@@ -69,21 +69,54 @@ do. 118 characters.
 | `name` | Morsels45 — Decide |
 | `description` | the short description above |
 | `app_store_description` | the long description above |
-| `app_type` | `b2b_app` — currently `website`, which is not an installable app |
-| `experience_path` | `/experiences/[experienceId]` — **declared but returns 404** |
+| `app_type` | stuck at `website` — cannot be changed, see above |
+| `experience_path` | `/experiences/[experienceId]` — built, live, returns 302 |
 | `icon` | already set |
 | `banner_image` | missing — needs a 1200×630-ish image |
-| `status` | `unlisted` → `live` **last**, after the route exists |
+| `status` | stays `unlisted` — `live` would publish into a directory that hides website apps |
 
-## Blockers before `status: live`
+## STOP — this app cannot be listed as an installable app
 
-1. **The experience route does not exist.** `experience_path` points at
-   `/experiences/[experienceId]` and there is no such route — a member who opens the app
-   inside a whop gets the 404 page. This is the one that makes a listing actively harmful
-   rather than merely incomplete.
-2. **`app_type` is `website`.** That is a site, not something a creator installs.
-3. **No banner image.** `status: live` requires name, icon and description; a banner is what
-   makes the card worth clicking.
+`app_type` is `website`, and the API refuses to change it:
+
+```
+whop apps update app_whoFNnhtY9AVWJ --app_type b2b_app
+HTTP_400: app_type cannot be changed on a website app
+```
+
+`whop apps create` has no `--app_type` flag either, so the type is fixed at creation and
+there is no CLI route around it. And a website app is excluded from discovery by design —
+the list API's own documentation says *"Apps of type `website` are left out unless you ask
+for them by name."* Setting `status: live` would therefore publish it into a directory
+where nobody browsing can find it, which is the exact problem listing was meant to solve.
+
+(That quote describes the list API's default filter. That the browsable App Store behaves
+the same way is an inference, a strong one, but not something anybody here has seen.)
+
+**What still works.** `unlisted` keeps the app "accessible via direct link", so a creator
+handed the link can install it today and their members get a working experience — which is
+true only because `/experiences/$experienceId` now exists. Installs come from asking rather
+than from browsing.
+
+**The one route back** is a fresh app record that is not typed `website` (dashboard, or
+`whop apps init`), pointed at this same codebase. Not obviously worth it: Whop communities
+skew heavily to trading, reselling and betting, so a food app was already a weak bet before
+it needed a second app record, a second route and a second deploy target to chase.
+
+**The copy below is still worth having.** It is the best positioning language this project
+has, and it works in a TikTok caption, a Reddit post or a DM to a creator just as well as
+in a listing.
+
+## Blockers that would remain even then
+
+1. ~~**The experience route does not exist.**~~ Built and deployed — `/experiences/exp_test`
+   returns 302 to `/decide/`. It also verifies Whop's `x-whop-user-token` against the
+   published JWKS (`lib/whop-token.ts`), because the SDK ships no verifier and the header
+   alone proves nothing on an origin anyone can reach directly.
+2. ~~**`app_type` is `website`.**~~ Not fixable — see above.
+3. **No banner image.** A banner is what makes a card worth clicking.
+4. **No dashboard view.** Both comparable live b2b apps (Automated Churn Recovery, Lobuly AI
+   Support) declare a `dashboard_path` for the installing creator. This app has none.
 
 ## The honest caveat
 
