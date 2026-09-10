@@ -174,14 +174,20 @@ re-reads the balance so points appear without a reload.
 
 ## 9. To go live
 
-1. **Create a Turso database**, then:
-   `whop apps secrets set TURSO_DATABASE_URL=... TURSO_AUTH_TOKEN=...`
-2. **Apply the schema:** `bun run credits:migrate`
-3. **Get a CPX publisher account**, then:
+1. ~~**Create a Turso database**~~ — done: `morsles45-zakarius.aws-us-east-1.turso.io`
+2. ~~**Apply the schema**~~ — done, all three tables and the `credit_ledger_txn`
+   unique index are live.
+3. **Set the secrets.** NOT done — `whop apps secrets set` refused with
+   `developer:update_app`, the same permission wall as everything else on this
+   credential. Set `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` from the Whop
+   dashboard instead. Use the `https://` form of the URL, not `libsql://`:
+   the `libsql://` scheme negotiates a WebSocket first, and the `https://` form
+   goes straight to the HTTP pipeline the Workers client uses anyway.
+4. **Get a CPX publisher account**, then:
    `whop apps secrets set CPX_APP_ID=... CPX_SECURE_HASH=... SURVEY_POSTBACK_IPS=<their postback IPs>`
-4. **Point CPX's postback at** `https://morsels45-app.whop.site/api/surveys/postback`
-5. **Sanity-check `POINTS_PER_USD`** against the spend side before opening it up (§3).
-6. **Decide on a migration bonus.** Chat and news are free today; metering them without
+5. **Point CPX's postback at** `https://morsels45-app.whop.site/api/surveys/postback`
+6. **Sanity-check `POINTS_PER_USD`** against the spend side before opening it up (§3).
+7. **Decide on a migration bonus.** Chat and news are free today; metering them without
    grandfathering existing users reads as a takeaway.
 
 Until step 1 is done every feature stays free — `charge()` returns `unmetered` when there is
@@ -198,3 +204,39 @@ refuses every caller rather than trusting one.
   gets publishers banned.
 - The Credits tab discloses that surveys are run by CPX, that CPX sees the responses, and that
   screenouts pay less than completions. Keep that text if you rework the screen.
+
+## 11. Earning inside Whop, instead of outside it
+
+Surveys are the only option here that pays **outside** Whop — CPX pays a publisher to
+PayPal, a bank, or crypto, and getting that into the Whop balance is a manual deposit.
+Everything below lands in the balance directly, needs no card, and needs no external
+account. If the goal is money in Whop without touching it, these outrank the survey wall.
+
+The ledger does not care where points come from. `credit()` dedupes on
+`(provider, provider_txn_id)`, so any of these becomes a new `provider` value and reuses
+everything already built and tested.
+
+**a. List the app in the Whop App Store.** `app_whoFNnhtY9AVWJ` is currently
+`status: unlisted`, `app_type: website`. Published, other creators install it into their
+own whops and pay: a one-time install fee, a 10–30% share of what they charge their
+members for access, or a per-member subscription. This is the largest number on the page
+and the biggest change — an installable app is a different product from a consumer food
+app, so it is a positioning decision, not a code change.
+
+**b. Sell credit packs** (§2 of the earlier proposal). Whop checkout, straight into the
+balance. Needs plan IDs created in the dashboard.
+
+**c. In-app affiliates.** The `affiliates` API creates affiliate records and commission
+overrides — percentage or flat, `first_payment` or `all_payments`, or an account-wide
+rev-share. It generates referral URLs with a 30-day attribution cookie, and refunds
+reverse commissions automatically (the same shape as the survey reversals in §5). Let
+users earn for bringing in Premium buyers: acquisition that costs nothing up front.
+One implementation note — **there are no affiliate webhooks**, so unlike the CPX postback
+this has to poll `affiliates.overrides.list` to notice earnings.
+
+**d. Whop Partners.** Not app revenue, but free to join with no approval and no card, and
+referral earnings transfer into the account balance.
+
+**e. Whop Treasury** pays yield on a USDT0 balance. Worth knowing about specifically
+because withdrawing needs a bank or wallet: a balance that cannot come out yet does not
+have to sit idle.
