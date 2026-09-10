@@ -3,10 +3,19 @@
  *
  * The original licence-key-and-passphrase flow lived here because a static
  * page has no account system of its own to ask. This page is not static: it
- * is served from morsels45.whop.site, which already knows how to sign
+ * is served from morsels45-app.whop.site, which already knows how to sign
  * someone in with their real Whop account and already knows, from that
  * account, whether they own morsels45 Premium. Asking twice — once with a
  * pasted key, once for real — is the friction this file removes.
+ *
+ * THE HOSTNAME IN THAT SENTENCE MATTERS, and it used to be wrong here.
+ * This app has lived at three names: morsels45decide.whop.site, then
+ * morsels45-app.whop.site, which is the live one. morsels45.whop.site has
+ * never been ours — it answers 502 because it belongs to something else that
+ * is broken, and links to it are simply lost. Whop does not keep a previous
+ * hostname alive either: morsels45decide.whop.site is a hard 404 today. So a
+ * link that goes out with the wrong host is a reader who never arrives, and
+ * renaming the app route again would do that to every link now in existence.
  *
  * So: one request, to this site's own /api/premium-status, which answers
  * from the visitor's Whop session. No key to paste, no device to bind, no
