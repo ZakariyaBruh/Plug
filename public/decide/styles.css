@@ -3779,3 +3779,62 @@ body.is-landing .topbar-brand .mark-word { display: none; }
 @media (prefers-contrast: more) {
   :root { --ink-3: #bdb8b0; --hair: #4a4a52; --hair-lit: #6a6a73; }
 }
+
+/* ------------------------------------------------------------------- heat */
+/*
+ * Endless runs hot, and the screen has to say so before the number does.
+ *
+ * Heat is a bargain: more points per tap, paid for with a clock that empties
+ * faster. A bargain the player cannot see themselves taking is just a number
+ * moving, so the run itself changes temperature — warm at the first band, and
+ * at the second visibly costing something. This is the same reason .is-panic
+ * exists rather than only the bar going red: one small indicator is not enough
+ * to look up for.
+ *
+ * Panic still wins over both. Whatever the run is worth, about to end is the
+ * more urgent fact.
+ */
+.endless-heat {
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--amber);
+  align-self: center;
+}
+
+.endless-run.is-warm .endless-clock i { background: var(--amber); }
+.endless-run.is-warm .endless-picks { border-color: var(--amber-dim); }
+
+.endless-run.is-blazing .endless-heat { animation: endless-throb 620ms var(--ease) infinite; }
+.endless-run.is-blazing .endless-clock i {
+  background: linear-gradient(90deg, var(--amber), var(--danger));
+}
+.endless-run.is-blazing .endless-picks { border-color: var(--amber); }
+.endless-run.is-blazing .endless-points b { color: var(--amber); }
+
+/* The bargain, drawn: at the top band the run breathes faster than the panic
+   state does, so "scoring hard" and "about to die" read as different feelings
+   rather than the same shake at two speeds. */
+.endless-run.is-blazing:not(.is-panic) { animation: endless-blaze 900ms var(--ease) infinite; }
+
+@keyframes endless-blaze {
+  0%, 100% { transform: none; }
+  50%      { transform: scale(1.004); }
+}
+
+/* Panic outranks heat: the bar goes red whatever the run is worth. */
+.endless-run.is-panic .endless-clock i { background: var(--danger); }
+
+/* The pop carries a word now — PERFECT, CLUTCH, BLAZING — so it needs room and
+   a little more weight than a bare "+30" did. */
+.endless-pop.is-big {
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .endless-run.is-blazing:not(.is-panic),
+  .endless-run.is-blazing .endless-heat { animation: none; }
+}

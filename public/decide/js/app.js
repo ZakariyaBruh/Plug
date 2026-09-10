@@ -6150,7 +6150,21 @@
   // The picks that get a whole-screen moment rather than a step up.
   var ENDLESS_MARKS = [10, 25, 50, 75, 100, 150, 200, 300];
 
-  var ENDLESS_QUICK = 1500;     // ms inside which an answer keeps the combo
+  /*
+   * The combo window, narrowed from 1500ms when heat arrived.
+   *
+   * At 1500 it caught people who were not trying to be caught. Somebody
+   * tapping at a comfortable 1300ms held the combo without meaning to, went
+   * hot, and burned clock at a rate their pace could not feed — 56 picks,
+   * where the same player tapping fractionally slower got 89. The worst
+   * outcome in the mode belonged to the most ordinary way of playing it, which
+   * is a trap rather than a difficulty.
+   *
+   * At 1100 the same tap is comfortably cool: 110 picks and a modest score.
+   * Heat now has to be reached for, which is what makes it a decision — and
+   * the run that commits to it still scores an order of magnitude more.
+   */
+  var ENDLESS_QUICK = 1100;     // ms inside which an answer keeps the combo
   var ENDLESS_COMBO_MAX = 9;
   var ENDLESS_BASE = 10;        // points for a pick
   var ENDLESS_STEP = 5;         // ...plus this much per step of combo
@@ -6167,6 +6181,52 @@
   var ENDLESS_READ_LEAN = 0.6;  // ...and how lopsided it has to have gone
   var ENDLESS_XP_CAP = 120;     // most XP one run can be worth
 
+  /*
+   * HEAT — the thing that turns a streak into a decision.
+   *
+   * The combo used to be free money. Answer quickly, score more, and there was
+   * never a reason not to: no tap ever cost anything, so "should I push it?"
+   * had one answer and therefore was not a question. Tap fifty played exactly
+   * like tap five with a bigger number over it, which is the boredom.
+   *
+   * So heat now buys points with time. Three picks quick and the run goes hot:
+   * more per tap, and the clock drains faster to pay for it. Three more and it
+   * is blazing, which is genuinely hard to hold. Let the combo lapse and it
+   * all comes off — the pace drops, the clock calms down, and you get to
+   * breathe at the price of scoring like everyone else.
+   *
+   * That is a real choice, made every few seconds, and it is the same choice
+   * whichever card you tap. THAT LAST PART IS NOT DECORATION. This mode ends
+   * by telling you something true about what you like, worked out from the
+   * pairs you chose — so a mechanic that made one card the correct answer
+   * would turn taps into optimisation and quietly make the ending a lie. Heat
+   * is deliberately symmetric: it changes what a pair is worth and never which
+   * side of it to take.
+   */
+  var ENDLESS_HEAT = [
+    // combo at which it starts, points multiplier, drain multiplier, name
+    { at: 0, points: 1,   drain: 1,   name: '' },
+    { at: 3, points: 1.5, drain: 1.3, name: 'Hot' },
+    { at: 6, points: 2,   drain: 1.6, name: 'Blazing' }
+  ];
+
+  /*
+   * The clutch bonus, which pays for nerve rather than speed.
+   *
+   * The red zone was pure dread: the bar goes red, everything shakes, and the
+   * only thing on offer is not dying. Now a tap made down there is worth half
+   * again — so the worst moment in a run is also the best-paid one, and
+   * hanging on at two hundred milliseconds is a choice somebody might make on
+   * purpose instead of a mistake they are recovering from.
+   */
+  var ENDLESS_CLUTCH = 1.5;
+
+  /*
+   * What a milestone hands back. Points inflate on their own; time is the only
+   * currency this mode is actually short of, so a mark is worth a breath.
+   */
+  var ENDLESS_MARK_CLOCK = 2000;
+
   var endless = {
     live: false,
     a: null, b: null, kind: '', champ: null,
@@ -6176,7 +6236,9 @@
     votes: {}, shown: {}, learned: [], won: {},
     lastRead: 0,
     // the clock
-    left: 0, phase: 0, warned: false, timer: null, shoutTimer: null, readTimer: null
+    left: 0, phase: 0, warned: false, timer: null, shoutTimer: null, readTimer: null,
+    // heat: the index into ENDLESS_HEAT the run is currently at
+    heat: 0, clutches: 0, hottest: 0
   };
 
   /*
@@ -6266,8 +6328,21 @@
     bankEndless();
   }
 
+  // Which heat band a combo sits in. Walked from the top so the highest
+  // qualifying band wins without depending on the array's order by luck.
+  function heatFor(combo) {
+    for (var i = ENDLESS_HEAT.length - 1; i > 0; i--) {
+      if (combo >= ENDLESS_HEAT[i].at) return i;
+    }
+    return 0;
+  }
+
+  function heatNow() { return ENDLESS_HEAT[endless.heat] || ENDLESS_HEAT[0]; }
+
   function drainEndless() {
-    endless.left -= ENDLESS_TICK;
+    // Heat is spent here, in the drain, which is the whole bargain: the run
+    // scores faster because it is running out faster.
+    endless.left -= ENDLESS_TICK * heatNow().drain;
     if (endless.left <= 0) {
       endless.left = 0;
       paintEndlessClock();
@@ -6332,6 +6407,14 @@
     endless.phase = phase;
 
     if (ENDLESS_MARKS.indexOf(endless.picks) !== -1 || (endless.picks > 300 && endless.picks % 100 === 0)) {
+      // Paid in time, not points. The score climbs on its own and another
+      // thousand on it changes nothing about the next ten seconds; two seconds
+      // of clock is the only reward this mode is ever actually short of, and
+      // at a hundred and eighty picks it is the difference between carrying on
+      // and not.
+      endless.left = Math.min(ENDLESS_CLOCK_MAX, endless.left + ENDLESS_MARK_CLOCK);
+      if (endless.left > ENDLESS_PANIC) endless.warned = false;
+      paintEndlessClock();
       shoutEndless(endless.picks + ' in a row', true);
       Sound.win();
       Confetti.burst({ y: window.innerHeight * 0.35 });
@@ -6340,9 +6423,19 @@
     }
   }
 
-  function popEndless(worth) {
+  /*
+   * The pop, which now has to explain itself.
+   *
+   * With one multiplier a bare "+30" was self-evident. With heat, gold and
+   * clutch stacking, the same tap can be worth anything from ten to a couple
+   * of hundred, and a number that moves that much without saying why reads as
+   * random — which is the opposite of what a risk you chose should feel like.
+   * So it carries the reason when there is one.
+   */
+  function popEndless(worth, why) {
     var pop = $('endless-pop');
-    pop.textContent = '+' + worth;
+    pop.textContent = '+' + worth + (why ? ' ' + why : '');
+    pop.classList.toggle('is-big', !!why);
     replay(pop);
     replay($('endless-score'));
   }
@@ -6407,6 +6500,10 @@
     endless.best = progress.state.endlessBest || 0;
     endless.beaten = false;
     endless.phase = 0;
+    endless.heat = 0;
+    endless.hottest = 0;
+    endless.clutches = 0;
+    $('endless-run').classList.remove('is-warm', 'is-blazing');
 
     clearTimeout(endless.shoutTimer);
     clearTimeout(endless.readTimer);
@@ -6611,6 +6708,22 @@
     $('endless-combo-n').textContent = endless.combo + 1;
     combo.classList.toggle('is-hot', endless.combo >= ENDLESS_COMBO_MAX);
 
+    // The band, named on screen while it is running rather than only announced
+    // as it changes — somebody who looked away for two taps still needs to know
+    // why the clock is emptying at that speed.
+    var heat = heatNow();
+    var badge = $('endless-heat');
+    if (badge) {
+      badge.hidden = endless.heat < 1;
+      badge.textContent = heat.name;
+    }
+    // On the run, not the badge: at blazing the whole screen should look like
+    // it is costing something, which is the only honest way to draw a bargain
+    // where the upside and the danger are the same lever.
+    var run = $('endless-run');
+    run.classList.toggle('is-warm', endless.heat === 1);
+    run.classList.toggle('is-blazing', endless.heat >= 2);
+
     var left = $('endless-left');
     left.hidden = isPlus();
     if (!isPlus()) $('endless-left-n').textContent = endlessLeft();
@@ -6627,12 +6740,40 @@
     var quick = Date.now() - endless.at <= ENDLESS_QUICK;
     var reflex = endless.left <= ENDLESS_RUSH;
 
+    // In the red when the tap was made, not after it was paid for — the bonus
+    // is for having been down there, and feeding the clock is what gets you out.
+    var clutch = endless.left <= ENDLESS_PANIC;
+
     endless.combo = quick ? Math.min(ENDLESS_COMBO_MAX, endless.combo + 1) : 0;
+
+    var wasHeat = endless.heat;
+    endless.heat = heatFor(endless.combo);
+    if (endless.heat > endless.hottest) endless.hottest = endless.heat;
 
     var worth = ENDLESS_BASE + endless.combo * ENDLESS_STEP;
     if (endless.kind === 'gold') worth *= 2;
+    worth = Math.round(worth * heatNow().points);
+    if (clutch) {
+      worth = Math.round(worth * ENDLESS_CLUTCH);
+      endless.clutches++;
+    }
     endless.score += worth;
     endless.picks++;
+
+    /*
+     * Crossing into a band gets said out loud, and losing it does too.
+     *
+     * A multiplier that changes silently is a number nobody notices changing.
+     * The drop matters more than the climb: the clock suddenly calming down is
+     * the mode giving something back, and without a word for it that reads as
+     * the game having gone quiet rather than having let you off.
+     */
+    if (endless.heat > wasHeat) {
+      shoutEndless(heatNow().name, endless.heat >= ENDLESS_HEAT.length - 1);
+      Sound.climb(endless.heat * 5);
+    } else if (endless.heat < wasHeat && wasHeat > 0) {
+      shoutEndless('Cooled off', false);
+    }
     endless.won[winner.name] = (endless.won[winner.name] || 0) + 1;
     feedEndless();
 
@@ -6704,7 +6845,12 @@
       Sound.climb(endless.combo);
     }
 
-    popEndless(worth);
+    // Named in the order they multiply, longest-odds first, and only ever one
+    // word: this is read in peripheral vision during the tap after it.
+    popEndless(worth, endless.kind === 'gold' ? 'PERFECT'
+      : clutch ? 'CLUTCH'
+      : endless.heat >= 2 ? 'BLAZING'
+      : '');
     beatEndless();
 
     // Tried on every tap once the gap has elapsed, rather than only on every
@@ -6814,6 +6960,26 @@
         : endless.picks < ENDLESS_READ_EVERY
           ? '. Not enough to work anything out — that takes about ' + ENDLESS_READ_EVERY + '.'
           : '. Nothing it would swear to, though — you have been too even-handed for that.');
+
+    /*
+     * How the run was played, not just how it went.
+     *
+     * The score already says how well; this says how — whether it was held at
+     * a steady pace or pushed into the red for the multiplier. Two runs can
+     * land on the same number by completely different nerve, and the mode now
+     * has a way to tell them apart, so it should say which one this was.
+     */
+    var heatLine = $('endless-over-heat');
+    if (heatLine) {
+      var bits = [];
+      if (endless.hottest >= 2) bits.push('You took it blazing');
+      else if (endless.hottest === 1) bits.push('You got it hot');
+      if (endless.clutches > 0) {
+        bits.push(endless.clutches + (endless.clutches === 1 ? ' pick' : ' picks') + ' made on a red clock');
+      }
+      heatLine.hidden = bits.length === 0;
+      heatLine.textContent = bits.join(' \u00b7 ') + (bits.length ? '.' : '');
+    }
 
     var list = $('endless-learned');
     list.innerHTML = '';
