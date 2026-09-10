@@ -1,4 +1,4 @@
-import { createClient, type Client } from "@libsql/client/web";
+import { createClient, type Client } from '@libsql/client/web'
 
 /*
  * credits.ts — the points ledger.
@@ -19,18 +19,18 @@ import { createClient, type Client } from "@libsql/client/web";
  * negative delta, so the history of a disputed payout survives.
  */
 
-export const POINTS_PER_USD = 100; // 1 point = $0.01 of gross revenue
-export const USER_SHARE = 0.3; // the user's 30%
+export const POINTS_PER_USD = 100 // 1 point = $0.01 of gross revenue
+export const USER_SHARE = 0.3 // the user's 30%
 
 /** Free allowances per UTC day, before credits are charged. */
-export const FREE_PER_DAY = { chat: 12, news: 10 } as const;
+export const FREE_PER_DAY = { chat: 12, news: 10 } as const
 
 /** What a metered action costs once the free allowance is gone. */
-export const COST = { chat: 1, news: 1, premium_action: 5 } as const;
+export const COST = { chat: 1, news: 1, premium_action: 5 } as const
 
-export type Feature = keyof typeof COST;
+export type Feature = keyof typeof COST
 
-let cached: Client | null = null;
+let cached: Client | null = null
 
 /**
  * Test seam. scripts/credits-test.mjs points this at a local SQLite file so
@@ -38,20 +38,37 @@ let cached: Client | null = null;
  * postbacks, reversals — rather than mocked and assumed.
  */
 export function useClient(client: Client | null) {
-  cached = client;
+  cached = client
 }
 
 /** null when Turso is not configured — callers must treat that as "no credits system". */
 export function db(): Client | null {
-  if (cached) return cached;
-  const url = process.env.TURSO_DATABASE_URL;
-  if (!url) return null;
-  cached = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
-  return cached;
+  if (cached) return cached
+  const url = process.env.TURSO_DATABASE_URL
+  if (!url) return null
+  cached = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN })
+  return cached
+}
+
+/*
+ * The kill switch, and why it is separate from the database being configured.
+ *
+ * Those are two different questions. "Is there a ledger?" is infrastructure.
+ * "Should people be charged?" is a decision about live users, and it has to be
+ * reversible in one field without tearing the credentials out underneath —
+ * points keep accruing from surveys either way, so nobody loses what they
+ * earned while it was off.
+ *
+ * Default off. Metering is switched on deliberately, once somebody has watched
+ * it work; it is never something that arrives by surprise with a deploy.
+ */
+export function metered(): boolean {
+  const flag = (process.env.CREDITS_ENABLED ?? '').trim().toLowerCase()
+  return flag === 'true' || flag === '1' || flag === 'yes' || flag === 'on'
 }
 
 export function utcDay(at = new Date()): string {
-  return at.toISOString().slice(0, 10);
+  return at.toISOString().slice(0, 10)
 }
 
 /**
@@ -61,8 +78,8 @@ export function utcDay(at = new Date()): string {
  * wrong nearly always.
  */
 export function pointsFor(netRevenueUsd: number): number {
-  if (!Number.isFinite(netRevenueUsd) || netRevenueUsd <= 0) return 0;
-  return Math.round(netRevenueUsd * POINTS_PER_USD * USER_SHARE);
+  if (!Number.isFinite(netRevenueUsd) || netRevenueUsd <= 0) return 0
+  return Math.round(netRevenueUsd * POINTS_PER_USD * USER_SHARE)
 }
 
 /*
@@ -76,69 +93,66 @@ export function pointsFor(netRevenueUsd: number): number {
  * Only a handful of attempts, and only for this error. Anything else is a
  * real fault and must surface rather than be retried into a timeout.
  */
-const BUSY = /SQLITE_BUSY|database is locked|conflict/i;
+const BUSY = /SQLITE_BUSY|database is locked|conflict/i
 
 async function writing<T>(run: () => Promise<T>): Promise<T> {
-  let last: unknown;
+  let last: unknown
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
-      return await run();
+      return await run()
     } catch (err) {
-      last = err;
-      if (!BUSY.test(String((err as Error)?.message ?? err))) throw err;
-      await new Promise((r) => setTimeout(r, 25 * (attempt + 1)));
+      last = err
+      if (!BUSY.test(String((err as Error)?.message ?? err))) throw err
+      await new Promise((r) => setTimeout(r, 25 * (attempt + 1)))
     }
   }
-  throw last;
+  throw last
 }
 
 export type Account = {
-  balance: number;
-  lifetimeEarned: number;
-  lifetimeSpent: number;
-};
+  balance: number
+  lifetimeEarned: number
+  lifetimeSpent: number
+}
 
-const EMPTY: Account = { balance: 0, lifetimeEarned: 0, lifetimeSpent: 0 };
+const EMPTY: Account = { balance: 0, lifetimeEarned: 0, lifetimeSpent: 0 }
 
 export async function getAccount(userId: string): Promise<Account> {
-  const client = db();
-  if (!client) return EMPTY;
+  const client = db()
+  if (!client) return EMPTY
   const { rows } = await client.execute({
-    sql: "SELECT balance, lifetime_earned, lifetime_spent FROM credit_accounts WHERE user_id = ?",
+    sql: 'SELECT balance, lifetime_earned, lifetime_spent FROM credit_accounts WHERE user_id = ?',
     args: [userId],
-  });
-  const row = rows[0];
-  if (!row) return EMPTY;
+  })
+  const row = rows[0]
+  if (!row) return EMPTY
   return {
     balance: Number(row.balance ?? 0),
     lifetimeEarned: Number(row.lifetime_earned ?? 0),
     lifetimeSpent: Number(row.lifetime_spent ?? 0),
-  };
+  }
 }
 
 export type LedgerEntry = {
-  delta: number;
-  reason: string;
-  feature: string | null;
-  createdAt: number;
-};
+  delta: number
+  reason: string
+  feature: string | null
+  createdAt: number
+}
 
-export async function recentLedger(
-  userId: string,
-  limit = 20,
-): Promise<LedgerEntry[]> {
-  const client = db();
-  if (!client) return [];
+export async function recentLedger(userId: string, limit = 20): Promise<LedgerEntry[]> {
+  const client = db()
+  if (!client) return []
   const { rows } = await client.execute({
-    sql: "SELECT delta, reason, feature, created_at FROM credit_ledger WHERE user_id = ? ORDER BY id DESC LIMIT ?",
+    sql: 'SELECT delta, reason, feature, created_at FROM credit_ledger WHERE user_id = ? ORDER BY id DESC LIMIT ?',
     args: [userId, limit],
-  });
+  })
   return rows.map((row) => ({
     delta: Number(row.delta ?? 0),
-    reason: String(row.reason ?? ""),
+    reason: String(row.reason ?? ''),
     feature: row.feature == null ? null : String(row.feature),
     createdAt: Number(row.created_at ?? 0),
-  }));
+  }))
 }
 
 /*
@@ -150,21 +164,21 @@ export async function recentLedger(
  * alone. That matters because networks retry postbacks aggressively.
  */
 export async function credit(opts: {
-  userId: string;
-  points: number;
-  reason: "survey_complete" | "survey_screenout" | "signup_bonus" | "manual";
-  provider?: string;
-  providerTxnId?: string;
-  netRevenueUsd?: number;
-  metadata?: unknown;
+  userId: string
+  points: number
+  reason: 'survey_complete' | 'survey_screenout' | 'signup_bonus' | 'manual'
+  provider?: string
+  providerTxnId?: string
+  netRevenueUsd?: number
+  metadata?: unknown
 }): Promise<{ credited: boolean; duplicate: boolean }> {
-  const client = db();
-  if (!client) return { credited: false, duplicate: false };
-  if (opts.points <= 0) return { credited: false, duplicate: false };
+  const client = db()
+  if (!client) return { credited: false, duplicate: false }
+  if (opts.points <= 0) return { credited: false, duplicate: false }
 
-  const now = Date.now();
+  const now = Date.now()
   return writing(async () => {
-    const tx = await client.transaction("write");
+    const tx = await client.transaction('write')
     try {
       const inserted = await tx.execute({
         sql: `INSERT OR IGNORE INTO credit_ledger
@@ -180,11 +194,11 @@ export async function credit(opts: {
           opts.metadata ? JSON.stringify(opts.metadata) : null,
           now,
         ],
-      });
+      })
 
       if (inserted.rowsAffected === 0) {
-        await tx.rollback();
-        return { credited: false, duplicate: true };
+        await tx.rollback()
+        return { credited: false, duplicate: true }
       }
 
       await tx.execute({
@@ -195,14 +209,14 @@ export async function credit(opts: {
               lifetime_earned = lifetime_earned + excluded.lifetime_earned,
               updated_at      = excluded.updated_at`,
         args: [opts.userId, opts.points, opts.points, now],
-      });
-      await tx.commit();
-      return { credited: true, duplicate: false };
+      })
+      await tx.commit()
+      return { credited: true, duplicate: false }
     } catch (err) {
-      await tx.rollback().catch(() => {});
-      throw err;
+      await tx.rollback().catch(() => {})
+      throw err
     }
-  });
+  })
 }
 
 /*
@@ -214,18 +228,18 @@ export async function credit(opts: {
  * (see spend()), not the balance itself.
  */
 export async function reverse(opts: {
-  userId: string;
-  points: number;
-  provider: string;
-  providerTxnId: string;
-  metadata?: unknown;
+  userId: string
+  points: number
+  provider: string
+  providerTxnId: string
+  metadata?: unknown
 }): Promise<{ reversed: boolean; duplicate: boolean }> {
-  const client = db();
-  if (!client) return { reversed: false, duplicate: false };
+  const client = db()
+  if (!client) return { reversed: false, duplicate: false }
 
-  const now = Date.now();
+  const now = Date.now()
   return writing(async () => {
-    const tx = await client.transaction("write");
+    const tx = await client.transaction('write')
     try {
       const inserted = await tx.execute({
         sql: `INSERT OR IGNORE INTO credit_ledger
@@ -240,10 +254,10 @@ export async function reverse(opts: {
           opts.metadata ? JSON.stringify(opts.metadata) : null,
           now,
         ],
-      });
+      })
       if (inserted.rowsAffected === 0) {
-        await tx.rollback();
-        return { reversed: false, duplicate: true };
+        await tx.rollback()
+        return { reversed: false, duplicate: true }
       }
       await tx.execute({
         sql: `INSERT INTO credit_accounts (user_id, balance, reversals, updated_at)
@@ -252,28 +266,22 @@ export async function reverse(opts: {
               balance    = balance - ?,
               reversals  = reversals + 1,
               updated_at = ?`,
-        args: [
-          opts.userId,
-          -Math.abs(opts.points),
-          now,
-          Math.abs(opts.points),
-          now,
-        ],
-      });
-      await tx.commit();
-      return { reversed: true, duplicate: false };
+        args: [opts.userId, -Math.abs(opts.points), now, Math.abs(opts.points), now],
+      })
+      await tx.commit()
+      return { reversed: true, duplicate: false }
     } catch (err) {
-      await tx.rollback().catch(() => {});
-      throw err;
+      await tx.rollback().catch(() => {})
+      throw err
     }
-  });
+  })
 }
 
 export type Charge =
-  | { ok: true; how: "free"; remainingFree: number; balance: number }
-  | { ok: true; how: "credits"; remainingFree: 0; balance: number }
-  | { ok: false; how: "insufficient"; remainingFree: 0; balance: number }
-  | { ok: true; how: "unmetered"; remainingFree: number; balance: number };
+  | { ok: true; how: 'free'; remainingFree: number; balance: number }
+  | { ok: true; how: 'credits'; remainingFree: 0; balance: number }
+  | { ok: false; how: 'insufficient'; remainingFree: 0; balance: number }
+  | { ok: true; how: 'unmetered'; remainingFree: number; balance: number }
 
 /*
  * One gate for every metered feature: free allowance first, then points.
@@ -282,47 +290,47 @@ export type Charge =
  * alternative — read the count, decide, write it back — lets two requests in
  * flight at once each see the same "you have one left".
  */
-export async function charge(
-  userId: string,
-  feature: Feature,
-): Promise<Charge> {
-  const client = db();
+export async function charge(userId: string, feature: Feature): Promise<Charge> {
+  // Checked before the database, so switching metering off costs nothing per
+  // request and does not depend on the store being reachable.
+  if (!metered()) return { ok: true, how: 'unmetered', remainingFree: 0, balance: 0 }
+
+  const client = db()
   // No database configured: the feature stays free rather than breaking. A
   // missing credit system must not take away something that worked yesterday.
-  if (!client)
-    return { ok: true, how: "unmetered", remainingFree: 0, balance: 0 };
+  if (!client) return { ok: true, how: 'unmetered', remainingFree: 0, balance: 0 }
 
-  const free = FREE_PER_DAY[feature as keyof typeof FREE_PER_DAY] ?? 0;
-  const cost = COST[feature];
-  const day = utcDay();
-  const now = Date.now();
+  const free = FREE_PER_DAY[feature as keyof typeof FREE_PER_DAY] ?? 0
+  const cost = COST[feature]
+  const day = utcDay()
+  const now = Date.now()
 
   return writing(async () => {
-    const tx = await client.transaction("write");
+    const tx = await client.transaction('write')
     try {
       const seen = await tx.execute({
-        sql: "SELECT used FROM feature_usage WHERE user_id = ? AND feature = ? AND day = ?",
+        sql: 'SELECT used FROM feature_usage WHERE user_id = ? AND feature = ? AND day = ?',
         args: [userId, feature, day],
-      });
-      const used = Number(seen.rows[0]?.used ?? 0);
+      })
+      const used = Number(seen.rows[0]?.used ?? 0)
 
       if (used < free) {
         await tx.execute({
           sql: `INSERT INTO feature_usage (user_id, feature, day, used) VALUES (?, ?, ?, 1)
               ON CONFLICT(user_id, feature, day) DO UPDATE SET used = used + 1`,
           args: [userId, feature, day],
-        });
+        })
         const account = await tx.execute({
-          sql: "SELECT balance FROM credit_accounts WHERE user_id = ?",
+          sql: 'SELECT balance FROM credit_accounts WHERE user_id = ?',
           args: [userId],
-        });
-        await tx.commit();
+        })
+        await tx.commit()
         return {
           ok: true,
-          how: "free",
+          how: 'free',
           remainingFree: free - used - 1,
           balance: Number(account.rows[0]?.balance ?? 0),
-        };
+        }
       }
 
       // Allowance spent — pay points. The `balance >= ?` in the WHERE clause is
@@ -332,56 +340,53 @@ export async function charge(
                SET balance = balance - ?, lifetime_spent = lifetime_spent + ?, updated_at = ?
              WHERE user_id = ? AND balance >= ?`,
         args: [cost, cost, now, userId, cost],
-      });
+      })
 
       if (paid.rowsAffected === 0) {
         const account = await tx.execute({
-          sql: "SELECT balance FROM credit_accounts WHERE user_id = ?",
+          sql: 'SELECT balance FROM credit_accounts WHERE user_id = ?',
           args: [userId],
-        });
-        await tx.rollback();
+        })
+        await tx.rollback()
         return {
           ok: false,
-          how: "insufficient",
+          how: 'insufficient',
           remainingFree: 0,
           balance: Number(account.rows[0]?.balance ?? 0),
-        };
+        }
       }
 
       await tx.execute({
         sql: `INSERT INTO credit_ledger (user_id, delta, reason, feature, created_at)
             VALUES (?, ?, 'spend', ?, ?)`,
         args: [userId, -cost, feature, now],
-      });
+      })
       const account = await tx.execute({
-        sql: "SELECT balance FROM credit_accounts WHERE user_id = ?",
+        sql: 'SELECT balance FROM credit_accounts WHERE user_id = ?',
         args: [userId],
-      });
-      await tx.commit();
+      })
+      await tx.commit()
       return {
         ok: true,
-        how: "credits",
+        how: 'credits',
         remainingFree: 0,
         balance: Number(account.rows[0]?.balance ?? 0),
-      };
+      }
     } catch (err) {
-      await tx.rollback().catch(() => {});
-      throw err;
+      await tx.rollback().catch(() => {})
+      throw err
     }
-  });
+  })
 }
 
 /** How much of today's free allowance is left, without consuming any of it. */
-export async function allowanceLeft(
-  userId: string,
-  feature: Feature,
-): Promise<number> {
-  const client = db();
-  if (!client) return 0;
-  const free = FREE_PER_DAY[feature as keyof typeof FREE_PER_DAY] ?? 0;
+export async function allowanceLeft(userId: string, feature: Feature): Promise<number> {
+  const client = db()
+  if (!client) return 0
+  const free = FREE_PER_DAY[feature as keyof typeof FREE_PER_DAY] ?? 0
   const { rows } = await client.execute({
-    sql: "SELECT used FROM feature_usage WHERE user_id = ? AND feature = ? AND day = ?",
+    sql: 'SELECT used FROM feature_usage WHERE user_id = ? AND feature = ? AND day = ?',
     args: [userId, feature, utcDay()],
-  });
-  return Math.max(0, free - Number(rows[0]?.used ?? 0));
+  })
+  return Math.max(0, free - Number(rows[0]?.used ?? 0))
 }

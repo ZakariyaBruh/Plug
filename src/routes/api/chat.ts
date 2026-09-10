@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
-import { COST, FREE_PER_DAY, charge } from '#/lib/credits'
+import { COST, FREE_PER_DAY, charge, metered } from '#/lib/credits'
 import { PREMIUM_PRODUCT_ID } from '#/lib/products'
 import { checkProductAccess } from '#/lib/session'
 
@@ -320,7 +320,10 @@ export const Route = createFileRoute('/api/chat')({
         let credits: { how: string; remainingFree: number; balance: number } | null = null
 
         if (!signedIn || !user) {
-          if (anonOverDay(who)) {
+          // metered() as well as the count: with credits switched off this
+          // path has to behave exactly as it did before any of this existed,
+          // which means the daily cap goes away too, not just the charging.
+          if (metered() && anonOverDay(who)) {
             return json(
               { error: 'sign_in', freePerDay: FREE_PER_DAY.chat, anonFreePerDay: ANON_FREE_PER_DAY },
               402,

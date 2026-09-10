@@ -177,17 +177,19 @@ re-reads the balance so points appear without a reload.
 1. ~~**Create a Turso database**~~ — done: `morsles45-zakarius.aws-us-east-1.turso.io`
 2. ~~**Apply the schema**~~ — done, all three tables and the `credit_ledger_txn`
    unique index are live.
-3. **Set the secrets.** NOT done — `whop apps secrets set` refused with
-   `developer:update_app`, the same permission wall as everything else on this
-   credential. Set `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` from the Whop
-   dashboard instead. Use the `https://` form of the URL, not `libsql://`:
+3. ~~**Set the secrets**~~ — done. `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`
+   are set on the app. Note the URL is the `https://` form, not `libsql://`:
    the `libsql://` scheme negotiates a WebSocket first, and the `https://` form
    goes straight to the HTTP pipeline the Workers client uses anyway.
-4. **Get a CPX publisher account**, then:
+4. **Turn metering on** when you are ready to charge real users:
+   `whop apps secrets set --secret CREDITS_ENABLED=true`. Until then the Credits
+   tab, the survey wall and the ledger all work and points accrue, but nothing
+   is charged — see §12.
+5. **Get a CPX publisher account**, then:
    `whop apps secrets set CPX_APP_ID=... CPX_SECURE_HASH=... SURVEY_POSTBACK_IPS=<their postback IPs>`
-5. **Point CPX's postback at** `https://morsels45-app.whop.site/api/surveys/postback`
-6. **Sanity-check `POINTS_PER_USD`** against the spend side before opening it up (§3).
-7. **Decide on a migration bonus.** Chat and news are free today; metering them without
+6. **Point CPX's postback at** `https://morsels45-app.whop.site/api/surveys/postback`
+7. **Sanity-check `POINTS_PER_USD`** against the spend side before opening it up (§3).
+8. **Decide on a migration bonus.** Chat and news are free today; metering them without
    grandfathering existing users reads as a takeaway.
 
 Until step 1 is done every feature stays free — `charge()` returns `unmetered` when there is
@@ -240,3 +242,24 @@ referral earnings transfer into the account balance.
 **e. Whop Treasury** pays yield on a USDT0 balance. Worth knowing about specifically
 because withdrawing needs a bank or wallet: a balance that cannot come out yet does not
 have to sit idle.
+
+## 12. The metering switch
+
+`CREDITS_ENABLED` governs whether anybody is *charged*. It is deliberately not the
+same question as whether the database is configured: one is infrastructure, the other
+is a decision about live users that has to be reversible in a single field.
+
+Off (the default, and anything that is not `true`/`1`/`yes`/`on`):
+
+- `charge()` returns `unmetered` before it touches the database, so chat and news
+  behave exactly as they did before any of this existed.
+- The anonymous chat cap is not applied either — metering off means all of it, not
+  just the charging.
+- `/api/news` goes back to `public` caching, so the shared fifteen-minute cache is not
+  given up for a meter that is not running.
+- The Credits tab says so plainly and hides the allowance rows, which would otherwise
+  read "12 of 12 free" forever and look like a broken meter rather than a paused one.
+
+**Earning is unaffected either way.** Survey postbacks still credit points, and points
+banked while metering was off are still there when it comes on. That is what makes the
+switch safe to leave off: it costs nothing to wait.

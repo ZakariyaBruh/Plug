@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { PREMIUM_PRODUCT_ID } from '#/lib/products'
 import { checkProductAccess } from '#/lib/session'
-import { COST, FREE_PER_DAY, allowanceLeft, db, getAccount, recentLedger } from '#/lib/credits'
+import { COST, FREE_PER_DAY, allowanceLeft, db, getAccount, metered, recentLedger } from '#/lib/credits'
 import { provider } from '#/lib/surveys'
 
 /*
@@ -20,7 +20,7 @@ export const Route = createFileRoute('/api/credits')({
         const { signedIn, hasAccess, user } = await checkProductAccess(PREMIUM_PRODUCT_ID)
 
         if (!signedIn || !user) {
-          return json({ signedIn: false, hasPremium: false, configured: !!db() })
+          return json({ signedIn: false, hasPremium: false, configured: !!db(), metered: metered() })
         }
 
         const [account, ledger, chatLeft, newsLeft] = await Promise.all([
@@ -34,6 +34,7 @@ export const Route = createFileRoute('/api/credits')({
           signedIn: true,
           hasPremium: hasAccess,
           configured: !!db(),
+          metered: metered(),
           balance: account.balance,
           lifetimeEarned: account.lifetimeEarned,
           lifetimeSpent: account.lifetimeSpent,

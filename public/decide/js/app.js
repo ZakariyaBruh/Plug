@@ -3828,6 +3828,12 @@
       ? earned + ' earned, ' + spent + ' spent, all time'
       : '';
 
+    $('credits-off').hidden = d.metered !== false;
+    // The allowance rows would otherwise read "12 of 12 free" forever, which
+    // looks like a meter that is broken rather than one that is switched off.
+    $('credits-today').hidden = d.metered === false;
+    $('credits-today-title').hidden = d.metered === false;
+
     paintCreditsToday(d);
     paintCreditsHistory(d);
 

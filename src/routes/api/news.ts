@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { AGENT, FEEDS, FEED_ACCEPT, type Story, parseFeed } from '#/lib/feed'
-import { COST, FREE_PER_DAY, charge } from '#/lib/credits'
+import { COST, FREE_PER_DAY, charge, metered } from '#/lib/credits'
 import { PREMIUM_PRODUCT_ID } from '#/lib/products'
 import { checkProductAccess } from '#/lib/session'
 
@@ -103,8 +103,12 @@ export const Route = createFileRoute('/api/news')({
              * which is where a repeat load within the window now gets served
              * from — and a load served from there is one the allowance is
              * never charged for.
+             *
+             * Only while metering is on, though. With credits switched off the
+             * answer is the same for everybody again, so the shared cache comes
+             * back rather than being paid for and not used.
              */
-            'Cache-Control': 'private, max-age=900',
+            'Cache-Control': metered() ? 'private, max-age=900' : 'public, max-age=900',
           },
         })
       },

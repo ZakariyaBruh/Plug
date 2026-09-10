@@ -8,7 +8,11 @@
  */
 import { unlinkSync, readFileSync, existsSync } from 'node:fs'
 import { createClient } from '@libsql/client'
-import { credit, reverse, charge, getAccount, pointsFor, useClient, FREE_PER_DAY, COST } from '../src/lib/credits.ts'
+import { credit, reverse, charge, getAccount, pointsFor, useClient, metered, FREE_PER_DAY, COST } from '../src/lib/credits.ts'
+
+// Metering is off by default, so the charging tests have to turn it on. That
+// default is the point of the flag and is asserted at the end.
+process.env.CREDITS_ENABLED = 'true'
 
 const FILE = '/tmp/credits-test.db'
 for (const f of [FILE, `${FILE}-wal`, `${FILE}-shm`]) if (existsSync(f)) unlinkSync(f)
@@ -122,7 +126,39 @@ const burst = await Promise.all(
 check('the free allowance is not overspent by a burst', burst.filter((r) => r.how === 'free').length, FREE_PER_DAY.chat)
 check('the rest of the burst is refused, not given away', burst.filter((r) => !r.ok).length, 3)
 
+// --- the kill switch -----------------------------------------------------
+/*
+ * Switching metering off must leave earning alone. Somebody who answered a
+ * survey while it was on keeps those points, and a survey answered while it is
+ * off still pays — the flag governs spending, not the ledger.
+ */
+process.env.CREDITS_ENABLED = ''
+check('metered() is off by default', metered(), false)
+
+const before = (await getAccount(R)).balance
+const offCharge = await charge(R, 'premium_action')
+check('nothing is charged while the switch is off', { ok: offCharge.ok, how: offCharge.how }, { ok: true, how: 'unmetered' })
+check('and the balance is untouched', (await getAccount(R)).balance, before)
+
+const earnedWhileOff = await credit({
+  userId: R, points: 10, reason: 'survey_complete', provider: 'cpx', providerTxnId: 'off_1', netRevenueUsd: 0.33,
+})
+check('surveys still pay while metering is off', earnedWhileOff.credited, true)
+check('those points are really banked', (await getAccount(R)).balance, before + 10)
+
+for (const on of ['true', '1', 'yes', 'on', 'TRUE']) {
+  process.env.CREDITS_ENABLED = on
+  if (!metered()) { console.log(`FAIL  CREDITS_ENABLED=${on} should enable metering`); fail += 1 }
+}
+for (const off of ['', 'false', '0', 'no', 'nope']) {
+  process.env.CREDITS_ENABLED = off
+  if (metered()) { console.log(`FAIL  CREDITS_ENABLED=${JSON.stringify(off)} should NOT enable metering`); fail += 1 }
+}
+pass += 1
+console.log('PASS  the switch only turns on for values that clearly mean yes')
+
 // --- no database configured must not break the feature -------------------
+process.env.CREDITS_ENABLED = 'true'
 useClient(null)
 const unmetered = await charge('user_nodb', 'chat')
 check('unconfigured ledger leaves features working', { ok: unmetered.ok, how: unmetered.how }, { ok: true, how: 'unmetered' })
