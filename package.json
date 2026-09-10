@@ -12,9 +12,12 @@
     "preview": "vite preview",
     "deploy": "whop apps deploy",
     "typecheck": "tsc --noEmit",
-    "indexnow": "node scripts/indexnow.mjs"
+    "indexnow": "node scripts/indexnow.mjs",
+    "test:credits": "bun run scripts/credits-test.mjs && bun run scripts/surveys-test.mjs",
+    "credits:migrate": "bun run scripts/credits-migrate.mjs"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-router": "latest",

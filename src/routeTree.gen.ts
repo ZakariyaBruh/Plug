@@ -19,6 +19,7 @@ import { Route as PremiumRouteImport } from './routes/premium'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiCreditsRouteImport } from './routes/api/credits'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
 import { Route as ApiOrderTogetherRouteImport } from './routes/api/order-together'
 import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-status'
@@ -29,6 +30,7 @@ import { Route as TogetherCodeRouteImport } from './routes/together.$code'
 import { Route as ApiOauthCallbackRouteImport } from './routes/api/oauth/callback'
 import { Route as ApiOauthLoginRouteImport } from './routes/api/oauth/login'
 import { Route as ApiOauthLogoutRouteImport } from './routes/api/oauth/logout'
+import { Route as ApiSurveysPostbackRouteImport } from './routes/api/surveys/postback'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -78,6 +80,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCreditsRoute = ApiCreditsRouteImport.update({
+  id: '/api/credits',
+  path: '/api/credits',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiNewsRoute = ApiNewsRouteImport.update({
@@ -130,6 +137,11 @@ const ApiOauthLogoutRoute = ApiOauthLogoutRouteImport.update({
   path: '/api/oauth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSurveysPostbackRoute = ApiSurveysPostbackRouteImport.update({
+  id: '/api/surveys/postback',
+  path: '/api/surveys/postback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -142,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/credits': typeof ApiCreditsRoute
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
@@ -152,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
+  '/api/surveys/postback': typeof ApiSurveysPostbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -164,6 +178,7 @@ export interface FileRoutesByTo {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/credits': typeof ApiCreditsRoute
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
@@ -174,6 +189,7 @@ export interface FileRoutesByTo {
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
+  '/api/surveys/postback': typeof ApiSurveysPostbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -187,6 +203,7 @@ export interface FileRoutesById {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/credits': typeof ApiCreditsRoute
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
@@ -197,6 +214,7 @@ export interface FileRoutesById {
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
+  '/api/surveys/postback': typeof ApiSurveysPostbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -211,6 +229,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/api/chat'
+    | '/api/credits'
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
@@ -221,6 +240,7 @@ export interface FileRouteTypes {
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
+    | '/api/surveys/postback'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -233,6 +253,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/api/chat'
+    | '/api/credits'
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
@@ -243,6 +264,7 @@ export interface FileRouteTypes {
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
+    | '/api/surveys/postback'
   id:
     | '__root__'
     | '/'
@@ -255,6 +277,7 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/api/chat'
+    | '/api/credits'
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
@@ -265,6 +288,7 @@ export interface FileRouteTypes {
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
+    | '/api/surveys/postback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -278,6 +302,7 @@ export interface RootRouteChildren {
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiCreditsRoute: typeof ApiCreditsRoute
   ApiNewsRoute: typeof ApiNewsRoute
   ApiOrderTogetherRoute: typeof ApiOrderTogetherRoute
   ApiPremiumStatusRoute: typeof ApiPremiumStatusRoute
@@ -287,6 +312,7 @@ export interface RootRouteChildren {
   ApiOauthCallbackRoute: typeof ApiOauthCallbackRoute
   ApiOauthLoginRoute: typeof ApiOauthLoginRoute
   ApiOauthLogoutRoute: typeof ApiOauthLogoutRoute
+  ApiSurveysPostbackRoute: typeof ApiSurveysPostbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -361,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/credits': {
+      id: '/api/credits'
+      path: '/api/credits'
+      fullPath: '/api/credits'
+      preLoaderRoute: typeof ApiCreditsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/news': {
       id: '/api/news'
       path: '/api/news'
@@ -431,6 +464,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOauthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/surveys/postback': {
+      id: '/api/surveys/postback'
+      path: '/api/surveys/postback'
+      fullPath: '/api/surveys/postback'
+      preLoaderRoute: typeof ApiSurveysPostbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -456,6 +496,7 @@ const rootRouteChildren: RootRouteChildren = {
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiCreditsRoute: ApiCreditsRoute,
   ApiNewsRoute: ApiNewsRoute,
   ApiOrderTogetherRoute: ApiOrderTogetherRoute,
   ApiPremiumStatusRoute: ApiPremiumStatusRoute,
@@ -465,6 +506,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOauthCallbackRoute: ApiOauthCallbackRoute,
   ApiOauthLoginRoute: ApiOauthLoginRoute,
   ApiOauthLogoutRoute: ApiOauthLogoutRoute,
+  ApiSurveysPostbackRoute: ApiSurveysPostbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

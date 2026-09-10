@@ -1,8 +1,9 @@
 # Credits / Money tab — design spec
 
-Status: **design only, not implemented.** The app source is not in this repo yet
-(`whop apps pull` still needs an app id). This document captures the decisions that are
-expensive to change after launch, so implementation is mechanical once the code lands.
+Status: **built.** Ledger, postback verification and gating are implemented and tested
+(`bun run test:credits` — 42 assertions). What is NOT done is everything that needs an
+account somewhere else: a CPX publisher account, a Turso database, and the secrets that
+point at them. See §9.
 
 ## 1. Shape of the feature
 
@@ -14,7 +15,7 @@ Points are **closed-loop**: earned in-app, spent in-app, never cashed out. Keep 
 A points balance that converts back to money is a materially different product — stored value,
 payout rails, and the regulatory surface that comes with them. Spend-only avoids all of it.
 
-## 2. Provider choice — DECISION NEEDED
+## 2. Provider — CPX Research
 
 All of these are survey/offerwall aggregators with an embeddable wall and S2S postbacks.
 
@@ -26,12 +27,16 @@ All of these are survey/offerwall aggregators with an embeddable wall and S2S po
 | **TheoremReach** | iframe + postback | Solid US fill, stricter approval |
 | **Lootably** | offerwall (surveys + offers) | Broader than surveys; more reward-fraud surface |
 
-Recommendation: **CPX Research or BitLabs**, and design the integration behind our own
-`SurveyProvider` interface so a second one can be added later. Fill rate varies a lot by
-geo — running two walls is common and worth planning for.
+**CPX is what is wired up**, chosen on payout terms: $25 minimum against BitLabs' $100, and
+an open application rather than a sales call. It sits behind a `SurveyProvider` interface in
+`src/lib/surveys.ts`, so swapping it means writing one adapter and changing `SURVEY_PROVIDER`.
 
-Every one of these requires a real domain and an app review before postbacks go live. Budget
-for that; it is not same-day.
+**Payouts do not reach the Whop balance, and no integration can make them.** Survey networks
+pay publishers to PayPal, a bank account, or crypto. Moving that into Whop afterwards is a
+deposit you make by hand. Nothing in this design changes that, because nothing can.
+
+All of these need a real domain and an app review before postbacks go live. Budget for it;
+it is not same-day.
 
 ## 3. The economics
 
@@ -60,7 +65,7 @@ it should live in config, not in code.
 completion. If screenouts pay nothing, the tab feels broken and users quit. Pay a small flat
 consolation (1–2 points) for a screenout, funded out of our 70%.
 
-## 4. Data model
+## 4. Data model — `scripts/credits-schema.sql`
 
 ```
 credit_accounts
@@ -86,7 +91,7 @@ credit_ledger                    -- append-only, the source of truth
 `UNIQUE(provider, provider_txn_id)` constraint is what makes postbacks idempotent — networks
 retry, and they will double-fire.
 
-## 5. Postback handling — the part that gets exploited
+## 5. Postback handling — `src/routes/api/surveys/postback.ts`
 
 The reward is granted **only** by a server-to-server postback from the provider. Never by the
 client, never by a redirect the browser follows, never by a "survey finished" JS callback. The
@@ -113,30 +118,38 @@ arrives as a postback with a negative amount or a `status=reversed` flag. Handle
 - If a user reverses repeatedly, flag the account. Serial reversals are the signature of survey
   fraud, and the network will eventually penalize *us* for the traffic, not them.
 
-## 6. Spending / gating
+## 6. Spending / gating — `src/lib/credits.ts`
 
-One server-side helper, used by every gated feature:
+One helper, `charge(userId, feature)`, used by every gated route. Free allowance first,
+then points, both inside a single write transaction — the check and the deduction cannot be
+separated, or two simultaneous requests each see the same last point.
 
-```
-spendCredits(userId, cost, reason, idempotencyKey) -> ok | insufficient
-```
+Gating is enforced in the route, next to the expensive work (the Gemini call, the feed fetch).
+A disabled button is an affordance, not a control.
 
-Gating must be enforced **server-side**, at the same place the expensive work happens (the model
-call, the article fetch). A disabled button is a UI affordance, not a control.
-
-Proposed gates — all values config, not constants:
-
-| Feature | Free allowance | Then |
+| Caller | Chat | News |
 |---|---|---|
-| Chat | 5 messages / day | 1 point per message |
-| News | 3 articles / day | 1 point per article |
-| Premium action (`x`) | — | 5 points |
+| **Premium** | unlimited | unlimited |
+| **Signed in, standard** | 12/day free, then 1 point | 10/day free, then 1 point |
+| **Signed out** | 5/day, best-effort by IP, then sign-in prompt | free (uncountable) |
 
-The free allowance resets on a rolling daily window. Premium/paid tiers bypass gating entirely
-(see open question 3).
+`premium_action` is defined at 5 points in `COST` and is not yet attached to a feature — wire
+it up when you decide which action it gates.
 
-When a user hits zero, the "out of credits" state should link straight into the Money tab. That
-transition is the entire funnel — it is worth designing properly rather than as an alert.
+Two honest caveats:
+
+- **The anonymous chat cap is best-effort.** It counts in isolate memory, exactly like the
+  burst limiter that was already there, and it does not survive a spread across isolates. It
+  is smaller than the signed-in allowance on purpose: signing out has to be a worse deal than
+  signing in, or the credits are decorative.
+- **Metering the news costs the shared cache.** That endpoint was `public, max-age=900`, so
+  four publishers served one request per 15 minutes for all readers. A per-user answer cannot
+  be shared, so it is now `private` — each signed-in load is a real fetch of four feeds plus
+  two Whop round trips. The allowance is set high because the point is consistency, not
+  revenue. It is one number in `FREE_PER_DAY` if you want it looser or gone.
+
+Running out is not rendered as an error. Chat and news both put an **Earn credits** tap in the
+failure state that lands on the Credits tab — that transition is the whole funnel.
 
 ## 7. Compliance notes
 
@@ -148,11 +161,40 @@ transition is the entire funnel — it is worth designing properly rather than a
 - Disclose plainly, in the tab: that surveys are run by a third party, that the third party
   receives their responses, and that screenouts pay less than completions.
 
-## 8. Open questions
+## 8. What the UI does — `public/decide/`
 
-1. **Which provider?** (§2) Blocks the whole integration — needs an account and app review.
-2. **`POINTS_PER_USD`?** (§3) Sets the feel of the economy.
-3. **What are the existing user tiers?** "Standard users" implies a premium tier that skips
-   gating. Need to see how the app currently models this.
-4. **Do existing users get a starting balance?** Gating chat and news with no grandfathering
-   will read as a takeaway to current users. A signup/migration bonus is the usual fix.
+A `Credits` rail item between News and Profile, with four states: signed out (sign-in prompt),
+Premium (nothing is metered for you), configured (balance, today's remaining allowance, the
+wall button, ledger history), and unreachable.
+
+The page is strictly a reader. There is no code path in `app.js` that can raise a balance —
+points are created by the postback and destroyed by the routes that charge for themselves.
+The wall opens in its own tab, the way `/premium` already does, and refocusing this tab
+re-reads the balance so points appear without a reload.
+
+## 9. To go live
+
+1. **Create a Turso database**, then:
+   `whop apps secrets set TURSO_DATABASE_URL=... TURSO_AUTH_TOKEN=...`
+2. **Apply the schema:** `bun run credits:migrate`
+3. **Get a CPX publisher account**, then:
+   `whop apps secrets set CPX_APP_ID=... CPX_SECURE_HASH=... SURVEY_POSTBACK_IPS=<their postback IPs>`
+4. **Point CPX's postback at** `https://morsels45-app.whop.site/api/surveys/postback`
+5. **Sanity-check `POINTS_PER_USD`** against the spend side before opening it up (§3).
+6. **Decide on a migration bonus.** Chat and news are free today; metering them without
+   grandfathering existing users reads as a takeaway.
+
+Until step 1 is done every feature stays free — `charge()` returns `unmetered` when there is
+no database, deliberately, so a missing ledger cannot take away something that worked
+yesterday. The same is true of step 3: with no `SURVEY_POSTBACK_IPS` the postback route
+refuses every caller rather than trusting one.
+
+## 10. Compliance notes
+
+- Survey networks generally require users to be **18+**. Check CPX's terms against the app's
+  actual audience before switching it on.
+- Never phrase the reward as payment for *particular answers*. Points are for completing the
+  survey, whatever the responses. Incentivising specific answers poisons the panel data and
+  gets publishers banned.
+- The Credits tab discloses that surveys are run by CPX, that CPX sees the responses, and that
+  screenouts pay less than completions. Keep that text if you rework the screen.

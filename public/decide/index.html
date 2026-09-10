@@ -340,6 +340,7 @@
       <li><button class="rail-link" data-view="nearby">Nearby</button></li>
       <li><button class="rail-link" data-view="chat">Ask</button></li>
       <li><button class="rail-link" data-view="news">News</button></li>
+      <li><button class="rail-link" data-view="credits">Credits</button></li>
       <li><button class="rail-link" data-view="profile">Profile</button></li>
     </ul>
 
@@ -1254,10 +1255,89 @@
 
       <div class="notice" id="news-error" hidden>
         <p id="news-error-text">The feeds would not load.</p>
-        <p class="fine">Nothing is wrong with your connection &mdash; this happens when a
-        publisher is having a bad morning.</p>
+        <p class="fine" id="news-error-why">Nothing is wrong with your connection &mdash; this
+        happens when a publisher is having a bad morning.</p>
         <div class="locate-actions">
           <button class="quiet" id="news-retry">Try again</button>
+          <button class="go go-sm" id="news-earn" hidden>Earn credits</button>
+        </div>
+      </div>
+    </section>
+
+    <!--
+      Credits. The only screen where money moves in both directions: a survey
+      network pays us, and a share of that comes back as points that unlock
+      the metered parts of the app.
+
+      NOTHING IN HERE IS AUTHORITATIVE. Every number is painted from whatever
+      /api/credits answered, and this page has no way to add a point to
+      itself. That is the whole reason the ledger is on the server rather than
+      in localStorage next to the streak: a streak somebody edits costs them
+      nothing, and a balance somebody edits costs a Premium feature.
+    -->
+    <section class="view" id="view-credits" aria-label="Credits">
+      <header class="head">
+        <p class="mechanic">Earn and spend</p>
+        <h1 class="head-title">Credits</h1>
+        <p class="head-sub">Answer a survey, keep a share of what it pays. Spend it on
+        the assistant and the news once the day&rsquo;s free run is gone.</p>
+      </header>
+
+      <div class="out-loading" id="credits-loading">
+        <div class="bone bone-row"></div>
+        <p class="fine">Checking your balance&hellip;</p>
+      </div>
+
+      <div class="notice" id="credits-signin" hidden>
+        <p>Points belong to a Whop account, not to this browser.</p>
+        <p class="fine">Sign in and the balance follows you onto any device you sign in on.</p>
+        <div class="locate-actions">
+          <a class="go go-sm" href="/api/oauth/login">Sign in</a>
+        </div>
+      </div>
+
+      <div class="notice" id="credits-premium" hidden>
+        <p><b>Premium</b> &mdash; none of this is metered for you.</p>
+        <p class="fine">The assistant and the news are unlimited on your account. Credits
+        are how a standard account gets what you already bought outright.</p>
+      </div>
+
+      <div id="credits-wrap" hidden>
+        <div class="credits-balance">
+          <p class="credits-count"><b id="credits-balance">0</b> <span>points</span></p>
+          <p class="fine" id="credits-lifetime"></p>
+        </div>
+
+        <div class="notice" id="credits-debt" hidden>
+          <p>Your balance is below zero.</p>
+          <p class="fine">A survey you were credited for was reversed by the panel &mdash;
+          normally a duplicate, or an answer set they threw out. Earning from here clears
+          it before it builds up.</p>
+        </div>
+
+        <h2 class="strip-title">Left today</h2>
+        <ul class="credits-rows" id="credits-today"></ul>
+
+        <h2 class="strip-title">Earn</h2>
+        <p class="fine">Surveys are run by CPX Research, not by morsels45 &mdash; they see
+        your answers, we are told only that one finished. Most attempts end in a screen-out
+        partway through, which is normal and still pays a point.</p>
+        <div class="locate-actions">
+          <button class="go go-sm" id="credits-earn">Open surveys</button>
+        </div>
+        <p class="fine" id="credits-earn-off" hidden>Surveys are not switched on yet.</p>
+
+        <h2 class="strip-title">History</h2>
+        <ul class="credits-rows" id="credits-history"></ul>
+        <p class="fine" id="credits-empty" hidden>Nothing yet. Earning or spending shows up here.</p>
+      </div>
+
+      <div class="notice" id="credits-error" hidden>
+        <p>Could not read your balance.</p>
+        <p class="fine">Nothing has been lost &mdash; the ledger is on the server, not in
+        this browser.</p>
+        <div class="locate-actions">
+          <button class="quiet" id="credits-retry">Try again</button>
         </div>
       </div>
     </section>

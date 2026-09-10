@@ -3779,3 +3779,60 @@ body.is-landing .topbar-brand .mark-word { display: none; }
 @media (prefers-contrast: more) {
   :root { --ink-3: #bdb8b0; --hair: #4a4a52; --hair-lit: #6a6a73; }
 }
+
+/* ------------------------------------------------------------------ credits */
+/*
+ * Two-column rows: what it was on the left, what it cost on the right. The
+ * same shape does today's allowance and the history, because they are the
+ * same question asked about the future and the past.
+ */
+.credits-balance {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem;
+  margin-bottom: 1.4rem;
+}
+
+.credits-count {
+  margin: 0;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.credits-count b { color: var(--amber); }
+
+.credits-count span {
+  font-size: 1rem;
+  color: var(--text-dim);
+}
+
+.credits-balance .fine { margin: 0.35rem 0 0; }
+
+.credits-rows {
+  list-style: none;
+  margin: 0 0 1.4rem;
+  padding: 0;
+}
+
+.credit-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.credit-row:last-child { border-bottom: 0; }
+
+.credit-what { color: var(--text); }
+
+.credit-amount {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.credit-amount.is-up { color: var(--amber); }
+/* Deliberately not red: a spend is the system working, not a failure. */
+.credit-amount.is-down { color: var(--text-dim); }
