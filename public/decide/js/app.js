@@ -322,7 +322,6 @@
     if (name === 'nearby') renderNearby();
     if (name === 'news') renderNews();
     if (name === 'chat') renderChat();
-    if (name === 'credits') renderCredits();
     window.scrollTo(0, 0);
   }
 
@@ -3652,42 +3651,6 @@
       // history either — leaving it there would send it again with the next one.
       chat.turns.pop();
       var why = (answer.body && answer.body.error) || '';
-
-      /*
-       * Running out is not an error and must not read like one.
-       *
-       * "Something went wrong" in front of a paywall is the worst of both:
-       * it hides what happened and offers nothing to do about it. So this
-       * says which of the two it was, and puts the way out one tap away.
-       */
-      if (why === 'no_credits' || why === 'sign_in') {
-        var body = answer.body || {};
-        var text = why === 'sign_in'
-          ? 'That is the free run for today. Sign in to keep going \u2014 you get '
-            + (body.freePerDay || 12) + ' a day, and surveys top it up past that.'
-          : 'Out of credits. Today\u2019s ' + (body.freePerDay || 12)
-            + ' free questions are used up, and each one after that costs '
-            + (body.cost || 1) + '. Answer a survey and you can carry on.';
-
-        var outRow = chatRow('bot', text, false);
-        var taps = document.createElement('div');
-        taps.className = 'chat-taps';
-        var tap = document.createElement('button');
-        tap.type = 'button';
-        tap.className = 'chat-tap';
-        tap.textContent = why === 'sign_in' ? 'Sign in' : 'Earn credits';
-        tap.addEventListener('click', function () {
-          Sound.tick();
-          if (why === 'sign_in') window.location.href = '/api/oauth/login';
-          else goEarn();
-        });
-        taps.appendChild(tap);
-        outRow.appendChild(taps);
-        waiting.replaceWith(outRow);
-        outRow.scrollIntoView({ block: 'nearest' });
-        return;
-      }
-
       var said = why === 'too_fast'
         ? 'That was a lot of questions at once'
         : why === 'busy'
@@ -3752,202 +3715,6 @@
   });
 
 
-  /* --------------------------------------------------------------- credits */
-  /*
-   * Points: what is left of today's free run, what a survey paid, what the
-   * assistant cost.
-   *
-   * Everything here is read. There is no code path in this file that can
-   * increase a balance, and there deliberately is not one: points are created
-   * by the survey network's postback to the worker and destroyed by the
-   * routes that charge for themselves. This screen asks /api/credits what is
-   * true and draws that.
-   *
-   * Re-asked every time the tab is opened, and again when the window regains
-   * focus, because the interesting case is exactly the one where the answer
-   * changed somewhere else: the survey wall opens in another tab, and the
-   * points land while this page is in the background.
-   */
-  var credits = { data: null, busy: false };
-
-  function renderCredits() {
-    loadCredits();
-  }
-
-  function loadCredits() {
-    if (credits.busy) return;
-    credits.busy = true;
-    if (!credits.data) {
-      $('credits-loading').hidden = false;
-      $('credits-wrap').hidden = true;
-      $('credits-signin').hidden = true;
-      $('credits-premium').hidden = true;
-    }
-    $('credits-error').hidden = true;
-
-    fetch('/api/credits', { headers: { Accept: 'application/json' } })
-      .then(function (res) {
-        if (!res.ok) throw new Error('credits ' + res.status);
-        return res.json();
-      })
-      .then(function (data) {
-        credits.busy = false;
-        credits.data = data;
-        paintCredits();
-      })
-      .catch(function () {
-        credits.busy = false;
-        $('credits-loading').hidden = true;
-        if (!credits.data) {
-          $('credits-wrap').hidden = true;
-          $('credits-error').hidden = false;
-        }
-      });
-  }
-
-  function paintCredits() {
-    var d = credits.data;
-    if (!d) return;
-
-    $('credits-loading').hidden = true;
-    $('credits-error').hidden = true;
-    $('credits-signin').hidden = !!d.signedIn;
-    $('credits-premium').hidden = !d.hasPremium;
-    // Premium has a balance and no use for it, so the ledger is hidden rather
-    // than shown at nought — a zero next to "unlimited" reads like a fault.
-    $('credits-wrap').hidden = !d.signedIn || !!d.hasPremium;
-    if (!d.signedIn || d.hasPremium) return;
-
-    var balance = Number(d.balance || 0);
-    $('credits-balance').textContent = String(balance);
-    $('credits-debt').hidden = balance >= 0;
-
-    var earned = Number(d.lifetimeEarned || 0);
-    var spent = Number(d.lifetimeSpent || 0);
-    $('credits-lifetime').textContent = earned || spent
-      ? earned + ' earned, ' + spent + ' spent, all time'
-      : '';
-
-    $('credits-off').hidden = d.metered !== false;
-    // The allowance rows would otherwise read "12 of 12 free" forever, which
-    // looks like a meter that is broken rather than one that is switched off.
-    $('credits-today').hidden = d.metered === false;
-    $('credits-today-title').hidden = d.metered === false;
-
-    paintCreditsToday(d);
-    paintCreditsHistory(d);
-
-    var wall = d.wallUrl;
-    $('credits-earn').hidden = !wall;
-    $('credits-earn-off').hidden = !!wall;
-  }
-
-  // What is still free today, per feature, so somebody can see the allowance
-  // they are spending before they are asked to pay for it.
-  function paintCreditsToday(d) {
-    var rows = [
-      { key: 'chat', label: 'Assistant' },
-      { key: 'news', label: 'Food news' }
-    ];
-    var list = $('credits-today');
-    list.innerHTML = '';
-    rows.forEach(function (row) {
-      var left = d.remaining ? Number(d.remaining[row.key] || 0) : 0;
-      var perDay = d.freePerDay ? Number(d.freePerDay[row.key] || 0) : 0;
-      var cost = d.cost ? Number(d.cost[row.key] || 0) : 0;
-
-      var li = document.createElement('li');
-      li.className = 'credit-row';
-
-      var name = document.createElement('span');
-      name.className = 'credit-what';
-      name.textContent = row.label;
-
-      var value = document.createElement('span');
-      value.className = 'credit-amount';
-      value.textContent = left
-        ? left + ' of ' + perDay + ' free'
-        : cost + (cost === 1 ? ' point each' : ' points each');
-
-      li.appendChild(name);
-      li.appendChild(value);
-      list.appendChild(li);
-    });
-  }
-
-  var LEDGER_WORDS = {
-    survey_complete: 'Survey finished',
-    survey_screenout: 'Survey screen-out',
-    signup_bonus: 'Welcome bonus',
-    reversal: 'Reversed by the panel',
-    manual: 'Adjustment'
-  };
-
-  var SPEND_WORDS = { chat: 'Assistant', news: 'Food news', premium_action: 'Premium feature' };
-
-  function paintCreditsHistory(d) {
-    var entries = (d && d.ledger) || [];
-    var list = $('credits-history');
-    list.innerHTML = '';
-    $('credits-empty').hidden = entries.length > 0;
-
-    entries.forEach(function (entry) {
-      var delta = Number(entry.delta || 0);
-      var li = document.createElement('li');
-      li.className = 'credit-row';
-
-      var what = document.createElement('span');
-      what.className = 'credit-what';
-      what.textContent = entry.reason === 'spend'
-        ? (SPEND_WORDS[entry.feature] || 'Spent')
-        : (LEDGER_WORDS[entry.reason] || entry.reason);
-
-      var amount = document.createElement('span');
-      amount.className = 'credit-amount' + (delta < 0 ? ' is-down' : ' is-up');
-      amount.textContent = (delta > 0 ? '+' : '') + delta;
-
-      li.appendChild(what);
-      li.appendChild(amount);
-      list.appendChild(li);
-    });
-  }
-
-  /*
-   * The wall opens in its own tab, the way /premium does.
-   *
-   * A survey runs for several minutes and navigates repeatedly inside itself;
-   * doing that in this tab would throw away a game in progress, and doing it
-   * in an iframe puts this app's origin in the middle of somebody else's
-   * redirect chain. Neither is worth it. Coming back here re-reads the
-   * balance, so the points appear without anybody reloading.
-   */
-  $('credits-earn').addEventListener('click', function () {
-    var wall = credits.data && credits.data.wallUrl;
-    if (!wall) return;
-    Sound.tick();
-    window.open(wall, '_blank', 'noopener');
-  });
-
-  $('news-earn').addEventListener('click', function () {
-    Sound.tick();
-    goEarn();
-  });
-
-  $('credits-retry').addEventListener('click', function () {
-    Sound.tick();
-    loadCredits();
-  });
-
-  window.addEventListener('focus', function () {
-    if (view === 'credits') loadCredits();
-  });
-
-  // Sends somebody to the earning screen from wherever they ran out.
-  function goEarn() {
-    hideLanding();
-    setView('credits');
-  }
-
   /* ------------------------------------------------------------- food news */
   /*
    * Four publishers' feeds, merged by /api/news and listed newest first.
@@ -3971,12 +3738,6 @@
     loadNews();
   }
 
-  function creditsGone(body) {
-    var err = new Error('no credits');
-    err.creditsGone = body || {};
-    return err;
-  }
-
   function loadNews() {
     if (news.busy) return;
     news.busy = true;
@@ -3987,9 +3748,6 @@
 
     fetch('/api/news', { headers: { Accept: 'application/json' } })
       .then(function (res) {
-        // 402 is the allowance, not a publisher having a bad morning. Telling
-        // the two apart matters: one of them the reader can do something about.
-        if (res.status === 402) return res.json().then(function (body) { throw creditsGone(body); });
         if (!res.ok) throw new Error('news ' + res.status);
         return res.json();
       })
@@ -4000,23 +3758,12 @@
         news.busy = false;
         paintNews();
       })
-      .catch(function (err) {
+      .catch(function () {
         news.busy = false;
         news.failed = true;
         $('news-loading').hidden = true;
         $('news-wrap').hidden = true;
         $('news-error').hidden = false;
-
-        var out = err && err.creditsGone;
-        $('news-error-text').textContent = out
-          ? 'That is today\u2019s ' + (out.freePerDay || 10) + ' free reads.'
-          : 'The feeds would not load.';
-        $('news-error-why').textContent = out
-          ? 'Each read after that costs ' + (out.cost || 1)
-            + '. Answer a survey in Credits and the news opens again.'
-          : 'Nothing is wrong with your connection \u2014 this happens when a publisher is having a bad morning.';
-        $('news-earn').hidden = !out;
-        $('news-retry').hidden = !!out;
       });
   }
 

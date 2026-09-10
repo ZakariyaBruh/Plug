@@ -1,9 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
-import { COST, FREE_PER_DAY, charge, metered } from '#/lib/credits'
-import { PREMIUM_PRODUCT_ID } from '#/lib/products'
-import { checkProductAccess } from '#/lib/session'
 
 /*
  * /api/chat — the food assistant.
@@ -14,15 +11,10 @@ import { checkProductAccess } from '#/lib/session'
  * worker — the browser only ever sees the words that came back. This is the
  * whole reason the chat is a route rather than a fetch from the game.
  *
- * NO LONGER FREE FOR EVERYONE, and the limits below changed shape because of
- * it. It used to be that there was no sign-in to hide behind and no paywall to
- * slow anybody down, so every request was assumed to be a stranger's. Now
- * there are three callers, and they are told apart before the model is asked
- * anything: Premium is unlimited, a signed-in visitor gets a daily allowance
- * and then pays a point a message, and a stranger gets a small taste and a
- * prompt to sign in. What has not changed is that the request itself is still
- * assumed to be hostile — the question is capped, the history is capped, the
- * answer is capped, and one address can still only ask so often.
+ * FREE FOR EVERYONE, which is what makes the limits below matter. There is no
+ * sign-in to hide behind and no paywall to slow anybody down, so every request
+ * is assumed to be a stranger's: the question is capped, the history is
+ * capped, the answer is capped, and one address can only ask so often.
  *
  * NOTHING FROM THE BROWSER IS TRUSTED. Messages are strings typed by whoever
  * is on the page. They are length-limited and passed to Gemini as content,
@@ -91,37 +83,6 @@ const TIMEOUT_MS = 12000
 const WINDOW_MS = 60_000
 const MAX_PER_WINDOW = 12
 const seen = new Map<string, { n: number; until: number }>()
-
-/*
- * The anonymous taste, and why it is smaller than the signed-in allowance.
- *
- * Chat used to be free to everyone with no sign-in at all, and metering it
- * changes that. What decides the size of this number is not generosity, it is
- * that signing out has to be a worse deal than signing in — otherwise the
- * credits are decorative and the way to get free chat is to open a private
- * window.
- *
- * It is counted the same best-effort way as the burst limit above, in this
- * isolate's memory, with the same honest caveat: it stops the ordinary case
- * and it does not stop somebody spreading requests across isolates. Signed-in
- * users are counted in the database instead, where the count is real.
- */
-const ANON_FREE_PER_DAY = 5
-const anon = new Map<string, { n: number; day: string }>()
-
-function anonOverDay(who: string): boolean {
-  const day = new Date().toISOString().slice(0, 10)
-  if (anon.size > 5000) {
-    for (const [key, hit] of anon) if (hit.day !== day) anon.delete(key)
-  }
-  const hit = anon.get(who)
-  if (!hit || hit.day !== day) {
-    anon.set(who, { n: 1, day })
-    return false
-  }
-  hit.n += 1
-  return hit.n > ANON_FREE_PER_DAY
-}
 
 function overLimit(who: string): boolean {
   const now = Date.now()
@@ -303,56 +264,6 @@ export const Route = createFileRoute('/api/chat')({
         const who = request.headers.get('cf-connecting-ip') ?? 'unknown'
         if (overLimit(who)) return json({ error: 'too_fast' }, 429)
 
-        /*
-         * Who is asking, and on whose tab.
-         *
-         * Premium is unlimited — it is the thing people already paid for, and
-         * putting a second currency in front of it would be selling the same
-         * access twice. Everyone else gets a daily allowance and then pays a
-         * point a message.
-         *
-         * This costs two round trips to Whop before the model is called. That
-         * is the price of knowing who is asking, and it is why the anonymous
-         * path skips it entirely.
-         */
-        const { signedIn, hasAccess, user } = await checkProductAccess(PREMIUM_PRODUCT_ID)
-
-        let credits: { how: string; remainingFree: number; balance: number } | null = null
-
-        if (!signedIn || !user) {
-          // metered() as well as the count: with credits switched off this
-          // path has to behave exactly as it did before any of this existed,
-          // which means the daily cap goes away too, not just the charging.
-          if (metered() && anonOverDay(who)) {
-            return json(
-              { error: 'sign_in', freePerDay: FREE_PER_DAY.chat, anonFreePerDay: ANON_FREE_PER_DAY },
-              402,
-            )
-          }
-        } else if (!hasAccess) {
-          const charged = await charge(user.sub, 'chat').catch((err: unknown) => {
-            // The ledger being unreachable must not take the chat down with
-            // it. Answering free is the wrong-but-harmless failure; refusing
-            // an answer somebody may have paid for is the other kind.
-            console.error('chat: could not charge credits', err)
-            return null
-          })
-          if (charged && !charged.ok) {
-            return json(
-              {
-                error: 'no_credits',
-                balance: charged.balance,
-                cost: COST.chat,
-                freePerDay: FREE_PER_DAY.chat,
-              },
-              402,
-            )
-          }
-          if (charged) {
-            credits = { how: charged.how, remainingFree: charged.remainingFree, balance: charged.balance }
-          }
-        }
-
         let turns: Turn[] = []
         try {
           const body = (await request.json()) as { messages?: unknown }
@@ -411,7 +322,7 @@ export const Route = createFileRoute('/api/chat')({
           return json({ error: 'no_answer' }, 502)
         }
 
-        return json({ reply, credits })
+        return json({ reply })
       },
     },
   },
