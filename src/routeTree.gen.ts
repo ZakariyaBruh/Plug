@@ -25,6 +25,7 @@ import { Route as ApiOrderTogetherRouteImport } from './routes/api/order-togethe
 import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-status'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as DecideSplatRouteImport } from './routes/decide/$'
+import { Route as EatIndexRouteImport } from './routes/eat.index'
 import { Route as EatDishRouteImport } from './routes/eat.$dish'
 import { Route as ExperiencesExperienceIdRouteImport } from './routes/experiences.$experienceId'
 import { Route as TogetherCodeRouteImport } from './routes/together.$code'
@@ -113,6 +114,11 @@ const DecideSplatRoute = DecideSplatRouteImport.update({
   path: '/$',
   getParentRoute: () => DecideRoute,
 } as any)
+const EatIndexRoute = EatIndexRouteImport.update({
+  id: '/eat/',
+  path: '/eat/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EatDishRoute = EatDishRouteImport.update({
   id: '/eat/$dish',
   path: '/eat/$dish',
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
   '/together/$code': typeof TogetherCodeRoute
+  '/eat/': typeof EatIndexRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
   '/together/$code': typeof TogetherCodeRoute
+  '/eat': typeof EatIndexRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
   '/together/$code': typeof TogetherCodeRoute
+  '/eat/': typeof EatIndexRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/eat/$dish'
     | '/experiences/$experienceId'
     | '/together/$code'
+    | '/eat/'
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/eat/$dish'
     | '/experiences/$experienceId'
     | '/together/$code'
+    | '/eat'
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/eat/$dish'
     | '/experiences/$experienceId'
     | '/together/$code'
+    | '/eat/'
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
@@ -322,6 +334,7 @@ export interface RootRouteChildren {
   EatDishRoute: typeof EatDishRoute
   ExperiencesExperienceIdRoute: typeof ExperiencesExperienceIdRoute
   TogetherCodeRoute: typeof TogetherCodeRoute
+  EatIndexRoute: typeof EatIndexRoute
   ApiOauthCallbackRoute: typeof ApiOauthCallbackRoute
   ApiOauthLoginRoute: typeof ApiOauthLoginRoute
   ApiOauthLogoutRoute: typeof ApiOauthLogoutRoute
@@ -442,6 +455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DecideSplatRouteImport
       parentRoute: typeof DecideRoute
     }
+    '/eat/': {
+      id: '/eat/'
+      path: '/eat'
+      fullPath: '/eat/'
+      preLoaderRoute: typeof EatIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/eat/$dish': {
       id: '/eat/$dish'
       path: '/eat/$dish'
@@ -524,6 +544,7 @@ const rootRouteChildren: RootRouteChildren = {
   EatDishRoute: EatDishRoute,
   ExperiencesExperienceIdRoute: ExperiencesExperienceIdRoute,
   TogetherCodeRoute: TogetherCodeRoute,
+  EatIndexRoute: EatIndexRoute,
   ApiOauthCallbackRoute: ApiOauthCallbackRoute,
   ApiOauthLoginRoute: ApiOauthLoginRoute,
   ApiOauthLogoutRoute: ApiOauthLogoutRoute,

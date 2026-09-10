@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 
 import { JsonLd } from '#/components/JsonLd'
 import { PageShell } from '#/components/PageShell'
-import { dishBySlug } from '#/lib/dishes'
+import { dishBySlug, relatedTo } from '#/lib/dishes'
 import { isoDuration, quickest, recipesFor, type Recipe } from '#/lib/recipes'
 import { SITE_NAME, SITE_URL, pageHead, track } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
@@ -33,7 +33,12 @@ const loadDish = createServerFn({ method: 'GET' })
   .handler(({ data }) => {
     const dish = dishBySlug(data.slug)
     if (!dish) return null
-    return { ...dish, recipes: recipesFor(dish.name), quickest: quickest(dish.name) }
+    return {
+      ...dish,
+      recipes: recipesFor(dish.name),
+      quickest: quickest(dish.name),
+      related: relatedTo(dish),
+    }
   })
 
 export const Route = createFileRoute('/eat/$dish')({
@@ -226,6 +231,30 @@ function EatPage() {
 
             {dish.quickest ? <JsonLd data={recipeSchema(dish, dish.quickest)} /> : null}
           </div>
+        ) : null}
+
+        {dish && dish.related.length ? (
+          <nav className="mx-auto mt-20 max-w-2xl text-center" aria-label="Similar dishes">
+            <h2 className="text-2xl font-bold">If you fancy something like it</h2>
+            <ul className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              {dish.related.map((other) => (
+                <li key={other.slug}>
+                  <Link
+                    to="/eat/$dish"
+                    params={{ dish: other.slug }}
+                    className="inline-block rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-dim)] hover:border-[var(--amber)] hover:text-[var(--text)]"
+                  >
+                    <span aria-hidden="true">{other.icon}</span> {other.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-8 text-sm">
+              <Link to="/eat" className="text-[var(--amber)] underline underline-offset-4">
+                See all 112 dishes
+              </Link>
+            </p>
+          </nav>
         ) : null}
       </main>
     </PageShell>

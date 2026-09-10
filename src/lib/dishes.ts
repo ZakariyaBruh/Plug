@@ -20,10 +20,20 @@ export type Dish = {
   name: string
   icon: string
   blurb: string
+  /** Flavour and format tags — 'hot', 'quick', 'veg' … See TAGS in data.js. */
+  tags: string[]
 }
 
-// item('Pizza', '\u{1F355}', 'A slice big enough to fold. …', 'tags…', 'tags…')
-const ITEM = /item\('((?:[^'\\]|\\.)*)',\s*'((?:[^'\\]|\\.)*)',\s*'((?:[^'\\]|\\.)*)'/g
+/*
+ * item('Pizza', '\u{1F355}', 'A slice big enough to fold. …', 'tags…', 'tags…')
+ *
+ * The last two groups are optional because a handful of items carry no tags,
+ * and \s* spans newlines because the calls wrap. Tags are what let one dish
+ * link to another: without them the 112 pages are islands that only the
+ * sitemap knows about, which is most of the reason none of them were indexed.
+ */
+const ITEM =
+  /item\('((?:[^'\\]|\\.)*)',\s*'((?:[^'\\]|\\.)*)',\s*'((?:[^'\\]|\\.)*)'(?:,\s*'((?:[^'\\]|\\.)*)')?(?:,\s*'((?:[^'\\]|\\.)*)')?/g
 
 // The icons are written as JS escapes in the source, which a raw import hands
 // over literally. Names and blurbs are plain text apart from escaped quotes.
@@ -42,12 +52,35 @@ export function slugify(name: string) {
     .replace(/^-+|-+$/g, '')
 }
 
-export const ALL_DISHES: Dish[] = [...dataJs.matchAll(ITEM)].map(([, name, icon, blurb]) => ({
-  slug: slugify(decode(name)),
-  name: decode(name),
-  icon: decode(icon),
-  blurb: decode(blurb),
-}))
+export const ALL_DISHES: Dish[] = [...dataJs.matchAll(ITEM)].map(
+  ([, name, icon, blurb, yesTags, maybeTags]) => ({
+    slug: slugify(decode(name)),
+    name: decode(name),
+    icon: decode(icon),
+    blurb: decode(blurb),
+    // A "maybe" tag is half-true of the dish in the game's scoring. For linking
+    // one page to another that distinction does not matter — both mean the two
+    // dishes have something in common, which is the whole question here.
+    tags: [...(yesTags ?? '').split(/\s+/), ...(maybeTags ?? '').split(/\s+/)].filter(Boolean),
+  }),
+)
+
+/*
+ * Dishes that have most in common with this one, best first.
+ *
+ * Ranked by shared tags, which is crude and is meant to be: the job is to give
+ * a crawler a real path between pages and a reader a plausible next tap, not
+ * to be right about cuisine.
+ */
+export function relatedTo(dish: Dish, limit = 6): Dish[] {
+  const own = new Set(dish.tags)
+  return ALL_DISHES.filter((other) => other.slug !== dish.slug)
+    .map((other) => ({ dish: other, shared: other.tags.filter((t) => own.has(t)).length }))
+    .filter((entry) => entry.shared > 0)
+    .sort((a, b) => b.shared - a.shared || a.dish.name.localeCompare(b.dish.name))
+    .slice(0, limit)
+    .map((entry) => entry.dish)
+}
 
 const BY_SLUG = new Map(ALL_DISHES.map((dish) => [dish.slug, dish]))
 

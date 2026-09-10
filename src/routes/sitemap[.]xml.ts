@@ -18,6 +18,10 @@ import { SITE_URL } from '#/lib/site'
 const PAGES: Array<[path: string, priority: string]> = [
   ['/', '1.0'],
   ['/decide/', '0.9'],
+  // The hub that makes the 112 dish pages reachable. It was missing here for
+  // the same reason it was missing everywhere: it did not exist, and the dish
+  // pages were URLs only this file knew about.
+  ['/eat', '0.85'],
   ['/premium', '0.8'],
   ['/how-it-works', '0.7'],
   ['/faq', '0.6'],
