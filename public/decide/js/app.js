@@ -4498,7 +4498,9 @@
         'Shortlist: eight dishes, tap out the ones you are not in the mood for',
         'Together: up to six of you round one phone, one dish you can all live with',
         'Swipe: like three out of the deck, then choose between the three',
-        'Endless with no daily count on it \u2014 free stops at ' + ENDLESS_DAY + ' picks a day'
+        'Endless with no daily count on it \u2014 free stops at ' + ENDLESS_DAY + ' picks a day',
+        'A second wind: one run-ending clock, survived, every run',
+        'Themed runs \u2014 an evening of nothing but quick, or comfort, or veg'
       ]
     },
     {
@@ -6227,6 +6229,48 @@
    */
   var ENDLESS_MARK_CLOCK = 2000;
 
+  /*
+   * SECOND WIND — Premium, and automatic on purpose.
+   *
+   * Every other revive in every other game is a screen: "Carry on? Yes / No",
+   * a countdown, a button. This mode's one rule is that there is never a
+   * moment shaped like a place to stop — the next pair is painted in the same
+   * frame as the answer to the last one, and a dialog in the middle of that
+   * would undo the whole thing. So the save is not offered, it just happens,
+   * with a shout and half a clock, once per run.
+   *
+   * Which makes it a genuine Premium benefit rather than a nag: what a free
+   * player loses at zero, a paying one survives, and neither is ever asked a
+   * question.
+   */
+  var ENDLESS_WIND_CLOCK = 3500;
+
+  /*
+   * THEMED RUNS — Premium. The pool, narrowed.
+   *
+   * Variety in this mode came only from the pairing, which means every run
+   * draws on the same hundred and twelve dishes and the fiftieth run feels
+   * like the fifth. A theme changes what the whole run is made of: an evening
+   * of nothing but quick things is a different game from an evening of nothing
+   * but comfort food, using pairs that would otherwise almost never meet.
+   *
+   * Tags rather than a hand-written list, so this stays true if the catalogue
+   * changes. A theme that cannot field enough dishes is not offered.
+   */
+  var ENDLESS_THEMES = [
+    { tag: '', label: 'Everything' },
+    { tag: 'quick', label: 'Quick' },
+    { tag: 'comfort', label: 'Comfort' },
+    { tag: 'healthy', label: 'Healthy' },
+    { tag: 'veg', label: 'Veg' },
+    { tag: 'spicy', label: 'Spicy' },
+    { tag: 'sweet', label: 'Sweet' }
+  ];
+  var ENDLESS_THEME_MIN = 12;   // dishes a theme needs before it is offered
+
+  // How often the pace marker re-reads. Every pick is too busy to look at.
+  var ENDLESS_PACE_EVERY = 3;
+
   var endless = {
     live: false,
     a: null, b: null, kind: '', champ: null,
@@ -6238,7 +6282,12 @@
     // the clock
     left: 0, phase: 0, warned: false, timer: null, shoutTimer: null, readTimer: null,
     // heat: the index into ENDLESS_HEAT the run is currently at
-    heat: 0, clutches: 0, hottest: 0
+    heat: 0, clutches: 0, hottest: 0,
+    // the three newer things
+    wind: false,      // has the second wind been spent this run
+    curve: [],        // score banked at every tenth pick, for the next run to race
+    theme: '',        // which pool this run drew from
+    pace: null        // how far ahead or behind the best run, last time it was read
   };
 
   /*
@@ -6344,6 +6393,25 @@
     // scores faster because it is running out faster.
     endless.left -= ENDLESS_TICK * heatNow().drain;
     if (endless.left <= 0) {
+      // Premium's one save, taken automatically rather than offered. Spent
+      // before the run is allowed to end, so nothing on screen ever shows a
+      // dead clock that then comes back — it simply never reaches zero.
+      if (isPlus() && !endless.wind) {
+        endless.wind = true;
+        endless.left = ENDLESS_WIND_CLOCK;
+        endless.warned = false;
+        // The streak does not survive it. Being saved is not the same as
+        // having kept going, and letting the combo through would hand a
+        // blazing multiplier to a run that just died.
+        endless.combo = 0;
+        endless.heat = 0;
+        paintEndlessHead();
+        paintEndlessClock();
+        shoutEndless('Second wind', true);
+        Sound.levelUp();
+        Confetti.burst({ y: window.innerHeight * 0.4 });
+        return;
+      }
       endless.left = 0;
       paintEndlessClock();
       return endEndless('clock');
@@ -6445,6 +6513,8 @@
   // at all. An allowance you were told about is an offer; one sprung on you at
   // the end is a trick.
   function paintEndlessCard() {
+    paintEndlessThemes();
+
     var tag = $('endless-tag');
     var line = $('endless-card-line');
     if (!tag || !line) return;
@@ -6462,6 +6532,48 @@
     line.textContent = left > 0
       ? left + ' of today’s ' + ENDLESS_DAY + ' picks left · Premium takes the count off'
       : 'Today’s ' + ENDLESS_DAY + ' are spent — they come back tomorrow';
+  }
+
+  /*
+   * The theme picker, on the card rather than inside the run.
+   *
+   * Choosing what kind of evening it is belongs before it starts, not as a
+   * menu you can open mid-run — this mode has no pause and should not grow
+   * one. Themes that the standing rules have already emptied out are simply
+   * not offered, so a vegetarian is never shown a choice that would silently
+   * do nothing.
+   */
+  function paintEndlessThemes() {
+    var wrap = $('endless-themes');
+    var knobs = $('endless-theme-knobs');
+    if (!wrap || !knobs) return;
+
+    wrap.hidden = !isPlus();
+    if (!isPlus()) return;
+
+    var pool = favouredDishes().map(function (r) { return r.item; });
+    if (pool.length < 4) pool = Data.ITEMS.slice();
+    var chosen = progress.state.endlessTheme || '';
+
+    knobs.innerHTML = '';
+    ENDLESS_THEMES.forEach(function (theme) {
+      var fits = !theme.tag ||
+        pool.filter(function (d) { return (d.tags[theme.tag] || 0) > 0; }).length >= ENDLESS_THEME_MIN;
+      if (!fits) return;
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'knob' + (chosen === theme.tag ? ' is-on' : '');
+      btn.textContent = theme.label;
+      btn.setAttribute('aria-pressed', chosen === theme.tag ? 'true' : 'false');
+      btn.addEventListener('click', function () {
+        progress.state.endlessTheme = theme.tag;
+        progress.save();
+        Sound.tick();
+        paintEndlessThemes();
+      });
+      knobs.appendChild(btn);
+    });
   }
 
   function startEndless() {
@@ -6486,6 +6598,23 @@
     endless.legal = favouredDishes().map(function (r) { return r.item; });
     if (endless.legal.length < 4) endless.legal = Data.ITEMS.slice();
 
+    /*
+     * The theme, applied after the standing rules rather than instead of them.
+     *
+     * favouredDishes() has already taken out bans, snoozes and always-avoids,
+     * so narrowing what is left can only ever make the pool smaller — a
+     * vegetarian who picks the "comfort" theme still cannot be served a steak.
+     * And a theme that has left too little to make pairs from is dropped
+     * rather than enforced: a run of four dishes over and over is worse than
+     * no theme at all.
+     */
+    endless.theme = isPlus() ? (progress.state.endlessTheme || '') : '';
+    if (endless.theme) {
+      var themed = endless.legal.filter(function (d) { return (d.tags[endless.theme] || 0) > 0; });
+      if (themed.length >= ENDLESS_THEME_MIN) endless.legal = themed;
+      else endless.theme = '';
+    }
+
     endless.queue = [];
     endless.live = true;
     endless.score = 0;
@@ -6503,6 +6632,9 @@
     endless.heat = 0;
     endless.hottest = 0;
     endless.clutches = 0;
+    endless.wind = false;
+    endless.curve = [];
+    endless.pace = null;
     $('endless-run').classList.remove('is-warm', 'is-blazing');
 
     clearTimeout(endless.shoutTimer);
@@ -6724,6 +6856,27 @@
     run.classList.toggle('is-warm', endless.heat === 1);
     run.classList.toggle('is-blazing', endless.heat >= 2);
 
+    /*
+     * Ahead or behind, in the words a player already has for it.
+     *
+     * Only shown once there is a best run to race and only while that run was
+     * still going — past its last pick there is nothing true to compare
+     * against, and "ahead" against a run that had already ended would be a
+     * flattering lie.
+     */
+    var pace = $('endless-pace');
+    if (pace) {
+      var d = endless.pace;
+      pace.hidden = d === null || d === undefined || endless.picks < ENDLESS_PACE_EVERY;
+      if (!pace.hidden) {
+        pace.textContent = d === 0 ? 'level with your best'
+          : d > 0 ? '+' + d + ' on your best'
+          : d + ' on your best';
+        pace.classList.toggle('is-ahead', d > 0);
+        pace.classList.toggle('is-behind', d < 0);
+      }
+    }
+
     var left = $('endless-left');
     left.hidden = isPlus();
     if (!isPlus()) $('endless-left-n').textContent = endlessLeft();
@@ -6759,6 +6912,27 @@
     }
     endless.score += worth;
     endless.picks++;
+
+    // The curve this run is writing, for the next one to race. Sampled at the
+    // same tenths endlessPaceAt() reads back.
+    if (endless.picks % 10 === 0) endless.curve.push(endless.score);
+
+    /*
+     * Racing the best run, which is the free half of tonight's work.
+     *
+     * A best score can only be beaten at the very end, so for most of a run it
+     * is a number with nothing to do. A curve can be raced the whole way: the
+     * marker says whether this run is ahead of where the best one was at the
+     * same pick, which gives a run you are losing a reason to keep going and a
+     * run you are winning something to protect.
+     *
+     * Read every third pick. Every pick is a number moving too fast to read,
+     * and this is meant to be caught in peripheral vision.
+     */
+    if (endless.picks % ENDLESS_PACE_EVERY === 0) {
+      var was = progress.endlessPaceAt(endless.picks);
+      endless.pace = was === null ? null : endless.score - was;
+    }
 
     /*
      * Crossing into a band gets said out loud, and losing it does too.
@@ -6943,7 +7117,7 @@
     // record, and saying so is the kind of praise that teaches somebody to
     // stop reading the praise.
     var had = endless.best;
-    var best = progress.recordEndless(endless.score) && had > 0;
+    var best = progress.recordEndless(endless.score, endless.curve) && had > 0;
     bankEndless();
 
     $('endless-run').hidden = true;
@@ -6977,6 +7151,9 @@
       if (endless.clutches > 0) {
         bits.push(endless.clutches + (endless.clutches === 1 ? ' pick' : ' picks') + ' made on a red clock');
       }
+      // Said plainly, because a run that was saved is not the same run as one
+      // that was not, and the score does not distinguish them.
+      if (endless.wind) bits.push('a second wind spent');
       heatLine.hidden = bits.length === 0;
       heatLine.textContent = bits.join(' \u00b7 ') + (bits.length ? '.' : '');
     }

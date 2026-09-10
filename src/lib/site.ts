@@ -133,6 +133,7 @@ export const STANDARD = [
   'All 112 dishes in the catalogue',
   'Browse, search, and filter the menu',
   'XP, levels, streaks, and badges',
+  'Endless races your own best run — it tells you, mid-run, whether you are ahead of it',
   'Tonight’s pick — one dish, no questions',
   'How many plates, and share a verdict',
   'Installs to your home screen, and plays with no signal',
@@ -163,6 +164,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Together', 'Up to six of you round one phone. Five either-ors each, then one dish the whole table can live with — and what you all turned out to agree on.'],
       ['Swipe', 'A deck, one dish at a time. Right for yes, left for no. Every no re-sorts what is left away from it, and three yeses end it with a choice between the three.'],
       ['Endless, with no count on it', 'Endless itself is free and always will be — but a free profile gets 200 picks a day and then it stops until tomorrow. Premium takes the daily count off entirely: the only thing that ends a run is the clock.'],
+      ['A second wind', 'Once a run, the clock reaching zero does not end it. No prompt, no countdown, no button to press — it simply keeps going with a few seconds back and the streak reset. The one thing that kills a run, survived, once.'],
     ],
   },
   {
@@ -184,6 +186,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Heat dial', 'Keep spice off, or ask for a kick — applied to every decision.'],
       ['Mix it up', 'Stick to what you like, keep the usual mix, or reach for the long tail.'],
       ['Guest at the table', 'Extra avoids for this sitting only. Always avoid stays as it is.'],
+      ['Themed Endless runs', 'Pick what a run is made of before it starts — quick things, comfort food, vegetarian, spicy, sweet. Pairs that would almost never meet in the full catalogue, and a fiftieth run that does not play like the fifth.'],
       ['Don’t repeat this week', 'Accept a dish and it is off the table for seven days.'],
     ],
   },

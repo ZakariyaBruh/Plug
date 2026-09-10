@@ -3838,3 +3838,40 @@ body.is-landing .topbar-brand .mark-word { display: none; }
   .endless-run.is-blazing:not(.is-panic),
   .endless-run.is-blazing .endless-heat { animation: none; }
 }
+
+/* --------------------------------------------------- pace, themes, wind */
+/*
+ * The pace marker — how this run is doing against the best one at the same
+ * pick. Sits with the score rather than the clock: it is about how well, not
+ * about how long left, and the clock is the only thing on this screen allowed
+ * to be about survival.
+ */
+.endless-pace {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.endless-pace.is-ahead  { color: var(--amber); }
+/* Behind is deliberately not red. Red on this screen means the run is ending,
+   and being behind your best is not that — it is the ordinary state of most
+   runs and should read as information, not as alarm. */
+.endless-pace.is-behind { color: var(--ink-3); }
+
+.endless-themes { margin-top: var(--s3); }
+
+.endless-themes-label {
+  margin: 0 0 var(--s2);
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+@media (max-width: 30rem) {
+  /* On a narrow phone the head already carries score, best, pace and heat.
+     Pace is the one that can wait — it is read between runs as often as
+     during one, and the summary says it too. */
+  .endless-pace { display: none; }
+}

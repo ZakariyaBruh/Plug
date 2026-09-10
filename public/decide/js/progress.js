@@ -135,7 +135,19 @@
       endlessDay: null,       // YYYY-MM-DD the tally below belongs to
       endlessUsed: 0,         // picks taken today, against the free allowance
       endlessBest: 0,         // best score ever, kept for good
-      endlessRuns: 0          // runs finished, ever
+      endlessRuns: 0,         // runs finished, ever
+      /*
+       * The best run's shape, not just its total — score banked at every tenth
+       * pick. A single best score can only be beaten at the end; a curve can be
+       * raced the whole way, which is what makes a run you are losing still
+       * worth finishing.
+       *
+       * Sampled every ten picks rather than every pick: a three-hundred-pick
+       * run is thirty numbers instead of three hundred, and the marker moves
+       * between samples by interpolation anyway.
+       */
+      endlessCurve: [],       // [score@10, score@20, ...] from the best run
+      endlessTheme: ''        // '' | a tag — which pool Endless draws from
     };
   }
 
@@ -437,13 +449,42 @@
 
   // Bank a finished run. Answers whether it was a personal best, which is the
   // only part of it worth saying out loud.
-  Progress.prototype.recordEndless = function (score) {
+  Progress.prototype.recordEndless = function (score, curve) {
     this.state.endlessRuns = (this.state.endlessRuns || 0) + 1;
     if (score > (this.state.endlessBest || 0)) {
       this.state.endlessBest = score;
+      // The curve belongs to the score: kept together or the marker would race
+      // one run's pace towards another run's total.
+      if (curve && curve.length) this.state.endlessCurve = curve.slice(0, 60);
       return true;
     }
     return false;
+  };
+
+  /*
+   * What the best run had banked by this pick, or null if it never got here.
+   *
+   * Interpolated between the ten-pick samples so the marker slides rather than
+   * jumping every tenth tap. Past the end of the curve there is nothing honest
+   * to say — the best run was already over, which is its own answer.
+   */
+  Progress.prototype.endlessPaceAt = function (picks) {
+    var curve = this.state.endlessCurve || [];
+    if (!curve.length || picks <= 0) return null;
+
+    var slot = picks / 10;
+    var i = Math.floor(slot);
+    var frac = slot - i;
+
+    // Landing exactly on the curve's last sample is a real number, not the end
+    // of it: curve[n-1] is the score at pick n*10, so a forty-pick curve knows
+    // what pick forty was worth. Bailing on i >= length lost that one — the
+    // marker went blank at the exact pick where the race was closest.
+    if (i > curve.length) return null;
+    if (i === curve.length) return frac === 0 ? curve[i - 1] : null;
+
+    var lo = i === 0 ? 0 : curve[i - 1];
+    return Math.round(lo + (curve[i] - lo) * frac);
   };
 
   Progress.prototype.rate = function (name, verdict) {

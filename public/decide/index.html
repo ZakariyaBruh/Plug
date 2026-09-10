@@ -194,6 +194,17 @@
         little more time &mdash; then a little less each time. See how far you get.</span>
         <span class="endless-card-line" id="endless-card-line">No questions. No rounds. Just don&rsquo;t stop.</span>
       </button>
+      <!--
+        Outside the card, because the card is one big button and a button
+        inside a button is not a thing a browser will render. Hidden entirely
+        on Standard rather than shown locked: this is a choice about what the
+        next run is made of, and dangling it in front of somebody about to
+        play the free version is a worse offer than not mentioning it.
+      -->
+      <div class="endless-themes" id="endless-themes" hidden>
+        <p class="fine endless-themes-label">Tonight&rsquo;s run is made of <span class="tag-premium">Premium</span></p>
+        <div class="knobs" id="endless-theme-knobs" role="group" aria-label="What Endless draws from"></div>
+      </div>
     </section>
 
     <p class="mode-grid-label">Or play it as a game <span class="tag-premium">Premium</span></p>
@@ -800,6 +811,7 @@
               <span class="endless-points"><b id="endless-score">0</b></span>
               <span class="endless-pop" id="endless-pop" aria-hidden="true"></span>
               <span class="endless-best" id="endless-best-wrap" hidden>best <b id="endless-best">0</b></span>
+              <span class="endless-pace" id="endless-pace" hidden></span>
               <span class="endless-heat" id="endless-heat" hidden></span>
               <span class="endless-combo" id="endless-combo" hidden>&times;<b id="endless-combo-n">2</b></span>
             </div>
