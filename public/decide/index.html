@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>morsels45 — what should you eat?</title>
+<meta name="description" content="Twenty questions that work out what you actually feel like eating.">
+
+<!-- ===========================================================================
+     What this page looks like when somebody sends it on. Share is the app's
+     own advertising channel — the share button hands out this URL — and until
+     now the link arrived naked: no title, no picture, nothing to click. The
+     URLs are absolute because a scraper resolves them against nothing.
+     =========================================================================== -->
+<link rel="canonical" href="https://morsels45-app.whop.site/decide/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="morsels45">
+<meta property="og:title" content="morsels45 — what should you eat?">
+<meta property="og:description" content="A handful of either-or questions and you have an answer. 112 dishes, no sign-up, and it still works with no signal.">
+<meta property="og:url" content="https://morsels45-app.whop.site/decide/">
+<meta property="og:image" content="https://morsels45-app.whop.site/site-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="morsels45 — stop scrolling, start eating">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="morsels45 — what should you eat?">
+<meta name="twitter:description" content="A handful of either-or questions and you have an answer. 112 dishes, no sign-up, and it still works with no signal.">
+<meta name="twitter:image" content="https://morsels45-app.whop.site/site-card.png">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#17171a">
+<!-- What makes "Add to Home Screen" produce a real app rather than a bookmark:
+     without these, iOS opens the icon in a normal Safari view, address bar and
+     all. The manifest says display:standalone and iOS 16.4 and later reads it,
+     but everything older needs the apple- names — and an old phone is exactly
+     the case this has to work for.
+
+     The status bar is opaque black rather than translucent because nothing in
+     the stylesheet reserves the safe area, and translucent would slide the top
+     of the page under the clock and the notch. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="morsels45">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<!-- Real files, not a data URI. The data URI saved a request and cost the
+     page its favicon everywhere that fetches one rather than renders it: a
+     crawler has no URL to ask for, which is why this page turned up in Google
+     with a generic globe beside it. The SVG is for browsers; the PNGs are what
+     Google's favicon pipeline wants, square and a multiple of 48. -->
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="/icon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/icon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+</head>
+<body>
+
+<!-- ===========================================================================
+     The top bar. Fixed above everything, including the landing screen, so
+     your account and Premium are never more than one glance away — the same
+     bar the rest of the site (home, /premium, /account) already carries.
+     =========================================================================== -->
+<header class="topbar" id="topbar">
+  <a class="topbar-brand" href="/decide/">
+    <span class="mark-glyph" aria-hidden="true">
+      <!-- The "45" ligature — the 4 and the 5 sharing one stem. Same shape as
+           icon.svg, just the strokes without the background square, so it sits
+           inline with the wordmark. Cropped to its own content box (viewBox),
+           not the icon's 512x512, so it fills the glyph slot rather than
+           floating in the middle of a square. -->
+      <svg viewBox="106 120 300 272" fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M256 140L126 256L256 256M256 140L256 372"/>
+        <path d="M386 140L256 140L256 256C426 256 426 372 256 372"/>
+      </svg>
+    </span>
+    <span class="mark-word">morsels45</span>
+  </a>
+  <nav class="topbar-nav" aria-label="Account">
+    <a class="topbar-link" id="topbar-premium" href="/premium">Premium</a>
+    <a class="topbar-link topbar-account" id="topbar-account" href="/api/oauth/login?redirect_to=%2Fdecide%2F">Sign in</a>
+  </nav>
+</header>
+
+<!-- ===========================================================================
+     The landing screen.
+
+     What used to be here was a sign-up form, and it was the first thing anybody
+     saw: a name, a passphrase, a warning that there is no way to reset it, all
+     before a single question had been asked. Nobody makes an account to find out
+     what to have for lunch. It is gone. Nothing is asked for up front and
+     nothing has to be — the whole app works, and saves what you play, without
+     an account existing at all.
+
+     What is here instead is the pitch, and one button. It is deliberately the
+     loudest screen in the app: everything after it is quiet on purpose, and the
+     one place a bit of noise earns its keep is the moment somebody is deciding
+     whether to bother.
+     =========================================================================== -->
+<div class="landing" id="landing" hidden>
+  <div class="landing-glow" aria-hidden="true"></div>
+
+  <div class="landing-inner">
+    <p class="mechanic landing-mark">morsels45
+      <svg class="squiggle" viewBox="0 0 60 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+        <path d="M1 5c4-5 8 1 12 0s8-5 12-4 8 6 12 5 8-5 12-4"/>
+      </svg>
+    </p>
+
+    <!-- The reel spins through real dishes from the catalogue. It is the one
+         piece of pure decoration in the app, and it is here because "112
+         dishes" told as a number lands differently from 112 dishes going past. -->
+    <div class="reel" id="reel" aria-hidden="true">
+      <span class="reel-item is-on">🍜</span>
+    </div>
+
+    <h1 class="landing-ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s alright &mdash; I might.</em></h1>
+    <p class="landing-sub">A few easy either-ors &mdash; sweet or savoury, hot or cold, hands or cutlery &mdash;
+    and we&rsquo;ll work out what you actually feel like. Usually in about eight questions.</p>
+
+    <div class="landing-actions">
+      <button class="go go-big" id="landing-start">
+        <span class="go-label">Decide for me</span>
+        <span class="go-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+        </span>
+      </button>
+      <button class="plain landing-plain" id="tonight-btn">Tonight&rsquo;s pick</button>
+      <button class="plain landing-plain" id="landing-browse">Browse the menu</button>
+      <button class="plain landing-plain" id="landing-nearby">See what&rsquo;s near you</button>
+      <button class="plain landing-plain" id="landing-ask">Ask what to eat</button>
+      <button class="plain landing-plain" id="landing-news">Read about food</button>
+      <button class="plain landing-plain" id="landing-invite">Decide with a friend</button>
+    </div>
+
+    <div class="knob-block" id="party-wrap">
+      <p class="mechanic">How many plates</p>
+      <div class="knobs" id="party-knobs" role="group" aria-label="How many plates"></div>
+    </div>
+
+    <p class="landing-install" id="install-wrap" hidden>
+      <button class="link-btn" id="install-btn">Add it to your home screen</button>
+      <span class="fine">Works with no signal once it is there.</span>
+    </p>
+
+    <!-- Android or iOS only, revealed by app.js. A real app rather than a
+         pinned tab, which is a different offer from the one above and worth
+         both. -->
+    <p class="landing-install" id="apk-wrap" hidden>
+      <a class="link-btn" id="apk-link" href="/morsels45.apk" download="morsels45.apk">Install the Android app</a>
+      <span class="fine">Version 1.0.0 &middot; 6.0&nbsp;MB. Android will ask whether to allow
+      installing from your browser &mdash; say yes once.</span>
+    </p>
+
+    <p class="landing-install" id="clip-wrap" hidden>
+      <b class="clip-title">Put it on your Home Screen</b>
+      <span class="fine" id="clip-note">Tap Share at the bottom of the screen, scroll down to
+      <b>Add to Home Screen</b>, then tap <b>Add</b>. It opens full screen with no address bar.</span>
+    </p>
+
+    <p class="landing-free">No account. No email. Nothing to fill in.</p>
+
+    <!-- Real numbers, read out of the catalogue at load rather than written
+         here, so they cannot drift into being a claim nobody checks. -->
+    <ul class="landing-stats">
+      <li><b id="landing-dishes">112</b><span>dishes</span></li>
+      <li><b id="landing-questions">8</b><span>questions, usually</span></li>
+      <li><b id="landing-recipes">125</b><span>recipes inside</span></li>
+    </ul>
+
+    <!-- ===================================================================
+         ENDLESS, and why it is out here on its own rather than in the grid
+         below it.
+
+         Every other game on this screen is locked, and the grid says so once
+         for all of them. Drop a free card into that row and the row stops
+         meaning anything: a lock badge and a "free" badge side by side read as
+         one muddled offer, and the one thing anybody can actually start right
+         now is the one nobody can see. So it gets its own block, above them,
+         with the allowance printed on it before you tap rather than after.
+         =================================================================== -->
+    <section class="strip endless-cta">
+      <h2 class="strip-title">Got a minute. Or an hour.</h2>
+      <button class="endless-card" id="endless-btn" type="button">
+        <span class="endless-card-top">
+          <span class="endless-card-icon" aria-hidden="true">&#9854;&#65039;</span>
+          <span class="endless-card-name">Endless</span>
+          <span class="endless-card-tag" id="endless-tag">Free</span>
+        </span>
+        <span class="endless-card-hook">Two dishes, and a few seconds on the clock. Tap one and it buys you a
+        little more time &mdash; then a little less each time. See how far you get.</span>
+        <span class="endless-card-line" id="endless-card-line">No questions. No rounds. Just don&rsquo;t stop.</span>
+      </button>
+    </section>
+
+    <p class="mode-grid-label">Or play it as a game <span class="tag-premium">Premium</span></p>
+    <div class="mode-grid">
+      <button class="mode-card" id="duel-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#129354;</span>
+        <span class="mode-name">This or that</span>
+        <span class="mode-hook">One champion, endless challengers. Winner stays on &mdash; until something knocks it off.</span>
+      </button>
+      <button class="mode-card" id="knockout-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#127942;</span>
+        <span class="mode-name">Knockout</span>
+        <span class="mode-hook">8 dishes enter a bracket. Round of 8, semifinal, final. One walks out dinner.</span>
+      </button>
+      <button class="mode-card" id="blitz-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#9889;</span>
+        <span class="mode-name">Blitz</span>
+        <span class="mode-hook">Thirty seconds on the clock, and rounds that keep changing the rules. However many picks you get through is the score.</span>
+      </button>
+      <button class="mode-card" id="spin-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#127922;</span>
+        <span class="mode-name">Shortlist</span>
+        <span class="mode-hook">Eight dishes from what you actually like. One of them lands. No questions.</span>
+      </button>
+      <button class="mode-card" id="together-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#128101;</span>
+        <span class="mode-name">Together</span>
+        <span class="mode-hook">Up to six of you, one phone. Five either-ors each, then one dish the
+        whole table can live with &mdash; and what you all turned out to agree on.</span>
+      </button>
+      <button class="mode-card" id="swipe-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#128152;</span>
+        <span class="mode-name">Swipe</span>
+        <span class="mode-hook">One dish at a time. Right for yes, left for no. Like three, then pick between them.</span>
+      </button>
+    </div>
+
+    <section class="strip" id="mood-wrap" hidden>
+      <h2 class="strip-title">Or just tell me the mood <span class="tag-premium">Premium</span></h2>
+      <div class="moods" id="moods"></div>
+    </section>
+
+    <div class="opening-more">
+      <button class="plain" id="surprise-btn" hidden>Surprise me <span class="tag-premium">Premium</span></button>
+    </div>
+
+    <section class="strip" id="week-wrap" hidden>
+      <h2 class="strip-title">This week <span class="tag-premium">Premium</span></h2>
+      <p class="fine" id="week-blurb">Seven dishes chosen from what you actually like, no two the same sort of thing.</p>
+      <ul class="chips" id="week-chips"></ul>
+      <button class="plain" id="week-btn">Plan my week</button>
+    </section>
+
+    <!-- Only for somebody who has been here before, and only then. -->
+    <div class="landing-back" id="landing-back" hidden>
+      <p class="mechanic">Welcome back</p>
+      <p class="landing-back-line" id="landing-back-line">Level 1 &middot; Snacker</p>
+      <div class="landing-back-stats">
+        <span><b id="landing-back-streak">0</b> day streak</span>
+        <span><b id="landing-back-decisions">0</b> decisions</span>
+        <span><b id="landing-back-dishes">0</b> dishes tried</span>
+      </div>
+    </div>
+
+    <!-- Both of these used to live on a second home screen that nothing could
+         reach any more (see the commit that removed it). They are the two
+         things that screen had and this one did not. -->
+    <section class="strip" id="intro-recent-wrap" hidden>
+      <h2 class="strip-title" id="intro-recent-title">Lately</h2>
+      <ul class="chips" id="intro-recent"></ul>
+    </section>
+
+    <section class="strip" id="intro-fav-wrap" hidden>
+      <h2 class="strip-title">Saved <span class="tag-premium">Premium</span></h2>
+      <ul class="chips" id="intro-favs"></ul>
+      <button class="plain" id="fav-decide-btn">Pick one of these for me</button>
+    </section>
+
+    <p class="landing-foot">Free to play. Premium is extra.
+      <button class="link-btn" id="landing-premium">See what Premium adds</button>
+    </p>
+  </div>
+</div>
+
+<!-- ===========================================================================
+     Order it together — one browser, driven by both of you.
+
+     The game says what to eat and has never had an answer to how to get it.
+     "Search Maps near me" is one tab on one phone, which is no help at all to
+     two people who have just agreed on a dish: one of them orders and the
+     other reads over their shoulder. This is a real browser, running
+     elsewhere, that both of them control from their own devices — send the
+     link, and there are two cursors in the same window.
+
+     It is torn down when this panel closes: the session bills for as long as
+     it is up.
+     =========================================================================== -->
+<div class="beam" id="beam" hidden>
+  <div class="beam-bar">
+    <div class="beam-titles">
+      <p class="mechanic" id="beam-kind">Order it together</p>
+      <p class="beam-dish" id="beam-dish"></p>
+    </div>
+    <div class="beam-tools">
+      <button class="plain" id="beam-copy">Copy the link</button>
+      <button class="ghost-btn" id="beam-close" aria-label="Close the shared browser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <p class="beam-hint" id="beam-hint">Send the link to whoever you&rsquo;re eating with &mdash;
+  you both get a cursor in the same window.</p>
+
+  <div class="beam-stage" id="beam-stage">
+    <p class="beam-state" id="beam-state">Opening a browser you can both use&hellip;</p>
+
+    <!-- Shown only if the frame is still blank after a few seconds. The frame
+         is the one part of this the page cannot check from inside: the session
+         is live and the URL is right, and it still renders nothing if a
+         permission was withheld somewhere up the chain of frames. Opened as a
+         page instead, none of that applies. -->
+    <p class="beam-escape" id="beam-escape" hidden>
+      Nothing showing?
+      <a class="link-btn" id="beam-open" target="_blank" rel="noopener noreferrer">Open it in a new tab</a>
+      &mdash; same browser, same session.
+    </p>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- ============================ rail ============================ -->
+  <nav class="rail" aria-label="Sections">
+    <ul class="rail-list">
+      <li><button class="rail-link is-current" data-view="decide">Decide</button></li>
+      <li><button class="rail-link" data-view="dishes">Dishes</button></li>
+      <li><button class="rail-link" data-view="nearby">Nearby</button></li>
+      <li><button class="rail-link" data-view="chat">Ask</button></li>
+      <li><button class="rail-link" data-view="news">News</button></li>
+      <li><button class="rail-link" data-view="profile">Profile</button></li>
+    </ul>
+
+    <p class="rail-foot" id="rail-streak" hidden><b id="streak-count">0</b> day streak</p>
+  </nav>
+
+  <!-- ============================ content ============================ -->
+  <main class="content" id="content">
+
+    <!-- ------------------------- DECIDE ------------------------- -->
+    <section class="view is-current" id="view-decide" aria-label="Decide">
+
+      <!-- intro -->
+      <!-- question -->
+      <div class="panel" id="panel-question">
+        <div class="q-bar">
+          <button class="ghost-btn" id="back-btn" aria-label="Undo last answer">
+            <svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 6H1M6 1 1 6l5 5"/>
+            </svg>
+          </button>
+          <p class="q-step"><span id="q-now">1</span><span class="q-of" id="q-total">/20</span>
+            <button class="keys-hint" id="keys-btn" type="button" aria-label="Keyboard shortcuts" title="Keyboard shortcuts">?</button>
+          </p>
+          <button class="ghost-btn" id="restart-btn" aria-label="Start over">
+            <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+              <path d="M16 9a7 7 0 1 1-2.1-5M16 2v5h-5"/>
+            </svg>
+          </button>
+        </div>
+
+        <p class="reaction" id="reaction" aria-live="polite">&nbsp;</p>
+        <h2 class="q-title" id="q-text">What sounds better?</h2>
+
+        <div class="picks">
+          <button class="pick" id="choice-yes">
+            <span class="pick-no">01</span>
+            <span class="pick-body">
+              <span class="pick-icon" id="yes-icon" aria-hidden="true"></span>
+              <span class="pick-label" id="yes-label"></span>
+            </span>
+          </button>
+          <button class="pick" id="choice-no">
+            <span class="pick-no">02</span>
+            <span class="pick-body">
+              <span class="pick-icon" id="no-icon" aria-hidden="true"></span>
+              <span class="pick-label" id="no-label"></span>
+            </span>
+          </button>
+        </div>
+
+        <div class="q-foot">
+          <div class="q-outs">
+            <button class="plain q-neither" id="choice-neither" hidden>
+              <span class="q-neither-icon" id="neither-icon" aria-hidden="true"></span>
+              <span id="neither-label">Neither</span>
+            </button>
+            <button class="plain" id="choice-either">Either, honestly</button>
+          </div>
+          <p class="closing"><span id="hunch">Wide open</span><i class="thread"><span id="meter-fill"></span></i></p>
+        </div>
+      </div>
+
+      <!-- result -->
+      <div class="panel" id="panel-result">
+        <div class="verdict" id="result-focus" aria-live="polite">
+          <p class="mechanic" id="result-eyebrow">You should eat</p>
+          <div class="verdict-head">
+            <span class="verdict-art" id="result-icon" aria-hidden="true">🍕</span>
+            <h2 class="verdict-name" id="result-name">&hellip;</h2>
+          </div>
+          <p class="verdict-note" id="result-blurb"></p>
+          <ul class="reasons" id="reasons"></ul>
+          <!-- Only when nothing on the menu could meet everything asked for.
+               The engine has always had to choose which answer to let go of;
+               this is it saying which, instead of quietly handing back
+               something that argues with what you told it. -->
+          <p class="gave" id="gave" hidden>
+            <span class="gave-mark">Had to let one go</span>
+            <span id="gave-why"></span>
+          </p>
+          <p class="tuned" id="agreed" hidden>
+            <span aria-hidden="true">&#129309;</span>
+            <span id="agreed-why"></span>
+          </p>
+          <p class="tuned" id="tuned" hidden>
+            <span class="tuned-mark">Tuned to you</span>
+            <span id="tuned-why"></span>
+          </p>
+          <p class="pair" id="pair" hidden>
+            <span class="pair-mark">A side with that <span class="tag-premium">Premium</span></span>
+            <button class="link-btn" id="pair-btn" type="button"></button>
+          </p>
+        </div>
+
+        <div class="verdict-actions">
+          <button class="go" id="accept-btn">
+            <span class="go-label">That&rsquo;s the one</span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </button>
+          <div class="verdict-side">
+            <button class="quiet" id="reject-btn">Not quite</button>
+            <button class="quiet" id="share-btn">Share this</button>
+            <button class="quiet" id="fav-btn"><span id="fav-btn-label">Save it</span> <span class="tag-premium">Premium</span></button>
+            <button class="quiet" id="snooze-btn">Not today <span class="tag-premium">Premium</span></button>
+            <button class="quiet danger" id="ban-btn">Never again <span class="tag-premium">Premium</span></button>
+            <a class="quiet" id="maps-btn" target="_blank" rel="noopener noreferrer">Search Maps near me</a>
+            <button class="quiet" id="order-btn">Order it together <span class="tag-premium">Premium</span></button>
+          </div>
+        </div>
+
+        <div class="alternates" id="alternates">
+          <p class="strip-title" id="alt-title">Or</p>
+          <div class="alt-row" id="alt-row"></div>
+        </div>
+
+        <button class="plain" id="again-btn">Start over</button>
+      </div>
+
+      <!-- reward -->
+      <div class="panel" id="panel-reward">
+        <div class="verdict">
+          <p class="mechanic">Sorted</p>
+          <div class="verdict-head">
+            <span class="verdict-art" id="done-icon" aria-hidden="true">🎉</span>
+            <h2 class="verdict-name" id="done-name">Sorted.</h2>
+          </div>
+          <p class="verdict-note" id="done-text">Go and eat it.</p>
+        </div>
+
+        <p class="xp-line"><span id="xp-total">+0</span> <span>XP</span></p>
+        <ul class="awards" id="awards"></ul>
+
+        <section class="strip" id="rate-wrap" hidden>
+          <h2 class="strip-title">How was it? <span class="tag-premium">Premium</span></h2>
+          <p class="fine" id="rate-note">Tell me and I get better at picking for you.</p>
+          <div class="rates" id="rates"></div>
+        </section>
+
+        <div class="levelup" id="levelup" hidden>
+          <span class="levelup-art" id="levelup-icon" aria-hidden="true">🍽️</span>
+          <span><strong>Level up.</strong> <span id="levelup-text">You&rsquo;re now a Foodie</span></span>
+        </div>
+
+        <div class="verdict-actions">
+          <button class="go" id="plan-btn">
+            <span class="go-label">How do I get it?</span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </button>
+          <div class="verdict-side">
+            <!--
+              The ask goes here rather than only on the reveal. "Share this"
+              exists one screen back, next to "Not quite" — offered at the
+              moment the answer appears, which is the moment somebody is still
+              deciding whether they like it. This screen is the one they reach
+              by saying yes, and a person who has just said yes is the only one
+              with anything to recommend.
+            -->
+            <button class="quiet" id="done-share-btn">Tell someone</button>
+            <button class="quiet" id="done-invite-btn">Decide with a friend</button>
+            <button class="quiet" id="done-again-btn">Decide again</button>
+            <button class="quiet" id="done-profile-btn">Your profile</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- this or that -->
+      <div class="panel" id="panel-duel">
+        <div class="q-bar">
+          <button class="ghost-btn" id="duel-back" aria-label="Undo the last round" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+          </button>
+          <p class="q-step"><span id="duel-now">1</span><span class="q-of">/<span id="duel-of">7</span></span></p>
+          <button class="ghost-btn" id="duel-restart" aria-label="Start over">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>
+          </button>
+        </div>
+
+        <p class="reaction" id="duel-reaction" aria-live="polite">&nbsp;</p>
+        <h2 class="q-title" id="duel-title">Which one, right now?</h2>
+
+        <div class="picks" id="duel-picks">
+          <button class="pick" id="duel-a">
+            <span class="pick-no" aria-hidden="true">01</span>
+            <span class="pick-body">
+              <span class="pick-crown" id="duel-a-crown">Champion &middot; <span id="duel-a-run">1</span> won</span>
+              <span class="pick-icon" id="duel-a-icon" aria-hidden="true"></span>
+              <span class="pick-label" id="duel-a-label"></span>
+              <span class="pick-note" id="duel-a-note"></span>
+            </span>
+          </button>
+          <button class="pick" id="duel-b">
+            <span class="pick-no" aria-hidden="true">02</span>
+            <span class="pick-body">
+              <span class="pick-crown" id="duel-b-crown">Champion &middot; <span id="duel-b-run">1</span> won</span>
+              <span class="pick-icon" id="duel-b-icon" aria-hidden="true"></span>
+              <span class="pick-label" id="duel-b-label"></span>
+              <span class="pick-note" id="duel-b-note"></span>
+            </span>
+          </button>
+        </div>
+
+        <div class="q-foot">
+          <div class="duel-side">
+            <button class="plain" id="duel-skip">Neither of those</button>
+            <button class="plain" id="duel-stop">Stop here</button>
+          </div>
+          <p class="closing"><span id="duel-hunch">Winner stays on</span></p>
+        </div>
+      </div>
+
+      <!-- knockout: an 8-dish single-elimination bracket -->
+      <!-- knockout: the seeding reveal, before a single match is played -->
+      <div class="panel" id="panel-knockout-seed">
+        <div class="q-bar">
+          <p class="q-step">Knockout</p>
+        </div>
+        <h2 class="q-title">Your bracket</h2>
+        <p class="pane-line">Eight dishes, seeded from what you actually like. Round of 8, semifinal, final &mdash; one of these is dinner.</p>
+        <ol class="bracket-seed" id="knockout-seed-list"></ol>
+        <div class="opening-actions">
+          <button class="go" id="knockout-seed-start">
+            <span class="go-label">Start the bracket</span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </button>
+          <button class="plain" id="knockout-seed-back">Never mind, take me back</button>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-knockout">
+        <div class="q-bar">
+          <button class="ghost-btn" id="knockout-restart" aria-label="Start over">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>
+          </button>
+          <p class="q-step" id="knockout-round">Round of 8</p>
+          <button class="ghost-btn" id="knockout-stop" aria-label="Stop here">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h12v12H6z"/></svg>
+          </button>
+        </div>
+
+        <div class="ladder" id="knockout-ladder" aria-label="The bracket so far"></div>
+
+        <p class="reaction" id="knockout-reaction" aria-live="polite">&nbsp;</p>
+        <h2 class="q-title" id="knockout-title">Match 1 of 4 &mdash; pick one</h2>
+
+        <div class="picks knockout-clash" id="knockout-picks">
+          <button class="pick" id="knockout-a">
+            <span class="pick-no" aria-hidden="true">01</span>
+            <span class="pick-body">
+              <span class="pick-icon" id="knockout-a-icon" aria-hidden="true"></span>
+              <span class="pick-label" id="knockout-a-label"></span>
+              <span class="pick-note" id="knockout-a-note"></span>
+            </span>
+          </button>
+          <span class="vs-badge" aria-hidden="true">VS</span>
+          <button class="pick" id="knockout-b">
+            <span class="pick-no" aria-hidden="true">02</span>
+            <span class="pick-body">
+              <span class="pick-icon" id="knockout-b-icon" aria-hidden="true"></span>
+              <span class="pick-label" id="knockout-b-label"></span>
+              <span class="pick-note" id="knockout-b-note"></span>
+            </span>
+          </button>
+        </div>
+
+        <div class="q-foot">
+          <p class="closing"><span id="knockout-hunch">Eight dishes go in. One comes out.</span></p>
+        </div>
+      </div>
+
+      <!-- blitz: this-or-that against a 30 second clock, with a countdown first
+           so the clock feels like it starts on purpose -->
+      <div class="panel" id="panel-blitz-ready">
+        <div class="blitz-ready-inner">
+          <p class="mechanic">Blitz</p>
+          <p class="blitz-count-big" id="blitz-countdown">3</p>
+          <p class="pane-line">Thirty seconds. This or that, as fast as you can tap &mdash; and every so often the round changes the rules on you.</p>
+          <button class="plain" id="blitz-ready-cancel">Cancel</button>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-blitz">
+        <div class="q-bar">
+          <button class="ghost-btn" id="blitz-restart" aria-label="Start over">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>
+          </button>
+          <p class="q-step blitz-clock" id="blitz-clock">30</p>
+          <button class="ghost-btn" id="blitz-stop" aria-label="Stop here">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6h12v12H6z"/></svg>
+          </button>
+        </div>
+
+        <p class="reaction" id="blitz-reaction" aria-live="polite">&nbsp;</p>
+        <div class="blitz-head">
+          <h2 class="q-title" id="blitz-title">Quick — which one?</h2>
+          <p class="blitz-streak" id="blitz-streak" hidden>&#128293; <span id="blitz-streak-n">0</span> streak</p>
+          <!-- Which twist this round is, named. The title says what to do; this
+               says what kind of round it is, so a run reads as a sequence of
+               different things rather than one thing occasionally behaving oddly. -->
+          <p class="blitz-special" id="blitz-special" hidden></p>
+        </div>
+
+        <div class="picks blitz-picks-grid" id="blitz-picks">
+          <button class="pick" id="blitz-a">
+            <span class="pick-no" aria-hidden="true">01</span>
+            <span class="pick-body">
+              <span class="pick-icon" id="blitz-a-icon" aria-hidden="true"></span>
+              <span class="pick-label" id="blitz-a-label"></span>
+              <span class="pick-note" id="blitz-a-note"></span>
+            </span>
+          </button>
+          <button class="pick" id="blitz-b">
+            <span class="pick-no" aria-hidden="true">02</span>
+            <span class="pick-body">
+              <span class="pick-icon" id="blitz-b-icon" aria-hidden="true"></span>
+              <span class="pick-label" id="blitz-b-label"></span>
+              <span class="pick-note" id="blitz-b-note"></span>
+            </span>
+          </button>
+          <button class="pick" id="blitz-c" hidden>
+            <span class="pick-no" aria-hidden="true">03</span>
+            <span class="pick-body">
+              <span class="pick-icon" id="blitz-c-icon" aria-hidden="true"></span>
+              <span class="pick-label" id="blitz-c-label"></span>
+              <span class="pick-note" id="blitz-c-note"></span>
+            </span>
+          </button>
+        </div>
+
+        <div class="q-foot">
+          <p class="closing"><span id="blitz-count">0 picks so far</span></p>
+        </div>
+      </div>
+
+
+      <!-- shortlist spin -->
+      <div class="panel" id="panel-spin">
+        <div class="blitz-ready-inner">
+          <p class="mechanic">Shortlist <span class="tag-premium">Premium</span></p>
+          <p class="spin-face" id="spin-face" aria-hidden="true">🍽️</p>
+          <h2 class="q-title" id="spin-name">Eight on the table</h2>
+          <p class="pane-line" id="spin-status">One of these is dinner.</p>
+          <!-- Tap any of them out before it spins. Passive was the whole
+               complaint: eight dishes appeared, one landed, and the person
+               watching had no say in either. -->
+          <ol class="spin-list" id="spin-list"></ol>
+
+          <p class="fine" id="spin-thin" hidden></p>
+
+          <div class="opening-actions" id="spin-actions">
+            <button class="go" id="spin-go">
+              <span class="go-label" id="spin-go-label">Spin all eight</span>
+              <span class="go-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+              </span>
+            </button>
+          </div>
+          <button class="plain" id="spin-refill" hidden>Put them all back</button>
+          <button class="plain" id="spin-cancel">Never mind, take me back</button>
+        </div>
+      </div>
+
+      <!-- swipe: a deck, one dish at a time. Right for yes, left for no, and
+           three yeses end it with a choice between them. -->
+      <div class="panel" id="panel-swipe">
+        <p class="mechanic">Swipe <span class="tag-premium">Premium</span></p>
+        <p class="fine" id="swipe-thin" hidden></p>
+
+        <!-- The cards are built in app.js; this is the stage they sit on.
+             aria-live is off deliberately: a stack that re-announces itself on
+             every swipe is unusable with a screen reader on. The buttons below
+             are the accessible controls, and they say what they do. -->
+        <div class="swipe-deck" id="swipe-deck"></div>
+
+        <!-- The three you swiped right on, and the choice between them. One
+             yes used to end the deck, which is the one thing a deck is bad at:
+             the first thing you like is not the best thing you like, it is
+             just the first. Three gives the decision something to be. -->
+        <div class="swipe-picks" id="swipe-picks" hidden>
+          <h2 class="q-title" id="swipe-picks-title">Three you liked. Pick one.</h2>
+          <p class="pane-line" id="swipe-picks-line">These are the ones you swiped right on.</p>
+          <ul class="swipe-picked" id="swipe-picked"></ul>
+          <div class="opening-actions">
+            <button class="plain" id="swipe-more">None of these &mdash; keep looking</button>
+          </div>
+        </div>
+
+        <div class="swipe-empty" id="swipe-empty" hidden>
+          <p class="swipe-empty-face" aria-hidden="true">&#129396;</p>
+          <h2 class="q-title" id="swipe-empty-title">That is the whole deck</h2>
+          <p class="pane-line">No to all of them is an answer too &mdash; it usually means the mood
+          is not on the menu yet.</p>
+          <div class="opening-actions">
+            <button class="go" id="swipe-again">Deal another deck</button>
+            <button class="plain" id="swipe-ask">Ask me questions instead</button>
+          </div>
+        </div>
+
+        <div class="swipe-actions" id="swipe-actions">
+          <button class="swipe-key swipe-key-no" id="swipe-no" type="button" aria-label="Pass on this one">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+          <button class="swipe-key swipe-key-undo" id="swipe-undo" type="button" aria-label="Bring the last one back" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h12a5 5 0 0 1 0 10H9M3 9l4-4M3 9l4 4"/></svg>
+          </button>
+          <button class="swipe-key swipe-key-yes" id="swipe-yes" type="button" aria-label="That one, then">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21S3.5 14.6 3.5 8.9A4.9 4.9 0 0 1 12 5.6a4.9 4.9 0 0 1 8.5 3.3C20.5 14.6 12 21 12 21z"/></svg>
+          </button>
+        </div>
+
+        <p class="pane-line swipe-status" id="swipe-status">Right for yes, left for no. Like three and you choose between them.</p>
+        <button class="plain" id="swipe-cancel">Never mind, take me back</button>
+      </div>
+
+      <!-- ==================================================================
+           ENDLESS.
+
+           Two dishes, tap one, two more. The thing that makes it different
+           from the duel next door is what is missing: no round counter, no
+           "3 of 7", no screen between one pair and the next. The next pair is
+           painted in the same frame as the tap that answered the last one, so
+           there is never a moment that invites you to stop.
+
+           What stops it is the allowance, and only for a free profile. The
+           counter is on screen from the first tap rather than sprung at the
+           end, because an allowance you were told about is an offer and one
+           you were not is a trick.
+           ================================================================== -->
+      <div class="panel" id="panel-endless">
+        <div class="endless-run" id="endless-run">
+          <!-- Sticky, and that is not decoration. Everything this mode gives
+               back for a tap is in here — the number going up, the multiplier
+               climbing, the day counting down — and it all sat at the top of
+               the panel where the first tap scrolled it away. A game whose
+               feedback is on a part of the page nobody is looking at is a game
+               with no feedback. It stays under the bar while the thumbs are on
+               the cards below it.
+               aria-live is off throughout: a number that changes on every tap
+               is not something a screen reader should read out over the choice
+               itself. The read below the cards is the exception — it changes
+               every six taps at the soonest, it is the one thing here worth
+               interrupting for, and politely announcing it is the difference
+               between playing this mode and playing a version of it with the
+               point removed. -->
+          <div class="endless-head">
+            <div class="endless-bar">
+              <p class="mechanic">Endless</p>
+              <p class="endless-left" id="endless-left" hidden><b id="endless-left-n">60</b> left today</p>
+            </div>
+
+            <div class="endless-score">
+              <span class="endless-points"><b id="endless-score">0</b></span>
+              <span class="endless-pop" id="endless-pop" aria-hidden="true"></span>
+              <span class="endless-best" id="endless-best-wrap" hidden>best <b id="endless-best">0</b></span>
+              <span class="endless-combo" id="endless-combo" hidden>&times;<b id="endless-combo-n">2</b></span>
+            </div>
+
+            <!-- The clock. It replaced a meter that filled towards the next
+                 read, which was a progress bar for a thing you could not lose
+                 — pleasant, and no reason at all to keep tapping. This one
+                 empties, every pick buys some back, and it buys back less the
+                 longer you last. -->
+            <div class="endless-clock" id="endless-clock" aria-hidden="true"><i id="endless-clock-fill"></i></div>
+          </div>
+
+          <!-- The heading, and the band the shouts are painted into.
+               They land on top of "Which one?" deliberately: it is the one
+               line on this screen that carries no information, and the first
+               version put them over the cards instead — which in a mode with a
+               clock running means hiding the choice for a second and a quarter
+               as a reward for doing well. Nobody should be able to die to
+               their own celebration. -->
+          <div class="endless-line">
+            <h2 class="q-title endless-q" id="endless-title">Which one?</h2>
+            <div class="endless-shout" id="endless-shout" aria-hidden="true" hidden>
+              <b id="endless-shout-line"></b>
+            </div>
+          </div>
+
+          <div class="picks endless-picks is-titled" id="endless-picks">
+            <button class="pick" id="endless-a" type="button">
+              <span class="pick-no" aria-hidden="true">01</span>
+              <span class="pick-body">
+                <span class="pick-crown endless-flag" id="endless-a-flag"></span>
+                <span class="pick-icon" id="endless-a-icon" aria-hidden="true"></span>
+                <span class="pick-label" id="endless-a-label"></span>
+                <span class="pick-note" id="endless-a-note"></span>
+              </span>
+            </button>
+            <button class="pick" id="endless-b" type="button">
+              <span class="pick-no" aria-hidden="true">02</span>
+              <span class="pick-body">
+                <span class="pick-crown endless-flag" id="endless-b-flag"></span>
+                <span class="pick-icon" id="endless-b-icon" aria-hidden="true"></span>
+                <span class="pick-label" id="endless-b-label"></span>
+                <span class="pick-note" id="endless-b-note"></span>
+              </span>
+            </button>
+          </div>
+
+          <!-- What it has worked out, so far. Slides in beneath the choice
+               every few taps and stays until it is replaced: it is the payload
+               of the whole mode, and it must never be a screen you have to
+               dismiss to keep playing. -->
+          <div class="endless-read" id="endless-read" aria-live="polite" hidden>
+            <p class="mechanic" id="endless-read-eyebrow">You keep choosing</p>
+            <p class="endless-read-line" id="endless-read-line"></p>
+            <p class="fine" id="endless-read-note"></p>
+          </div>
+
+          <p class="pane-line endless-status" id="endless-status">Every pick buys time back. It buys back less the longer you last.</p>
+          <button class="plain" id="endless-stop">Stop &mdash; and see what it worked out</button>
+        </div>
+
+        <!-- The only screen in the mode that ends anything, and it still hands
+             back something to do: the dish the run kept choosing, ready to be
+             tonight's answer. Sixty taps that produce dinner beat sixty taps
+             that produce a score. -->
+        <div class="endless-over" id="endless-over" hidden>
+          <p class="mechanic" id="endless-over-eyebrow">That is the run</p>
+          <h2 class="q-title" id="endless-over-title">128 points</h2>
+          <p class="pane-line" id="endless-over-line">Twelve picks, and it learned three things.</p>
+
+          <ul class="endless-learned" id="endless-learned"></ul>
+
+          <div class="endless-champ" id="endless-champ" hidden>
+            <p class="mechanic" id="endless-champ-eyebrow">The one you kept choosing</p>
+            <button class="endless-champ-btn" id="endless-champ-btn" type="button">
+              <span class="endless-champ-icon" id="endless-champ-icon" aria-hidden="true"></span>
+              <span class="endless-champ-body">
+                <b id="endless-champ-name"></b>
+                <span class="fine" id="endless-champ-note"></span>
+              </span>
+            </button>
+          </div>
+
+          <!-- Only ever shown to a free profile that has actually run out.
+               Nobody is told what they are missing before they have had it. -->
+          <div class="endless-spent" id="endless-spent" hidden>
+            <p class="endless-spent-line">That is today&rsquo;s <b id="endless-spent-n">60</b>. They come back tomorrow.</p>
+            <p class="fine">Premium has no daily count on it &mdash; the only thing that ends a run is the clock.</p>
+            <button class="go" id="endless-upgrade">See what Premium adds</button>
+          </div>
+
+          <div class="opening-actions">
+            <button class="go" id="endless-again">Go again</button>
+            <button class="plain" id="endless-done">Take me back</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- week plan -->
+      <!-- together: the handover between the two people deciding -->
+      <!--
+        How many are eating. This is what separates Together from the free
+        link version: the link does two people on two phones and does it
+        better, so the one that needs everybody in the room does the thing
+        only it can — the whole table, and a reveal of what they all agreed on.
+      -->
+      <div class="panel" id="panel-table">
+        <p class="mechanic">Together</p>
+        <h2 class="q-title">How many are eating?</h2>
+        <p class="hand-sub">Everybody answers five either-ors on this phone, one after another.
+        Then one dish the whole table can live with.</p>
+
+        <div class="knobs" id="table-knobs" role="group" aria-label="How many are eating"></div>
+
+        <div class="opening-actions">
+          <button class="go" id="table-go">
+            <span class="go-label">Start</span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </button>
+        </div>
+
+        <div class="q-foot">
+          <div class="duel-side">
+            <button class="plain" id="table-quit">Never mind</button>
+          </div>
+          <p class="closing">Nobody sees anybody else&rsquo;s answers</p>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-hand">
+        <p class="mechanic">Together</p>
+        <h2 class="q-title" id="hand-title">Pass the phone over.</h2>
+        <p class="hand-sub" id="hand-sub">Same questions, their answers. Whatever comes
+        back has to suit you both.</p>
+
+        <div class="opening-actions">
+          <button class="go" id="hand-go">
+            <span class="go-label" id="hand-go-label">Ready</span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </button>
+        </div>
+
+        <div class="q-foot">
+          <div class="duel-side">
+            <button class="plain" id="hand-quit">Never mind</button>
+          </div>
+          <p class="closing" id="hand-closing">Nobody sees the other&rsquo;s answers</p>
+        </div>
+      </div>
+
+      <!--
+        The half of "decide together" that only finishes when somebody else
+        plays. It is the app's one honest recruiting moment: nothing here is a
+        pitch, the link simply does not resolve into a dish until a second
+        person answers five questions.
+      -->
+      <div class="panel" id="panel-invite">
+        <p class="mechanic">Decide together</p>
+        <h2 class="q-title">Your half is done.</h2>
+        <p class="hand-sub">Send this to whoever you&rsquo;re eating with. They answer five of
+        their own, and you both land on one dish that suits you both.</p>
+
+        <label class="sr-only" for="invite-link">Your link</label>
+        <input class="invite-link" id="invite-link" readonly value="">
+
+        <div class="opening-actions">
+          <button class="go" id="invite-share">
+            <span class="go-label">Send the link</span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </button>
+        </div>
+
+        <div class="q-foot">
+          <div class="duel-side">
+            <button class="plain" id="invite-quit">Never mind</button>
+          </div>
+          <p class="closing">Your answers ride in the link &mdash; nothing is stored</p>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-week">
+        <div class="q-bar">
+          <button class="ghost-btn" id="week-back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+          </button>
+          <p class="q-step">Your week</p>
+          <button class="ghost-btn" id="week-reroll" aria-label="Plan it again">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>
+          </button>
+        </div>
+
+        <p class="pane-line" id="week-intro">Seven dishes, picked from what you actually like.</p>
+        <ol class="week" id="week-list"></ol>
+        <button class="plain" id="week-done">Back to the start</button>
+      </div>
+
+      <!-- plan -->
+      <div class="panel" id="panel-plan">
+        <div class="q-bar">
+          <button class="ghost-btn" id="plan-back" aria-label="Back to your result">
+            <svg viewBox="0 0 20 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 6H1M6 1 1 6l5 5"/></svg>
+          </button>
+          <p class="plan-dish"><span id="plan-icon" aria-hidden="true">🍕</span> <span id="plan-name">Pizza</span></p>
+          <span></span>
+        </div>
+
+        <div class="tabs" role="tablist" aria-label="How to get it">
+          <button class="tab is-on" id="seg-cook" role="tab" aria-selected="true">Cook it</button>
+          <button class="tab" id="seg-out" role="tab" aria-selected="false">Eat out</button>
+        </div>
+
+        <section class="pane is-current" id="pane-cook" role="tabpanel" aria-labelledby="seg-cook">
+          <p class="pane-line" id="cook-intro">Two ways to make it.</p>
+          <div class="vault" id="cook-vault">
+            <div class="vault-body" id="cook-body">
+              <div class="recipes" id="recipe-list"></div>
+            </div>
+            <div class="vault-lock" id="cook-lock" hidden>
+              <p class="mechanic">Premium</p>
+              <p class="vault-line" id="cook-lock-line">The recipes are behind Premium.</p>
+              <button class="go go-sm vault-btn" data-unlock="Recipes">
+                <span class="go-label">Unlock recipes</span>
+                <span class="go-arrow" aria-hidden="true">
+                  <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+                </span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="pane" id="pane-out" role="tabpanel" aria-labelledby="seg-out" hidden>
+          <div class="vault" id="out-vault">
+            <div class="vault-body" id="out-body">
+          <div class="locate" id="locate">
+            <p class="pane-line" id="out-intro">Find somewhere nearby that does it.</p>
+            <div class="locate-actions">
+              <button class="go go-sm" id="locate-btn">
+                <span class="go-label">Use my location</span>
+                <span class="go-arrow" aria-hidden="true">
+                  <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+                </span>
+              </button>
+              <a class="quiet" id="maps-search-btn" target="_blank" rel="noopener noreferrer">Just search Google Maps</a>
+            </div>
+            <p class="fine">Used for this search only. Never stored.</p>
+          </div>
+
+          <div class="out-loading" id="out-loading" hidden>
+            <div class="bone bone-map"></div>
+            <div class="bone bone-row"></div>
+            <div class="bone bone-row"></div>
+            <p class="fine" id="out-status">Looking around you&hellip;</p>
+          </div>
+
+          <div class="out-results" id="out-results" hidden>
+            <div class="map-frame" id="map-frame"></div>
+
+            <div class="chosen" id="chosen" hidden>
+              <div class="chosen-who">
+                <p class="mechanic">Selected</p>
+                <p class="chosen-name" id="chosen-name"></p>
+                <p class="fine" id="chosen-meta"></p>
+              </div>
+              <a class="go go-sm" id="chosen-go" target="_blank" rel="noopener noreferrer">
+                <span class="go-label">Take me there</span>
+                <span class="go-arrow" aria-hidden="true">
+                  <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+                </span>
+              </a>
+            </div>
+            <p class="pane-line" id="out-summary"></p>
+            <ul class="places" id="place-list"></ul>
+          </div>
+
+          <div class="notice" id="out-error" hidden>
+            <p id="out-error-text">Something went wrong.</p>
+            <p class="fine" id="out-error-note"></p>
+            <div class="locate-actions">
+              <a class="go go-sm" id="out-fallback" target="_blank" rel="noopener noreferrer">
+                <span class="go-label">Find it on Google Maps</span>
+                <span class="go-arrow" aria-hidden="true">
+                  <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+                </span>
+              </a>
+              <button class="quiet" id="out-retry">Try the map again</button>
+            </div>
+          </div>
+            </div>
+            <div class="vault-lock" id="out-lock" hidden>
+              <p class="mechanic">Premium</p>
+              <p class="vault-line">Finding somewhere nearby is part of Premium.</p>
+              <button class="go go-sm vault-btn" data-unlock="Nearby places">
+                <span class="go-label">Unlock places</span>
+                <span class="go-arrow" aria-hidden="true">
+                  <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+                </span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ------------------------- DISHES ------------------------- -->
+    <!-- =========================================================================
+         Nearby — the aggregator.
+
+         Deliberately not attached to a verdict. The rest of the app answers
+         "where can I get this"; this answers the question people ask far more
+         often, which is "what are my options". One wide lookup, sorted into
+         what the neighbourhood actually has.
+         ========================================================================= -->
+    <section class="view" id="view-nearby" aria-label="Nearby">
+      <header class="head">
+        <p class="mechanic">Around you</p>
+        <h1 class="head-title">Nearby</h1>
+      </header>
+
+          <div class="locate" id="near-locate">
+            <p class="pane-line">Everywhere you could eat within a walk &mdash; whatever the game
+            has or hasn&rsquo;t decided.</p>
+            <div class="locate-actions">
+              <button class="go go-sm" id="near-btn">
+                <span class="go-label">Use my location</span>
+                <span class="go-arrow" aria-hidden="true">
+                  <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+                </span>
+              </button>
+            </div>
+            <p class="fine">Used for this search only. Never stored.</p>
+          </div>
+
+          <div class="out-loading" id="near-loading" hidden>
+            <div class="bone bone-map"></div>
+            <div class="bone bone-row"></div>
+            <div class="bone bone-row"></div>
+            <p class="fine" id="near-status">Looking around you&hellip;</p>
+          </div>
+
+          <div class="out-results" id="near-results" hidden>
+            <div class="map-frame" id="near-map"></div>
+            <div class="chosen" id="near-chosen" hidden>
+              <div class="chosen-who">
+                <p class="mechanic">Selected</p>
+                <p class="chosen-name" id="near-chosen-name"></p>
+                <p class="fine" id="near-chosen-meta"></p>
+              </div>
+              <div class="chosen-acts">
+                <a class="go go-sm" id="near-chosen-go" target="_blank" rel="noopener noreferrer">
+                  <span class="go-label">Take me there</span>
+                  <span class="go-arrow" aria-hidden="true">
+                    <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+                  </span>
+                </a>
+                <!-- The list is free. This is the part that costs: one real
+                     browser, both of you in it, on that place's menu. -->
+                <button class="quiet" id="near-beam-btn">Order from here <span class="tag-premium">Premium</span></button>
+              </div>
+            </div>
+            <p class="pane-line" id="near-summary"></p>
+            <div class="filters" id="near-cats" role="group" aria-label="Filter by kind"></div>
+            <ul class="places" id="near-list"></ul>
+          </div>
+
+          <div class="notice" id="near-error" hidden>
+            <p id="near-error-text">Something went wrong.</p>
+            <p class="fine" id="near-error-note"></p>
+            <div class="locate-actions">
+              <button class="quiet" id="near-retry">Try again</button>
+            </div>
+          </div>
+
+    </section>
+
+    <!--
+      Food news. Free, and deliberately so: it is the one screen with a reason
+      to come back on a day you are not deciding anything. The stories come
+      from four publishers' own feeds through /api/news — an RSS feed sends no
+      CORS headers, so the worker has to fetch them, which also means four
+      publishers get one request rather than one per reader.
+
+      Everything inside a row is written by somebody else and is put on the
+      page with textContent, never innerHTML. See renderNews().
+    -->
+    <!--
+      The food assistant. Free for everybody, which is why the request it makes
+      is capped at the server: see routes/api/chat.ts. The key it needs is not
+      in this page and never will be.
+
+      Every line in here is rendered with textContent — half of it is typed by
+      the reader and the other half comes back from a model, and neither is
+      markup this page has any business running.
+    -->
+    <section class="view" id="view-chat" aria-label="Ask">
+      <header class="head">
+        <p class="mechanic">Ask <span class="tag-beta">Beta</span></p>
+        <h1 class="head-title">Ask anything</h1>
+        <p class="head-sub">Food is what it knows best &mdash; what to eat, what goes with what,
+        what to do with half a cabbage &mdash; but it will have a go at whatever you ask.</p>
+        <p class="fine chat-beta">Beta &mdash; it runs on a service that is busy a lot of the
+        time, so it will occasionally not answer. Ask again and it usually does.</p>
+      </header>
+
+      <ul class="chat" id="chat-log" aria-live="polite"></ul>
+
+      <p class="chat-empty" id="chat-empty">Tap one, or say it your way:</p>
+      <div class="filters" id="chat-seeds" role="group" aria-label="Suggestions"></div>
+
+      <form class="chat-form" id="chat-form">
+        <label class="sr-only" for="chat-input">Ask about food</label>
+        <input class="chat-input" id="chat-input" autocomplete="off"
+               maxlength="500" placeholder="Ask me anything about food&hellip;">
+        <button class="go go-sm" id="chat-send" type="submit">
+          <span class="go-label">Ask</span>
+          <span class="go-arrow" aria-hidden="true">
+            <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+          </span>
+        </button>
+      </form>
+
+      <p class="fine chat-foot">Answers come from a model and can be wrong &mdash; worth checking
+      anything that matters. It cannot see your kitchen, your location, or what you have eaten
+      before, and it is not a doctor, a lawyer or an accountant.</p>
+    </section>
+
+    <section class="view" id="view-news" aria-label="Food news">
+      <header class="head">
+        <p class="mechanic">Worth reading</p>
+        <h1 class="head-title">Food news</h1>
+        <p class="head-sub">Recipes, restaurants and the odd argument about bread &mdash;
+        from <b>the Guardian</b>, <b>Eater</b>, <b>NYT Dining</b> and <b>King Arthur Baking</b>.</p>
+      </header>
+
+      <div class="out-loading" id="news-loading">
+        <div class="bone bone-row"></div>
+        <div class="bone bone-row"></div>
+        <div class="bone bone-row"></div>
+        <p class="fine">Fetching today&rsquo;s food writing&hellip;</p>
+      </div>
+
+      <div id="news-wrap" hidden>
+        <div class="filters" id="news-sources" role="group" aria-label="Filter by publisher"></div>
+        <ul class="stories" id="news-list"></ul>
+        <p class="fine news-foot">Headlines and summaries belong to the publishers.
+        Tapping through opens their page.</p>
+      </div>
+
+      <div class="notice" id="news-error" hidden>
+        <p id="news-error-text">The feeds would not load.</p>
+        <p class="fine">Nothing is wrong with your connection &mdash; this happens when a
+        publisher is having a bad morning.</p>
+        <div class="locate-actions">
+          <button class="quiet" id="news-retry">Try again</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-dishes" aria-label="Dishes">
+      <header class="head">
+        <p class="mechanic">The list</p>
+        <h1 class="head-title">Dishes</h1>
+      </header>
+
+      <div class="find">
+        <svg class="find-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+          <circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.4 15.4 21 21"/>
+        </svg>
+        <input type="search" id="dish-search" placeholder="Search" aria-label="Search dishes" autocomplete="off">
+      </div>
+
+      <div class="filters" id="dish-filters" role="group" aria-label="Filter dishes"></div>
+
+      <!-- Cook from what you have, rather than shopping for what you fancy.
+           It reads the bundled recipes rather than the tags, so the answer is
+           "here is a recipe you can start now" and not "here is a dish that
+           sounds like those words". -->
+      <section class="pantry" id="pantry">
+        <div class="pantry-head">
+          <h2 class="strip-title">What&rsquo;s in your kitchen? <span class="tag-premium">Premium</span></h2>
+          <button class="quiet" id="pantry-toggle" aria-expanded="false">Open the cupboard</button>
+        </div>
+        <div class="pantry-body" id="pantry-body" hidden>
+          <p class="fine">Name a few things you already have. I&rsquo;ll find the
+          recipes you could start right now, and tell you what is missing from
+          the near misses.</p>
+          <div class="find">
+            <svg class="find-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
+              <path d="M4 20h16M6 20V9l6-5 6 5v11"/><path d="M10 20v-6h4v6"/>
+            </svg>
+            <input type="text" id="pantry-input" placeholder="eggs, rice, onion…" aria-label="Ingredients you have" autocomplete="off">
+          </div>
+          <ul class="chips" id="pantry-chips"></ul>
+          <p class="fine" id="pantry-empty">Nothing in the cupboard yet.</p>
+          <ul class="pantry-hits" id="pantry-hits"></ul>
+        </div>
+      </section>
+
+      <p class="count" id="dish-count-label"></p>
+      <ul class="listing" id="dish-grid"></ul>
+      <p class="notice" id="dish-empty" hidden>Nothing matches. Try something else.</p>
+    </section>
+
+    <!-- ------------------------- PROFILE ------------------------- -->
+    <section class="view" id="view-profile" aria-label="Your profile">
+      <header class="head">
+        <p class="mechanic">You</p>
+        <h1 class="head-title" id="profile-name">Snacker</h1>
+        <p class="head-sub"><b id="profile-xp">0</b> XP &middot; <span id="profile-next">keep going</span></p>
+        <i class="thread thread-wide"><span id="profile-xp-fill"></span></i>
+      </header>
+
+      <div class="ledger">
+        <div class="ledger-row"><b id="tile-decisions">0</b><span>decisions</span></div>
+        <div class="ledger-row"><b id="tile-streak">0</b><span>day streak</span></div>
+        <div class="ledger-row"><b id="tile-dishes">0</b><span>dishes tried</span></div>
+      </div>
+      <p class="fine" id="freeze-note" hidden></p>
+
+      <!-- Premium here is exactly what the account page already knows: real
+           Whop sign-in, real product access, checked server-side. Nothing to
+           paste, nothing bound to this one browser — sign into the same Whop
+           account anywhere and it is on. -->
+      <section class="strip" id="plus-strip">
+        <h2 class="strip-title">morsels45 Premium</h2>
+        <div class="settings">
+          <div class="setting">
+            <span><b id="plus-state">Off</b><small id="plus-note">Three days free switches on every Premium feature.</small></span>
+            <a class="quiet" id="plus-toggle" href="/premium" target="_blank" rel="noopener noreferrer">Try it free</a>
+          </div>
+        </div>
+        <ul class="perks" id="perks"></ul>
+
+        <div class="buy" id="buy">
+          <a class="go" id="buy-btn" href="/premium" target="_blank" rel="noopener noreferrer">
+            <span class="go-label">Try Premium &mdash; <span id="buy-price">3 days free</span></span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </a>
+          <a class="plain" id="buy-refresh" href="https://whop.com/@me/settings/memberships/" target="_blank" rel="noopener noreferrer" hidden>Manage or cancel your subscription</a>
+          <p class="fine" id="buy-note">Free for three days, then $3.45/month &mdash; cancel
+          before it ends and you are not charged. Tax may be added depending on where you are,
+          so the total can come to a little over that; checkout shows it before you pay.</p>
+        </div>
+      </section>
+
+      <section class="strip" id="insight-wrap">
+        <h2 class="strip-title">What your history says <span class="tag-premium">Premium</span></h2>
+        <ul class="insights" id="insights"></ul>
+        <p class="fine" id="insight-empty">Not much yet. Make a few decisions and this fills in.</p>
+      </section>
+
+      <section class="strip">
+        <h2 class="strip-title">Saved <span class="tag-premium">Premium</span></h2>
+        <ul class="chips" id="fav-list"></ul>
+        <p class="fine" id="fav-empty">Nothing saved yet. Hit <em>Save it</em> on a result.</p>
+      </section>
+
+      <section class="strip">
+        <h2 class="strip-title">Always avoid <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Applied to every decision, so you stop being asked.</p>
+        <div class="rules" id="diet-rules"></div>
+      </section>
+
+      <section class="strip">
+        <h2 class="strip-title">Never again <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Struck off for good. These never come up anywhere.</p>
+        <ul class="chips" id="ban-list"></ul>
+        <p class="fine" id="ban-empty">Nothing struck off.</p>
+      </section>
+
+      <section class="strip">
+        <h2 class="strip-title">Anything else <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Ban any ingredient or style, not just the six above.</p>
+        <div class="filters" id="custom-rules"></div>
+      </section>
+
+      <!-- The likes-and-dislikes screen from the sign-up, kept rather than
+           thrown away after one use: what somebody is in the mood for changes,
+           and a set-up question you can only answer once is a set-up question
+           that is wrong within a month. -->
+      <section class="strip">
+        <h2 class="strip-title">Likes and dislikes <span class="tag-premium">Premium</span></h2>
+        <p class="fine">What you told me when you signed up, and anything you have
+        changed your mind about since.</p>
+        <div class="locate-actions">
+          <button class="quiet" id="tune-btn">Tune what I like</button>
+        </div>
+        <p class="fine" id="tune-summary"></p>
+      </section>
+
+      <!-- Six palettes. Nothing else changes, and the contrast rules hold in
+           every one of them — a theme that fails the legibility audit is not a
+           theme, it is a bug with a name. -->
+      <section class="strip">
+        <h2 class="strip-title">Look <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Six palettes. The one you pick sticks to this device.</p>
+        <div class="themes" id="themes"></div>
+      </section>
+
+      <section class="strip" id="meal-wrap">
+        <h2 class="strip-title">Meal slot <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Lock breakfast, lunch, dinner or late. Every mode respects it until you clear it.</p>
+        <div class="knobs" id="meal-knobs" role="group" aria-label="Meal slot"></div>
+      </section>
+
+      <section class="strip" id="heat-wrap">
+        <h2 class="strip-title">Heat dial <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Keep spice off, or ask for a kick. Applied to every decision.</p>
+        <div class="knobs" id="heat-knobs" role="group" aria-label="Heat dial"></div>
+      </section>
+
+      <section class="strip" id="adventure-wrap">
+        <h2 class="strip-title">Mix it up <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Stick to what you like, keep the usual mix, or reach for the long tail.</p>
+        <div class="knobs" id="adventure-knobs" role="group" aria-label="Mix it up"></div>
+      </section>
+
+      <section class="strip" id="norepeat-wrap">
+        <h2 class="strip-title">Don&rsquo;t repeat this week <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Accept a dish and it is off the table for seven days.</p>
+        <div class="settings">
+          <div class="setting">
+            <span><b id="norepeat-state">Off</b><small>Shelves whatever you just ate.</small></span>
+            <button class="quiet" id="norepeat-toggle">Off</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="strip" id="guest-wrap">
+        <h2 class="strip-title">Guest at the table <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Someone visiting. Extra avoids for this session only &mdash; Always avoid stays as it is.</p>
+        <div class="knobs" id="guest-knobs" role="group" aria-label="Guest at the table"></div>
+      </section>
+
+      <section class="strip">
+        <h2 class="strip-title">What you tend to pick</h2>
+        <div class="axes" id="axes"></div>
+      </section>
+
+      <section class="strip">
+        <h2 class="strip-title">Badges <span class="count" id="badge-progress"></span></h2>
+        <div class="badges" id="badges"></div>
+      </section>
+
+      <section class="strip">
+        <h2 class="strip-title">History</h2>
+        <ul class="log" id="history"></ul>
+        <p class="fine" id="history-empty">Nothing yet.</p>
+      </section>
+
+      <section class="strip">
+        <h2 class="strip-title">Settings</h2>
+        <div class="settings">
+          <div class="setting">
+            <span><b>Sound</b><small>Small blips as you play</small></span>
+            <button class="quiet" id="setting-sound">On</button>
+          </div>
+          <div class="setting">
+            <span><b>Reset everything</b><small>XP, badges, streak, saved dishes on this browser. Premium stays right where it is.</small></span>
+            <button class="quiet danger" id="profile-reset-btn">Reset</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+  </main>
+</div>
+
+<dialog class="sheet" id="dish-sheet" aria-label="Dish details">
+  <button class="sheet-x" id="sheet-close" aria-label="Close">&times;</button>
+  <span class="sheet-art" id="sheet-icon" aria-hidden="true">🍕</span>
+  <h2 class="sheet-name" id="sheet-name">Pizza</h2>
+  <p class="sheet-note" id="sheet-blurb"></p>
+  <p class="fine sheet-flag" id="sheet-flag" hidden></p>
+
+  <p class="strip-title">What it is</p>
+  <ul class="reasons" id="sheet-tags"></ul>
+
+  <p class="strip-title">How to make it <span class="tag-premium">Premium</span></p>
+  <div class="vault" id="sheet-vault">
+    <div class="vault-body" id="sheet-body">
+      <div class="recipes" id="sheet-recipes"></div>
+    </div>
+    <div class="vault-lock" id="sheet-lock" hidden>
+      <p class="vault-line">Recipes are part of Premium.</p>
+      <button class="go go-sm vault-btn" data-unlock="Recipes">
+        <span class="go-label">Unlock</span>
+        <span class="go-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+        </span>
+      </button>
+    </div>
+  </div>
+
+  <div class="sheet-actions">
+    <button class="quiet" id="sheet-share">Share this</button>
+    <button class="quiet" id="sheet-save">Save it</button>
+    <button class="quiet danger" id="sheet-ban">Never again</button>
+  </div>
+</dialog>
+
+<!-- Cook mode. A recipe read off a phone propped against a bag of flour is a
+     different object from a recipe read on a sofa: one step at a time, type big
+     enough to read from a step back, and a timer for the steps that name one,
+     because the alternative is everybody setting a separate kitchen timer and
+     losing track of which is which. -->
+<dialog class="cook" id="cook-mode" aria-label="Cook mode">
+  <div class="cook-bar">
+    <button class="ghost-btn" id="cook-exit" aria-label="Leave cook mode">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
+    <p class="cook-of"><span id="cook-now">1</span><span class="q-of">/<span id="cook-total">8</span></span></p>
+    <p class="cook-dish"><span id="cook-icon" aria-hidden="true">🍕</span> <span id="cook-name">Pizza</span></p>
+  </div>
+
+  <i class="thread thread-wide cook-thread"><span id="cook-fill"></span></i>
+
+  <div class="cook-stage">
+    <p class="mechanic" id="cook-kind">Step</p>
+    <p class="cook-step" id="cook-step">Put the kettle on.</p>
+    <ul class="cook-list" id="cook-why" hidden></ul>
+
+    <div class="cook-timer" id="cook-timer" hidden>
+      <p class="cook-clock" id="cook-clock">10:00</p>
+      <div class="locate-actions">
+        <button class="quiet" id="cook-timer-btn">Start the timer</button>
+        <button class="quiet" id="cook-timer-reset" hidden>Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cook-foot">
+    <button class="quiet" id="cook-along-btn">Cook along <span class="tag-premium">Premium</span></button>
+    <button class="quiet" id="cook-prev">Back</button>
+    <button class="go go-sm" id="cook-next">
+      <span class="go-label">Next step</span>
+      <span class="go-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+      </span>
+    </button>
+  </div>
+</dialog>
+
+<dialog class="sheet" id="list-sheet" aria-label="Shopping list">
+  <button class="sheet-x" id="list-close" aria-label="Close">&times;</button>
+  <p class="mechanic">Shopping list <span class="tag-premium">Premium</span></p>
+  <h2 class="sheet-name" id="list-name">Pizza</h2>
+  <p class="sheet-note" id="list-serves"></p>
+  <ul class="shopping" id="list-items"></ul>
+  <div class="sheet-actions">
+    <button class="quiet" id="list-copy">Copy the list</button>
+    <button class="quiet" id="list-shop-btn">Shop it together <span class="tag-premium">Premium</span></button>
+  </div>
+</dialog>
+
+<!-- What somebody likes changes, so this is not a one-time sign-up question —
+     it is the same editor, reachable from the profile whenever it is worth
+     updating. -->
+<!-- The whole game has been playable from the keyboard for a while and nothing
+     said so. This is the card that says so. -->
+<dialog class="sheet" id="keys" aria-label="Keyboard shortcuts">
+  <button class="sheet-x" id="keys-close" aria-label="Close">&times;</button>
+  <p class="mechanic">Keyboard</p>
+  <h2 class="sheet-name">You can play this without touching the screen</h2>
+  <dl class="keys-list">
+    <div><dt><kbd>1</kbd> <span class="keys-or">or</span> <kbd>&larr;</kbd></dt><dd>The first answer</dd></div>
+    <div><dt><kbd>2</kbd> <span class="keys-or">or</span> <kbd>&rarr;</kbd></dt><dd>The second answer</dd></div>
+    <div><dt><kbd>3</kbd></dt><dd>Neither, when the question offers it</dd></div>
+    <div><dt><kbd>4</kbd> <span class="keys-or">or</span> <kbd>&darr;</kbd></dt><dd>Either, honestly &mdash; skip it</dd></div>
+    <div><dt><kbd>Backspace</kbd></dt><dd>Undo the last answer</dd></div>
+    <div><dt><kbd>Esc</kbd></dt><dd>Close whatever is open</dd></div>
+    <div><dt><kbd>?</kbd></dt><dd>This card</dd></div>
+  </dl>
+  <p class="fine">In This or that and in Endless, <kbd>1</kbd> and <kbd>2</kbd> pick the left and right dish.
+  In Swipe, <kbd>&larr;</kbd> and <kbd>&rarr;</kbd> are no and yes, and <kbd>Backspace</kbd> brings the last one back.</p>
+</dialog>
+
+<dialog class="sheet" id="tuner" aria-label="Tune what I like">
+  <button class="sheet-x" id="tuner-close" aria-label="Close">&times;</button>
+  <p class="mechanic">Likes and dislikes</p>
+  <h2 class="sheet-name">What are you into?</h2>
+  <p class="sheet-note">Tap what you love. Tap twice on anything you never want to see.</p>
+
+  <div class="taste-key" aria-hidden="true">
+    <span class="taste-key-item is-loved">love it</span>
+    <span class="taste-key-item is-banned">never</span>
+  </div>
+
+  <p class="strip-title">Kinds of food</p>
+  <div class="filters" id="setup-tags"></div>
+
+  <p class="strip-title">Dishes worth knowing about</p>
+  <div class="setup-dishes" id="setup-dishes"></div>
+
+  <p class="fine" id="setup-count">Nothing picked yet — that is fine.</p>
+
+  <div class="sheet-actions">
+    <button class="quiet" id="tuner-cancel">Cancel</button>
+    <button class="go go-sm" id="tuner-save">
+      <span class="go-label">Save that</span>
+      <span class="go-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+      </span>
+    </button>
+  </div>
+</dialog>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="js/data.js"></script>
+<script src="js/recipes.js"></script>
+<script src="js/flavor.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/taste.js"></script>
+<!-- Everything in here ships in the page and is public by design, which is why
+     it is committed rather than treated as a secret. -->
+<script src="js/config.js"></script>
+<!-- Premium is the site's own Whop session, asked through /api/premium-status —
+     no licence key, no per-browser account. -->
+<script src="js/premium.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/confetti.js"></script>
+<script src="js/places.js"></script>
+<script src="js/mapview.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

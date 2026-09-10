@@ -1,0 +1,3781 @@
+/* ==========================================================================
+   morsels45
+
+   An editorial food app, not a dashboard. The rules this holds to:
+
+   · Hierarchy comes from type, space and hairlines — not from putting every
+     piece of information inside its own rounded box.
+   · One warm accent, used only where the eye should go next.
+   · Off-white behaves like paper: it appears as whole inverted blocks, never
+     as a tint or a glow.
+   · No gradients, no glassmorphism, no stacked shadows.
+   · Composition is deliberately off-centre.
+
+   Accessibility rules enforced by tools/audit.js: WCAG AA on every text pair,
+   nothing under 13px, 44px targets, visible focus, rem sizing so the browser's
+   own text setting scales the interface.
+   ========================================================================== */
+
+:root {
+  /* ink and ground */
+  --void:      #131316;   /* page */
+  --char:      #17171a;   /* rail */
+  --raise:     #1e1e22;   /* the rare recessed surface */
+  --hair:      #2c2c31;   /* dividers */
+  --hair-lit:  #3d3d44;
+
+  /* paper — used as whole inverted blocks */
+  --paper:     #f2ece1;
+  --paper-ink: #1a1a17;
+
+  /* type */
+  --ink:       #f3efe8;
+  --ink-2:     #c8c3ba;
+  --ink-3:     #9d988f;
+
+  /* one accent */
+  --amber:     #e0a340;
+  --amber-dim: #6b4d19;
+
+  --danger:    #e28e8e;
+
+  /* space */
+  --s1: .25rem; --s2: .5rem; --s3: .75rem; --s4: 1rem;
+  --s5: 1.5rem; --s6: 2rem;  --s7: 3rem;  --s8: 4.5rem;
+
+  /* type scale — large sizes used sparingly */
+  --t-xs: .8125rem; --t-sm: .875rem; --t-base: 1rem;
+  --t-md: 1.125rem; --t-lg: 1.375rem; --t-xl: 2rem; --t-2xl: 3rem;
+
+  --tap: clamp(44px, 2.75rem, 60px);
+  --rail-w: 13rem;
+  --topbar-h: 3.5rem;
+
+  --ease: cubic-bezier(.2, .7, .3, 1);
+  --fast: 130ms;
+  --mid:  240ms;
+
+  --display: "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system,
+             "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --text: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+}
+
+/* ==========================================================================
+   Palettes
+
+   Six of them, and they are a Premium feature rather than a preference, so
+   they have to be worth the money: each is a genuinely different room to sit
+   in, not the same room with the accent nudged.
+
+   Every one is only these tokens. Nothing below this block knows a theme
+   exists, which is what stops six palettes becoming six stylesheets to keep in
+   step — and every pair in every palette is held to the same WCAG AA that the
+   original is, because a theme that fails the legibility audit is not a theme,
+   it is a bug with a name on it.
+   ========================================================================== */
+
+[data-theme="ember"] {
+  --void: #17100e; --char: #1c1310; --raise: #241814; --hair: #362520; --hair-lit: #4a332c;
+  --paper: #f4e7dc; --paper-ink: #1d120c;
+  --ink: #f6ece4; --ink-2: #d3c0b4; --ink-3: #a4907f;
+  --amber: #ee8b5b; --amber-dim: #6d3a20;
+  --danger: #ef9a9a;
+}
+
+[data-theme="matcha"] {
+  --void: #101512; --char: #141a16; --raise: #1a221d; --hair: #26312a; --hair-lit: #35453a;
+  --paper: #e9f0e4; --paper-ink: #121a14;
+  --ink: #eef3ea; --ink-2: #bfcbb9; --ink-3: #90a08c;
+  --amber: #93c97a; --amber-dim: #3a5730;
+  --danger: #e79a94;
+}
+
+[data-theme="ink"] {
+  --void: #0f1218; --char: #12161e; --raise: #181d27; --hair: #232936; --hair-lit: #333c4d;
+  --paper: #e6eaf2; --paper-ink: #10141c;
+  --ink: #eef1f7; --ink-2: #bcc4d3; --ink-3: #8b95a8;
+  --amber: #78aef0; --amber-dim: #21375a;
+  --danger: #ef97a4;
+}
+
+/* The one light palette. Paper inverts to ink rather than the other way
+   round, which is why every "paper" surface in the app is a token rather
+   than a hard-coded off-white. */
+[data-theme="paper"] {
+  --void: #f6f2ea; --char: #efe9de; --raise: #e9e2d5; --hair: #d8d0c1; --hair-lit: #bcb2a0;
+  --paper: #22201c; --paper-ink: #f7f3ec;
+  --ink: #1e1c18; --ink-2: #4a463e; --ink-3: #635e52;
+  /* 4.5:1 is the floor and 4.4 is a fail, which is exactly the kind of miss
+     that gets waved through by eye. Darkened until the audit agreed. */
+  --amber: #7d5205; --amber-dim: #dcc79c;
+  --danger: #9c2f2f;
+}
+
+[data-theme="neon"] {
+  --void: #0d0b14; --char: #120f1c; --raise: #1a1526; --hair: #2a2140; --hair-lit: #3d3059;
+  --paper: #ece5ff; --paper-ink: #140f22;
+  --ink: #f2edff; --ink-2: #c6bce2; --ink-3: #9a8fb8;
+  --amber: #c99bff; --amber-dim: #4a2d70;
+  --danger: #ff92b0;
+}
+
+@media (prefers-contrast: more) {
+  [data-theme="paper"] { --ink-3: #4f4a3f; --hair: #b3a893; --hair-lit: #8d836f; }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  padding-top: var(--topbar-h);
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: var(--t-base);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { margin: 0; font-family: var(--display); line-height: 1.08; }
+
+/* ============================ topbar ============================
+   Sits above everything, including the landing screen — so who you are
+   signed in as, and the way to Premium, are never more than one glance
+   away, whether you are still deciding to play or three questions in. */
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: 0 var(--s5);
+  background: var(--char);
+  border-bottom: 1px solid var(--hair);
+}
+
+.topbar-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  color: var(--ink);
+  text-decoration: none;
+  min-height: var(--tap);
+  transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.topbar-brand:hover { opacity: .82; }
+.topbar-brand:active { transform: scale(.97); }
+.topbar-brand .mark-glyph { transition: transform var(--mid) var(--ease); }
+.topbar-brand:hover .mark-glyph { transform: rotate(-8deg); }
+
+/* 300:272 — the "45" ligature's own content box, not a square (see index.html). */
+.topbar-brand .mark-glyph { width: 1.24rem; height: 1.125rem; color: var(--amber); flex: none; }
+.topbar-brand .mark-word {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: var(--t-sm);
+  letter-spacing: -.01em;
+}
+
+.topbar-nav { display: flex; align-items: center; gap: var(--s3); }
+
+.topbar-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: var(--s1) var(--s3);
+  border-radius: .5rem;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease),
+    border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.topbar-link:hover { color: var(--ink); background: var(--raise); transform: translateY(-1px); }
+.topbar-link:active { transform: translateY(0) scale(.96); }
+
+.topbar-account {
+  border: 1px solid var(--hair-lit);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.topbar-account:hover { border-color: var(--amber); background: var(--raise); }
+.topbar-account:active { transform: scale(.96); }
+.topbar-account.is-premium { border-color: var(--amber); color: var(--amber); }
+p { margin: 0; }
+button { font-family: inherit; }
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px;
+  padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* --- small mechanic label: a product part number, not a marketing eyebrow --- */
+.mechanic {
+  display: inline-flex;
+  align-items: baseline;
+  /* The squiggle drops to its own line rather than forcing the label's row to
+     be 290px wide. Without this, a decorative flourish set the minimum width of
+     the whole landing screen at 175% text on a 320px phone, and the page
+     scrolled sideways. It only ever wraps at sizes where it was going to be a
+     problem anyway. */
+  flex-wrap: wrap;
+  gap: var(--s2);
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.squiggle { width: 3.75rem; height: .5rem; color: var(--amber); opacity: .85; }
+
+/* A boxed, bordered, uppercase label next to every gated control meant three
+   of them shouting over the result screen — the upsell drawn louder than the
+   thing being sold. Same words, same colour, no box: it marks the control
+   without outranking it. */
+
+/* Beta: the same shape as the Premium tag so it reads as a status rather than
+   decoration, but grey — this is a warning, not a sales badge. */
+.tag-beta {
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+.chat-beta { margin: var(--s3) 0 0; max-width: 42rem; }
+
+.tag-premium {
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--amber);
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+.tag-premium::before {
+  content: '';
+  display: inline-block;
+  width: .3rem;
+  height: .3rem;
+  margin-right: .35em;
+  vertical-align: .1em;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ==========================================================================
+   Shell — a quiet rail, content offset from it
+   ========================================================================== */
+/* A column, so the deciding screens can fill whatever is left under the bar
+   without anyone having to know how tall the bar is. On wide screens the rail
+   is fixed and out of flow, so this is simply the content filling the window;
+   on narrow ones the bar is sticky and in flow, and the column accounts for it
+   by itself. That measurement used to be a guess, and the guess was wrong
+   enough on mobile that the centring was switched off altogether — which left
+   three to five hundred pixels of nothing under every short screen. */
+.app { display: flex; flex-direction: column; min-height: 100dvh; }
+
+.rail {
+  position: fixed;
+  inset: var(--topbar-h) auto 0 0;
+  width: var(--rail-w);
+  padding: var(--s6) var(--s5);
+  background: var(--char);
+  border-right: 1px solid var(--hair);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s7);
+  /* Above the landing screen (40), below the shared browser (50) and the top
+     bar (60). The landing used to cover this, which meant the only way to
+     Dishes, Nearby or Profile was to start a game first and then leave it. */
+  z-index: 45;
+}
+
+.mark {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  text-decoration: none;
+  color: var(--ink);
+  min-height: var(--tap);
+}
+
+.mark-glyph { width: 1.25rem; height: 1.25rem; color: var(--amber); }
+.mark-glyph svg { width: 100%; height: 100%; display: block; }
+
+.mark-word {
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 600;
+  letter-spacing: -.02em;
+}
+
+.rail-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .125rem; }
+
+.rail-link {
+  position: relative;
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s2) 0 var(--s2) var(--s4);
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--display);
+  font-size: var(--t-base);
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  transition: color var(--fast) var(--ease);
+}
+
+.rail-link:hover { color: var(--ink); }
+
+/* current section: a mark in the margin plus weight — no pill, no fill */
+.rail-link.is-current { color: var(--ink); font-weight: 600; }
+.rail-link.is-current::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 50%;
+  width: .375rem; height: .375rem;
+  margin-top: -.1875rem;
+  background: var(--amber);
+}
+
+.rail-foot {
+  margin-top: auto;
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  letter-spacing: .02em;
+}
+
+.rail-foot b { color: var(--ink-2); font-weight: 600; }
+
+.content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  margin-left: var(--rail-w);
+  padding: var(--s8) var(--s7) var(--s8) var(--s8);
+  max-width: 68rem;
+}
+
+/* The deciding screens are single compositions rather than documents, so they
+   sit in the middle of the screen instead of hanging off the top. Taller
+   content simply grows past the space available and the centring stops
+   applying — `flex: 1` grows the panel to fill, and a flex item still refuses
+   to shrink below its own content. */
+#view-decide.is-current { display: flex; flex-direction: column; flex: 1; }
+
+#view-decide .panel.is-current {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+}
+
+.view { display: none; }
+.view.is-current { display: block; animation: lift var(--mid) var(--ease) both; }
+.panel { display: none; }
+.panel.is-current { display: block; animation: lift var(--mid) var(--ease) both; }
+
+@keyframes lift {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.opening-actions {
+  margin-top: var(--s6);
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  flex-wrap: wrap;
+}
+
+/* the quieter routes, on their own line under the two real buttons */
+.opening-more {
+  margin-top: var(--s4);
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+  flex-wrap: wrap;
+}
+
+/* the three game modes — each one its own card, so "This or that", Knockout
+   and Blitz read as three different games to try rather than three lines of
+   text to skim past. Premium is not a small dot on a label here: it is a
+   solid amber pill on every card, gone the moment the tier is actually on. */
+.mode-grid-label {
+  margin-top: var(--s6);
+  font-size: var(--t-xs);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.mode-grid {
+  margin-top: var(--s3);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+  gap: var(--s3);
+}
+
+@media (min-width: 46rem) {
+  .mode-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Two-up, five cards leaves the last one beside an empty cell, which reads as
+   a card that failed to load. It takes the row instead. Three-up the last row
+   is 3 + 2 and needs no help. */
+@media (max-width: 45.99rem) {
+  .mode-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
+.mode-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s2);
+  text-align: left;
+  padding: var(--s4);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  background: var(--char);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), transform var(--fast) var(--ease),
+    background var(--fast) var(--ease);
+}
+
+.mode-card:hover { border-color: var(--amber); transform: translateY(-2px); }
+.mode-card:active { transform: translateY(-2px) scale(.98); }
+
+.mode-card.is-locked { border-color: var(--amber-dim); }
+.mode-card.is-locked:hover { background: var(--raise); }
+
+.mode-lock {
+  position: absolute;
+  top: var(--s3);
+  right: var(--s3);
+  font-family: var(--display);
+  font-size: 0;                 /* the words are in the section heading */
+  line-height: 0;
+  color: transparent;
+}
+
+.mode-lock::after {
+  content: '\1F512';
+  font-size: .6875rem;
+  line-height: 1;
+  color: var(--amber);
+}
+
+/* Unlocked, there is nothing to say. */
+.mode-card:not(.is-locked) .mode-lock { display: none; }
+
+body.is-premium .mode-lock { display: none; }
+
+.mode-icon { font-size: 1.5rem; line-height: 1; }
+
+.mode-name {
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 600;
+}
+
+.mode-hook {
+  font-size: var(--t-xs);
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+
+
+/* ------------------------- knockout seed & blitz ready ------------------ */
+.bracket-seed {
+  list-style: none;
+  margin: var(--s5) 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr));
+  gap: var(--s3);
+}
+
+.bracket-seed li {
+  display: grid;
+  gap: var(--s1);
+  justify-items: center;
+  text-align: center;
+  padding: var(--s3) var(--s2);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  background: var(--char);
+  animation: pick-in var(--mid) var(--ease) both;
+}
+
+.bracket-seed .seed-icon { font-size: 1.75rem; line-height: 1; }
+.bracket-seed .seed-name { font-size: var(--t-xs); color: var(--ink-2); line-height: 1.3; }
+
+.blitz-ready-inner {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: var(--s3);
+  padding: var(--s8) 0;
+}
+
+.blitz-count-big {
+  font-family: var(--display);
+  font-size: 5rem;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+  animation: blitz-tick 480ms var(--ease) both;
+}
+
+@keyframes blitz-tick {
+  from { opacity: 0; transform: scale(.6); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes drift {
+  from { opacity: .35; transform: translateY(1px); }
+  to   { opacity: .7;  transform: translateY(-3px); }
+}
+
+/* --- the primary action: a paper block, squared off, with a sliding arrow --- */
+/* The primary action, and the widest thing on most screens. It is allowed to
+   wrap its own label and to be narrower than its natural width, because the
+   alternative is one button deciding how wide the page is: at 175% text on a
+   320px phone "Decide for me" plus its padding and arrow came to 322px against
+   a 264px column, and the whole intro scrolled sideways. */
+.go {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 0;
+  max-width: 100%;
+  gap: var(--s4);
+  min-height: var(--tap);
+  padding: .85rem 1.35rem;
+  border: 0;
+  border-radius: 2px;
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 600;
+  letter-spacing: -.01em;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.go:active { transform: scale(.97); }
+
+.go-sm { font-size: var(--t-base); padding: .7rem 1.1rem; }
+
+.go-alt {
+  background: none;
+  color: var(--ink);
+  border: 1px solid var(--amber);
+  gap: var(--s3);
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+.go-alt:hover { background: var(--amber-dim); color: var(--ink); }
+.go:hover { background: #fff; }
+.go-arrow { width: 1.5rem; height: .75rem; display: block; }
+.go-arrow svg { width: 100%; height: 100%; display: block; transition: transform var(--mid) var(--ease); }
+.go:hover .go-arrow svg { transform: translateX(.25rem); }
+.go:disabled { opacity: .45; cursor: default; }
+.go:disabled:hover .go-arrow svg { transform: none; }
+
+/* --- quieter actions: underline, not a button shape --- */
+.plain, .quiet {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--text);
+  font-size: var(--t-sm);
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px solid var(--hair-lit);
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  line-height: 1.2;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.plain { border-bottom: 0; text-decoration: underline; text-underline-offset: .3em; text-decoration-color: var(--hair-lit); }
+
+/* A button stretched by a grid or flex column centres its own label, so these
+   ended up floating in the middle of the screen looking like a heading. They
+   are asides; they belong at the start of the line. */
+.stage > .plain,
+#view-decide .panel.is-current > .plain { justify-self: start; align-self: flex-start; }
+.plain:hover, .quiet:hover { color: var(--ink); border-color: var(--amber); text-decoration-color: var(--amber); }
+.quiet.danger { color: var(--danger); }
+
+.ghost-btn {
+  width: var(--tap); height: var(--tap);
+  /* In a flex row this shrank to 38px wide and stopped being a target. */
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.ghost-btn svg { width: 1.1rem; height: auto; }
+.ghost-btn:hover:not(:disabled) { border-color: var(--hair-lit); color: var(--ink); }
+.ghost-btn:disabled { opacity: .3; cursor: default; }
+
+/* ==========================================================================
+   Ledger + strips — rows and rules, not cards
+   ========================================================================== */
+.ledger {
+  display: flex;
+  gap: var(--s7);
+  margin-top: var(--s8);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--hair);
+  flex-wrap: wrap;
+}
+
+.ledger-row b {
+  display: block;
+  font-family: var(--display);
+  font-size: var(--t-lg);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+}
+
+.ledger-row span { font-size: var(--t-xs); color: var(--ink-3); letter-spacing: .04em; }
+
+.strip { margin-top: var(--s7); }
+
+.strip-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  margin: 0 0 var(--s4);
+  padding-bottom: var(--s3);
+  border-bottom: 1px solid var(--hair);
+  font-family: var(--display);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: .04em;
+  color: var(--ink-2);
+}
+
+.chips { list-style: none; margin: 0 0 var(--s4); padding: 0; display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); }
+.chips:empty { display: none; margin: 0; }
+
+.chips li, .chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: default;
+}
+
+.chip-btn { cursor: pointer; min-height: var(--tap); border-bottom: 1px solid transparent; }
+.chip-btn:hover { color: var(--ink); border-color: var(--amber); }
+
+.fine { font-size: var(--t-xs); color: var(--ink-3); line-height: 1.5; }
+.fine em { color: var(--ink-2); font-style: normal; }
+.count { font-size: var(--t-xs); color: var(--ink-3); font-weight: 400; letter-spacing: .02em; }
+
+/* ==========================================================================
+   Question — two tactile choices, one dark, one paper
+   ========================================================================== */
+.q-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding-bottom: var(--s4);
+  border-bottom: 1px solid var(--hair);
+}
+
+.q-step {
+  font-family: var(--display);
+  font-size: var(--t-sm);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+  color: var(--ink);
+}
+
+/* the countdown in Blitz — plain until the last ten seconds, when it turns
+   the one colour in the app that means "hurry" */
+.blitz-clock { font-size: var(--t-md); font-weight: 600; }
+.blitz-clock.is-low { color: var(--danger); animation: blitz-pulse 1s var(--ease) infinite; }
+
+/* the streak — what keeps Blitz from being the same tap forever. Answer
+   fast, back to back, and the number climbs; hesitate and it resets, so
+   staying fast is worth more than any one pick. */
+.blitz-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s3); flex-wrap: wrap; }
+
+.blitz-streak {
+  margin: 0;
+  font-family: var(--display);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  color: var(--amber);
+  animation: blitz-tick 260ms var(--ease) both;
+}
+
+.blitz-streak.is-hot { animation: blitz-pulse .6s var(--ease) infinite; }
+
+/* The twist on this round, named. Deliberately not amber: the streak is the
+   thing you are chasing, this is the thing that just happened to you. */
+.blitz-special {
+  margin: 0;
+  padding: .15rem .5rem;
+  border: 1px solid var(--hair-lit);
+  border-radius: 4px;
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--ink);
+  background: var(--raise);
+  animation: blitz-tick 260ms var(--ease) both;
+}
+
+/* Blind: the name goes, the picture and the description stay, so it is still
+   a decision about food. The dash keeps the card the same height. */
+.blitz-picks-grid.is-blind .pick-label {
+  color: var(--ink-3);
+  letter-spacing: .3em;
+}
+
+@keyframes blitz-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .55; }
+}
+
+/* the whole tournament, watched fill in — three columns, Round of 8 down to
+   the Final, so Knockout reads as a bracket being played out rather than
+   another round of "here are two, pick one". */
+.ladder {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s3);
+  margin-bottom: var(--s5);
+  padding-bottom: var(--s5);
+  border-bottom: 1px solid var(--hair);
+}
+
+.ladder-col { display: grid; gap: var(--s2); align-content: start; }
+.ladder-col-label {
+  font-size: var(--t-xs);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 var(--s1);
+}
+
+.ladder-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.25rem;
+  border: 1px solid var(--hair);
+  border-radius: 3px;
+  font-size: 1.1rem;
+  color: var(--ink-3);
+  background: var(--char);
+}
+
+.ladder-slot.is-current { border-color: var(--amber); color: var(--ink); }
+.ladder-slot.is-decided {
+  border-color: var(--hair-lit);
+  color: var(--ink);
+  background: var(--raise);
+  animation: pick-in var(--mid) var(--ease) both;
+}
+
+/* the pairing, made to look like a matchup rather than a menu — a VS badge
+   sitting on the seam between the two cards */
+.knockout-clash { position: relative; }
+
+.vs-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  background: var(--amber);
+  color: var(--void);
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+
+@media (min-width: 40rem) {
+  .vs-badge { display: flex; }
+}
+
+.q-of { color: var(--ink-3); }
+
+.reaction {
+  margin: var(--s5) 0 var(--s2);
+  min-height: 1.5rem;
+  font-family: var(--display);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  letter-spacing: .01em;
+  color: var(--amber);
+}
+
+.q-title {
+  max-width: 20ch;
+  margin-bottom: var(--s6);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  font-weight: 500;
+  letter-spacing: -.03em;
+}
+
+/* The line under the handover heading in Together. */
+/* The ? beside the question counter, and the card it opens. */
+.keys-hint {
+  margin-left: var(--s2);
+  padding: 0 .4rem;
+  min-width: 1.25rem;
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: var(--t-xs);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.keys-hint:hover { color: var(--ink); border-color: var(--amber); }
+
+.keys-list { display: grid; gap: var(--s3); margin: var(--s5) 0; }
+.keys-list > div { display: flex; align-items: baseline; gap: var(--s4); }
+.keys-list dt { flex: 0 0 auto; min-width: 8.5rem; }
+.keys-list dd { margin: 0; color: var(--ink-2); font-size: var(--t-sm); }
+.keys-or { color: var(--ink-3); font-size: var(--t-xs); }
+
+kbd {
+  display: inline-block;
+  padding: .1rem .4rem;
+  border: 1px solid var(--hair);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--char);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+}
+
+@media (max-width: 30rem) {
+  .keys-list > div { flex-direction: column; gap: var(--s1); }
+  .keys-list dt { min-width: 0; }
+}
+
+.hand-sub {
+  max-width: 34ch;
+  margin-top: calc(var(--s6) * -1 + var(--s3));
+  color: var(--ink-2);
+  font-size: var(--t-md);
+}
+
+.reaction.is-new, .q-title.is-new { animation: lift var(--mid) var(--ease) both; }
+.pick.is-new { animation: lift var(--mid) var(--ease) both; }
+
+/* Knockout's cards land harder than a plain lift — this is a matchup, not
+   the next item in a list. */
+.knockout-clash .pick.is-new { animation: clash-in 360ms var(--ease) both; }
+
+@keyframes clash-in {
+  from { opacity: 0; transform: scale(.9); }
+  to   { opacity: 1; transform: none; }
+}
+
+.picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  gap: 1px;
+  background: var(--hair);   /* shows through the gap as a single hairline */
+  border: 1px solid var(--hair);
+}
+
+.pick {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s4);
+  min-width: 0;
+  min-height: 10rem;
+  padding: var(--s5);
+  border: 0;
+  background: var(--raise);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), padding-left var(--mid) var(--ease);
+}
+
+.pick:hover { background: var(--paper); color: var(--paper-ink); padding-left: var(--s6); }
+.pick:active { background: #fff; }
+
+/* The 01 / 02 never gives up its space, so it never squeezes the answer. */
+.pick-no {
+  flex: 0 0 auto;
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 500;
+  letter-spacing: .1em;
+  color: var(--ink-3);
+  padding-top: .35rem;
+  transition: color var(--fast) var(--ease);
+}
+
+.pick:hover .pick-no { color: var(--amber-dim); }
+
+/* `min-width: 0`, because a grid item's automatic minimum is its content, and
+   the content here is a word set at --t-lg. At 175% text on a 320px phone the
+   answer panel could not hold "Savoury" — the word set the width of the panel,
+   the panel set the width of the row, and the row pushed the page sideways.
+   Every answer in the catalogue overflowed; the ones that happened to be short
+   enough were the only reason it had not been noticed. */
+.pick-body { display: grid; gap: var(--s3); min-width: 0; }
+.pick-icon { font-size: 1.75rem; line-height: 1; }
+
+.pick-label {
+  font-family: var(--display);
+  font-size: var(--t-lg);
+  font-weight: 500;
+  letter-spacing: -.02em;
+  line-height: 1.15;
+  min-width: 0;
+  /* A single word longer than the panel breaks rather than escaping it. Last
+     resort — the wrapping above handles everything with a space in it. */
+  overflow-wrap: break-word;
+}
+
+.q-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s5);
+  margin-top: var(--s5);
+  flex-wrap: wrap;
+}
+
+/* The two ways out of a question: a real third answer where the question has
+   one, and the shrug that is always there. */
+.q-outs {
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+  flex-wrap: wrap;
+}
+
+.q-neither { display: inline-flex; align-items: center; gap: var(--s2); }
+.q-neither-icon { font-size: 1.05em; line-height: 1; }
+
+.closing {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}
+
+/* a hairline that fills — no percentage chip, no bar in a box */
+.thread {
+  display: block;
+  width: 7rem;
+  height: 2px;
+  background: var(--hair);
+}
+
+.thread span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--amber);
+  transition: width .45s var(--ease);
+}
+
+.thread-wide { width: 100%; max-width: 22rem; margin-top: var(--s4); }
+
+/* ==========================================================================
+   Verdict
+   ========================================================================== */
+.verdict { max-width: 34rem; }
+
+.verdict-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  margin: var(--s4) 0 var(--s3);
+}
+
+.verdict-art { font-size: 2.75rem; line-height: 1; }
+.verdict-art.is-landed { animation: land .4s var(--ease) both; }
+
+@keyframes land {
+  from { opacity: 0; transform: translateY(6px) scale(.9); }
+  to   { opacity: 1; transform: none; }
+}
+
+.verdict-name {
+  font-size: clamp(2rem, 4.6vw, 2.75rem);
+  font-weight: 500;
+  letter-spacing: -.035em;
+}
+
+.verdict-note { color: var(--ink-2); font-size: var(--t-md); max-width: 32ch; }
+
+.reasons {
+  list-style: none;
+  margin: var(--s5) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+}
+
+.reasons li {
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  animation: lift var(--mid) var(--ease) both;
+}
+
+/* The primary on its own line, the rest as a full-width grid under it. As a
+   wrapping flex row the side group was a shrink-to-fit item, so its grid never
+   had a width to divide and collapsed to one column at every screen size. */
+.verdict-actions {
+  display: grid;
+  gap: var(--s5);
+  margin-top: var(--s6);
+  padding-top: var(--s5);
+  border-top: 1px solid var(--hair);
+}
+
+.verdict-actions > .go { justify-self: start; }
+
+/* Five actions as a wrapping flex row gave five underlines of five different
+   widths at five different offsets, which reads as debris rather than a set of
+   choices. A grid puts them in columns, so the underlines line up and the group
+   looks like something somebody arranged. */
+/* Five controls, each of which may or may not be carrying a Premium marker,
+   and the markers are what break the grid: "Never again · Premium" is half
+   again as wide as "Not quite". A wider track and a label that is allowed to
+   wrap inside its own column beats a column that wraps mid-phrase. */
+.verdict-side {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(12.5rem, 100%), 1fr));
+  gap: var(--s2) var(--s4);
+  align-items: stretch;
+}
+
+.verdict-side .quiet {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  row-gap: 0;
+  text-align: left;
+}
+
+.alternates { margin-top: var(--s7); }
+.alt-row { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5); }
+
+.alt {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--text);
+  font-size: var(--t-base);
+  cursor: pointer;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.alt:hover { color: var(--ink); border-color: var(--amber); }
+.alt-art { font-size: 1.15rem; }
+.alt-name { white-space: nowrap; }
+
+/* ==========================================================================
+   Reward
+   ========================================================================== */
+.xp-line {
+  margin-top: var(--s6);
+  font-family: var(--display);
+  font-size: var(--t-xl);
+  font-weight: 500;
+  letter-spacing: -.03em;
+  color: var(--amber);
+}
+
+.xp-line span:last-child { font-size: var(--t-sm); color: var(--ink-3); letter-spacing: .06em; }
+
+.awards { list-style: none; margin: var(--s4) 0 0; padding: 0; max-width: 26rem; }
+
+.awards li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--hair);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  animation: lift var(--mid) var(--ease) both;
+}
+
+.awards li:last-child { border-bottom: 0; }
+.awards li b { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 500; }
+
+.levelup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-top: var(--s5);
+  padding: var(--s3) var(--s4);
+  border-left: 2px solid var(--amber);
+  background: var(--raise);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.levelup strong { color: var(--ink); font-weight: 600; }
+.levelup-art { font-size: 1.35rem; }
+
+/* ==========================================================================
+   Plan
+   ========================================================================== */
+.plan-dish {
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 500;
+  letter-spacing: -.01em;
+}
+
+.tabs { display: flex; gap: var(--s5); margin: var(--s5) 0 var(--s6); }
+
+.tab {
+  min-height: var(--tap);
+  padding: 0 0 var(--s2);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--ink-3);
+  font-family: var(--display);
+  font-size: var(--t-base);
+  cursor: pointer;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.tab:hover { color: var(--ink-2); }
+.tab.is-on { color: var(--ink); border-color: var(--amber); font-weight: 600; }
+
+.pane { display: none; }
+.pane.is-current { display: block; animation: lift var(--mid) var(--ease) both; }
+.pane-line { color: var(--ink-2); font-size: var(--t-sm); margin-bottom: var(--s5); }
+
+.locate-actions { display: flex; align-items: center; gap: var(--s5); flex-wrap: wrap; margin-bottom: var(--s3); }
+
+.notice {
+  padding: var(--s4) 0;
+  border-top: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  display: grid;
+  gap: var(--s3);
+  justify-items: start;
+}
+
+/* --- recipes: an index, opened in place --- */
+.recipes { border-top: 1px solid var(--hair); }
+.recipe { border-bottom: 1px solid var(--hair); animation: lift var(--mid) var(--ease) both; }
+
+.recipe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s4) 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.recipe-head:hover .recipe-name { color: var(--amber); }
+.recipe-title { display: grid; gap: .15rem; min-width: 0; }
+
+.recipe-chevron {
+  flex: none;
+  width: 1rem; height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--ink-3);
+  transition: transform var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.recipe.is-open .recipe-chevron { transform: rotate(180deg); color: var(--amber); }
+
+.recipe-name {
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 500;
+  letter-spacing: -.015em;
+  transition: color var(--fast) var(--ease);
+}
+
+.recipe-meta { font-size: var(--t-xs); color: var(--ink-3); white-space: nowrap; letter-spacing: .02em; }
+
+.recipe-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--mid) var(--ease); }
+.recipe.is-open .recipe-body { grid-template-rows: 1fr; }
+.recipe-body > div { overflow: hidden; }
+
+.recipe-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+  gap: var(--s6);
+  padding: 0 0 var(--s5);
+}
+
+.recipe-sub {
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: var(--s3);
+}
+
+.recipe-inner ul, .recipe-inner ol { margin: 0; padding-left: 1.1em; display: grid; gap: var(--s2); }
+.recipe-inner li { font-size: var(--t-sm); color: var(--ink-2); line-height: 1.55; }
+.recipe-inner ul li::marker { color: var(--amber); }
+.recipe-inner ol li::marker { color: var(--ink-3); font-family: var(--display); }
+
+/* --- places --- */
+.map-frame {
+  position: relative;
+  height: 17rem;
+  border: 1px solid var(--hair);
+  background: var(--char);
+  overflow: hidden;
+  margin-bottom: var(--s5);
+}
+
+.mapview-wrap { touch-action: none; }
+.mapview { width: 100%; height: 100%; display: block; cursor: grab; }
+.mapview.is-dragging { cursor: grabbing; }
+
+.map-ring { fill: none; stroke: var(--hair-lit); stroke-width: 1; }
+.map-ring-label { fill: var(--ink-3); font-size: 11px; font-family: inherit; }
+.map-me { fill: var(--amber); }
+.map-me-halo { fill: var(--amber); opacity: .18; }
+.map-me-ring { fill: none; stroke: var(--char); stroke-width: 2; }
+.map-hit { fill: transparent; }
+
+.map-dot {
+  fill: var(--char);
+  stroke: var(--ink-2);
+  stroke-width: 2;
+  transition: fill var(--fast) var(--ease), stroke var(--fast) var(--ease);
+}
+
+.map-pin { cursor: pointer; }
+.map-pin:hover .map-dot { stroke: var(--amber); }
+.map-pin.is-selected .map-dot { fill: var(--amber); stroke: var(--amber); }
+.map-pin:focus { outline: none; }
+.map-pin:focus-visible .map-dot { stroke: var(--amber); }
+
+.map-pin-rank { fill: var(--ink-2); font-size: 12px; font-weight: 600; font-family: inherit; text-anchor: middle; pointer-events: none; }
+.map-pin.is-selected .map-pin-rank { fill: var(--paper-ink); }
+
+.map-pin-label {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--char);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
+}
+
+.map-north-arrow { fill: var(--ink-3); }
+.map-north-label { fill: var(--ink-3); font-size: 11px; font-weight: 600; font-family: inherit; text-anchor: middle; }
+.map-scale { stroke: var(--ink-3); stroke-width: 1.5; fill: none; }
+.map-scale-label { fill: var(--ink-3); font-size: 11px; font-family: inherit; }
+
+.map-controls { position: absolute; right: var(--s3); bottom: var(--s3); display: grid; gap: 1px; }
+
+.map-btn {
+  width: var(--tap); height: var(--tap);
+  border: 1px solid var(--hair);
+  background: var(--void);
+  color: var(--ink-2);
+  font-size: var(--t-base);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.map-btn:hover { color: var(--ink); border-color: var(--hair-lit); }
+
+.places { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
+
+/* The row selects on the map; the link leaves for Maps. Two controls, one rule
+   between them, so tapping a place never navigates away by accident. */
+.place-line {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  border-bottom: 1px solid var(--hair);
+}
+
+.place {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: var(--s3) 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  animation: lift var(--mid) var(--ease) both;
+  transition: padding-left var(--fast) var(--ease);
+}
+
+.place:hover { padding-left: var(--s3); }
+.place.is-selected { padding-left: var(--s3); box-shadow: inset 2px 0 0 var(--amber); }
+
+.place-rank {
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  min-width: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.place.is-selected .place-rank { color: var(--amber); }
+.place-main { flex: 1; min-width: 0; display: grid; gap: .1rem; }
+.place-name { font-family: var(--display); font-size: var(--t-base); font-weight: 500; }
+.place-meta { font-size: var(--t-xs); color: var(--ink-3); }
+.place-far { text-align: right; display: grid; gap: .1rem; }
+.place-dist { font-size: var(--t-sm); font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.place-dir { font-size: var(--t-xs); color: var(--ink-3); }
+.place-go { color: var(--ink-3); flex: none; }
+.place-go:hover { color: var(--amber); }
+
+/* the place you picked, and the one thing you want to do with it */
+.chosen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  margin: var(--s4) 0 var(--s5);
+  padding: var(--s4);
+  border: 1px solid var(--amber-dim);
+  background: var(--raise);
+  animation: lift var(--mid) var(--ease) both;
+}
+
+.chosen-who { min-width: 0; display: grid; gap: .15rem; }
+
+/* Two things to do with the selected place: go there, or look at it with
+   somebody. They wrap together rather than one dropping to its own line. */
+.chosen-acts { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s3) var(--s4); }
+
+.chosen-name {
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 500;
+  letter-spacing: -.015em;
+  color: var(--ink);
+}
+
+/* loading bones — flat, no shimmer gradient */
+.bone { background: var(--raise); border: 1px solid var(--hair); }
+.bone-map { height: 12rem; margin-bottom: var(--s3); }
+.bone-row { height: 3rem; margin-bottom: var(--s2); }
+
+/* ==========================================================================
+   Dishes
+   ========================================================================== */
+.head { margin-bottom: var(--s6); }
+.head-title { margin-top: var(--s3); font-size: var(--t-xl); font-weight: 500; letter-spacing: -.03em; }
+.head-sub { margin-top: var(--s2); font-size: var(--t-sm); color: var(--ink-3); }
+.head-sub b { color: var(--ink-2); font-weight: 500; }
+
+.find { position: relative; max-width: 24rem; margin-bottom: var(--s5); }
+
+.find-icon {
+  position: absolute;
+  left: 0; top: 50%;
+  width: 1.05rem; height: 1.05rem;
+  margin-top: -.525rem;
+  color: var(--ink-3);
+  pointer-events: none;
+}
+
+/* Written against the wrapper rather than one id: there are two of these now
+   — the dish search and the cupboard — and an id selector is how the second
+   one ends up looking like an unstyled text box. */
+.find input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s2) 0 var(--s2) 1.9rem;
+  border: 0;
+  border-bottom: 1px solid var(--hair-lit);
+  background: none;
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: var(--t-md);
+}
+
+.find input::placeholder { color: var(--ink-3); }
+.find input:focus { outline: none; border-color: var(--amber); }
+#dish-search:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
+
+.filters { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); margin-bottom: var(--s5); }
+
+.filter {
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: none;
+  color: var(--ink-3);
+  font-family: var(--text);
+  font-size: var(--t-sm);
+  cursor: pointer;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.filter:hover { color: var(--ink-2); }
+.filter.is-on { color: var(--ink); border-color: var(--amber); font-weight: 600; }
+
+.listing { list-style: none; margin: var(--s4) 0 0; padding: 0; border-top: 1px solid var(--hair); }
+
+.dish {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s4);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s3) 0;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: padding-left var(--fast) var(--ease);
+}
+
+.dish:hover { padding-left: var(--s3); }
+.dish:hover .dish-name { color: var(--amber); }
+.dish-art { font-size: 1.15rem; line-height: 1; }
+.dish-name { font-family: var(--display); font-size: var(--t-md); font-weight: 500; letter-spacing: -.015em; flex: 0 0 14rem; transition: color var(--fast) var(--ease); }
+.dish-note { flex: 1; min-width: 0; font-size: var(--t-sm); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ==========================================================================
+   Premium — moods, ratings, the week plan, insights
+   ========================================================================== */
+
+/* moods: a row of one-tap shortcuts that answer two questions for you */
+/* Capped rather than full width: six of these spanning a wide screen squeezed
+   every label onto two lines, and a row of shortcuts is not a hero element. */
+/* `minmax(12rem, 1fr)` is a 336px track at 175% text, which is wider than a
+   320px phone — a grid track cannot shrink below its own minimum, so the whole
+   intro scrolled sideways. `min()` clamps the minimum to the space that is
+   actually there. */
+.moods {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  max-width: 46rem;
+  background: var(--hair);
+  border: 1px solid var(--hair);
+}
+
+@media (min-width: 46rem) {
+  .moods { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.mood {
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border: 0;
+  background: var(--raise);
+  color: var(--ink-2);
+  font-family: var(--text);
+  font-size: var(--t-sm);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.mood:hover { background: var(--paper); color: var(--paper-ink); }
+.mood-art { font-size: 1.15rem; line-height: 1; }
+
+/* "tuned to you" — a claim the app has to back up, so it always names a reason */
+/* Shown only when the answers could not all be met. Amber like the rest of the
+   accent, marked with a word rather than only a colour, and deliberately quiet:
+   it is an admission, not an alarm. */
+.gave {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s2) var(--s3);
+  margin-top: var(--s4);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--hair);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+
+.gave-mark {
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--amber);
+  white-space: nowrap;
+}
+
+.tuned {
+  margin-top: var(--s4);
+  padding-left: var(--s3);
+  border-left: 2px solid var(--amber);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.tuned-mark {
+  display: block;
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.pair {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s2) var(--s3);
+  margin-top: var(--s4);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--hair);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+  line-height: 1.6;
+}
+
+.pair-mark {
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.spin-face {
+  margin: 0;
+  font-size: 3.25rem;
+  line-height: 1;
+}
+
+.spin-list {
+  list-style: none;
+  margin: var(--s4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  justify-content: center;
+}
+
+.spin-list li {
+  font-family: var(--display);
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  transition: color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+/* Struck out: still on the list, visibly out of the running. Kept in place
+   rather than removed so the eight stay countable while you whittle them. */
+.spin-list li.is-out { opacity: .4; text-decoration: line-through; }
+.spin-list li { cursor: pointer; }
+.spin-list li:hover { color: var(--ink); }
+
+.spin-list li.is-on {
+  color: var(--ink);
+  transform: scale(1.06);
+}
+
+/* ------------------------------------------------------------------- swipe */
+/* A deck of one dish at a time. The stack is an illusion three cards deep —
+   past that nothing is visible, so nothing is built. */
+.swipe-deck {
+  position: relative;
+  width: min(21rem, 100%);
+  height: 23rem;
+  margin: var(--s4) auto 0;
+  touch-action: none;            /* the card owns horizontal drag, not the page */
+}
+
+.swipe-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  padding: var(--s5) var(--s4);
+  text-align: center;
+  background: var(--raise);
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  box-shadow: 0 1rem 2.5rem rgba(0, 0, 0, .45);
+  cursor: grab;
+  user-select: none;
+  /* Each card behind sits lower and narrower, so the stack reads as a stack —
+     the point of the deck is that there is visibly more where this came from. */
+  transform: translateY(calc(var(--depth) * 1.15rem)) scale(calc(1 - var(--depth) * .055));
+  transition: transform var(--mid) var(--ease), opacity var(--mid) var(--ease);
+}
+
+.swipe-card.is-dragging { cursor: grabbing; transition: none; }
+.swipe-card.is-gone { transition: transform .28s var(--ease), opacity .28s var(--ease); opacity: 0; }
+
+.swipe-face { font-size: 4.5rem; line-height: 1; }
+
+.swipe-name {
+  font-family: var(--display);
+  font-size: var(--t-xl);
+  font-weight: 700;
+  margin: 0;
+}
+
+.swipe-tags {
+  margin: 0;
+  font-size: var(--t-xs);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.swipe-blurb { margin: 0; color: var(--ink-2); max-width: 22ch; }
+
+/* The stamps the drag reveals. Opacity is driven from the pointer, so they
+   arrive as the card leans rather than snapping on at the threshold. */
+.swipe-stamp {
+  position: absolute;
+  top: var(--s4);
+  font-family: var(--display);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: var(--s1) var(--s3);
+  border: 3px solid currentColor;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.swipe-stamp-yes { left: var(--s4); color: var(--amber); transform: rotate(-12deg); opacity: var(--yes, 0); }
+.swipe-stamp-no  { right: var(--s4); color: var(--danger); transform: rotate(12deg);  opacity: var(--no, 0); }
+
+.swipe-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--s4);
+  margin-top: var(--s5);
+}
+
+.swipe-key {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--hair-lit);
+  background: var(--raise);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: transform var(--fast) var(--ease), border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.swipe-key svg { width: 1.5rem; height: 1.5rem; }
+.swipe-key:hover { transform: scale(1.08); }
+.swipe-key:active { transform: scale(.94); }
+.swipe-key:disabled { opacity: .35; cursor: default; transform: none; }
+.swipe-key-no:hover  { color: var(--danger); border-color: var(--danger); }
+.swipe-key-yes { width: 4rem; height: 4rem; }
+.swipe-key-yes svg { width: 1.75rem; height: 1.75rem; }
+.swipe-key-yes:hover { color: var(--amber); border-color: var(--amber); }
+.swipe-key-undo { width: 2.75rem; height: 2.75rem; }
+.swipe-key-undo svg { width: 1.15rem; height: 1.15rem; }
+
+.clip-title { display: block; color: var(--ink); font-family: var(--display); }
+
+.swipe-status { margin-top: var(--s3); color: var(--ink-3); }
+.swipe-empty { text-align: center; }
+.swipe-empty-face { font-size: 3.5rem; line-height: 1; margin: 0 0 var(--s3); }
+
+/* The shortlist: the three cards this sitting said yes to, laid out flat so
+   they can be compared rather than remembered. */
+.swipe-picks { display: grid; gap: var(--s4); text-align: center; }
+
+.swipe-picked {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s3);
+}
+
+@media (min-width: 46rem) {
+  .swipe-picked { grid-auto-flow: column; grid-auto-columns: 1fr; }
+}
+
+.swipe-pick {
+  width: 100%;
+  height: 100%;
+  min-height: var(--tap);
+  display: grid;
+  gap: var(--s2);
+  justify-items: center;
+  align-content: start;
+  padding: var(--s5) var(--s4);
+  background: var(--raise);
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  color: inherit;
+  font-family: var(--text);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.swipe-pick:hover,
+.swipe-pick:focus-visible { border-color: var(--amber); transform: translateY(-2px); }
+
+.swipe-pick-face { font-size: 2.75rem; line-height: 1; }
+
+.swipe-pick-name {
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.swipe-pick-blurb { font-size: var(--t-xs); color: var(--ink-3); }
+
+.knob-block {
+  display: grid;
+  gap: var(--s3);
+}
+
+.knobs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.knob {
+  min-height: var(--tap);
+  padding: 0 var(--s4);
+  border: 1px solid var(--hair);
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--text);
+  font-size: var(--t-sm);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease),
+    background var(--fast) var(--ease);
+}
+
+.knob:hover { border-color: var(--amber); color: var(--ink); }
+
+.knob.is-on {
+  border-color: var(--amber);
+  background: var(--paper);
+  color: var(--paper-ink);
+}
+
+.knob.is-locked { opacity: .7; }
+
+/* how was it — three verdicts, one of them chosen */
+.rates { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s4); }
+
+.rate {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: var(--tap);
+  min-width: var(--tap);
+  padding: 0 var(--s3);
+  border: 1px solid var(--hair);
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--text);
+  font-size: var(--t-sm);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.rate:hover { border-color: var(--hair-lit); color: var(--ink); }
+.rate.is-on { border-color: var(--amber); color: var(--ink); }
+.rate-art { font-size: 1.05rem; line-height: 1; }
+
+/* the week plan */
+.week { list-style: none; margin: var(--s5) 0 var(--s6); padding: 0; border-top: 1px solid var(--hair); counter-reset: day; }
+
+.week li {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--hair);
+  animation: lift var(--mid) var(--ease) both;
+}
+
+.week-day {
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  min-width: 3.5rem;
+}
+
+.week-art { font-size: 1.15rem; line-height: 1; }
+/* a .plain button centres its label; in a list of days it has to line up */
+.week-name {
+  flex: 1;
+  min-width: 0;
+  justify-content: flex-start;
+  text-align: left;
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 500;
+}
+
+/* what the history says */
+.insights { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
+
+.insights li {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--hair);
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+}
+
+.insight-label { min-width: 11rem; color: var(--ink-3); }
+.insight-value { flex: 1; min-width: 0; font-family: var(--display); font-size: var(--t-md); font-weight: 500; color: var(--ink); }
+.insight-note { color: var(--ink-3); font-size: var(--t-xs); }
+
+/* what the tier buys, listed plainly */
+.perks { list-style: none; margin: var(--s4) 0; padding: 0; display: grid; gap: var(--s2); }
+
+.perks li {
+  display: flex;
+  gap: var(--s3);
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+}
+
+.perks li::before { content: "\2014"; color: var(--amber); }
+.perks li.is-on { color: var(--ink-2); }
+
+/* A group head inside the same list: no dash, and a tag saying which side of
+   the paywall the four lines under it are on. */
+.perks li.perk-head {
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s3);
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.perks li.perk-head:first-child { margin-top: 0; }
+.perks li.perk-head::before { content: none; }
+
+.perk-tag {
+  border: 1px solid var(--amber);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-family: var(--text);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+/* recipe tools: servings, and the list to take to the shop */
+.recipe-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s3) var(--s5);
+  padding: 0 0 var(--s4);
+}
+
+.stepper { display: inline-flex; align-items: center; gap: var(--s3); }
+.stepper-label { font-size: var(--t-xs); color: var(--ink-3); letter-spacing: .04em; }
+
+.step-btn {
+  width: var(--tap); height: var(--tap);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hair);
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--display);
+  font-size: var(--t-md);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.step-btn:hover:not(:disabled) { border-color: var(--amber); color: var(--ink); }
+/* Dimmed by colour rather than opacity: at .35 the glyph fell to 2.3:1 and
+   stopped being readable at all, which is not what "unavailable" should mean. */
+.step-btn:disabled { color: var(--ink-3); border-color: var(--char); cursor: default; }
+
+.stepper-value {
+  min-width: 2.5rem;
+  text-align: center;
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.shopping { list-style: none; margin: var(--s4) 0; padding: 0; border-top: 1px solid var(--hair); }
+
+.shopping li {
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--hair);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.sheet-actions {
+  display: flex;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  margin-top: var(--s5);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--hair);
+}
+
+/* A locked control still reads, it just says why when you press it. It used to
+   be dimmed to .55 opacity, which took "This or that" down to 3.98:1 — the
+   Premium marker beside it already says everything the dimming was saying, and
+   says it without costing legibility. */
+.is-locked .tag-premium { background: var(--raise); }
+
+/* The markers exist to sell the tier. Once it is bought they are labels on
+   things you already own, and every one of them is a word between a subscriber
+   and the control they are reaching for. */
+body.is-premium .tag-premium { display: none; }
+
+/* a heading already draws the rule; the block under it must not draw a second */
+.strip-title + .settings,
+.strip-title + .rules,
+.strip-title + .insights,
+.strip-title + .week { border-top: 0; }
+
+/* ==========================================================================
+   The gate — onboarding, sign in
+   ========================================================================== */
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow-y: auto;
+  background: var(--void);
+  display: grid;
+  place-items: center;
+  padding: var(--s6) var(--s5);
+}
+
+.gate-inner { width: min(28rem, 100%); }
+.gate-ask { font-size: clamp(2rem, 4.5vw, 2.75rem); margin: var(--s5) 0 var(--s3); }
+
+.gate-form { margin-top: var(--s6); display: grid; gap: var(--s5); }
+
+.field { display: grid; gap: var(--s2); }
+.field-label { font-size: var(--t-sm); color: var(--ink-2); }
+.field-label b { color: var(--ink); font-weight: 600; }
+.field-hint { color: var(--ink-3); font-size: var(--t-xs); }
+
+.field-input {
+  min-height: var(--tap);
+  padding: 0 var(--s3);
+  border: 0;
+  border-bottom: 1px solid var(--hair-lit);
+  border-radius: 0;
+  background: var(--raise);
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: var(--t-base);
+}
+
+.field-input:focus { outline: none; border-color: var(--amber); }
+.field-input:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+
+.gate-error { font-size: var(--t-sm); color: var(--danger); line-height: 1.45; }
+
+/* the profiles on this device — a name is all that is stored unencrypted */
+.accounts {
+  list-style: none;
+  margin: var(--s5) 0 0;
+  padding: 0;
+  border-top: 1px solid var(--hair);
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s3) 0;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--display);
+  font-size: var(--t-md);
+  text-align: left;
+  cursor: pointer;
+  transition: padding-left var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.account:hover { padding-left: var(--s3); color: var(--ink); }
+.account.is-on { color: var(--ink); box-shadow: inset 2px 0 0 var(--amber); padding-left: var(--s3); }
+.account-when { font-family: var(--text); font-size: var(--t-xs); color: var(--ink-3); }
+
+.adopt { display: flex; align-items: center; gap: var(--s3); font-size: var(--t-sm); color: var(--ink-2); }
+.adopt input { width: 1.05rem; height: 1.05rem; accent-color: var(--amber); }
+
+.gate-more { margin-top: var(--s5); display: flex; gap: var(--s5); flex-wrap: wrap; }
+
+/* pick a face — the one bit of the sign-up that is just for fun.
+   Four across, so eight of them land as two even rows. As a wrapping flex row
+   they came out seven and a lonely one, which reads as broken rather than as
+   a choice anyone made. */
+.faces {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s2);
+  max-width: 20rem;
+}
+
+.face {
+  min-width: var(--tap);
+  height: var(--tap);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hair);
+  background: var(--raise);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.face:hover { border-color: var(--hair-lit); transform: translateY(-2px); }
+.face.is-on { border-color: var(--amber); background: var(--char); transform: translateY(-2px); }
+
+/* passphrase feedback, which encourages rather than scolds */
+.strength {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-top: var(--s2);
+  min-height: 1.2rem;
+  opacity: 0;
+  transition: opacity var(--mid) var(--ease);
+}
+/* Kept in the layout so nothing jumps when it arrives. */
+.strength.is-live { opacity: 1; }
+.strength-bar { flex: 1; max-width: 9rem; height: 2px; background: var(--hair); display: block; }
+.strength-bar b { display: block; height: 100%; width: 0; background: var(--amber); transition: width var(--mid) var(--ease); }
+.strength span, #strength-word { font-size: var(--t-xs); color: var(--ink-3); }
+
+/* ---- signing up, one step at a time -------------------------------------
+   The app asks one question at a time everywhere else. A five-field form was
+   the one screen that did not, and it was the one people bounced off. */
+
+.steps { display: flex; gap: var(--s4); list-style: none; margin: 0; padding: 0; }
+
+.step-dot {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: var(--t-xs);
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.step-dot::before {
+  content: '';
+  width: .5rem;
+  height: .5rem;
+  border: 1px solid var(--hair-lit);
+  border-radius: 50%;
+  transition: background var(--mid) var(--ease), border-color var(--mid) var(--ease);
+}
+
+.step-dot.is-on { color: var(--ink); }
+.step-dot.is-on::before { background: var(--amber); border-color: var(--amber); }
+
+/* Done, not current: a tick rather than a dot, so "where am I" reads from the
+   shape and does not rely on telling two shades of amber apart. */
+.step-dot.is-done { color: var(--ink-2); }
+.step-dot.is-done::before {
+  content: '\2713';
+  width: auto;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--amber);
+  font-size: .75rem;
+  line-height: 1;
+}
+
+.stage { display: grid; gap: var(--s5); animation: stage-in var(--mid) var(--ease) both; }
+.stage .gate-ask { margin-top: var(--s4); }
+
+@keyframes stage-in {
+  from { opacity: 0; transform: translateY(.5rem); }
+  to   { opacity: 1; transform: none; }
+}
+
+.field-big { font-size: var(--t-md); min-height: calc(var(--tap) + .35rem); }
+
+/* the passphrase box and its eye */
+.field-wrap { position: relative; display: grid; }
+.field-wrap .field-input { padding-right: calc(var(--tap) + var(--s2)); }
+
+.peek {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: var(--tap);
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color var(--fast) var(--ease);
+}
+
+.peek svg { width: 1.15rem; height: 1.15rem; display: block; }
+.peek:hover { color: var(--ink); }
+.peek.is-on { color: var(--amber); }
+/* Struck through when hidden, open when shown — the state is in the shape, so
+   it still reads with the colour taken away. */
+.peek .peek-slash { opacity: 1; transition: opacity var(--fast) var(--ease); }
+.peek.is-on .peek-slash { opacity: 0; }
+
+/* A label with an action on the right of it. The action reads as a link but
+   still has to be a 44px target, so the padding does the reaching and the
+   negative margin keeps it from pushing the field down. */
+.field-label.has-act {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: var(--tap);
+  margin-bottom: calc(var(--s2) * -1);
+}
+
+.field-act {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--s2);
+  margin-right: calc(var(--s2) * -1);
+  border: 0;
+  background: none;
+  color: var(--amber);
+  font-family: var(--text);
+  font-size: var(--t-xs);
+  text-align: right;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: .25em;
+}
+
+.field-act:hover { color: var(--ink); }
+
+/* the fine print, which is true and no longer shouted */
+.gate-truth {
+  margin-top: var(--s6);
+  border-top: 1px solid var(--hair);
+  padding-top: var(--s4);
+}
+
+.gate-truth summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  flex-wrap: wrap;
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  cursor: pointer;
+  list-style: none;
+}
+
+.gate-truth summary::-webkit-details-marker { display: none; }
+.truth-lock { font-size: .7rem; }
+.truth-more { color: var(--amber); text-decoration: underline; text-underline-offset: .25em; }
+.gate-truth[open] .truth-more { color: var(--ink-2); }
+.gate-truth .fine { margin-top: var(--s3); }
+
+/* buying the paid tier */
+.buy { margin-top: var(--s5); display: grid; gap: var(--s5); justify-items: start; }
+.buy .go { text-decoration: none; }
+.buy-key { margin-top: 0; width: min(24rem, 100%); justify-items: start; }
+.buy-key .field-input { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+.gate-truth {
+  margin-top: var(--s7);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--hair);
+  display: grid;
+  gap: var(--s3);
+}
+
+.gate-truth b { color: var(--ink-2); font-weight: 600; }
+
+/* ==========================================================================
+   The vault — paid content, shown but not readable
+   ========================================================================== */
+
+/* Blurred rather than hidden: an empty pane says "nothing here", a blurred one
+   says "something here, and it is not yours yet". The blurred layer is inert
+   and hidden from assistive tech, so what is announced is the notice, not
+   scrambled recipe steps.
+
+   This is a paywall, not a security boundary — it is a static page, so the
+   recipes are in the bundle whatever the tier says. */
+.vault { position: relative; }
+
+.vault.is-locked .vault-body {
+  filter: blur(7px) saturate(.6);
+  opacity: .5;
+  pointer-events: none;
+  user-select: none;
+  max-height: 22rem;
+  overflow: hidden;
+}
+
+.vault-lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--s3);
+  padding: var(--s5);
+  background: linear-gradient(to bottom, rgba(19, 19, 22, .55), rgba(19, 19, 22, .92));
+}
+
+.vault-line { max-width: 26ch; font-size: var(--t-md); color: var(--ink); line-height: 1.35; }
+
+/* ==========================================================================
+   This or that
+   ========================================================================== */
+/* The reigning dish, so swapping sides each round stays readable. The row is
+   reserved on both cards rather than hidden on one, or the champion's dish sits
+   lower than its challenger. Before there is a champion, neither card has one
+   and the row goes entirely. */
+.picks:not(.is-titled) .pick-crown { display: none; }
+.pick-crown { visibility: hidden; }
+.pick-crown.is-on { visibility: visible; }
+
+.pick-crown {
+  align-self: start;
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border-bottom: 1px solid var(--amber-dim);
+  padding-bottom: .15rem;
+}
+
+.pick:hover .pick-crown { color: var(--paper-ink); border-color: rgba(26, 26, 23, .3); }
+
+.duel-side { display: flex; align-items: center; gap: var(--s5); flex-wrap: wrap; }
+.pick-note {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  line-height: 1.45;
+  max-width: 30ch;
+}
+
+.pick:hover .pick-note { color: var(--paper-ink); opacity: .75; }
+
+/* the Premium switch, when you have just been sent to it */
+.is-flash { animation: flash 1.4s var(--ease); }
+
+@keyframes flash {
+  0%, 100% { box-shadow: none; }
+  15%, 70% { box-shadow: -1rem 0 0 -.85rem var(--amber); }
+}
+
+/* a dish struck off for good — still findable, plainly not on the menu */
+.dish.is-struck .dish-name { color: var(--ink-3); text-decoration: line-through; }
+.dish.is-struck .dish-art { filter: grayscale(1); opacity: .6; }
+.dish.is-struck .dish-note { color: var(--danger); }
+
+/* a chip you can also dismiss */
+.chip-wrap { display: inline-flex; align-items: center; }
+
+.chip-x {
+  display: inline-grid;
+  place-items: center;
+  width: var(--tap);
+  min-height: var(--tap);
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font-size: var(--t-md);
+  line-height: 1;
+  cursor: pointer;
+  transition: color var(--fast) var(--ease);
+}
+
+.chip-x:hover { color: var(--danger); }
+
+/* ==========================================================================
+   Profile
+   ========================================================================== */
+.rules { display: grid; gap: 0; margin-top: var(--s3); border-top: 1px solid var(--hair); }
+
+.rule {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s3) 0;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--text);
+  font-size: var(--t-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.rule:hover { color: var(--ink); }
+.rule-state { font-family: var(--display); font-size: var(--t-xs); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.rule.is-on { color: var(--ink); }
+.rule.is-on .rule-state { color: var(--amber); }
+
+.axes { display: grid; gap: var(--s4); }
+
+.axis {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr) 5.5rem;
+  align-items: center;
+  gap: var(--s3);
+  font-size: var(--t-xs);
+  color: var(--ink-2);
+}
+
+.axis.is-empty { color: var(--ink-3); }
+.axis-end-right { text-align: right; }
+.axis-track { position: relative; height: 1px; background: var(--hair-lit); }
+
+.axis-track i {
+  position: absolute;
+  top: 50%;
+  width: .5rem; height: .5rem;
+  margin-top: -.25rem;
+  background: var(--amber);
+  transition: left .4s var(--ease);
+}
+
+.axis.is-empty .axis-track i { background: var(--ink-3); }
+
+.badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr)); gap: var(--s4) var(--s5); }
+
+.badge { padding-left: var(--s3); border-left: 1px solid var(--hair); color: var(--ink-3); }
+.badge.is-earned { border-color: var(--amber); color: var(--ink-2); }
+.badge-icon { display: block; font-size: 1.1rem; line-height: 1; margin-bottom: var(--s2); filter: grayscale(1) opacity(.5); }
+.badge.is-earned .badge-icon { filter: none; }
+.badge b { display: block; font-family: var(--display); font-size: var(--t-sm); font-weight: 500; color: var(--ink-2); }
+.badge.is-earned b { color: var(--ink); }
+.badge small { display: block; font-size: var(--t-xs); line-height: 1.45; margin-top: .15rem; }
+
+.log { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
+
+.log li {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--hair);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.log b { flex: 1; font-weight: 500; color: var(--ink); }
+.log time { font-size: var(--t-xs); color: var(--ink-3); }
+
+.settings { border-top: 1px solid var(--hair); }
+
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s5);
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--hair);
+}
+
+.setting span { display: grid; }
+.setting b { font-family: var(--display); font-size: var(--t-base); font-weight: 500; }
+.setting small { font-size: var(--t-xs); color: var(--ink-3); }
+
+/* ==========================================================================
+   Overlays
+   ========================================================================== */
+/* Fixed and centred in the viewport, explicitly.
+   This used to be `position: relative`, which drops a modal dialog back into
+   the document flow: opening a dish from halfway down the list scrolled the
+   page to the top to reveal it, and closing it left you at the top of eighty
+   rows with no idea where you had been. `inset: 0` with `margin: auto` centres
+   it wherever the page happens to be scrolled to. */
+.sheet {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(30rem, calc(100vw - 2rem));
+  max-height: min(86dvh, 48rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--s6);
+  border: 1px solid var(--hair-lit);
+  border-radius: 2px;
+  background: var(--char);
+  color: var(--ink);
+}
+
+.sheet-x { position: sticky; float: right; }
+/* sections inside the card need air between them, not just a rule */
+.sheet .strip-title { margin-top: var(--s5); }
+.sheet .vault.is-locked .vault-body { max-height: 14rem; }
+.sheet-flag { margin-bottom: var(--s4); color: var(--danger); }
+
+.sheet::backdrop { background: rgba(10, 10, 12, .78); }
+
+.sheet-x {
+  top: 0; right: 0;
+  width: var(--tap); height: var(--tap);
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font-size: var(--t-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sheet-x:hover { color: var(--ink); }
+.sheet-art { font-size: 2.25rem; line-height: 1; }
+.sheet-name { margin: var(--s3) 0 var(--s2); font-size: var(--t-lg); font-weight: 500; letter-spacing: -.02em; }
+.sheet-note { color: var(--ink-2); font-size: var(--t-sm); margin-bottom: var(--s5); }
+
+.toasts {
+  position: fixed;
+  left: calc(var(--rail-w) + var(--s6));
+  bottom: var(--s5);
+  z-index: 60;
+  display: grid;
+  gap: var(--s2);
+  width: min(22rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  border-left: 2px solid var(--amber);
+  background: var(--raise);
+  animation: toast-in .3s var(--ease) both;
+}
+
+.toast.is-out { animation: toast-out .3s var(--ease) forwards; }
+.toast-icon { font-size: 1.35rem; line-height: 1; }
+.toast-body { min-width: 0; }
+.toast strong { display: block; font-family: var(--display); font-size: var(--t-xs); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+.toast-text { font-size: var(--t-sm); color: var(--ink-2); }
+
+@keyframes toast-in  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(-4px); } }
+
+.xp-float {
+  position: fixed;
+  z-index: 40;
+  transform: translate(-50%, -50%);
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 600;
+  color: var(--amber);
+  pointer-events: none;
+  animation: xp-rise .8s var(--ease) both;
+}
+
+@keyframes xp-rise {
+  0%   { opacity: 0; transform: translate(-50%, -50%); }
+  30%  { opacity: 1; transform: translate(-50%, -120%); }
+  100% { opacity: 0; transform: translate(-50%, -190%); }
+}
+
+.confetti { position: fixed; inset: 0; z-index: 30; pointer-events: none; }
+
+/* ==========================================================================
+   The landing screen
+
+   The one place in this app allowed to raise its voice. Everything after it is
+   deliberately quiet, and the moment a bit of noise earns its keep is the
+   moment somebody is deciding whether to bother at all.
+
+   What it is not: a hero image, a testimonial nobody said, or a number nobody
+   counted. The three figures on it are read out of the catalogue at load, so
+   they cannot drift into being a claim.
+   ========================================================================== */
+
+.landing {
+  position: fixed;
+  inset: var(--topbar-h) 0 0 0;
+  z-index: 40;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--void);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  place-items: start center;
+  padding: var(--s7) var(--s5) var(--s8);
+}
+
+body.is-landing { overflow: hidden; }
+
+/* The landing sits beside the rail rather than over it, so the sections are
+   reachable from the front door like everywhere else in the app. */
+@media (min-width: 60.01rem) {
+  .landing { left: var(--rail-w); }
+}
+
+/* Narrow, where the rail is a row under the top bar rather than a column: it
+   is pinned there while the landing is up, and the landing's own content
+   starts below it. Padding rather than an offset box, so if the rail is a few
+   pixels taller than reckoned — larger text, a wrapped streak — the cost is a
+   little more space above the hero, not a rail with something on top of it. */
+@media (max-width: 60rem) {
+  body.is-landing .rail {
+    position: fixed;
+    inset: var(--topbar-h) 0 auto 0;
+  }
+  body.is-landing .landing { padding-top: calc(var(--tap) + var(--s6)); }
+}
+
+/* ==========================================================================
+   Order it together — the shared browser
+   ========================================================================== */
+/* Fixed over everything, below the top bar so the way out of the app is still
+   there, and above the rail so nothing of the game shows around the edges. */
+.beam {
+  position: fixed;
+  inset: var(--topbar-h) 0 0 0;
+  z-index: 50;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: var(--s3);
+  padding: var(--s4) var(--s4) var(--s5);
+  background: var(--void);
+}
+
+body.is-beaming { overflow: hidden; }
+
+.beam-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  flex-wrap: wrap;
+}
+
+.beam-titles { display: grid; gap: var(--s1); min-width: 0; }
+
+.beam-dish {
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.beam-tools { display: flex; align-items: center; gap: var(--s3); flex-shrink: 0; }
+
+.beam-hint {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  max-width: 60ch;
+}
+
+/* The stage keeps the browser's own 16:9 shape whatever the window does, so
+   the stream is never letterboxed into a sliver on a phone held upright. */
+.beam-stage {
+  position: relative;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  background: var(--char);
+  overflow: hidden;
+}
+
+/* An iframe with no size of its own is 300x150 with a border, which is what a
+   shared browser looks like when this rule goes missing: a small grey box in
+   the middle of a full-screen panel. It has gone missing once. */
+.beam-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.beam-escape { font-size: var(--t-sm); color: var(--ink-3); text-align: center; margin: 0; }
+.beam-escape .link-btn { font-size: inherit; }
+
+.beam-state {
+  padding: var(--s5);
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  text-align: center;
+}
+
+@media (max-width: 40rem) {
+  .beam { padding: var(--s3) var(--s3) var(--s4); }
+  .beam-hint { font-size: var(--t-xs); }
+  .beam-tools { width: 100%; justify-content: space-between; }
+}
+
+/* One wordmark on screen at a time. The top bar carries the brand everywhere
+   in the app; the landing draws its own, larger, as part of its layout. Both
+   at once put "morsels45" twice in the first 90 pixels of the page, so on the
+   landing the bar keeps its glyph and drops its word. */
+body.is-landing .topbar-brand .mark-word { display: none; }
+
+/* One wash of colour, behind everything, and the only gradient in the app. It
+   is here because a flat charcoal rectangle is the correct answer to every
+   other screen and the wrong answer to this one. */
+/* Inside its own bounds. Reaching past them — `inset: -20% -10% auto -10%`,
+   which is the obvious way to write "bleed off the edges" — made the landing
+   screen scroll sideways at every width and every text size, and a decorative
+   wash is not worth a horizontal scrollbar. The gradients spread instead. */
+.landing-glow {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 60vh;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 80% at 18% 10%, color-mix(in srgb, var(--amber) 20%, transparent), transparent 70%),
+    radial-gradient(60% 70% at 82% 0%, color-mix(in srgb, var(--amber) 11%, transparent), transparent 72%);
+  animation: glow-drift 18s var(--ease) infinite alternate;
+}
+
+/* Opacity rather than transform, for the same reason: a drifting element in a
+   scroll container drifts its scroll width with it. */
+@keyframes glow-drift {
+  from { opacity: .75; }
+  to   { opacity: 1; }
+}
+
+.landing-inner {
+  position: relative;
+  width: min(46rem, 100%);
+  min-width: 0;
+  justify-self: center;
+  display: grid;
+  /* Definite, not auto. A grid item's automatic minimum size is its
+     min-content, so one wide descendant — the three-column mood grid — was
+     pushing this column past the width set above and every sibling with it. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s5);
+  animation: landing-in 560ms var(--ease) both;
+}
+
+@keyframes landing-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.landing-mark { margin: 0; }
+
+/* ---- the reel -----------------------------------------------------------
+   Decoration, and it knows it. "112 dishes" as a number does not land the way
+   112 dishes going past does. */
+
+.reel {
+  position: relative;
+  height: 4.5rem;
+  display: grid;
+  place-items: center start;
+  overflow: hidden;
+}
+
+.reel-item {
+  grid-area: 1 / 1;
+  font-size: 3.25rem;
+  line-height: 1;
+  opacity: 0;
+  transform: translateY(60%);
+  transition: opacity var(--mid) var(--ease), transform var(--mid) var(--ease);
+}
+
+.reel-item.is-on { opacity: 1; transform: none; }
+.reel-item.is-gone { opacity: 0; transform: translateY(-60%); }
+
+.landing-ask {
+  font-size: clamp(2.125rem, 6.5vw, 3.25rem);
+  font-weight: 500;
+  line-height: 1.22;
+  letter-spacing: -.02em;
+  text-wrap: balance;
+}
+
+.landing-ask em { font-style: normal; color: var(--amber); }
+
+.landing-sub {
+  font-size: var(--t-md);
+  color: var(--ink-2);
+  max-width: 32rem;
+  line-height: 1.6;
+}
+
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3) var(--s5);
+}
+
+/* Below the button rather than beside it once the row gets tight, and the two
+   of them stay on one line with each other. */
+.landing-actions .landing-plain { flex: 0 0 auto; }
+
+@media (max-width: 30rem) {
+  .landing-actions .go-big { flex: 1 0 100%; justify-content: center; }
+}
+.landing-plain { min-height: var(--tap); }
+
+/* The landing's one button, and the widest thing on the screen. At 175% text
+   on a 320px phone its own padding and label came to 273px against a 264px
+   column, which is the whole page scrolling sideways for one button. It is
+   allowed to wrap its label and to be narrower than its natural width. */
+.go-big { font-size: var(--t-md); padding: var(--s4) var(--s5); }
+.go .go-label { min-width: 0; }
+
+.landing-install {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s2) var(--s3);
+  margin: 0;
+  font-size: var(--t-sm);
+}
+
+.landing-free {
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  margin-top: calc(var(--s4) * -1);
+}
+
+.landing-stats {
+  list-style: none;
+  margin: var(--s2) 0 0;
+  padding: var(--s5) 0 0;
+  border-top: 1px solid var(--hair);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s4);
+}
+
+.landing-stats li { display: grid; gap: var(--s1); }
+.landing-stats b { font-family: var(--display); font-size: var(--t-xl); font-weight: 500; line-height: 1; }
+.landing-stats span {
+  font-size: var(--t-xs);
+  letter-spacing: .04em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Only for somebody who has been here before. It is the streak and the level,
+   which are the two things worth coming back for. */
+.landing-back {
+  padding: var(--s4) var(--s5);
+  background: var(--char);
+  border-left: 2px solid var(--amber);
+  display: grid;
+  gap: var(--s2);
+}
+
+.landing-back .mechanic { margin: 0; }
+.landing-back-line { font-family: var(--display); font-size: var(--t-md); }
+.landing-back-stats { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); font-size: var(--t-sm); color: var(--ink-2); }
+.landing-back-stats b { color: var(--ink); font-family: var(--display); }
+.landing-back .plain { justify-self: start; }
+
+@keyframes pick-in {
+  from { opacity: 0; transform: translateY(.4rem); }
+  to   { opacity: 1; transform: none; }
+}
+
+.landing-foot { font-size: var(--t-sm); color: var(--ink-3); padding-top: var(--s4); border-top: 1px solid var(--hair); }
+
+.landing .mode-grid { margin-top: 0; }
+.landing .mode-grid-label { margin-top: var(--s2); }
+.landing .strip { margin-top: 0; padding-top: var(--s5); border-top: 1px solid var(--hair); }
+.landing .opening-more { margin: 0; }
+
+/* A button that reads as a link, and is still a real target. */
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--amber);
+  font: inherit;
+  cursor: pointer;
+  border-bottom: 1px solid var(--amber-dim);
+  transition: border-color var(--fast) var(--ease), opacity var(--fast) var(--ease);
+}
+
+.link-btn:hover { border-bottom-color: var(--amber); }
+.link-btn:active { opacity: .7; }
+
+/* ==========================================================================
+   Likes and dislikes
+
+   One control with three states, because two lists of checkboxes for "love"
+   and "never" is twice the reading for the same information. Tap once for
+   love, twice for never, three times for neither — and the state is a glyph
+   and a border as well as a colour, so it survives being colour-blind or
+   printed in grey.
+   ========================================================================== */
+
+.taste-key { display: flex; gap: var(--s4); font-size: var(--t-xs); color: var(--ink-3); }
+.taste-key-item { display: inline-flex; align-items: center; gap: var(--s2); }
+.taste-key-item::before {
+  content: '\2665';
+  color: var(--amber);
+  font-size: var(--t-sm);
+}
+.taste-key-item.is-banned::before { content: '\2715'; color: var(--danger); }
+
+.setup-dishes { display: flex; flex-wrap: wrap; gap: var(--s2); margin-bottom: var(--s4); }
+
+.tune {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  min-height: var(--tap);
+  padding: var(--s2) var(--s3);
+  background: none;
+  border: 1px solid var(--hair);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.tune:hover { border-color: var(--hair-lit); color: var(--ink); }
+.tune-icon { font-size: var(--t-base); line-height: 1; }
+.tune-mark { font-size: var(--t-sm); line-height: 1; }
+
+.tune.is-loved { border-color: var(--amber); color: var(--ink); }
+.tune.is-loved .tune-mark { color: var(--amber); }
+.tune.is-banned { border-color: var(--danger); color: var(--ink-3); }
+.tune.is-banned .tune-label { text-decoration: line-through; }
+.tune.is-banned .tune-mark { color: var(--danger); }
+
+/* ==========================================================================
+   The cupboard
+   ========================================================================== */
+
+.pantry { margin-bottom: var(--s5); padding-bottom: var(--s5); border-bottom: 1px solid var(--hair); }
+
+.pantry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.pantry-head .strip-title { margin: 0; }
+.pantry-body { display: grid; gap: var(--s3); margin-top: var(--s4); }
+
+.chip-removable { display: inline-flex; align-items: center; gap: var(--s2); }
+.chip-x { color: var(--ink-3); font-size: var(--t-md); line-height: 1; }
+.chip-removable:hover .chip-x { color: var(--danger); }
+
+.pantry-hits { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+
+.pantry-hit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3) var(--s4);
+  padding: var(--s3) 0;
+  border-top: 1px solid var(--hair);
+}
+
+.pantry-icon { font-size: var(--t-lg); line-height: 1; }
+.pantry-what { display: grid; flex: 1 1 12rem; min-width: 0; }
+.pantry-what b { font-family: var(--display); font-weight: 500; }
+.pantry-what small { font-size: var(--t-xs); color: var(--ink-3); }
+
+.pantry-gap { font-size: var(--t-xs); color: var(--ink-3); flex: 1 1 8rem; }
+.pantry-hit.is-ready .pantry-gap { color: var(--amber); }
+
+.pantry-go {
+  min-height: var(--tap);
+  padding: 0 var(--s3);
+  background: none;
+  border: 1px solid var(--hair);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+
+.pantry-go:hover { border-color: var(--amber); color: var(--ink); }
+
+/* ==========================================================================
+   Palettes, as a control
+   ========================================================================== */
+
+.themes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr)); gap: var(--s3); }
+
+.theme {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  min-height: var(--tap);
+  padding: var(--s3);
+  background: none;
+  border: 1px solid var(--hair);
+  color: var(--ink-2);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease);
+}
+
+.theme:hover { border-color: var(--hair-lit); }
+.theme.is-on { border-color: var(--amber); color: var(--ink); }
+
+.theme-swatch { display: flex; flex: 0 0 auto; }
+.theme-swatch i { width: .75rem; height: 1.5rem; display: block; border: 1px solid var(--hair); border-left-width: 0; }
+.theme-swatch i:first-child { border-left-width: 1px; }
+
+.theme-what { display: grid; min-width: 0; }
+.theme-what b { font-family: var(--display); font-weight: 500; font-size: var(--t-sm); }
+.theme-what small { font-size: var(--t-xs); color: var(--ink-3); }
+
+/* Each swatch shows its own palette rather than the current one, which is the
+   only way a list of six names means anything.
+
+   `data-palette`, not `data-theme`. These buttons carried `data-theme` at
+   first, which also matched the palette blocks at the top of this file — so
+   every button quietly redefined the whole token set inside itself, and the
+   one labelled "Paper" was drawing dark-on-dark text at 1.98:1 while claiming
+   to be a light theme. The legibility audit caught it; nothing else would
+   have, because the swatches themselves looked exactly right. */
+.theme[data-palette=""]       .theme-a { background: #131316; } .theme[data-palette=""]       .theme-b { background: #e0a340; } .theme[data-palette=""]       .theme-c { background: #f2ece1; }
+.theme[data-palette="ember"]  .theme-a { background: #17100e; } .theme[data-palette="ember"]  .theme-b { background: #ee8b5b; } .theme[data-palette="ember"]  .theme-c { background: #f4e7dc; }
+.theme[data-palette="matcha"] .theme-a { background: #101512; } .theme[data-palette="matcha"] .theme-b { background: #93c97a; } .theme[data-palette="matcha"] .theme-c { background: #e9f0e4; }
+.theme[data-palette="ink"]    .theme-a { background: #0f1218; } .theme[data-palette="ink"]    .theme-b { background: #78aef0; } .theme[data-palette="ink"]    .theme-c { background: #e6eaf2; }
+.theme[data-palette="paper"]  .theme-a { background: #f6f2ea; } .theme[data-palette="paper"]  .theme-b { background: #7d5205; } .theme[data-palette="paper"]  .theme-c { background: #22201c; }
+.theme[data-palette="neon"]   .theme-a { background: #0d0b14; } .theme[data-palette="neon"]   .theme-b { background: #c99bff; } .theme[data-palette="neon"]   .theme-c { background: #ece5ff; }
+
+/* ==========================================================================
+   Cook mode
+
+   A recipe read off a phone propped against a bag of flour is a different
+   object from a recipe read on a sofa. One step, big type, and a timer.
+   ========================================================================== */
+
+.cook {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--void);
+  color: var(--ink);
+  display: none;
+  /* minmax(0, 1fr), not 1fr. A grid item's min-height is auto, so a `1fr` row
+     will not shrink below its own content — the ingredients list made the
+     middle row taller than the dialog and pushed the Next button off the
+     bottom of the screen, on a screen whose entire job is one button. */
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+}
+
+.cook[open] { display: grid; }
+.cook::backdrop { background: var(--void); }
+
+.cook-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--hair);
+}
+
+.cook-of { font-family: var(--display); font-size: var(--t-sm); color: var(--ink-3); }
+.cook-dish { margin-left: auto; font-family: var(--display); font-size: var(--t-sm); display: flex; gap: var(--s2); align-items: center; }
+.cook-thread { margin: 0; }
+
+.cook-stage {
+  display: grid;
+  min-height: 0;
+  align-content: center;
+  gap: var(--s5);
+  padding: var(--s6) var(--s5);
+  max-width: 44rem;
+  width: 100%;
+  margin: 0 auto;
+  overflow: auto;
+}
+
+.cook-step {
+  font-family: var(--display);
+  font-size: clamp(1.375rem, 3.5vw, 2rem);
+  line-height: 1.25;
+  font-weight: 500;
+  text-wrap: pretty;
+}
+
+.cook-why { color: var(--ink-2); font-size: var(--t-sm); line-height: 1.7; }
+
+/* The ingredients, on the first page. A list, because that is what somebody
+   is about to read off it one line at a time. */
+.cook-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s2); }
+.cook-list li {
+  padding-left: var(--s4);
+  position: relative;
+  color: var(--ink-2);
+  font-size: var(--t-base);
+}
+.cook-list li::before { content: '\2014'; position: absolute; left: 0; color: var(--ink-3); }
+
+.cook-timer { display: grid; gap: var(--s3); justify-items: start; padding-top: var(--s4); border-top: 1px solid var(--hair); }
+.cook-clock { font-family: var(--display); font-size: var(--t-2xl); line-height: 1; font-variant-numeric: tabular-nums; }
+.cook-clock.is-done { color: var(--amber); }
+
+.cook-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding: var(--s4) var(--s5);
+  border-top: 1px solid var(--hair);
+}
+
+/* ==========================================================================
+   This device
+   ========================================================================== */
+
+#device-strip .fine { max-width: 34rem; }
+
+/* ==========================================================================
+   Narrower screens — the rail becomes a top bar
+   ========================================================================== */
+@media (max-width: 60rem) {
+  .rail {
+    position: sticky;
+    inset: var(--topbar-h) 0 auto 0;
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s2) var(--s5);
+    padding: var(--s3) var(--s5);
+    border-right: 0;
+    border-bottom: 1px solid var(--hair);
+  }
+
+  .rail-list { display: flex; flex-wrap: wrap; gap: 0 var(--s5); }
+  .rail-link { padding: var(--s2) 0; min-height: var(--tap); }
+  .rail-link.is-current::before { left: 50%; top: auto; bottom: .25rem; margin: 0 0 0 -.1875rem; }
+  .rail-foot { margin: 0 0 0 auto; }
+
+  .content { margin-left: 0; padding: var(--s6) var(--s5) var(--s8); max-width: none; }
+  .toasts { left: 50%; transform: translateX(-50%); }
+  .recipe-inner { grid-template-columns: 1fr; gap: var(--s4); }
+}
+
+@media (max-width: 34rem) {
+  .rail { gap: var(--s2) var(--s4); padding: var(--s2) var(--s4); }
+  .rail-list { gap: 0 var(--s4); }
+  .rail-foot { display: none; }
+  .content { padding: var(--s5) var(--s4) var(--s7); }
+  .ledger { gap: var(--s5); }
+  .picks { grid-template-columns: minmax(0, 1fr); }
+  .pick { min-height: 7.5rem; padding: var(--s4); }
+  .pick:hover { padding-left: var(--s5); }
+  .dish-name { flex: 1 1 auto; }
+  .dish-note { display: none; }
+  .axis { grid-template-columns: 4.5rem minmax(0, 1fr) 4.5rem; }
+  .insight-label { min-width: 0; flex: 1 0 100%; }
+  .week-day { min-width: 2.75rem; }
+
+  /* The landing has a lot of vertical rhythm to spend on a phone and not much
+     room to spend it in. */
+  .landing { padding: var(--s5) var(--s3) var(--s7); }
+  .landing-stats { gap: var(--s4) var(--s5); }
+  .cook-stage { padding: var(--s5) var(--s4); }
+  .cook-bar, .cook-foot { padding: var(--s3) var(--s4); }
+  .cook-dish { flex-basis: 100%; margin-left: 0; order: 3; }
+  .themes { grid-template-columns: 1fr; }
+  .pantry-gap { flex-basis: 100%; }
+}
+
+/* --- the invite link: a field you read, not one you fill in --- */
+.invite-link {
+  width: 100%;
+  margin: var(--s5) 0 var(--s4);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  background: var(--raise);
+  color: var(--ink-2);
+  font-family: var(--text);
+  font-size: var(--t-sm);
+  text-overflow: ellipsis;
+}
+
+.invite-link:focus { outline: 2px solid var(--amber); outline-offset: 2px; color: var(--ink); }
+
+/* --- ask: a conversation, kept plain --- */
+.chat { list-style: none; margin: 0 0 var(--s5); padding: 0; display: grid; gap: var(--s4); }
+.chat:empty { margin: 0; }
+
+.chat-row {
+  display: grid;
+  gap: .2rem;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  background: var(--raise);
+  animation: lift var(--mid) var(--ease) both;
+  max-width: 42rem;
+}
+
+/* The reader's own words sit to the right and unfilled, the way a person's
+   half of a conversation does everywhere else they have ever had one. */
+.chat-row.is-user { justify-self: end; background: none; border-color: var(--hair-lit); }
+.chat-row.is-bot { justify-self: start; }
+/* Provisional, not absent: the app's own answer, on screen and tappable while
+   the assistant is still being asked. Barely dimmed, because it is a real
+   answer and may well be the final one. */
+.chat-row.is-pending { opacity: .82; }
+
+.chat-note {
+  margin-top: var(--s2);
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}
+
+.chat-who {
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.chat-row.is-bot .chat-who { color: var(--amber); }
+.chat-text { margin: 0; font-size: var(--t-sm); line-height: 1.6; color: var(--ink); white-space: pre-wrap; }
+
+.chat-empty { font-size: var(--t-sm); color: var(--ink-3); margin: 0 0 var(--s3); }
+
+/* The dish it named, as a way in rather than a word to go and look up. */
+.chat-taps { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
+
+.chat-tap {
+  min-height: var(--tap);
+  padding: .3rem .6rem;
+  border: 1px solid var(--hair-lit);
+  border-radius: 4px;
+  background: none;
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: var(--t-sm);
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.chat-tap:hover { border-color: var(--amber); color: var(--amber); }
+
+.chat-form { display: flex; gap: var(--s3); align-items: stretch; margin-top: var(--s4); }
+
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--hair);
+  border-radius: 4px;
+  background: var(--raise);
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: var(--t-base);
+}
+
+.chat-input::placeholder { color: var(--ink-3); }
+.chat-input:focus { outline: 2px solid var(--amber); outline-offset: 2px; border-color: transparent; }
+
+.chat-form .go { flex: none; }
+.chat-foot { margin-top: var(--s4); }
+
+@media (max-width: 30rem) {
+  .chat-form { flex-wrap: wrap; }
+  .chat-form .go { width: 100%; justify-content: center; }
+}
+
+/* --- food news: an index of other people's writing, opened in place ---
+   Same shape as the recipe index deliberately. A story is a headline you skim
+   and occasionally stop on; the standfirst unfolds under it and the link out
+   is the last thing in the row, so nothing navigates away by accident. */
+.stories { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
+
+.story {
+  border-bottom: 1px solid var(--hair);
+  animation: lift var(--mid) var(--ease) both;
+}
+
+.story-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s4);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s4) 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.story-head:hover .story-name { color: var(--amber); }
+.story-title { display: grid; gap: .25rem; min-width: 0; }
+
+.story-name {
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 500;
+  letter-spacing: -.015em;
+  line-height: 1.3;
+  transition: color var(--fast) var(--ease);
+}
+
+/* Who wrote it and when, in that order — the publisher is the part that tells
+   you whether you want to read it. */
+.story-meta {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  letter-spacing: .02em;
+}
+
+.story-source { color: var(--ink-2); }
+
+.story-chevron {
+  flex: none;
+  width: 1rem; height: 1rem;
+  margin-top: .2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  color: var(--ink-3);
+  transition: transform var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.story.is-open .story-chevron { transform: rotate(180deg); color: var(--amber); }
+
+.story-body { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--mid) var(--ease); }
+.story.is-open .story-body { grid-template-rows: 1fr; }
+.story-body > div { overflow: hidden; }
+
+.story-inner { padding-bottom: var(--s4); display: grid; gap: var(--s3); justify-items: start; }
+.story-sum { font-size: var(--t-sm); color: var(--ink-2); line-height: 1.6; max-width: 42rem; }
+.story-sum:empty { display: none; }
+
+.news-foot { margin-top: var(--s5); }
+
+/* ==========================================================================
+   Endless — the free run, and the one card on the landing that leads
+   ========================================================================== */
+/* Deliberately not a .mode-card. Everything in that grid is locked and reads
+   as one offer; this is the thing anybody can start right now, and it has to
+   look like a different kind of thing rather than a sixth member of a set. */
+.endless-cta { margin-top: var(--s6); }
+
+.endless-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s3);
+  width: 100%;
+  text-align: left;
+  padding: var(--s5);
+  border: 1px solid var(--amber-dim);
+  border-radius: 4px;
+  /* Flat first, so a browser that does not know color-mix drops only the
+     second declaration and keeps a card with a background rather than a
+     transparent one. */
+  background: var(--char);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--amber) 8%, transparent), transparent 55%),
+    var(--char);
+  color: var(--ink);
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.endless-card:hover { border-color: var(--amber); transform: translateY(-2px); }
+.endless-card:active { transform: translateY(-2px) scale(.995); }
+
+.endless-card-top {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: 100%;
+}
+
+.endless-card-icon { font-size: 1.5rem; line-height: 1; }
+
+.endless-card-name {
+  font-family: var(--display);
+  font-size: var(--t-lg);
+  font-weight: 600;
+}
+
+/* The allowance, said before the tap rather than after it. */
+.endless-card-tag {
+  margin-left: auto;
+  flex: 0 0 auto;
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--amber);
+  border: 1px solid var(--amber-dim);
+  border-radius: 999px;
+  padding: .15rem .6rem;
+}
+
+.endless-card-tag.is-open { color: var(--void); background: var(--amber); border-color: var(--amber); }
+
+.endless-card-hook { font-size: var(--t-sm); line-height: 1.5; color: var(--ink-2); max-width: 44rem; }
+.endless-card-line { font-size: var(--t-xs); color: var(--ink-3); }
+
+/* ------------------------------------------------------------------ the run */
+/* Everything the mode gives back for a tap lives in here, so it stays put
+   while the cards below it scroll. Sticky under the fixed top bar rather than
+   at 0, which would tuck it behind it. */
+.endless-head {
+  position: sticky;
+  /* Set by app.js: the top bar, plus the rail when the rail is a second bar
+     under it. The fallback is the wide-screen case, where the rail is a
+     column down the side and takes no height off the top at all. */
+  top: var(--stack-top, var(--topbar-h));
+  z-index: 3;
+  padding-top: var(--s3);
+  padding-bottom: var(--s2);
+  background: var(--void);
+}
+
+.endless-bar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.endless-left { font-size: var(--t-xs); color: var(--ink-3); }
+.endless-left b { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.endless-score {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s4);
+  margin-top: var(--s2);
+}
+
+.endless-points b {
+  font-family: var(--display);
+  font-size: var(--t-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.endless-best { font-size: var(--t-xs); color: var(--ink-3); }
+.endless-best b { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+.endless-combo {
+  margin-left: auto;
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 700;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+}
+
+.endless-combo.is-hot { animation: endless-throb 900ms var(--ease) infinite; }
+
+@keyframes endless-throb {
+  0%, 100% { transform: none; }
+  50%      { transform: scale(1.12); }
+}
+
+/* The clock. Empties on its own; every pick buys some back. Thicker than the
+   meter it replaced, because it is the only thing on this screen that can end
+   the run and it has to be readable out of the corner of an eye. */
+.endless-clock {
+  height: 5px;
+  margin-top: var(--s2);
+  background: var(--hair);
+  overflow: hidden;
+}
+
+.endless-clock i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--amber);
+  /* Just long enough to look like a drain rather than a stutter, and shorter
+     than the tick that drives it so it never lags behind the real number. */
+  transition: width 60ms linear, background 200ms var(--ease);
+}
+
+/* Under a second and a half left. The bar goes red, the score goes with it,
+   and the whole panel breathes — three things saying one thing, because a
+   single small red bar is not enough to look up for. */
+.endless-run.is-panic .endless-clock i { background: var(--danger); }
+.endless-run.is-panic .endless-points b { color: var(--danger); }
+.endless-run.is-panic .endless-picks { border-color: var(--danger); }
+.endless-run.is-panic { animation: endless-panic 620ms var(--ease) infinite; }
+
+@keyframes endless-panic {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .93; }
+}
+
+/* The score, and the points that just landed on it. */
+.endless-points b.is-new { animation: endless-bump 220ms var(--ease) both; }
+
+@keyframes endless-bump {
+  0%   { transform: none; }
+  35%  { transform: scale(1.18); }
+  100% { transform: none; }
+}
+
+.endless-pop {
+  align-self: flex-start;
+  margin-left: calc(var(--s3) * -1);
+  font-family: var(--display);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  color: var(--amber);
+  opacity: 0;
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.endless-pop.is-new { animation: endless-rise 700ms var(--ease) both; }
+
+@keyframes endless-rise {
+  from { opacity: 1; transform: translateY(2px); }
+  to   { opacity: 0; transform: translateY(-16px); }
+}
+
+/* Faster. Ten in a row. Painted over the choice and gone again, never in the
+   way of the next tap. */
+.endless-line { position: relative; }
+
+.endless-shout {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center start;
+  pointer-events: none;
+}
+
+.endless-shout b {
+  white-space: nowrap;
+  font-family: var(--display);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--void);
+  background: var(--amber);
+  padding: .2rem var(--s4);
+  border-radius: 2px;
+}
+
+/* Bigger, but still inside the band the heading occupies — a shout that
+   spills onto the cards is back to covering the choice. */
+.endless-shout.is-big b { font-size: var(--t-lg); padding: .3rem var(--s5); letter-spacing: .1em; }
+.endless-shout.is-new b { animation: endless-shout 340ms var(--ease) both; }
+
+@keyframes endless-shout {
+  from { opacity: 0; transform: scale(.86) translateY(6px); }
+  60%  { opacity: 1; transform: scale(1.04); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The cards deal rather than drift. The generic .pick lift is 240ms, which is
+   most of a second at four taps a second and reads as lag. */
+.endless-picks .pick.is-new { animation: endless-deal 150ms var(--ease) both; }
+.endless-picks .pick:active { transform: scale(.985); }
+
+@keyframes endless-deal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.endless-q { margin-top: var(--s4); }
+.endless-picks { margin-top: var(--s4); }
+
+/* The two pairings worth noticing. A hairline rather than a glow: this pair
+   is worth more, it is not a different screen. */
+.endless-picks.is-gold { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber-dim); }
+.endless-picks.is-stranger { border-color: var(--hair-lit); }
+
+.endless-flag { font-size: .6875rem; letter-spacing: .09em; }
+
+.endless-read {
+  margin-top: var(--s4);
+  padding: var(--s4) var(--s5);
+  border-left: 2px solid var(--amber);
+  background: var(--raise);
+}
+
+.endless-read.is-new { animation: endless-read 260ms var(--ease) both; }
+
+@keyframes endless-read {
+  from { opacity: 0; transform: translateX(-10px) scale(.99); }
+  to   { opacity: 1; transform: none; }
+}
+
+.endless-read-line {
+  margin: var(--s1) 0 var(--s1);
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 600;
+}
+
+.endless-status { margin-top: var(--s4); }
+
+/* -------------------------------------------------------------- the summary */
+.endless-learned {
+  list-style: none;
+  margin: var(--s5) 0 0;
+  padding: 0 0 0 var(--s4);
+  border-left: 2px solid var(--amber-dim);
+  display: grid;
+  gap: var(--s3);
+}
+
+.endless-learned li { display: grid; gap: .1rem; }
+.endless-learned b { font-family: var(--display); font-size: var(--t-base); font-weight: 600; }
+.endless-learned span { font-size: var(--t-xs); color: var(--ink-3); }
+
+.endless-champ { margin-top: var(--s6); }
+
+.endless-champ-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  width: 100%;
+  margin-top: var(--s3);
+  padding: var(--s4);
+  border: 1px solid var(--hair);
+  background: var(--raise);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.endless-champ-btn:hover { background: var(--paper); color: var(--paper-ink); border-color: var(--paper); }
+.endless-champ-icon { font-size: 2rem; line-height: 1; }
+.endless-champ-body { display: grid; gap: .15rem; min-width: 0; }
+.endless-champ-body b { font-family: var(--display); font-size: var(--t-md); font-weight: 600; }
+.endless-champ-btn:hover .fine { color: inherit; opacity: .75; }
+
+.endless-spent {
+  margin-top: var(--s6);
+  padding: var(--s5);
+  border: 1px solid var(--amber-dim);
+  border-radius: 4px;
+  background: var(--raise);
+  display: grid;
+  gap: var(--s3);
+  justify-items: start;
+}
+
+.endless-spent-line { font-size: var(--t-base); }
+.endless-spent-line b { color: var(--amber); font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root { --ink-3: #bdb8b0; --hair: #4a4a52; --hair-lit: #6a6a73; }
+}
