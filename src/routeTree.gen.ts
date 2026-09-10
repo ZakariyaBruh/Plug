@@ -26,6 +26,7 @@ import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-statu
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as DecideSplatRouteImport } from './routes/decide/$'
 import { Route as EatDishRouteImport } from './routes/eat.$dish'
+import { Route as ExperiencesExperienceIdRouteImport } from './routes/experiences.$experienceId'
 import { Route as TogetherCodeRouteImport } from './routes/together.$code'
 import { Route as ApiOauthCallbackRouteImport } from './routes/api/oauth/callback'
 import { Route as ApiOauthLoginRouteImport } from './routes/api/oauth/login'
@@ -117,6 +118,11 @@ const EatDishRoute = EatDishRouteImport.update({
   path: '/eat/$dish',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExperiencesExperienceIdRoute = ExperiencesExperienceIdRouteImport.update({
+  id: '/experiences/$experienceId',
+  path: '/experiences/$experienceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TogetherCodeRoute = TogetherCodeRouteImport.update({
   id: '/together/$code',
   path: '/together/$code',
@@ -161,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
+  '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
@@ -185,6 +192,7 @@ export interface FileRoutesByTo {
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
+  '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
@@ -210,6 +218,7 @@ export interface FileRoutesById {
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
+  '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
@@ -236,6 +245,7 @@ export interface FileRouteTypes {
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
+    | '/experiences/$experienceId'
     | '/together/$code'
     | '/api/oauth/callback'
     | '/api/oauth/login'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
+    | '/experiences/$experienceId'
     | '/together/$code'
     | '/api/oauth/callback'
     | '/api/oauth/login'
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
+    | '/experiences/$experienceId'
     | '/together/$code'
     | '/api/oauth/callback'
     | '/api/oauth/login'
@@ -308,6 +320,7 @@ export interface RootRouteChildren {
   ApiPremiumStatusRoute: typeof ApiPremiumStatusRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
   EatDishRoute: typeof EatDishRoute
+  ExperiencesExperienceIdRoute: typeof ExperiencesExperienceIdRoute
   TogetherCodeRoute: typeof TogetherCodeRoute
   ApiOauthCallbackRoute: typeof ApiOauthCallbackRoute
   ApiOauthLoginRoute: typeof ApiOauthLoginRoute
@@ -436,6 +449,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EatDishRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/experiences/$experienceId': {
+      id: '/experiences/$experienceId'
+      path: '/experiences/$experienceId'
+      fullPath: '/experiences/$experienceId'
+      preLoaderRoute: typeof ExperiencesExperienceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/together/$code': {
       id: '/together/$code'
       path: '/together/$code'
@@ -502,6 +522,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPremiumStatusRoute: ApiPremiumStatusRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
   EatDishRoute: EatDishRoute,
+  ExperiencesExperienceIdRoute: ExperiencesExperienceIdRoute,
   TogetherCodeRoute: TogetherCodeRoute,
   ApiOauthCallbackRoute: ApiOauthCallbackRoute,
   ApiOauthLoginRoute: ApiOauthLoginRoute,

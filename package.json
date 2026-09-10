@@ -13,7 +13,7 @@
     "deploy": "whop apps deploy",
     "typecheck": "tsc --noEmit",
     "indexnow": "node scripts/indexnow.mjs",
-    "test:credits": "bun run scripts/credits-test.mjs && bun run scripts/surveys-test.mjs",
+    "test:credits": "bun run scripts/credits-test.mjs && bun run scripts/surveys-test.mjs && bun run scripts/whop-token-test.mjs",
     "credits:migrate": "bun run scripts/credits-migrate.mjs"
   },
   "dependencies": {
