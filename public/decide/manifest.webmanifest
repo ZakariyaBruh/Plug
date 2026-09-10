@@ -1,0 +1,47 @@
+{
+  "name": "morsels45 — what should you eat?",
+  "short_name": "morsels45",
+  "description": "A few easy either-ors, and it works out what you actually feel like eating.",
+  "id": "/decide/",
+  "start_url": "/decide/",
+  "scope": "/decide/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#17171a",
+  "theme_color": "#17171a",
+  "categories": ["food", "lifestyle", "games"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Decide for me",
+      "short_name": "Decide",
+      "description": "Straight into the questions",
+      "url": "/decide/?go=decide"
+    },
+    {
+      "name": "Browse the menu",
+      "short_name": "Menu",
+      "description": "All 112 dishes",
+      "url": "/decide/?go=dishes"
+    },
+    {
+      "name": "Food news",
+      "short_name": "News",
+      "description": "What food writers filed today",
+      "url": "/decide/?go=news"
+    }
+  ]
+}

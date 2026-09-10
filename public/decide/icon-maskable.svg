@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="morsels45">
+  <!--
+    Maskable variant: full-bleed background, no corner radius of its own —
+    Android supplies the mask shape (circle, squircle, rounded square) and
+    crops to it, so a shape baked in here would fight whatever it picks.
+    The ligature is scaled into the safe zone at the same 0.72 the icon has
+    always used, so it survives every mask shape with room to spare.
+  -->
+  <rect width="512" height="512" fill="#17171a"/>
+  <g fill="none" stroke="#e0a340" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"
+     transform="translate(256 256) scale(0.72) translate(-256 -256)">
+    <path d="M256 140L126 256L256 256M256 140L256 372"/>
+    <path d="M386 140L256 140L256 256C426 256 426 372 256 372"/>
+  </g>
+</svg>

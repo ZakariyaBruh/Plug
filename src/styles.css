@@ -1,0 +1,62 @@
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&display=swap");
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  --bg: #131316;
+  --bg-raised: #1e1e22;
+  --border: #2c2c31;
+  --amber: #e0a340;
+  --amber-soft: #e0a3401a;
+  --text: #f3efe8;
+  --text-dim: #9d948f;
+  scrollbar-width: thin;
+  scrollbar-color: #38383c transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ============================ motion ============================
+   Every page here was a hard cut: instant on, instant off. A little
+   motion on arrival and on every button is what makes it feel like a
+   real product rather than a slideshow. */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.fade-in-up { animation: fade-in-up 480ms cubic-bezier(.2, .7, .3, 1) both; }
+.fade-in { animation: fade-in 320ms ease both; }
+
+a, button {
+  transition: background-color 160ms ease, color 160ms ease, opacity 160ms ease,
+    transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+a:active, button:active { transform: scale(.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in-up, .fade-in { animation: none; }
+  a, button { transition: none; }
+  a:active, button:active { transform: none; }
+}

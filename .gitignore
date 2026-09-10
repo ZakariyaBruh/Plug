@@ -1,0 +1,18 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+.env
+# wrangler reads local secrets from here. Nothing in it should ever be committed.
+.dev.vars
+.dev.vars.*
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+# A test script with an unset output path once created this. Never ours.
+undefined/

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="morsels45">
+  <!--
+    The mark: a "45" ligature — the 4 and the 5 share one stem. That shared
+    stroke is the whole idea. Two digits sitting side by side is a number
+    anyone can type; fusing them makes a single glyph that is this brand's
+    and nobody else's, which a fork and knife on a dark square never was.
+
+    Drawn as strokes rather than set in a typeface, so it is exactly this
+    shape at 512px or at a 16px favicon — no font to load, nothing to
+    substitute. One weight throughout, round caps, and no detail finer than
+    the stroke itself, which is what lets it survive the shrink.
+  -->
+  <rect width="512" height="512" rx="104" fill="#17171a"/>
+  <g fill="none" stroke="#e0a340" stroke-width="40" stroke-linecap="round" stroke-linejoin="round">
+    <!-- the 4: diagonal, crossbar, and the stem it shares with the 5 -->
+    <path d="M256 140L126 256L256 256M256 140L256 372"/>
+    <!-- the 5: top bar off that same stem, then the bowl -->
+    <path d="M386 140L256 140L256 256C426 256 426 372 256 372"/>
+  </g>
+</svg>
