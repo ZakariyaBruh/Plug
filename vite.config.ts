@@ -68,6 +68,61 @@ function stampServiceWorker(): Plugin {
   }
 }
 
+/*
+ * The recipe book, lifted out of the game's own script at build time.
+ *
+ * public/decide/js/recipes.js is a UMD bundle the browser loads by <script>
+ * tag — there is no module to import from it, and it is the only place a
+ * recipe is written down. lib/dishes.ts has the same problem and solves it by
+ * regex, which works because an item() call is one flat line. A recipe is not:
+ * it is nested objects with arrays of prose, and a regex that appears to parse
+ * that would go wrong quietly, on one dish, months from now.
+ *
+ * So it is evaluated instead — here, in Node, at build time, where evaluating
+ * our own source file is ordinary. It could not be done in the worker even if
+ * that were wise: the Workers runtime refuses eval and new Function outright.
+ *
+ * The result is inlined as JSON through a virtual module, so nothing is read
+ * from disk at request time and nothing is committed that could drift from
+ * recipes.js — change a recipe and the next build carries it.
+ */
+function recipeBook(): Plugin {
+  const VIRTUAL = 'virtual:recipe-book'
+  const RESOLVED = '\0' + VIRTUAL
+
+  return {
+    name: 'morsels45-recipe-book',
+    resolveId(id) {
+      return id === VIRTUAL ? RESOLVED : null
+    },
+    load(id) {
+      if (id !== RESOLVED) return null
+
+      const path = join(process.cwd(), 'public', 'decide', 'js', 'recipes.js')
+      const source = readFileSync(path, 'utf8')
+
+      // The UMD header prefers module.exports when it is given one, so handing
+      // it a module object is enough to get the factory's return value out.
+      const shim = { exports: {} as Record<string, unknown> }
+      new Function('module', 'exports', source)(shim, shim.exports)
+
+      const book = shim.exports.BOOK
+      if (!book || typeof book !== 'object') {
+        throw new Error('recipe-book: recipes.js did not export a BOOK')
+      }
+      const count = Object.keys(book).length
+      if (count < 100) {
+        // A silently half-empty book would take 112 pages back down to stubs
+        // without anything failing, which is the exact failure this plugin is
+        // meant to make impossible.
+        throw new Error(`recipe-book: only ${count} dishes parsed, expected 112`)
+      }
+      this.info(`recipe-book: ${count} dishes`)
+      return `export default ${JSON.stringify(book)}`
+    },
+  }
+}
+
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   // When this build was made, for the sitemap's <lastmod>. It has to be baked
@@ -77,6 +132,7 @@ const config = defineConfig({
   // which is exactly the pattern that gets lastmod ignored.
   define: { __BUILT_AT__: JSON.stringify(new Date().toISOString()) },
   plugins: [
+    recipeBook(),
     whop({ disableTanstackDevtools: true }),
     devtools(),
     cloudflare({ viteEnvironment: { name: 'ssr' } }),

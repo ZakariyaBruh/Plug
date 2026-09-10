@@ -2,33 +2,46 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { useEffect } from 'react'
 
+import { JsonLd } from '#/components/JsonLd'
 import { PageShell } from '#/components/PageShell'
 import { dishBySlug } from '#/lib/dishes'
-import { pageHead, track } from '#/lib/site'
+import { isoDuration, quickest, recipesFor, type Recipe } from '#/lib/recipes'
+import { SITE_NAME, SITE_URL, pageHead, track } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
- * /eat/<dish> — where a shared answer lands.
+ * /eat/<dish> — where a shared answer lands, and the only page here a search
+ * engine has any reason to want.
  *
- * The share button hands out a link, and until now that link was /decide/:
- * a good page, but one that says nothing about why it arrived. Somebody sent
- * you "morsels45 says eat Ramen" and the preview underneath it was a bare URL.
+ * IT WAS TWO PAGES' WORTH OF JOB IN ONE PAGE'S WORTH OF CONTENT. As a thing to
+ * receive it was right: somebody sent you "morsels45 said Ramen", and this
+ * names the dish in its own card and offers you a go. As a thing to find, it
+ * was eighty-four words — a name, a one-line blurb and a button — repeated
+ * across 112 URLs. Thin near-duplicates like that are what Google calls
+ * doorway pages: it crawls them and declines to index them, which is why this
+ * site had 117 pages in its sitemap and no organic traffic at all.
  *
- * This page is the other half of that message. It names the dish in its own
- * card, so the link previews as the answer somebody actually got, and offers
- * the one thing a reader of that message wants: a go of their own.
- *
- * The slug is looked up in the real catalogue rather than prettified back into
- * words. /eat/anything-at-all would otherwise render whatever text a stranger
- * put in the URL into a card carrying this site's name.
+ * The fix was not to write anything new. The recipes already existed, in
+ * public/decide/js/recipes.js, rendered by the game after you have already
+ * decided — which is the one moment a search engine never sees. Putting them
+ * on the page turns a stub into the thing somebody searching for the dish was
+ * actually looking for, and the answer stays honest because it is the same
+ * recipe the app itself gives you.
  */
 const loadDish = createServerFn({ method: 'GET' })
   .inputValidator((input: { slug: string }) => input)
-  .handler(({ data }) => dishBySlug(data.slug))
+  .handler(({ data }) => {
+    const dish = dishBySlug(data.slug)
+    if (!dish) return null
+    return { ...dish, recipes: recipesFor(dish.name), quickest: quickest(dish.name) }
+  })
 
 export const Route = createFileRoute('/eat/$dish')({
   loader: async ({ params }) => {
-    const [viewer, dish] = await Promise.all([loadViewer(), loadDish({ data: { slug: params.dish } })])
+    const [viewer, dish] = await Promise.all([
+      loadViewer(),
+      loadDish({ data: { slug: params.dish } }),
+    ])
     return { viewer, dish }
   },
   head: ({ loaderData }) => {
@@ -36,20 +49,106 @@ export const Route = createFileRoute('/eat/$dish')({
     if (!dish) {
       return pageHead({
         title: 'morsels45 — what should you eat?',
-        description: 'A handful of either-or questions and you have an answer. 112 dishes, no sign-up.',
+        description:
+          'A handful of either-or questions and you have an answer. 112 dishes, no sign-up.',
         noindex: true,
       })
     }
+
+    /*
+     * The title is built from the recipes rather than written, so it can only
+     * ever promise what the page actually has. "Ramen — morsels45" was a title
+     * for a search nobody performs; "Ramen recipes — 2 ways, from 20 minutes"
+     * leads with the words somebody types and is checkable against the page.
+     */
+    const count = dish.recipes.length
+    const fastest = dish.quickest?.time
+    const title = count
+      ? `${dish.name} recipes — ${count === 1 ? 'one way' : `${count} ways`}` +
+        (fastest ? `, from ${fastest} minutes` : '')
+      : `${dish.name} — ${SITE_NAME}`
+
+    const description = count
+      ? `${count === 1 ? 'One way' : `${count} ways`} to make ${dish.name.toLowerCase()} at home` +
+        (fastest ? `, the quickest in ${fastest} minutes` : '') +
+        `. ${dish.blurb} Free, no sign-up.`
+      : `${dish.blurb} Play the 20-second food-decision game and get your own answer — free, no sign-up.`
+
     return pageHead({
       path: `/eat/${dish.slug}`,
-      title: `${dish.name} — morsels45`,
-      description: `${dish.blurb} Play the 20-second food-decision game and get your own answer — free, no sign-up.`,
+      title,
+      description,
+      // The share card keeps its old voice: this is still what lands in a
+      // message, and "morsels45 said: Ramen" is the right thing to arrive.
       ogTitle: `morsels45 said: ${dish.name}`,
       ogDescription: `${dish.blurb} A handful of either-ors and you have your own answer.`,
     })
   },
   component: EatPage,
 })
+
+/*
+ * Recipe schema, and the one thing deliberately left out of it.
+ *
+ * Every field here is read off the recipe the app itself serves, so the markup
+ * and the page cannot disagree — which is the actual rule, not a style choice:
+ * structured data that describes something the reader cannot see is a manual
+ * penalty waiting to happen.
+ *
+ * There is no `image`, because there are no photographs of these dishes. Google
+ * wants one for a recipe rich result, so leaving it out means no card with a
+ * picture — and putting the site's own share card there instead would be
+ * claiming a photograph of ramen that is not a photograph of ramen. Valid
+ * markup with a missing optional beats a rich result built on a small lie.
+ */
+function recipeSchema(dish: { name: string; blurb: string; slug: string }, recipe: Recipe) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Recipe',
+    name: `${dish.name} — ${recipe.name}`,
+    description: dish.blurb,
+    url: `${SITE_URL}/eat/${dish.slug}`,
+    totalTime: isoDuration(recipe.time),
+    recipeYield: `${recipe.serves} ${recipe.serves === 1 ? 'serving' : 'servings'}`,
+    recipeIngredient: recipe.ingredients,
+    recipeInstructions: recipe.steps.map((step) => ({ '@type': 'HowToStep', text: step })),
+    author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+  }
+}
+
+function RecipeCard({ recipe }: { recipe: Recipe }) {
+  return (
+    <article className="rounded-2xl border border-[var(--border)] p-6 text-left sm:p-8">
+      <h3 className="text-xl font-bold">{recipe.name}</h3>
+      <p className="mt-2 text-sm text-[var(--text-dim)]">
+        {recipe.time} minutes · serves {recipe.serves} · {recipe.level}
+      </p>
+
+      <h4 className="mt-6 text-xs font-semibold uppercase tracking-widest text-[var(--text-dim)]">
+        What you need
+      </h4>
+      <ul className="mt-3 space-y-1.5">
+        {recipe.ingredients.map((line) => (
+          <li key={line} className="text-[var(--text-dim)]">
+            {line}
+          </li>
+        ))}
+      </ul>
+
+      <h4 className="mt-6 text-xs font-semibold uppercase tracking-widest text-[var(--text-dim)]">
+        What you do
+      </h4>
+      <ol className="mt-3 space-y-3">
+        {recipe.steps.map((step, i) => (
+          <li key={step} className="flex gap-3">
+            <span className="shrink-0 font-semibold text-[var(--amber)]">{i + 1}</span>
+            <span className="text-[var(--text-dim)]">{step}</span>
+          </li>
+        ))}
+      </ol>
+    </article>
+  )
+}
 
 function EatPage() {
   const { viewer, dish } = Route.useLoaderData()
@@ -94,7 +193,10 @@ function EatPage() {
             >
               Play morsels45
             </a>
-            <Link to="/how-it-works" className="text-sm text-[var(--amber)] underline underline-offset-4">
+            <Link
+              to="/how-it-works"
+              className="text-sm text-[var(--amber)] underline underline-offset-4"
+            >
               How it works
             </Link>
           </div>
@@ -103,6 +205,28 @@ function EatPage() {
             Free, no sign-up, and it works with no signal.
           </p>
         </div>
+
+        {dish && dish.recipes.length ? (
+          <div className="mx-auto mt-20 max-w-2xl">
+            <h2 className="text-center text-2xl font-bold sm:text-3xl">
+              How to make {dish.name.toLowerCase()}
+            </h2>
+            <p className="mt-3 text-center text-[var(--text-dim)]">
+              {dish.recipes.length === 1
+                ? 'One way to do it'
+                : `${dish.recipes.length} genuinely different takes — a classic, and a faster or lighter route`}
+              . The same ones the app hands you once you have decided.
+            </p>
+
+            <div className="mt-10 space-y-8">
+              {dish.recipes.map((recipe) => (
+                <RecipeCard key={recipe.name} recipe={recipe} />
+              ))}
+            </div>
+
+            {dish.quickest ? <JsonLd data={recipeSchema(dish, dish.quickest)} /> : null}
+          </div>
+        ) : null}
       </main>
     </PageShell>
   )
