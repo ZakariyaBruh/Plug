@@ -70,8 +70,32 @@
   Premium.prototype.isSignedIn = function () { return !!this.status.signedIn; };
 
   // Opens real checkout in a new tab, so nothing on this page is lost.
+  /*
+   * Open checkout, and actually open it.
+   *
+   * 'noopener' is deliberately NOT passed, and that is not an oversight: with
+   * it, window.open returns null whether it succeeded or was blocked — the
+   * spec says so — which makes the two impossible to tell apart. The page
+   * being opened is this site's own /premium, so the opener reference is ours
+   * either way, and it is severed below regardless.
+   *
+   * WHY THE FALLBACK. Inside an iframe sandboxed without allow-popups —
+   * which is a perfectly ordinary way for an app embedded on somebody else's
+   * site to be served — window.open does nothing at all and reports nothing,
+   * while the toast beside it promises a checkout that is opening. Measured:
+   * top level and a plain iframe both get a tab; a sandbox without
+   * allow-popups gets silence. Navigating this frame is the one thing left
+   * that works. It costs the game in progress, which is a real cost and a
+   * much smaller one than a buy button that does nothing.
+   */
   Premium.prototype.openUpgrade = function () {
-    window.open(UPGRADE_URL, '_blank', 'noopener');
+    var opened = null;
+    try { opened = window.open(UPGRADE_URL, '_blank'); } catch (err) {}
+    if (opened) {
+      try { opened.opener = null; } catch (err) {}
+      return;
+    }
+    try { window.location.assign(UPGRADE_URL); } catch (err) {}
   };
 
   Premium.prototype.upgradeUrl = function () { return UPGRADE_URL; };

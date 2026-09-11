@@ -25,6 +25,16 @@ export const SITE_CARD_ALT = 'morsels45 — stop scrolling, start eating'
  */
 export const DISH_COUNT = 133
 
+/*
+ * The affiliate programme.
+ *
+ * One constant because it now appears in several places, and a money link
+ * copy-pasted around a codebase is a money link that goes stale in three of
+ * them. The game has its own copy of this in decide/js/app.js, which is a
+ * separate static app and cannot import from here.
+ */
+export const AFFILIATES_URL = 'https://whop.com/morsels45/affiliates'
+
 export const ANDROID_APK = '/morsels45.apk'
 export const ANDROID_VERSION = '1.0.0'
 export const ANDROID_SIZE = '6.0 MB'

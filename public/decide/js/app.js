@@ -148,6 +148,49 @@
     return false;
   }
 
+  /*
+   * Open something that is not this app, and make sure it opens.
+   *
+   * Every outward link in here is an <a target="_blank">, which is right at
+   * the top level and silently does nothing inside an iframe sandboxed
+   * without allow-popups — the same hole that made the Premium button a dead
+   * end, and one that applies to every affiliate link too. So the click is
+   * intercepted and tried properly: a new tab if the browser will give one,
+   * and this frame if it will not.
+   *
+   * The href stays on the element and is still the real URL, so middle-click,
+   * "copy link" and a right-click menu all keep working, and the link is
+   * still a link with JavaScript off.
+   */
+  function openOut(url) {
+    if (!url) return;
+    var opened = null;
+    try { opened = window.open(url, '_blank'); } catch (err) {}
+    if (opened) {
+      // Severed by hand because 'noopener' would make the return value null
+      // on success as well as on failure, and then there is no telling
+      // whether anything opened.
+      try { opened.opener = null; } catch (err) {}
+      return;
+    }
+    try { window.location.assign(url); } catch (err) {}
+  }
+
+  /*
+   * Delegated, not bound one by one at load. Half the outward links in this
+   * app do not exist yet when it starts — every news headline, every link
+   * inside a recipe, the escape hatch out of the shared browser — and binding
+   * the ones present at boot would have covered the static offers and missed
+   * exactly the ones that are built later.
+   */
+  document.addEventListener('click', function (e) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    var link = e.target.closest && e.target.closest('a[target="_blank"]');
+    if (!link || !link.href) return;
+    e.preventDefault();
+    openOut(link.href);
+  });
+
   // One tap from anywhere in the app to real checkout — no hunting for a
   // switch on the profile screen first. Opens in a new tab, so a game in
   // progress here is never lost; coming back to this tab re-checks Premium
@@ -173,9 +216,23 @@
     if ('inert' in body) body.inert = !open;
   }
 
-  // The unlock buttons behave like a checkout link: they take you to where the
-  // tier is actually switched, rather than switching it behind your back.
-  $$('.vault-btn').forEach(function (btn) {
+  /*
+   * The unlock buttons behave like a checkout link: they take you to where the
+   * tier is actually switched, rather than switching it behind your back.
+   *
+   * BOUND BY THE ATTRIBUTE, not by a class. This read `.vault-btn`, which is
+   * the class that styles a button sitting inside a blurred vault — and the
+   * Menu section's pitch is not a vault, so its button was written without it
+   * and nothing was listening to "See what Premium gets you". It was a dead
+   * button in every environment: no tab, no navigation, no toast, top level
+   * and framed alike.
+   *
+   * data-unlock is what actually marks one of these — it carries the name of
+   * the thing being unlocked, which is the whole payload — so that is what is
+   * bound. A class is for looks and will be dropped the next time something
+   * looks different.
+   */
+  $$('[data-unlock]').forEach(function (btn) {
     btn.addEventListener('click', function () {
       Sound.reject();
       goPremium(btn.dataset.unlock);
@@ -3755,6 +3812,38 @@
             'earning from them every month they keep using it.',
       fine: 'Nothing to pay, nothing to ship, and no minimum.',
       cta: 'See the terms'
+    },
+    {
+      id: 'aff-nothing-to-sell',
+      kind: 'aff',
+      icon: '\u{1F4E6}',
+      title: 'Nothing to buy, nothing to post',
+      body: 'This is not one of those where you have to buy a kit or put anything on ' +
+            'social media. It is a link. You send it to people who cannot decide what ' +
+            'to eat, which is everybody.',
+      fine: 'Free to join and you can stop at any point.',
+      cta: 'Get my link'
+    },
+    {
+      id: 'aff-group',
+      kind: 'aff',
+      icon: '\u{1F465}',
+      title: 'One link works for a whole group chat',
+      body: 'The same link does not run out and does not care how many people use it. ' +
+            'Put it somewhere a few people will see it once, rather than sending it ' +
+            'over and over.',
+      fine: 'Free to join, and it costs the people you send nothing extra.',
+      cta: 'Show me how'
+    },
+    {
+      id: 'aff-cancel',
+      kind: 'aff',
+      icon: '\u{1F513}',
+      title: 'You keep your link if you stop paying',
+      body: 'The affiliate programme is not part of Premium. Join it on the free ' +
+            'version, keep it if you cancel, and keep earning either way.',
+      fine: 'Nothing to pay, ever, to be an affiliate.',
+      cta: 'Join it'
     }
   ];
 
@@ -5776,6 +5865,20 @@
   function renderProfile() {
     var level = progress.level();
     var state = progress.state;
+
+    /*
+     * The affiliate block's own line, grounded the same way the prompt's is.
+     *
+     * This screen already knows how much somebody has used the app, and that
+     * is the only honest argument for why they of all people should have a
+     * link. No rate and no amount: this file does not know them, and the page
+     * at the other end does.
+     */
+    var settled = state.decisions || 0;
+    $('earn-wrap-line').textContent = settled
+      ? 'You have settled ' + settled + ' ' + (settled === 1 ? 'dinner' : 'dinners') +
+        ' in here. Somebody you know has the same problem.'
+      : '';
 
     $('profile-name').textContent = level.name;
     $('profile-xp').textContent = state.xp;
