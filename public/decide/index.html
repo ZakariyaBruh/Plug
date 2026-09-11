@@ -261,6 +261,13 @@
       <button class="plain" id="surprise-btn" hidden>Surprise me <span class="tag-premium">Premium</span></button>
     </div>
 
+    <section class="strip" id="menu-wrap">
+      <h2 class="strip-title">Feeding people <span class="tag-premium">Premium</span></h2>
+      <p class="fine" id="menu-blurb">A starter, a main and a pudding that actually go together &mdash; not three heavy
+      things, and not three cold ones.</p>
+      <button class="plain" id="menu-btn">Write me a menu</button>
+    </section>
+
     <section class="strip" id="week-wrap" hidden>
       <h2 class="strip-title">This week <span class="tag-premium">Premium</span></h2>
       <p class="fine" id="week-blurb">Seven dishes chosen from what you actually like, no two the same sort of thing.</p>
@@ -1017,6 +1024,24 @@
         <p class="pane-line" id="week-intro">Seven dishes, picked from what you actually like.</p>
         <ol class="week" id="week-list"></ol>
         <button class="plain" id="week-done">Back to the start</button>
+      </div>
+
+      <!-- menu: three courses that go together -->
+      <div class="panel" id="panel-menu">
+        <div class="q-bar">
+          <button class="ghost-btn" id="menu-back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+          </button>
+          <p class="q-step">Tonight&rsquo;s menu</p>
+          <button class="ghost-btn" id="menu-reroll" aria-label="Write another one">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>
+          </button>
+        </div>
+
+        <p class="pane-line" id="menu-intro">Three courses that belong on the same table.</p>
+        <ol class="menu-courses" id="menu-list"></ol>
+        <p class="fine" id="menu-note"></p>
+        <button class="plain" id="menu-done">Back to the start</button>
       </div>
 
       <!-- plan -->

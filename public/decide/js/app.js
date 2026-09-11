@@ -2233,6 +2233,146 @@
       ' dishes, no two the same sort of thing. Tap one to read about it.';
   }
 
+  /* ------------------------------------------------------------ the menu */
+  /*
+   * Three courses that belong on the same table.
+   *
+   * The catalogue has no idea what a course is — there is no `starter` tag and
+   * there should not be, because most of these dishes can be either depending
+   * on how much of it you put on the plate. Sixty dishes read as a plausible
+   * starter and sixty-seven as a plausible main, and thirty-six of them are
+   * the same dishes. So nothing is classified; everything is scored, and the
+   * best fit for each slot wins.
+   *
+   * The second half of the job is that the three have to get along. A fried
+   * starter before a fried main before a fried pudding is three of the same
+   * evening, so a course is marked down for repeating what has already been
+   * chosen — which is what stops this being three separate random picks with
+   * a menu drawn round them.
+   */
+  var COURSES = [
+    { id: 'starter', label: 'To start',
+      likes: ['light', 'fresh', 'shareable', 'soupy', 'crunchy'],
+      dislikes: ['filling', 'indulgent', 'carby'] },
+    { id: 'main', label: 'Then',
+      likes: ['filling', 'hot', 'comfort', 'carby', 'meat'],
+      dislikes: ['light', 'breakfast'] },
+    { id: 'pudding', label: 'And after',
+      likes: ['sweet', 'indulgent', 'soft', 'fruity'],
+      dislikes: [] }
+  ];
+
+  // What a course must never be, whatever it scores.
+  function courseAllows(course, dish) {
+    var sweet = (dish.tags.sweet || 0) > 0;
+    var drink = (dish.tags.drink || 0) > 0;
+    if (drink) return false;                         // a menu is food
+    if (course.id === 'pudding') return sweet;
+    return !sweet;
+  }
+
+  function courseScore(course, dish, taken) {
+    var score = 0;
+    course.likes.forEach(function (t) { score += (dish.tags[t] || 0) * 2; });
+    course.dislikes.forEach(function (t) { score -= (dish.tags[t] || 0) * 2; });
+
+    /*
+     * Marked down for being the same evening twice. Not forbidden — sometimes
+     * the best main really does share a tag with the starter — but enough that
+     * a menu of three fried things loses to a menu that goes somewhere.
+     */
+    taken.forEach(function (other) {
+      Object.keys(dish.tags).forEach(function (t) {
+        if ((other.tags[t] || 0) > 0 && (dish.tags[t] || 0) > 0) score -= 0.6;
+      });
+    });
+
+    return score;
+  }
+
+  /*
+   * Chosen from the good-enough, not the single best.
+   *
+   * Scoring alone put Fattoush at the top of every starter this catalogue can
+   * produce — five menus in a row opened with it — because one dish really is
+   * the highest-scoring answer and a small random nudge cannot outvote a real
+   * gap. Endless already had this problem and solved it with a band of
+   * plausible partners to draw from (ENDLESS_BAND); this is the same idea.
+   * A menu that is always the same menu is not a menu.
+   */
+  var MENU_BAND = 8;
+
+  function buildMenu() {
+    // favouredDishes has already applied bans, avoids and snoozes, so nothing
+    // chosen here can break a rule somebody set.
+    var pool = favouredDishes().map(function (r) { return r.item; });
+    if (pool.length < 12) pool = Data.ITEMS.slice();
+
+    var taken = [];
+    var menu = [];
+    COURSES.forEach(function (course) {
+      var ranked = [];
+      pool.forEach(function (dish) {
+        if (!courseAllows(course, dish)) return;
+        if (taken.indexOf(dish) !== -1) return;
+        ranked.push({ dish: dish, score: courseScore(course, dish, taken) });
+      });
+      ranked.sort(function (a, b) { return b.score - a.score; });
+      var band = ranked.slice(0, MENU_BAND);
+      var best = band.length ? band[Math.floor(Math.random() * band.length)].dish : null;
+      // A course with nothing eligible is left out rather than filled with
+      // something wrong — a vegetarian with every pudding banned gets two
+      // courses, not a steak for afters.
+      if (best) { taken.push(best); menu.push({ course: course, dish: best }); }
+    });
+    return menu;
+  }
+
+  function renderMenu(menu) {
+    var list = $('menu-list');
+    list.innerHTML = '';
+    menu.forEach(function (entry, i) {
+      var li = document.createElement('li');
+      li.className = 'menu-course';
+      li.style.animationDelay = (i * 70) + 'ms';
+      li.innerHTML = '<span class="menu-when"></span>' +
+        '<span class="menu-art" aria-hidden="true"></span>' +
+        '<button class="menu-name plain" type="button"></button>' +
+        '<span class="menu-note"></span>';
+      li.querySelector('.menu-when').textContent = entry.course.label;
+      li.querySelector('.menu-art').textContent = entry.dish.icon;
+      var btn = li.querySelector('.menu-name');
+      btn.textContent = entry.dish.name;
+      btn.addEventListener('click', function () { openSheet(entry.dish); });
+      li.querySelector('.menu-note').textContent = entry.dish.blurb;
+      list.appendChild(li);
+    });
+
+    var cooking = menu.filter(function (e) { return Recipes.has(e.dish.name); }).length;
+    $('menu-note').textContent = cooking === menu.length
+      ? 'Every course has a recipe behind it — tap one to read it.'
+      : 'Tap a course to read about it.';
+  }
+
+  function openMenu() {
+    if (!premium('The menu')) return;
+    hideLanding();
+    var menu = buildMenu();
+    if (!menu.length) {
+      Sound.reject();
+      return toast('\u{1F37D}\u{FE0F}', 'Not enough to work with',
+        'Your rules have ruled out too much to build three courses from.');
+    }
+    renderMenu(menu);
+    setView('decide');
+    setPanel('menu');
+  }
+
+  $('menu-btn').addEventListener('click', function () { Sound.tick(); openMenu(); });
+  $('menu-reroll').addEventListener('click', function () { Sound.tick(); openMenu(); });
+  $('menu-back').addEventListener('click', goHome);
+  $('menu-done').addEventListener('click', goHome);
+
   function openWeek(fresh) {
     if (!premium('The week plan')) return;
     hideLanding();
@@ -4863,6 +5003,7 @@
         'Cook from what is already in your kitchen',
         'Scale any recipe and take a shopping list to the shop',
         'A side with that, and a planned week of seven dishes',
+        'Write me a menu: three courses that go together, with the recipes',
         'Mood shortcuts and instant picks \u2014 no questions at all'
       ]
     },

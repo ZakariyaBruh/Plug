@@ -199,6 +199,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Somewhere that serves it', 'Find the dish near you, matched on what a place actually sells rather than on being open and close by.'],
       ['A side with that', 'A drink or a light plate that actually sits next to the answer.'],
       ['A planned week', 'Seven dishes, no two alike.'],
+      ['Write me a menu', 'A starter, a main and a pudding that belong on the same table — not three heavy things, and not three cold ones. Each course scored against the others so the evening goes somewhere, and every one has its recipe behind it.'],
     ],
   },
   {

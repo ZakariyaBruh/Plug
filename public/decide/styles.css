@@ -3908,3 +3908,47 @@ body.is-landing .topbar-brand .mark-word { display: none; }
   font-size: var(--t-sm);
   color: var(--amber);
 }
+
+/* ------------------------------------------------------------------ menu */
+/* Three courses, read down the page in the order they arrive at the table.
+   Same shape as the week list, which is the other place this app hands over
+   more than one dish at a time. */
+.menu-courses { list-style: none; margin: var(--s4) 0 var(--s5); padding: 0; }
+
+.menu-course {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'when when' 'art name' '. note';
+  gap: var(--s1) var(--s3);
+  align-items: center;
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--hair);
+  animation: lift var(--mid) var(--ease) both;
+}
+
+.menu-course:last-child { border-bottom: 0; }
+
+.menu-when {
+  grid-area: when;
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.menu-art { grid-area: art; font-size: var(--t-xl); }
+
+.menu-name {
+  grid-area: name;
+  justify-self: start;
+  font-family: var(--display);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+}
+
+.menu-note { grid-area: note; font-size: var(--t-sm); color: var(--ink-3); }
+
+@media (prefers-reduced-motion: reduce) { .menu-course { animation: none; } }
