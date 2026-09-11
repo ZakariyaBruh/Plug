@@ -1605,6 +1605,35 @@
   in. Same discipline as the enjoy prompt next to it: earned, once, and a
   refusal that is the same size as the agreement.
 -->
+<!-- ===========================================================================
+     THE AD SHEET — one dialog, many prompts.
+
+     The three prompts below it are each about one specific thing and each keep
+     their own state, which is why they have their own markup. These are the
+     rotating ones: the Premium pitch and the affiliate offers. They differ
+     only in words and a link, so writing a dialog per angle would be four
+     copies of the same markup drifting apart. Everything here is filled in
+     from the ADS roster in app.js, which is also the one place a new offer
+     gets added.
+
+     Two refusals, and they are not the same refusal. "Not now" is a shrug and
+     the prompt comes back in a later game. The second one is final and is
+     honoured forever — a pitch with no way to end it is the thing that makes
+     people leave rather than the thing that makes them buy.
+     =========================================================================== -->
+<dialog class="sheet enjoy-sheet" id="ad-sheet" aria-labelledby="ad-title">
+  <button class="sheet-x" id="ad-close" aria-label="Close">&times;</button>
+  <span class="sheet-art" id="ad-art" aria-hidden="true">&#10024;</span>
+  <h2 class="sheet-name" id="ad-title"></h2>
+  <p class="sheet-note" id="ad-body"></p>
+  <p class="fine" id="ad-fine"></p>
+  <div class="enjoy-actions">
+    <a class="go go-sm" id="ad-go" target="_blank" rel="noopener noreferrer"></a>
+    <button class="quiet" id="ad-later" type="button">Not now</button>
+    <button class="quiet" id="ad-never" type="button"></button>
+  </div>
+</dialog>
+
 <!-- The third prompt, and the only one that asks for nothing. It is never
      shown to somebody who has not already said they like this. -->
 <dialog class="sheet enjoy-sheet" id="share-sheet" aria-labelledby="share-title">

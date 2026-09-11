@@ -167,7 +167,18 @@
 
       share: '',              // '' | 'no' — whether being asked to pass it on was declined
       shareAt: 0,             // decisions at the last showing
-      shareShown: 0           // times it has been shown, ever
+      shareShown: 0,          // times it has been shown, ever
+
+      /*
+       * The rotating offers (see ADS in app.js). `plusAd` and `earn` are the
+       * two final refusals — 'no' on either silences that whole kind of offer
+       * for good, not just the card that was on screen. `adAt` is where the
+       * rotation got to, saved so a new game opens on the next card rather
+       * than the same one every time.
+       */
+      plusAd: '',             // '' | 'no' — whether the Premium pitch was ended
+      adAt: 0,                // rotation cursor into ADS
+      adShown: 0              // offers shown, ever — for the record, not a cap
     };
   }
 

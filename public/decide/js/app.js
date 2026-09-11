@@ -2805,12 +2805,27 @@
     if (value === 'either') Sound.shrug(); else Sound.tick();
     floatXp(gained, source);
 
+    var asked = game.answers.length;
     game.answer(current.tag, value);
     step();
 
     // After step(), so the new question's render doesn't clear it.
     $('reaction').textContent = line;
     replay($('reaction'));
+
+    /*
+     * The one prompt allowed inside the question flow, and only when this
+     * game's budget is a big one.
+     *
+     * Four answers in is the quietest point in a run: past the broad strokes,
+     * not yet close enough to an answer to be worth hurrying. It still costs
+     * a beat in the middle of a game, so it is only taken when the budget is
+     * more than the reward screen can comfortably spend on its own — at two
+     * or three prompts they all go at the end, where nothing is waiting.
+     */
+    if (asked === 4 && gameBudget >= 4 && panel === 'question') {
+      setTimeout(function () { if (panel === 'question') fillSlot(false); }, 900);
+    }
   }
 
   /* ---------------------------------------------------------------- reveal */
@@ -2853,6 +2868,13 @@
       $('reject-btn').disabled = false;
       busy = false;
       Sound.reveal();
+
+      // The verdict is on screen and the game has stopped of its own accord,
+      // so this is a slot. After the reveal has been read, and only if the
+      // reader is still on it.
+      if (gameBudget >= 3) {
+        setTimeout(function () { if (panel === 'result') fillSlot(false); }, 2200);
+      }
     }
 
     if (!spins) return land();
@@ -3128,22 +3150,22 @@
     $('done-text').textContent = DONE_LINES[Math.floor(Math.random() * DONE_LINES.length)];
 
     /*
-     * The one moment in the app that is already a resting point, which is why
-     * the prompt is allowed here and nowhere else. Delayed so it lands after
-     * the answer has been read rather than on top of it, and re-checked when
-     * the timer fires so it is abandoned if the reader has moved on.
+     * The end of the game, and the last and largest of the prompt slots.
+     *
+     * Whatever is left of this game's budget is spent here, one prompt after
+     * another, because this is the only screen in the game where nothing is
+     * waiting on the reader. Delayed so the first lands after the answer has
+     * been read rather than on top of it, and abandoned if they have moved on.
      *
      * THE PANEL NAME. This read `panel === 'done'` for as long as the prompts
      * have existed, and there has never been a panel called that — the screen
      * this lands on is #panel-reward, and setPanel names it 'reward'. The
-     * guard was therefore false every single time, so neither prompt has ever
+     * guard was therefore false every single time, so neither prompt had ever
      * been shown to anybody: not a tuning problem, a name that was wrong from
      * the first commit. The ids inside the panel are done-icon and done-name,
      * which is where the wrong word came from and why it never looked wrong.
      */
-    if (enjoyDue()) setTimeout(function () { if (panel === 'reward') openEnjoy(); }, 1400);
-    else if (earnDue()) setTimeout(function () { if (panel === 'reward') openEarn(); }, 1400);
-    else if (shareDue()) setTimeout(function () { if (panel === 'reward') openShare(); }, 1400);
+    setTimeout(function () { if (panel === 'reward') fillSlot(true); }, 1400);
     $('xp-total').textContent = '+' + outcome.total;
 
     var list = $('awards');
@@ -3355,14 +3377,37 @@
     focusQuietly(enjoyOpener);
   }
 
-  // A dismissal is not a no. It comes back, later, and not many more times.
-  function enjoyLater() {
+  /*
+   * Record a dismissal. Closes nothing, so it can hang off the close event.
+   *
+   * This used to live inside enjoyLater and therefore only ran on the two
+   * routes wired to it — the X and Escape. Anything else that closed the
+   * sheet recorded nothing, so `enjoy` stayed empty, `enjoyAt` was never set,
+   * and the prompt was due again on the very next decision: bounded only by
+   * ENJOY_MAX_SHOWS, which is three. Three prompts in three dinners, which is
+   * exactly what it did when a test closed the dialog directly.
+   *
+   * Those two routes are the only ones a person has today, so this was
+   * latent — but it is the kind of latent that gets shipped by the next
+   * person to call closeEnjoy() from somewhere new, and the higher the
+   * frequency the worse the failure. The dialog's own close event fires
+   * however it closed, so the record is taken there instead.
+   *
+   * Idempotent: an answer of 'yes' or 'no' is final and this leaves it alone,
+   * and recording 'later' twice writes the same two values.
+   */
+  function noteEnjoyLater() {
     var st = progress.state;
     if (st.enjoy !== 'yes' && st.enjoy !== 'no') {
       st.enjoy = 'later';
       st.enjoyAt = st.decisions || 0;
       progress.save();
     }
+  }
+
+  // A dismissal is not a no. It comes back, later, and not many more times.
+  function enjoyLater() {
+    noteEnjoyLater();
     closeEnjoy();
   }
 
@@ -3418,6 +3463,10 @@
   $('enjoy-done').addEventListener('click', closeEnjoy);
   $('enjoy-close').addEventListener('click', enjoyLater);
   $('enjoy-sheet').addEventListener('cancel', function (e) { e.preventDefault(); enjoyLater(); });
+  // The backstop: whatever closed it, the dismissal is on the record. The two
+  // handlers above stay because the no-<dialog> fallback removes the open
+  // attribute by hand and fires no close event.
+  $('enjoy-sheet').addEventListener('close', noteEnjoyLater);
 
   /*
    * Said when the app has just answered the question it exists to answer. In
@@ -3504,6 +3553,270 @@
   }
 
   var earnOpener = null;
+
+  /* ------------------------------------------------------- the prompt budget */
+  /*
+   * HOW MANY PROMPTS ONE GAME IS ALLOWED, and where they are allowed to land.
+   *
+   * A game is one play-through: from starting a decision to accepting one.
+   * On Standard that game gets a budget of between two and five prompts,
+   * drawn once when the game starts so the pace varies between games instead
+   * of being the same every time. A Premium member gets one: they have
+   * already bought the thing two of these are selling, and the affiliate
+   * offer is worth making once.
+   *
+   * WHERE THEY LAND, and why not mid-question. Three modal dialogs thrown
+   * across the question flow would hit the budget and wreck the game: every
+   * one of them steals focus in the middle of a train of thought that takes
+   * about a minute to finish. So the slots are the two places the game has
+   * already stopped — the verdict and the reward screen — plus one quiet
+   * point in the middle, and the reward screen then spends whatever is left
+   * over, one prompt after the next, each waiting for the one before it to be
+   * closed. Same count, and nothing interrupted.
+   *
+   * WHAT FILLS A SLOT, in order. The three bespoke prompts first, when they
+   * are due: they are about a specific thing, they keep their own state and
+   * they are rare by design. Then the ads, which are what makes a budget of
+   * five reachable at all — an offer with nothing behind it but "not now"
+   * comes back, where a survey answered is answered forever.
+   */
+  var GAME_BUDGET_MIN = 2;
+  var GAME_BUDGET_MAX = 5;
+  var GAME_BUDGET_PLUS = 1;
+
+  var gameBudget = 0;
+  var gameSpent = 0;
+  var gameAds = [];   // ad ids already used this game, so none repeats in it
+
+  function startGameBudget() {
+    gameSpent = 0;
+    gameAds = [];
+    gameBudget = isPlus()
+      ? GAME_BUDGET_PLUS
+      : GAME_BUDGET_MIN + Math.floor(Math.random() * (GAME_BUDGET_MAX - GAME_BUDGET_MIN + 1));
+  }
+
+  function anySheetOpen() {
+    var ids = ['enjoy-sheet', 'earn-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet'];
+    for (var i = 0; i < ids.length; i++) {
+      var dlg = document.getElementById(ids[i]);
+      if (dlg && dlg.open) return true;
+    }
+    return false;
+  }
+
+  /*
+   * Spend one prompt, if there is budget and something worth showing.
+   *
+   * `chain` keeps going after each one is closed until the budget is gone —
+   * only used on the reward screen, where nothing is waiting. Returns whether
+   * anything was shown, so a caller can tell a spent budget from an empty
+   * roster.
+   */
+  function fillSlot(chain) {
+    // Capped live rather than trusting the number drawn at the start of the
+    // game: Premium is settled by a request to the server, so the very first
+    // game of a session can begin before the answer is back. Reading isPlus()
+    // here means a member never spends a Standard-sized budget.
+    var cap = isPlus() ? Math.min(gameBudget, GAME_BUDGET_PLUS) : gameBudget;
+    if (gameSpent >= cap) return false;
+    if (anySheetOpen()) return false;
+
+    var shown = null;
+    if (enjoyDue()) { openEnjoy(); shown = 'enjoy-sheet'; }
+    else if (earnDue()) { openEarn(); shown = 'earn-sheet'; }
+    else if (shareDue()) { openShare(); shown = 'share-sheet'; }
+    else if (openAd(nextAd())) { shown = 'ad-sheet'; }
+
+    if (!shown) return false;
+    gameSpent += 1;
+
+    if (chain) {
+      var dlg = $(shown);
+      // The dialog's own close event, so the next one waits for this one to be
+      // dealt with however it was dealt with. Two prompts on screen at once is
+      // not two chances, it is one person closing two things.
+      dlg.addEventListener('close', function once() {
+        dlg.removeEventListener('close', once);
+        setTimeout(function () { if (panel === 'reward') fillSlot(true); }, 500);
+      });
+    }
+    return true;
+  }
+
+  /* --------------------------------------------------------------- the ads */
+  /*
+   * The rotating prompts, and the one place a new offer is added.
+   *
+   * ADD AN AFFILIATE HERE. One entry, and it joins the rotation: it will be
+   * shown, spaced, counted against the per-game budget and silenced by the
+   * same refusal as the rest, with nothing else to wire up. `kind` decides
+   * who sees it and which refusal ends it — 'plus' is the upgrade pitch and
+   * is never shown to somebody already paying; 'aff' is an affiliate offer
+   * and is ended for good by the same "not for me" that ends all of them.
+   *
+   * NO NUMBERS THAT ARE NOT KNOWN HERE. None of these name a commission rate
+   * or an amount, because this file does not know them and a made-up figure
+   * in a money pitch is the one kind of wrong that costs somebody something
+   * real. They say what the deal is and let the page at the other end say
+   * what it pays.
+   */
+  var AFFILIATES_URL = 'https://whop.com/morsels45/affiliates';
+
+  var ADS = [
+    {
+      id: 'plus-coffee',
+      kind: 'plus',
+      icon: '✨',
+      title: 'Cheaper than a cup of coffee',
+      body: 'Premium is the other six ways to play, cook mode, the menu builder, ' +
+            'and rules it never asks you about twice. A whole month of it costs less ' +
+            'than one coffee.',
+      fine: 'Three days free first. The game you are playing stays free either way.',
+      cta: 'Three days free'
+    },
+    {
+      id: 'plus-modes',
+      kind: 'plus',
+      icon: '\u{1F3C6}',
+      title: 'There are six more games in here',
+      body: 'Knockout, Blitz, This or that, Shortlist, Swipe and Together are all ' +
+            'sitting behind one switch. Same catalogue, six different ways to argue ' +
+            'with it.',
+      fine: 'Three days free, then less than a coffee a month.',
+      cta: 'Have a look'
+    },
+    {
+      id: 'aff-tell',
+      kind: 'aff',
+      icon: '\u{1F4B8}',
+      title: 'Get paid for telling people',
+      body: 'morsels45 has an affiliate programme. Share your own link, and when ' +
+            'somebody signs up through it you take a cut — for as long as they stay.',
+      fine: 'Free to join, nothing to pay, and it costs the people you send nothing extra.',
+      cta: 'Show me how'
+    },
+    {
+      id: 'aff-already',
+      kind: 'aff',
+      icon: '\u{1F4E3}',
+      title: 'You are already recommending it',
+      body: 'Every time you settle an argument about dinner with this, somebody else ' +
+            'hears about it. With a link in your hand, that is worth something to you ' +
+            'as well as to them.',
+      fine: 'Takes a minute to set up and there is nothing to pay.',
+      cta: 'Get my link'
+    },
+    {
+      id: 'aff-recurring',
+      kind: 'aff',
+      icon: '\u{1F501}',
+      title: 'It pays for as long as they stay',
+      body: 'The cut is not a one-off finder’s fee. Sign somebody up and you keep ' +
+            'earning from them every month they keep using it.',
+      fine: 'Nothing to pay, nothing to ship, and no minimum.',
+      cta: 'See the terms'
+    }
+  ];
+
+  /*
+   * Which ads this profile is allowed to see at all.
+   *
+   * Nothing here is about timing — that is the budget's job below. This is
+   * only the question of whether an offer makes sense for this person and
+   * whether they have told us to stop.
+   */
+  function adAllowed(ad) {
+    var st = progress.state;
+    if (ad.kind === 'plus') return !isPlus() && st.plusAd !== 'no';
+    if (ad.kind === 'aff') return st.earn !== 'no';
+    return true;
+  }
+
+  /*
+   * The rotation cursor, saved.
+   *
+   * Held in progress rather than in a variable so the rotation carries across
+   * games and across days. Without that, every game would open with the same
+   * ad, which is how a roster of five ends up being one ad with four spares.
+   */
+  function nextAd() {
+    var st = progress.state;
+    var start = st.adAt || 0;
+    for (var i = 0; i < ADS.length; i++) {
+      var ad = ADS[(start + i) % ADS.length];
+      if (!adAllowed(ad)) continue;
+      // Never the same card twice in one game. With most of the roster
+      // refused the cursor wraps inside a single game, and it did: a profile
+      // that had ended the affiliate offers got "six more games in here",
+      // then the coffee line, then both again, in one sitting. The same pitch
+      // twice in five minutes is the exact thing that makes somebody leave.
+      // Nothing new to say means the slot goes unfilled and the budget simply
+      // is not spent — fewer prompts for somebody who has refused most of
+      // them is the right answer, not a repeat.
+      if (gameAds.indexOf(ad.id) !== -1) continue;
+      st.adAt = (start + i + 1) % ADS.length;
+      progress.save();
+      gameAds.push(ad.id);
+      return ad;
+    }
+    return null;
+  }
+
+  var adOpener = null;
+  var adShowing = null;
+
+  function openAd(ad, preview) {
+    if (!ad) return false;
+    adShowing = ad;
+
+    $('ad-art').textContent = ad.icon;
+    $('ad-title').textContent = ad.title;
+    $('ad-body').textContent = ad.body;
+    $('ad-fine').textContent = ad.fine;
+    $('ad-go').textContent = ad.cta;
+    $('ad-go').href = ad.kind === 'aff' ? AFFILIATES_URL : premiumApi.upgradeUrl();
+    // The final refusal is named after what it ends, not after this one card:
+    // "not for me" on an affiliate offer ends every affiliate offer, and it
+    // should not take somebody three refusals to discover that.
+    $('ad-never').textContent = ad.kind === 'aff' ? 'Not for me' : 'Not interested';
+
+    if (!preview) {
+      var st = progress.state;
+      st.adShown = (st.adShown || 0) + 1;
+      progress.save();
+    }
+
+    adOpener = document.activeElement;
+    var dlg = $('ad-sheet');
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    focusQuietly($('ad-go'));
+    return true;
+  }
+
+  function closeAd() {
+    var dlg = $('ad-sheet');
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+    focusQuietly(adOpener);
+  }
+
+  $('ad-later').addEventListener('click', function () { Sound.tick(); closeAd(); });
+  $('ad-close').addEventListener('click', closeAd);
+  $('ad-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeAd(); });
+
+  // Final, and for the whole kind rather than this one card.
+  $('ad-never').addEventListener('click', function () {
+    var st = progress.state;
+    if (adShowing && adShowing.kind === 'aff') st.earn = 'no';
+    if (adShowing && adShowing.kind === 'plus') st.plusAd = 'no';
+    progress.save();
+    Sound.tick();
+    closeAd();
+  });
+
+  // Tapping the offer is an answer too: it should not be put to them again in
+  // the same breath, and the sheet is a change of context anyway.
+  $('ad-go').addEventListener('click', function () { closeAd(); });
 
   /* ----------------------------------------------------------- send it on */
   /*
@@ -6036,6 +6349,10 @@
   function resetGame() {
     toastQueue = [];
     duel.live = false;
+    // A new game, and a fresh prompt budget for it. Every mode in the app
+    // comes through here, which is what makes "per game" mean the same thing
+    // in Endless, Knockout and the ordinary question flow alike.
+    startGameBudget();
     // Order matters: the bias is read while the prior is built, and the bans are
     // applied to the weights afterwards.
     applyTaste();
@@ -8699,7 +9016,12 @@
      * accident.
      */
     var wanted = (here.searchParams.get('prompt') || '').toLowerCase();
-    if (wanted) previewPrompts(wanted === 'all' ? ['enjoy', 'earn', 'share'] : [wanted]);
+    if (wanted) {
+      var queue = wanted === 'all' ? ['enjoy', 'earn', 'share', 'ads']
+                : wanted === 'ads' ? ['ads']
+                : [wanted];
+      previewPrompts(queue);
+    }
   })();
 
   /*
@@ -8709,14 +9031,22 @@
    */
   function previewPrompts(names) {
     var openers = { enjoy: openEnjoy, earn: openEarn, share: openShare };
-    var queue = names.filter(function (n) { return openers[n]; });
+    // 'ads' expands to one preview of every card in the roster, in order, so
+    // the whole rotation can be read in one go rather than played for.
+    var queue = [];
+    names.forEach(function (n) {
+      if (openers[n]) return queue.push(n);
+      if (n !== 'ads') return;
+      ADS.forEach(function (ad, i) { queue.push('ad:' + i); });
+    });
     if (!queue.length) return;
 
     function next() {
       var name = queue.shift();
       if (!name) return;
-      openers[name](true);
-      var dlg = $(name + '-sheet');
+      if (name.indexOf('ad:') === 0) openAd(ADS[Number(name.slice(3))], true);
+      else openers[name](true);
+      var dlg = $(name.indexOf('ad:') === 0 ? 'ad-sheet' : name + '-sheet');
       if (!dlg || !queue.length) return;
       // Native <dialog> fires this; the attribute fallback does not, in which
       // case the walk simply stops after the first one rather than misfiring.
