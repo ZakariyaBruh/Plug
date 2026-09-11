@@ -30,41 +30,51 @@ import iconMaskableSvg from '../../../public/decide/icon-maskable.svg?raw'
 import swJsRaw from '../../../public/decide/sw.js?raw'
 
 /*
- * A build id for the service worker's cache name.
+ * The build id, and the versioned URLs that go with it.
  *
- * The stamping that matters happens at build time, in vite.config.ts: the host
- * serves public/decide/** from its own static asset layer, so the copy people
- * actually get never passes through this file. This is the fallback for the
- * case this route exists to cover at all — the static layer missing — so that
- * a worker served from here is versioned too rather than shipping the literal
- * placeholder.
+ * BUILD comes from vite.config.ts, which hashes these same source files — one
+ * number, computed once, used by everything that needs it. This file used to
+ * compute its own with a small FNV-1a over the same bytes, which was fine
+ * while the id only had to name a cache. It is not fine now that the id is
+ * also on the URL of every script: there are two ways a file under /decide/
+ * reaches a browser — the host's static asset layer for most of them, this
+ * route for the page itself — and two different hashes meant the worker
+ * precached js/app.js?v=<one> while the page asked for js/app.js?v=<other>.
+ * Everything still worked, and the precache was never used once.
  *
- * A plain FNV-1a over the concatenated sources. It is not a security hash and
- * does not need to be one: it needs to change when the bytes change, be cheap
- * enough to run at startup, and be the same for every instance of one build.
+ * WHY THE URLS CARRY IT AT ALL. index.html is fetched network-first, so a
+ * deploy arrives on the next visit — but that page is still controlled by the
+ * PREVIOUS service worker, which answers js/app.js out of its own cache. The
+ * first load after every deploy therefore ran new markup against the previous
+ * build's JavaScript. With the id on the URL the request simply cannot match
+ * an old cache entry: it misses, goes to the network, and the page and its
+ * code are the same build on the first load rather than the second.
+ *
+ * The route matches on pathname, so ?v= never has to be understood here — it
+ * exists to be different, not to be read.
  */
-function buildId(...sources: string[]) {
-  let hash = 0x811c9dc5
-  for (const source of sources) {
-    for (let i = 0; i < source.length; i++) {
-      hash ^= source.charCodeAt(i)
-      hash = Math.imul(hash, 0x01000193) >>> 0
-    }
+import { BUILD } from 'virtual:build-id'
+
+const VERSIONED = [
+  'styles.css', 'js/app.js', 'js/confetti.js', 'js/config.js', 'js/data.js',
+  'js/engine.js', 'js/flavor.js', 'js/mapview.js', 'js/places.js', 'js/premium.js',
+  'js/progress.js', 'js/recipes.js', 'js/sound.js', 'js/taste.js',
+]
+
+function stampUrls(text: string, quote: string): string {
+  let out = text
+  for (const file of VERSIONED) {
+    out = out.split(`${quote}${file}${quote}`).join(`${quote}${file}?v=${BUILD}${quote}`)
   }
-  return hash.toString(36)
+  return out
 }
 
-const BUILD = buildId(
-  indexHtml, stylesCss, appJs, confettiJs, configJs, dataJs, engineJs, flavorJs,
-  mapviewJs, placesJs, premiumJs, progressJs, recipesJs, soundJs, tasteJs,
-  manifestJson, iconSvg, iconMaskableSvg, swJsRaw,
-)
-
-const swJs = swJsRaw.replace('__BUILD__', BUILD)
+const page = stampUrls(indexHtml, '"')
+const swJs = stampUrls(swJsRaw, "'").replace('__BUILD__', BUILD)
 
 const FILES: Record<string, { body: string; type: string }> = {
-  '': { body: indexHtml, type: 'text/html; charset=utf-8' },
-  'index.html': { body: indexHtml, type: 'text/html; charset=utf-8' },
+  '': { body: page, type: 'text/html; charset=utf-8' },
+  'index.html': { body: page, type: 'text/html; charset=utf-8' },
   'styles.css': { body: stylesCss, type: 'text/css; charset=utf-8' },
   'js/app.js': { body: appJs, type: 'text/javascript; charset=utf-8' },
   'js/confetti.js': { body: confettiJs, type: 'text/javascript; charset=utf-8' },
