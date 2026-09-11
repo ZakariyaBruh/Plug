@@ -6366,6 +6366,28 @@
    * Heat now has to be reached for, which is what makes it a decision — and
    * the run that commits to it still scores an order of magnitude more.
    */
+  /*
+   * THE FLOOR — below which a tap was not a choice.
+   *
+   * Heat made speed worth about thirteen times what considered play was worth,
+   * and the fastest way to score is therefore to stop reading: hammer a side
+   * of the screen and the multiplier climbs on its own. That does not merely
+   * make the mode shallow, it makes the ending dishonest — Endless closes by
+   * telling you something true about what you like, worked out from the pairs
+   * you chose, and a hundred and forty taps nobody read are not choices to
+   * work anything out from.
+   *
+   * There is a real number under this. Two dish names and two icons cannot be
+   * taken in and decided between in much under four hundred milliseconds; a
+   * hundred and fifty is a thumb, not a preference. So a tap below the floor
+   * keeps nothing: no combo, no heat, and — see the learning rule further down
+   * — nothing taught.
+   *
+   * It is a floor rather than a penalty on purpose. Mashing is not punished,
+   * it simply earns nothing, and the run goes quietly nowhere. Nobody is
+   * told off; the score just does not move.
+   */
+  var ENDLESS_FLOOR = 380;      // ms under which nobody read both cards
   var ENDLESS_QUICK = 1100;     // ms inside which an answer keeps the combo
   var ENDLESS_COMBO_MAX = 9;
   var ENDLESS_BASE = 10;        // points for a pick
@@ -7090,7 +7112,11 @@
 
     // Read before the clock is fed, because both of these are about the state
     // the tap was actually made in.
-    var quick = Date.now() - endless.at <= ENDLESS_QUICK;
+    // A band, not a ceiling: fast enough to be decisive AND slow enough to have
+    // looked. Outside it either way, the streak goes.
+    var took = Date.now() - endless.at;
+    var mashed = took < ENDLESS_FLOOR;
+    var quick = !mashed && took <= ENDLESS_QUICK;
     var reflex = endless.left <= ENDLESS_RUSH;
 
     // In the red when the tap was made, not after it was paid for — the bonus
@@ -7146,10 +7172,31 @@
       shoutEndless(heatNow().name, endless.heat >= ENDLESS_HEAT.length - 1);
       Sound.climb(endless.heat * 5);
     } else if (endless.heat < wasHeat && wasHeat > 0) {
-      shoutEndless('Cooled off', false);
+      // Named when mashing is what broke it, because a streak that vanishes
+      // while you are going faster than ever is otherwise unreadable. Only on
+      // a streak worth losing — saying it on every stray tap would be its own
+      // kind of spam.
+      shoutEndless(mashed ? 'Too quick to have read it' : 'Cooled off', false);
     }
     endless.won[winner.name] = (endless.won[winner.name] || 0) + 1;
-    feedEndless();
+
+    /*
+     * A tap nobody read buys no time either, and this is the part that makes
+     * the floor work rather than merely look strict.
+     *
+     * Taking the combo away from mashing was not enough on its own: the clock
+     * was still being fed two and a half seconds per tap, so hammering at a
+     * hundred and twenty milliseconds refilled it faster than it could drain
+     * and the run simply never ended. Simulated, that scored thirty thousand
+     * against fifteen for playing properly — the exploit was better than the
+     * game.
+     *
+     * So time is bought by choosing, not by touching. Mash and the clock keeps
+     * emptying underneath you: seven seconds later the run is over with
+     * nothing in it. One stray fast tap costs that tap's worth of time and
+     * nothing more, which a real mis-tap can afford.
+     */
+    if (!mashed) feedEndless();
 
     // The winner goes back into the queue a few cards down.
     //
@@ -7194,7 +7241,14 @@
     // opinion about dinner — it still scores, because the game is the game,
     // but "whichever one your thumb was nearest with the clock red" is not
     // something this app should quietly file away as a thing you like.
-    if (!reflex) {
+    /*
+     * Nothing is learned from a tap nobody read, for the same reason nothing is
+     * learned from a panic tap: nine hundred milliseconds of thought and a
+     * hundred and fifty of thumb are different events, and only one of them is
+     * an opinion about dinner. A run spent mashing therefore ends the way it
+     * deserves to — a number, and "nothing it would swear to".
+     */
+    if (!reflex && !mashed) {
       shuffled(Taste.decisiveTags(winner, loser, Data.TAGS))
         .sort(function (x, y) { return rankOf(y.tag) - rankOf(x.tag); })
         .slice(0, ENDLESS_VOTES)
