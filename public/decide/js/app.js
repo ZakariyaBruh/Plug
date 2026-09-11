@@ -306,49 +306,10 @@
   // setPanel('home') leaves behind.
   var panel = 'home';
 
-  /*
-   * One smooth change of screen.
-   *
-   * View Transitions do the hard part: the browser photographs the page,
-   * runs the callback, photographs it again and cross-fades the two. That is
-   * a real transition between the outgoing screen and the incoming one, which
-   * a CSS animation on the arriving element cannot be — it can only fade in
-   * over whatever is already gone.
-   *
-   * Everything about it is optional. No support, reduced motion asked for, or
-   * an exception mid-flight, and the callback simply runs on its own and the
-   * app behaves exactly as it did before. Nothing waits on the transition
-   * finishing, so a slow frame can never hold up a tap.
-   *
-   * NOT used for Endless. That mode repaints a pair every few hundred
-   * milliseconds and its whole design is that the next pair arrives in the
-   * same frame as the answer to the last one — photographing the page around
-   * each tap would put a cross-fade in the one place the app deliberately has
-   * none.
-   */
-  function calm() {
-    try {
-      return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    } catch (err) { return false; }
-  }
-
-  function smooth(run) {
-    if (!document.startViewTransition || calm()) return run();
-    try { document.startViewTransition(run); } catch (err) { run(); }
-  }
-
   function setView(name) {
-    // The reel only spins while home is on screen. It used to be stopped by
-    // hideLanding() because leaving home always went through it; now the rail
-    // can move straight from home to Nearby without that, and a reel left
-    // running is an animation nobody is looking at.
-    if (name !== 'home') { landed = true; stopReel(); }
-
     view = name;
-    smooth(function () {
-      $$('.view').forEach(function (el) {
-        el.classList.toggle('is-current', el.id === 'view-' + name);
-      });
+    $$('.view').forEach(function (el) {
+      el.classList.toggle('is-current', el.id === 'view-' + name);
     });
     $$('.rail-link').forEach(function (el) {
       var on = el.dataset.view === name;
@@ -361,39 +322,27 @@
     if (name === 'nearby') renderNearby();
     if (name === 'news') renderNews();
     if (name === 'chat') renderChat();
-    if (name === 'home') { renderIntro(); startReel(); }
     window.scrollTo(0, 0);
   }
 
   function setPanel(name) {
     panel = name;
-    smooth(function () {
-      $$('#view-decide .panel').forEach(function (el) {
-        el.classList.toggle('is-current', el.id === 'panel-' + name);
-      });
+    $$('#view-decide .panel').forEach(function (el) {
+      el.classList.toggle('is-current', el.id === 'panel-' + name);
     });
     window.scrollTo(0, 0);
   }
 
   $$('.rail-link').forEach(function (el) {
     el.addEventListener('click', function () {
-      /*
-       * Home has its own rail entry now, so Decide can mean the deciding
-       * screen and nothing else. It used to double as the way back home —
-       * mid-question it kept your answers, anywhere else it bounced you to
-       * the overlay — which was two jobs on one control and only made sense
-       * while home had no button of its own.
-       *
-       * Tapping Decide from a finished result still starts a fresh one;
-       * mid-question it leaves the run alone.
-       */
-      if (el.dataset.view === 'home') { leaveEndless(); return goHome(); }
-      if (el.dataset.view === 'decide' && panel !== 'question') {
-        leaveEndless();
-        setView('decide');
-        return restart();
-      }
+      // Decide means "take me to the deciding screen". Mid-question that is
+      // where you already are, so the answers survive; anywhere else — a
+      // finished result, a recipe — it means start again.
+      if (el.dataset.view === 'decide' && panel !== 'question') return goHome();
       leaveEndless();
+      // Now that the rail is reachable from the landing, going anywhere from
+      // there has to put the landing away — otherwise the section loads
+      // underneath it and the tap looks like it did nothing.
       hideLanding();
       setView(el.dataset.view);
     });
@@ -2355,21 +2304,7 @@
     $('meter-fill').style.width = Math.round(confidence * 100) + '%';
     $('hunch').textContent = game.answers.length ? Flavor.hunch(confidence) : 'Wide open';
 
-    /*
-     * The question arriving as one movement rather than four.
-     *
-     * Only the title used to be replayed, so the words changed with a small
-     * lift while the two cards under them swapped their contents in place —
-     * which reads as the page glitching rather than as a new question. Now the
-     * title and the cards come in together, the cards a beat behind and offset
-     * from each other, so the eye follows one motion down the screen.
-     *
-     * Deliberately not a full-page cross-fade like a view change: answering
-     * throws a floating XP number off the button you tapped, and photographing
-     * the page for a transition would freeze that mid-flight.
-     */
     replay($('q-text'));
-    replay($('q-picks'));
   }
 
   function step() {
@@ -5355,11 +5290,8 @@
     swipe.drag = null;
     leaveEndless();
     renderIntro();
-    // The decide view is reset but not travelled to: showLanding() goes to
-    // home now, and setting the view twice would run two transitions for one
-    // tap. setPanel still matters — it is what the decide view shows whenever
-    // somebody comes back to it.
     setPanel('home');
+    setView('decide');
     showLanding();
   }
 
@@ -7671,21 +7603,12 @@
     reelTimer = null;
   }
 
-  /*
-   * Home, which is now a view like any other.
-   *
-   * It used to be a fixed overlay that made the entire shell inert. That is
-   * why nothing could ever transition into or out of it: home and everywhere
-   * else were disjoint layers, so moving between them was a cut between two
-   * screens rather than a change of one. As a view it shares the rail, the
-   * scroll container and the same transition as Dishes or Nearby.
-   *
-   * The painting it already did is unchanged — this screen is still the one
-   * that has to be current every time it opens, not only when a view change
-   * happens to have run first.
-   */
   function showLanding() {
     landed = false;
+    $('landing').hidden = false;
+    document.body.classList.add('is-landing');
+    if ('inert' in shell) shell.inert = true;
+    shell.setAttribute('aria-hidden', 'true');
 
     var state = progress.state;
     var played = state.decisions > 0;
@@ -7703,22 +7626,16 @@
     // and not only when a view change happens to have run first.
     renderIntro();
     startReel();
-    setView('home');
     focusQuietly($('landing-start'));
   }
 
-  /*
-   * Kept as a name rather than deleted, and deliberately almost empty.
-   *
-   * Twenty-five places call this immediately before setView('somewhere'), from
-   * a time when leaving home meant tearing down an overlay. Now the setView
-   * that follows is the whole job, so this only has to stop the reel and let
-   * go — rewriting all twenty-five call sites to drop it would be a much
-   * larger diff for no behavioural difference.
-   */
   function hideLanding() {
     landed = true;
     stopReel();
+    $('landing').hidden = true;
+    document.body.classList.remove('is-landing');
+    if ('inert' in shell) shell.inert = false;
+    shell.removeAttribute('aria-hidden');
   }
 
   $('landing-start').addEventListener('click', function () {

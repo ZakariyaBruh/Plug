@@ -2662,20 +2662,20 @@ body.is-premium .tag-premium { display: none; }
    they cannot drift into being a claim.
    ========================================================================== */
 
-/* Home. It was `position: fixed` with a z-index over the whole shell, which
-   is what made it a layer rather than a place — and why nothing could animate
-   between it and anywhere else. In normal flow it is a view like the rest, and
-   the content scroller it now sits inside does the scrolling it used to do
-   for itself. The generous padding stays: this is still the screen that has to
-   feel like an opening rather than a page. */
 .landing {
+  position: fixed;
+  inset: var(--topbar-h) 0 0 0;
+  z-index: 40;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--void);
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   place-items: start center;
-  padding: var(--s7) 0 var(--s8);
+  padding: var(--s7) var(--s5) var(--s8);
 }
 
-/* body.is-landing is gone with the overlay — home scrolls with everything else. */
+body.is-landing { overflow: hidden; }
 
 /* The landing sits beside the rail rather than over it, so the sections are
    reachable from the front door like everywhere else in the app. */
@@ -2689,6 +2689,11 @@ body.is-premium .tag-premium { display: none; }
    pixels taller than reckoned — larger text, a wrapped streak — the cost is a
    little more space above the hero, not a rail with something on top of it. */
 @media (max-width: 60rem) {
+  body.is-landing .rail {
+    position: fixed;
+    inset: var(--topbar-h) 0 auto 0;
+  }
+  body.is-landing .landing { padding-top: calc(var(--tap) + var(--s6)); }
 }
 
 /* ==========================================================================
@@ -2779,6 +2784,7 @@ body.is-beaming { overflow: hidden; }
    in the app; the landing draws its own, larger, as part of its layout. Both
    at once put "morsels45" twice in the first 90 pixels of the page, so on the
    landing the bar keeps its glyph and drops its word. */
+body.is-landing .topbar-brand .mark-word { display: none; }
 
 /* One wash of colour, behind everything, and the only gradient in the app. It
    is here because a flat charcoal rectangle is the correct answer to every
@@ -3901,44 +3907,4 @@ body.is-beaming { overflow: hidden; }
   margin: 0 0 var(--s2);
   font-size: var(--t-sm);
   color: var(--amber);
-}
-
-/* ------------------------------------------------------ smooth transitions */
-/*
- * Between screens, the browser does the work: View Transitions photograph the
- * page before and after the class swap and cross-fade the two. That is a real
- * transition between the screen leaving and the screen arriving, which the old
- * `lift` animation could not be — it only faded the arriving element in over
- * whatever had already vanished.
- *
- * Tuned slower than the default 250ms and eased the same way as everything
- * else in the app, so a change of section feels like the same hand moved it.
- */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 320ms;
-  animation-timing-function: var(--ease);
-}
-
-/* The outgoing screen leaves slightly faster than the incoming one arrives, so
-   they overlap in the middle rather than crossing at half opacity — a straight
-   50/50 cross-fade reads as a smear. */
-::view-transition-old(root) { animation-duration: 220ms; }
-
-/* A question arriving as one movement: the title, then the two cards a beat
-   behind it and offset from each other, so the eye follows a single motion
-   down the screen instead of four things changing at once. */
-#q-picks.is-new > .pick {
-  animation: lift var(--mid) var(--ease) both;
-}
-#q-picks.is-new > .pick:nth-child(1) { animation-delay: 60ms; }
-#q-picks.is-new > .pick:nth-child(2) { animation-delay: 110ms; }
-#q-picks.is-new > .pick:nth-child(3) { animation-delay: 160ms; }
-
-@media (prefers-reduced-motion: reduce) {
-  /* smooth() already skips the transition entirely; this covers the stagger,
-     which is plain CSS and would otherwise still run. */
-  #q-picks.is-new > .pick { animation: none; }
-  ::view-transition-old(root),
-  ::view-transition-new(root) { animation: none; }
 }
