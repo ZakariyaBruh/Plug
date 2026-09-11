@@ -3163,10 +3163,12 @@
     return decisions >= need;
   }
 
-  function openEnjoy() {
+  function openEnjoy(preview) {
     var st = progress.state;
-    st.enjoyShown = (st.enjoyShown || 0) + 1;
-    progress.save();
+    if (!preview) {
+      st.enjoyShown = (st.enjoyShown || 0) + 1;
+      progress.save();
+    }
 
     $('enjoy-ask').hidden = false;
     $('enjoy-pitch').hidden = true;
@@ -3295,11 +3297,13 @@
     return true;
   }
 
-  function openEarn() {
+  function openEarn(preview) {
     var st = progress.state;
-    st.earnShown = (st.earnShown || 0) + 1;
-    st.earnAt = st.decisions || 0;
-    progress.save();
+    if (!preview) {
+      st.earnShown = (st.earnShown || 0) + 1;
+      st.earnAt = st.decisions || 0;
+      progress.save();
+    }
 
     earnOpener = document.activeElement;
     var dlg = $('earn-sheet');
@@ -3351,11 +3355,13 @@
 
   var shareOpener = null;
 
-  function openShare() {
+  function openShare(preview) {
     var st = progress.state;
-    st.shareShown = (st.shareShown || 0) + 1;
-    st.shareAt = st.decisions || 0;
-    progress.save();
+    if (!preview) {
+      st.shareShown = (st.shareShown || 0) + 1;
+      st.shareAt = st.decisions || 0;
+      progress.save();
+    }
 
     // The dish on screen is what gets sent, so the line names it — "send them
     // this" about nothing in particular is a link nobody clicks.
@@ -8423,7 +8429,56 @@
     else if (go === 'dishes') { hideLanding(); setView('dishes'); }
     else if (go === 'news') { hideLanding(); setView('news'); }
     else if (go === 'ask') { hideLanding(); setView('chat'); }
+
+    /*
+     * ?prompt= — see a prompt now, instead of playing until one is due.
+     *
+     * The three prompts are deliberately hard to trigger: the enjoy one is
+     * never put to a Premium member at all, the affiliate one wants
+     * twenty-five decisions behind it, and the share one only goes to
+     * somebody who has already said they like this. Good rules for a
+     * stranger, and useless if you are the person who has to check the thing
+     * works — the honest answer to "why do I never see it" was "because you
+     * are paying and you have not made twenty-five decisions", which is not
+     * something anybody should have to take on trust.
+     *
+     * So: ?prompt=enjoy, ?prompt=earn, ?prompt=share, or ?prompt=all to walk
+     * through all three. It spends nothing — no showing is counted and
+     * nothing is saved — so previewing one does not use up a real one, and it
+     * cannot be stumbled into, because nobody types a query string by
+     * accident.
+     */
+    var wanted = (here.searchParams.get('prompt') || '').toLowerCase();
+    if (wanted) previewPrompts(wanted === 'all' ? ['enjoy', 'earn', 'share'] : [wanted]);
   })();
+
+  /*
+   * Show the named prompts one after another, each waiting for the one before
+   * it to be closed. Chained on the dialog's own close event rather than a
+   * timer, so a slow read does not stack two sheets on top of each other.
+   */
+  function previewPrompts(names) {
+    var openers = { enjoy: openEnjoy, earn: openEarn, share: openShare };
+    var queue = names.filter(function (n) { return openers[n]; });
+    if (!queue.length) return;
+
+    function next() {
+      var name = queue.shift();
+      if (!name) return;
+      openers[name](true);
+      var dlg = $(name + '-sheet');
+      if (!dlg || !queue.length) return;
+      // Native <dialog> fires this; the attribute fallback does not, in which
+      // case the walk simply stops after the first one rather than misfiring.
+      dlg.addEventListener('close', function once() {
+        dlg.removeEventListener('close', once);
+        setTimeout(next, 350);
+      });
+    }
+
+    // After the landing has painted, or the sheet opens behind it.
+    setTimeout(next, 900);
+  }
 
   // Ask this site's own session whether this browser is signed into a Whop
   // account that owns Premium. No key to paste, no purchase to "claim" — the
