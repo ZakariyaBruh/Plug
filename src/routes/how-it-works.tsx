@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { pageHead } from '#/lib/site'
+import { DISH_COUNT, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 export const Route = createFileRoute('/how-it-works')({
@@ -20,7 +20,7 @@ const STEPS = [
   {
     n: '01',
     title: 'Hit Decide for me',
-    body: 'No account. No email. The catalogue is already loaded — 112 dishes, from a bowl of ramen to a banana and peanut butter on toast.',
+    body: `No account. No email. The catalogue is already loaded — ${DISH_COUNT} dishes, from a bowl of ramen to a banana and peanut butter on toast.`,
   },
   {
     n: '02',

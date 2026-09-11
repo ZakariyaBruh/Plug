@@ -7,6 +7,7 @@ import { PREMIUM_PLAN_ID } from '#/lib/products'
 import { InstallApp } from '#/components/InstallApp'
 import { JsonLd } from '#/components/JsonLd'
 import {
+  DISH_COUNT,
   OFFER,
   OFFER_SHORT,
   PRICE_MONTHLY,
@@ -83,7 +84,7 @@ const APP_SCHEMA = {
       name: 'Standard',
       price: '0',
       priceCurrency: 'USD',
-      description: 'The Decide game, all 112 dishes, browse and search, XP and streaks.',
+      description: `The Decide game, all ${DISH_COUNT} dishes, browse and search, XP and streaks.`,
     },
     {
       '@type': 'Offer',
@@ -153,7 +154,7 @@ function HomePage() {
 
             <ul className="mx-auto mt-14 grid max-w-2xl grid-cols-3 gap-4 text-center">
               {[
-                ['112', 'dishes'],
+                [String(DISH_COUNT), 'dishes'],
                 ['8', 'questions to an answer'],
                 ['$3.45', `a month, after ${TRIAL_DAYS} free days`],
               ].map(([n, label]) => (

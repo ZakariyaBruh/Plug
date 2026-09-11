@@ -163,7 +163,11 @@
 
       enjoy: '',              // '' | 'yes' | 'no' | 'later'
       enjoyAt: 0,             // when it was last put to them
-      enjoyShown: 0           // how many times it has been shown, ever
+      enjoyShown: 0,          // how many times it has been shown, ever
+
+      share: '',              // '' | 'no' — whether being asked to pass it on was declined
+      shareAt: 0,             // decisions at the last showing
+      shareShown: 0           // times it has been shown, ever
     };
   }
 

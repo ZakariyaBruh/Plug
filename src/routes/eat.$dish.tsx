@@ -6,7 +6,7 @@ import { JsonLd } from '#/components/JsonLd'
 import { PageShell } from '#/components/PageShell'
 import { dishBySlug, relatedTo } from '#/lib/dishes'
 import { isoDuration, quickest, recipesFor, type Recipe } from '#/lib/recipes'
-import { SITE_NAME, SITE_URL, pageHead, track } from '#/lib/site'
+import { DISH_COUNT, SITE_NAME, SITE_URL, pageHead, track } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
@@ -55,7 +55,7 @@ export const Route = createFileRoute('/eat/$dish')({
       return pageHead({
         title: 'morsels45 — what should you eat?',
         description:
-          'A handful of either-or questions and you have an answer. 112 dishes, no sign-up.',
+          `A handful of either-or questions and you have an answer. ${DISH_COUNT} dishes, no sign-up.`,
         noindex: true,
       })
     }
@@ -185,7 +185,7 @@ function EatPage() {
             <>
               <h1 className="text-4xl font-bold sm:text-5xl">That one is not on the menu</h1>
               <p className="mx-auto mt-4 max-w-md text-lg text-[var(--text-dim)]">
-                There are 112 dishes in here, though, and about twenty seconds between you and one
+                There are {DISH_COUNT} dishes in here, though, and about twenty seconds between you and one
                 of them.
               </p>
             </>
@@ -251,7 +251,7 @@ function EatPage() {
             </ul>
             <p className="mt-8 text-sm">
               <Link to="/eat" className="text-[var(--amber)] underline underline-offset-4">
-                See all 112 dishes
+                See all {DISH_COUNT} dishes
               </Link>
             </p>
           </nav>

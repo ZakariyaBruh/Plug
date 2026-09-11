@@ -3,7 +3,7 @@
  *
  * Deciding what to eat happens in the places phones are worst: a basement
  * kitchen, a train, a supermarket aisle, somebody's flat with two bars. The
- * whole game — 112 dishes, the questions, the engine, the recipes — is a few
+ * whole game — the whole catalogue, the questions, the engine, the recipes — is a few
  * hundred kilobytes of static files and needs no network at all once it has
  * been fetched. There is no good reason for a dead signal to be the thing that
  * stops dinner being decided.

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
 import { JsonLd } from '#/components/JsonLd'
-import { OFFER, pageHead } from '#/lib/site'
+import { DISH_COUNT, OFFER, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 export const Route = createFileRoute('/faq')({
@@ -19,7 +19,7 @@ export const Route = createFileRoute('/faq')({
 const FAQS: [string, string][] = [
   [
     'Is it actually free?',
-    'Yes. The Decide game, the whole 112-dish catalogue, browse, Tonight’s pick, how many plates, XP, streaks and badges are free. You do not need an account to play.',
+    `Yes. The Decide game, the whole ${DISH_COUNT}-dish catalogue, browse, Tonight’s pick, how many plates, XP, streaks and badges are free. You do not need an account to play.`,
   ],
   [
     'What does Premium add?',

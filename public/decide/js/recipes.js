@@ -1610,6 +1610,16 @@
               'Skewer holes in the warm sponge and pour half the sauce in. The rest goes over at the table.'] }
   ]);
 
+  recipes('Lobster', [
+    { name: 'Grilled, with garlic butter', time: 30, serves: 2, level: 'Easier than it looks',
+      ingredients: ['2 lobsters, about 500g each', '100g butter, softened', '2 garlic cloves, crushed', 'Small handful of parsley, chopped', '1 lemon', 'Salt and pepper'],
+      steps: ['Put the lobsters in the freezer for 20 minutes first — it sedates them, and it is the kind thing to do.',
+              'Lay one flat and split it lengthways through the head in one firm movement. Clean out the dark tract and the sac behind the eyes.',
+              'Mash the butter with the garlic, parsley, lemon zest and plenty of pepper, and work it into the split flesh.',
+              'Grill shell-side down, high and close, 8 to 10 minutes, until the flesh turns opaque and the butter is bubbling. Do not turn them over.',
+              'Lemon squeezed over at the table. Serve with bread for the butter in the shell, which is the best part of it.'] }
+  ]);
+
   return {
     BOOK: BOOK,
     scale: scale,

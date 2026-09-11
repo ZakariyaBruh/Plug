@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="morsels45">
 <meta property="og:title" content="morsels45 — what should you eat?">
-<meta property="og:description" content="A handful of either-or questions and you have an answer. 112 dishes, no sign-up, and it still works with no signal.">
+<meta property="og:description" content="A handful of either-or questions and you have an answer. 133 dishes, no sign-up, and it still works with no signal.">
 <meta property="og:url" content="https://morsels45-app.whop.site/decide/">
 <meta property="og:image" content="https://morsels45-app.whop.site/site-card.png">
 <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
 <meta property="og:image:alt" content="morsels45 — stop scrolling, start eating">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="morsels45 — what should you eat?">
-<meta name="twitter:description" content="A handful of either-or questions and you have an answer. 112 dishes, no sign-up, and it still works with no signal.">
+<meta name="twitter:description" content="A handful of either-or questions and you have an answer. 133 dishes, no sign-up, and it still works with no signal.">
 <meta name="twitter:image" content="https://morsels45-app.whop.site/site-card.png">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#17171a">
@@ -111,8 +111,8 @@
     </p>
 
     <!-- The reel spins through real dishes from the catalogue. It is the one
-         piece of pure decoration in the app, and it is here because "112
-         dishes" told as a number lands differently from 112 dishes going past. -->
+         piece of pure decoration in the app, and it is here because the
+         catalogue told as a number lands differently from the dishes going past. -->
     <div class="reel" id="reel" aria-hidden="true">
       <span class="reel-item is-on">🍜</span>
     </div>
@@ -170,9 +170,9 @@
     <!-- Real numbers, read out of the catalogue at load rather than written
          here, so they cannot drift into being a claim nobody checks. -->
     <ul class="landing-stats">
-      <li><b id="landing-dishes">112</b><span>dishes</span></li>
+      <li><b id="landing-dishes">133</b><span>dishes</span></li>
       <li><b id="landing-questions">8</b><span>questions, usually</span></li>
-      <li><b id="landing-recipes">125</b><span>recipes inside</span></li>
+      <li><b id="landing-recipes">133</b><span>recipes inside</span></li>
     </ul>
 
     <!-- ===================================================================
@@ -366,6 +366,7 @@
     <ul class="rail-list">
       <li><button class="rail-link is-current" data-view="decide">Decide</button></li>
       <li><button class="rail-link" data-view="dishes">Dishes</button></li>
+      <li><button class="rail-link" data-view="menu">Menu</button></li>
       <li><button class="rail-link" data-view="nearby">Nearby</button></li>
       <li><button class="rail-link" data-view="chat">Ask</button></li>
       <li><button class="rail-link" data-view="news">News</button></li>
@@ -1067,24 +1068,6 @@
         <button class="plain" id="picks-done">Back to the start</button>
       </div>
 
-      <!-- menu: three courses that go together -->
-      <div class="panel" id="panel-menu">
-        <div class="q-bar">
-          <button class="ghost-btn" id="menu-back" aria-label="Back">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-          </button>
-          <p class="q-step">Tonight&rsquo;s menu</p>
-          <button class="ghost-btn" id="menu-reroll" aria-label="Write another one">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg>
-          </button>
-        </div>
-
-        <p class="pane-line" id="menu-intro">Three courses that belong on the same table.</p>
-        <ol class="menu-courses" id="menu-list"></ol>
-        <p class="fine" id="menu-note"></p>
-        <button class="plain" id="menu-done">Back to the start</button>
-      </div>
-
       <!-- plan -->
       <div class="panel" id="panel-plan">
         <div class="q-bar">
@@ -1346,6 +1329,46 @@
       </div>
     </section>
 
+    <!-- Feeding people: its own section, because writing a menu is a thing you
+         come here to do, not a step on the way to deciding what to eat. It
+         lived inside #view-decide as a panel and was reachable only by
+         scrolling the opening screen to the bottom and finding one button. -->
+    <section class="view" id="view-menu" aria-label="Tonight&rsquo;s menu">
+      <header class="head">
+        <p class="mechanic">Feeding people</p>
+        <h1 class="head-title">Tonight&rsquo;s menu</h1>
+        <p class="head-sub">A starter, a main and a pudding that actually go together &mdash;
+        not three heavy things, and not three cold ones. Built from what you already like.</p>
+      </header>
+
+      <div id="menu-wrap-view" hidden>
+        <ol class="menu-courses" id="menu-list"></ol>
+        <p class="fine" id="menu-note"></p>
+        <div class="locate-actions">
+          <button class="quiet" id="menu-reroll">Write another one</button>
+        </div>
+      </div>
+
+      <div class="notice" id="menu-locked" hidden>
+        <p class="mechanic">Premium</p>
+        <p id="menu-locked-line">Writing a menu comes with Premium &mdash; three days free,
+        then cheaper than a cup of coffee.</p>
+        <div class="locate-actions">
+          <button class="go go-sm" data-unlock="The menu">
+            <span class="go-label">See what Premium gets you</span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="notice" id="menu-empty" hidden>
+        <p>Your rules have ruled out too much to build three courses from.</p>
+        <p class="fine">Loosen a ban or two on your profile and try again.</p>
+      </div>
+    </section>
+
     <section class="view" id="view-dishes" aria-label="Dishes">
       <header class="head">
         <p class="mechanic">The list</p>
@@ -1569,6 +1592,21 @@
   in. Same discipline as the enjoy prompt next to it: earned, once, and a
   refusal that is the same size as the agreement.
 -->
+<!-- The third prompt, and the only one that asks for nothing. It is never
+     shown to somebody who has not already said they like this. -->
+<dialog class="sheet enjoy-sheet" id="share-sheet" aria-labelledby="share-title">
+  <button class="sheet-x" id="share-close" aria-label="Close">&times;</button>
+  <span class="sheet-art" aria-hidden="true">&#128172;</span>
+  <h2 class="sheet-name" id="share-title">Know somebody who can never decide?</h2>
+  <p class="sheet-note" id="share-line">Send them this. It takes five questions and it settles
+  the argument.</p>
+  <p class="fine">No sign-up at the other end &mdash; the link just works.</p>
+  <div class="enjoy-actions">
+    <button class="go go-sm" id="share-go" type="button">Send it to someone</button>
+    <button class="quiet" id="share-no" type="button">Not now</button>
+  </div>
+</dialog>
+
 <dialog class="sheet enjoy-sheet" id="earn-sheet" aria-labelledby="earn-title">
   <button class="sheet-x" id="earn-close" aria-label="Close">&times;</button>
   <span class="sheet-art" aria-hidden="true">&#128176;</span>

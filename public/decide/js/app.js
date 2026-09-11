@@ -319,6 +319,7 @@
     if (name === 'decide') renderIntro();
     if (name === 'profile') renderProfile();
     if (name === 'dishes') renderDishes();
+    if (name === 'menu') renderMenuView();
     if (name === 'nearby') renderNearby();
     if (name === 'news') renderNews();
     if (name === 'chat') renderChat();
@@ -2518,24 +2519,41 @@
       : 'Tap a course to read about it.';
   }
 
-  function openMenu() {
-    if (!premium('The menu')) return;
-    hideLanding();
+  /*
+   * Paint the Menu section for whoever is looking at it.
+   *
+   * Three states, and only one of them is a menu. A free profile gets the
+   * pitch instead of a toast, because this is now somewhere you can arrive by
+   * tapping a tab in the rail: a tab that answers with a disappearing message
+   * and an empty screen reads as broken, not as locked. A profile whose own
+   * rules have ruled out too much gets told that, rather than a blank list.
+   *
+   * Called from setView, so every route in — the rail, the button on the
+   * opening screen, a reload with the section already open — lands here.
+   */
+  function renderMenuView() {
+    var locked = !isPlus();
+    $('menu-locked').hidden = !locked;
+    $('menu-wrap-view').hidden = locked;
+    $('menu-empty').hidden = true;
+    if (locked) return;
+
     var menu = buildMenu();
     if (!menu.length) {
-      Sound.reject();
-      return toast('\u{1F37D}\u{FE0F}', 'Not enough to work with',
-        'Your rules have ruled out too much to build three courses from.');
+      $('menu-wrap-view').hidden = true;
+      $('menu-empty').hidden = false;
+      return;
     }
     renderMenu(menu);
-    setView('decide');
-    setPanel('menu');
+  }
+
+  function openMenu() {
+    hideLanding();
+    setView('menu');
   }
 
   $('menu-btn').addEventListener('click', function () { Sound.tick(); openMenu(); });
-  $('menu-reroll').addEventListener('click', function () { Sound.tick(); openMenu(); });
-  $('menu-back').addEventListener('click', goHome);
-  $('menu-done').addEventListener('click', goHome);
+  $('menu-reroll').addEventListener('click', function () { Sound.tick(); renderMenuView(); });
 
   function openWeek(fresh) {
     if (!premium('The week plan')) return;
@@ -2955,11 +2973,23 @@
      */
     $('done-text').textContent = DONE_LINES[Math.floor(Math.random() * DONE_LINES.length)];
 
-    // The one moment in the app that is already a resting point, which is why
-    // the prompt is allowed here and nowhere else. Delayed so it lands after
-    // the answer has been read rather than on top of it.
-    if (enjoyDue()) setTimeout(function () { if (panel === 'done') openEnjoy(); }, 1400);
-    else if (earnDue()) setTimeout(function () { if (panel === 'done') openEarn(); }, 1400);
+    /*
+     * The one moment in the app that is already a resting point, which is why
+     * the prompt is allowed here and nowhere else. Delayed so it lands after
+     * the answer has been read rather than on top of it, and re-checked when
+     * the timer fires so it is abandoned if the reader has moved on.
+     *
+     * THE PANEL NAME. This read `panel === 'done'` for as long as the prompts
+     * have existed, and there has never been a panel called that — the screen
+     * this lands on is #panel-reward, and setPanel names it 'reward'. The
+     * guard was therefore false every single time, so neither prompt has ever
+     * been shown to anybody: not a tuning problem, a name that was wrong from
+     * the first commit. The ids inside the panel are done-icon and done-name,
+     * which is where the wrong word came from and why it never looked wrong.
+     */
+    if (enjoyDue()) setTimeout(function () { if (panel === 'reward') openEnjoy(); }, 1400);
+    else if (earnDue()) setTimeout(function () { if (panel === 'reward') openEarn(); }, 1400);
+    else if (shareDue()) setTimeout(function () { if (panel === 'reward') openShare(); }, 1400);
     $('xp-total').textContent = '+' + outcome.total;
 
     var list = $('awards');
@@ -3284,6 +3314,81 @@
   }
 
   var earnOpener = null;
+
+  /* ----------------------------------------------------------- send it on */
+  /*
+   * The third prompt, and the only one that is not asking for money.
+   *
+   * It is deliberately last in the queue and deliberately the narrowest. The
+   * other two are pitches; this one is a favour, and a favour asked of
+   * somebody who has not yet said they like the thing is just another advert.
+   * So it is only ever put to a profile that has already answered "yeah, I
+   * like it" to the enjoy prompt, or that is paying — a Premium member has
+   * made that judgement with their own money and does not need to be asked
+   * twice.
+   *
+   * Twice ever, a full run of decisions apart, and never in the same breath as
+   * one of the other two. Three prompts stacked on one screen is not three
+   * chances, it is one person closing three things.
+   */
+  var SHARE_AFTER = 15;       // decisions before it is offered at all
+  var SHARE_MAX_SHOWS = 2;    // times it may ever appear
+
+  function shareDue() {
+    var st = progress.state;
+    if (st.share === 'no') return false;
+    if ((st.shareShown || 0) >= SHARE_MAX_SHOWS) return false;
+    // Only for somebody who has already said this is any good, one way or
+    // the other.
+    if (!isPlus() && st.enjoy !== 'yes') return false;
+    // Never on top of, or in the same run as, one of the other prompts.
+    if (enjoyDue() || earnDue()) return false;
+    var decisions = st.decisions || 0;
+    if (decisions < SHARE_AFTER) return false;
+    if ((st.shareShown || 0) > 0 && decisions < (st.shareAt || 0) + SHARE_AFTER) return false;
+    return true;
+  }
+
+  var shareOpener = null;
+
+  function openShare() {
+    var st = progress.state;
+    st.shareShown = (st.shareShown || 0) + 1;
+    st.shareAt = st.decisions || 0;
+    progress.save();
+
+    // The dish on screen is what gets sent, so the line names it — "send them
+    // this" about nothing in particular is a link nobody clicks.
+    $('share-line').textContent = shownItem
+      ? 'Send them tonight\u2019s answer \u2014 ' + shownItem.name + ' \u2014 and they can have a go themselves.'
+      : 'Send them this. It takes five questions and it settles the argument.';
+
+    shareOpener = document.activeElement;
+    var dlg = $('share-sheet');
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    focusQuietly($('share-go'));
+  }
+
+  function closeShare() {
+    var dlg = $('share-sheet');
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+    focusQuietly(shareOpener);
+  }
+
+  $('share-go').addEventListener('click', function () {
+    Sound.tick();
+    closeShare();
+    shareVerdict();
+  });
+
+  $('share-no').addEventListener('click', function () {
+    progress.state.share = 'no';
+    progress.save();
+    closeShare();
+  });
+
+  $('share-close').addEventListener('click', closeShare);
+  $('share-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeShare(); });
 
   $('earn-no').addEventListener('click', function () {
     progress.state.earn = 'no';

@@ -112,12 +112,42 @@ function recipeBook(): Plugin {
       }
       const count = Object.keys(book).length
       if (count < 100) {
-        // A silently half-empty book would take 112 pages back down to stubs
-        // without anything failing, which is the exact failure this plugin is
-        // meant to make impossible.
-        throw new Error(`recipe-book: only ${count} dishes parsed, expected 112`)
+        // A silently half-empty book would take every dish page back down to a
+        // stub without anything failing, which is the exact failure this plugin
+        // is meant to make impossible.
+        throw new Error(`recipe-book: only ${count} recipes parsed, expected the whole book`)
       }
-      this.info(`recipe-book: ${count} dishes`)
+
+      /*
+       * And while data.js is open anyway: check that the number the site tells
+       * people matches the number of dishes there actually are.
+       *
+       * DISH_COUNT is a literal in lib/site.ts rather than a count of
+       * ALL_DISHES, because importing the catalogue to get one integer would
+       * bundle the catalogue into every page that prints it. A literal can
+       * drift, and "112" did — it survived three batches of new dishes and was
+       * still on the front page, the FAQ, the premium feature list and both
+       * social cards after the catalogue had reached 133. Nobody noticed
+       * because nothing could fail. Now something can.
+       */
+      const dishes = readFileSync(join(process.cwd(), 'public', 'decide', 'js', 'data.js'), 'utf8')
+      const dishCount = (dishes.match(/^\s*item\(/gm) ?? []).length
+      const site = readFileSync(join(process.cwd(), 'src', 'lib', 'site.ts'), 'utf8')
+      const claimed = Number(/export const DISH_COUNT = (\d+)/.exec(site)?.[1])
+      if (!dishCount || !claimed) {
+        throw new Error('recipe-book: could not read the dish count from data.js or site.ts')
+      }
+      if (dishCount !== claimed) {
+        throw new Error(
+          `recipe-book: the site says ${claimed} dishes, data.js has ${dishCount}. ` +
+            'Update DISH_COUNT in src/lib/site.ts (and the two counts in public/decide/index.html).',
+        )
+      }
+      if (count !== dishCount) {
+        throw new Error(`recipe-book: ${dishCount} dishes but ${count} recipes — they must be 1:1`)
+      }
+
+      this.info(`recipe-book: ${count} dishes, ${count} recipes`)
       return `export default ${JSON.stringify(book)}`
     },
   }

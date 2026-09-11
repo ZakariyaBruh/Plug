@@ -11,6 +11,20 @@ export const SITE_CARD_ALT = 'morsels45 — stop scrolling, start eating'
  * phone about a download a site did not warn you about is how a perfectly
  * ordinary install starts looking like a mistake.
  */
+/*
+ * How many dishes are in the catalogue.
+ *
+ * Written out rather than counted from ALL_DISHES on purpose: that module
+ * parses the whole of decide/js/data.js, and importing it here to get one
+ * integer would drag the entire catalogue into every page that mentions the
+ * number. So it is a literal — and the build checks it. vite.config.ts reads
+ * data.js at build time anyway (see recipeBook) and fails the build if this
+ * does not match what it finds, which is what stops it going stale the way
+ * "112" did: that number outlived three separate batches of new dishes,
+ * on the front page, the FAQ, the premium list and both social cards.
+ */
+export const DISH_COUNT = 133
+
 export const ANDROID_APK = '/morsels45.apk'
 export const ANDROID_VERSION = '1.0.0'
 export const ANDROID_SIZE = '6.0 MB'
@@ -130,7 +144,7 @@ export function track(event: string, data?: Record<string, unknown>) {
 export const STANDARD = [
   'The 20-question Decide game',
   'Endless — two dishes and a clock. Every pick buys time back, and buys back less each time. 200 picks a day',
-  'All 112 dishes in the catalogue',
+  `All ${DISH_COUNT} dishes in the catalogue`,
   'Browse, search, and filter the menu',
   'XP, levels, streaks, and badges',
   'Endless races your own best run — it tells you, mid-run, whether you are ahead of it',

@@ -651,7 +651,9 @@
     item('Kunafa', '\u{1F36E}', 'Shredded pastry, melting cheese, syrup. Hot, somehow.',
       'sweet hot cheesy indulgent shareable crunchy', 'homemade'),
     item('Sticky toffee pudding', '\u{1F36E}', 'Dates, sponge, and more sauce than seems wise.',
-      'sweet hot soft indulgent comfort homemade filling', 'shareable')
+      'sweet hot soft indulgent comfort homemade filling', 'shareable'),
+    item('Lobster', '\u{1F99E}', 'Butter, a cracked shell, and no dignity left at the table.',
+      'hot seafood indulgent shareable messy filling soft', 'homemade fresh')
   ];
 
   return { QUESTIONS: QUESTIONS, TAGS: TAGS, TASTES: TASTES, ITEMS: ITEMS,

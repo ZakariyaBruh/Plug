@@ -79,7 +79,7 @@ export async function currentUser(): Promise<UserInfo | null> {
   return retried ? await fetchUserinfo(retried) : null
 }
 
-async function accessLevel(userId: string, resourceId: string) {
+export async function accessLevel(userId: string, resourceId: string) {
   const response = await fetch(
     `${process.env.WHOP_API_ORIGIN ?? 'https://api.whop.com'}/api/v1/users/${userId}/access/${resourceId}`,
   )
@@ -94,4 +94,36 @@ export async function checkProductAccess(productId: string) {
 
   const { has_access } = await accessLevel(user.sub, productId)
   return { signedIn: true as const, hasAccess: has_access, user }
+}
+
+/*
+ * The same access question, asked about a user id rather than about whoever
+ * owns the cookie. Exists for the iframe: in there the cookie is a
+ * third-party cookie and may never arrive, so the visitor is identified from
+ * Whop's signed header instead (see lib/whop-token.ts) and only the id is in
+ * hand — there is no OAuth token to call /oauth/userinfo with.
+ *
+ * The display name is a nicety and is fetched separately, so a failure there
+ * costs a greeting and never the answer about access.
+ */
+export async function checkProductAccessFor(userId: string, productId: string) {
+  const { has_access } = await accessLevel(userId, productId)
+  return { signedIn: true as const, hasAccess: has_access }
+}
+
+/** Best-effort display name for a user id. Empty string if anything goes wrong. */
+export async function usernameFor(userId: string): Promise<string> {
+  const key = process.env.WHOP_API_KEY
+  if (!key) return ''
+  try {
+    const response = await fetch(
+      `${process.env.WHOP_API_ORIGIN ?? 'https://api.whop.com'}/api/v1/users/${userId}`,
+      { headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' } },
+    )
+    if (!response.ok) return ''
+    const user = (await response.json()) as { username?: string; name?: string }
+    return user.username ?? user.name ?? ''
+  } catch {
+    return ''
+  }
 }
