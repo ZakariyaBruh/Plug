@@ -35,10 +35,11 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
+    "@whop/cli": "latest",
+    "playwright-core": "^1.63.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
-    "wrangler": "^4.70.0",
-    "@whop/cli": "latest"
+    "wrangler": "^4.70.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

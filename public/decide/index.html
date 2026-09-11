@@ -1497,6 +1497,26 @@
   Two panes in one dialog: the question, and the offer that only the yes branch
   ever sees. A "not really" is a complete answer and gets no pitch at all.
 -->
+<!--
+  "Want to earn some money?" — the affiliate offer, on the same sheet as
+  everything else so it reads as the app asking rather than an advert that got
+  in. Same discipline as the enjoy prompt next to it: earned, once, and a
+  refusal that is the same size as the agreement.
+-->
+<dialog class="sheet enjoy-sheet" id="earn-sheet" aria-labelledby="earn-title">
+  <button class="sheet-x" id="earn-close" aria-label="Close">&times;</button>
+  <span class="sheet-art" aria-hidden="true">&#128176;</span>
+  <h2 class="sheet-name" id="earn-title">Want to earn some money?</h2>
+  <p class="sheet-note">If you like morsels45, you can get paid for telling people about it.
+  Share your link, and when somebody signs up through it you take a cut &mdash; for as long
+  as they stay.</p>
+  <p class="fine">Free to join, nothing to pay, and it costs the people you send nothing extra.</p>
+  <div class="enjoy-actions">
+    <a class="go go-sm" id="earn-go" href="https://whop.com/morsels45/affiliates" target="_blank" rel="noopener noreferrer">Show me how</a>
+    <button class="quiet" id="earn-no" type="button">Not for me</button>
+  </div>
+</dialog>
+
 <dialog class="sheet enjoy-sheet" id="enjoy-sheet" aria-labelledby="enjoy-title">
   <button class="sheet-x" id="enjoy-close" aria-label="Close">&times;</button>
 

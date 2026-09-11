@@ -2652,6 +2652,7 @@
     // the prompt is allowed here and nowhere else. Delayed so it lands after
     // the answer has been read rather than on top of it.
     if (enjoyDue()) setTimeout(function () { if (panel === 'done') openEnjoy(); }, 1400);
+    else if (earnDue()) setTimeout(function () { if (panel === 'done') openEarn(); }, 1400);
     $('xp-total').textContent = '+' + outcome.total;
 
     var list = $('awards');
@@ -2926,6 +2927,75 @@
     'Done. That is the deciding out of the way.',
     'Locked in. Enjoy the bit that comes next.'
   ];
+
+  /* --------------------------------------------------------- earn with it */
+  /*
+   * The affiliate offer, on the same terms as the enjoy prompt.
+   *
+   * Shown later than that one, and never in the same sitting: being asked
+   * whether you like something and then asked to go and sell it, one after the
+   * other, is two asks in a row and reads as a sales funnel rather than an
+   * app. So this waits for somebody who has really stuck around, and only if
+   * the other prompt is not what is due.
+   *
+   * "Not for me" is final. There is no later on this one — somebody who does
+   * not want to sell your app is not going to want to in a fortnight, and
+   * asking again would just be nagging with extra steps.
+   */
+  var EARN_AFTER = 25;        // decisions before it is offered at all
+  var EARN_MAX_SHOWS = 2;     // times it may ever appear
+
+  function earnDue() {
+    var st = progress.state;
+    if (st.earn === 'no') return false;
+    if ((st.earnShown || 0) >= EARN_MAX_SHOWS) return false;
+    // Never on top of the other prompt, and never in the same run as one.
+    if (enjoyDue()) return false;
+    var decisions = st.decisions || 0;
+    if (decisions < EARN_AFTER) return false;
+    // A second showing costs another full run of decisions.
+    if ((st.earnShown || 0) > 0 && decisions < (st.earnAt || 0) + EARN_AFTER) return false;
+    return true;
+  }
+
+  function openEarn() {
+    var st = progress.state;
+    st.earnShown = (st.earnShown || 0) + 1;
+    st.earnAt = st.decisions || 0;
+    progress.save();
+
+    earnOpener = document.activeElement;
+    var dlg = $('earn-sheet');
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    focusQuietly($('earn-go'));
+  }
+
+  function closeEarn() {
+    var dlg = $('earn-sheet');
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+    focusQuietly(earnOpener);
+  }
+
+  var earnOpener = null;
+
+  $('earn-no').addEventListener('click', function () {
+    progress.state.earn = 'no';
+    progress.save();
+    Sound.tick();
+    closeEarn();
+  });
+
+  // The link is a real anchor with a real href, so it works on a middle click,
+  // a long press and with the keyboard — and still goes somewhere if the
+  // JavaScript on this page ever fails. Closing behind it just tidies up.
+  $('earn-go').addEventListener('click', function () {
+    progress.state.earn = 'seen';
+    progress.save();
+    setTimeout(closeEarn, 0);
+  });
+
+  $('earn-close').addEventListener('click', closeEarn);
+  $('earn-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeEarn(); });
 
   function rejectCurrent() {
     if (busy) return;

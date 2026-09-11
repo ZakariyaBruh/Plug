@@ -157,6 +157,10 @@
        * question, and asking a second time is not a survey, it is nagging.
        * 'later' is a dismissal — it comes back, but not soon.
        */
+      earn: '',               // '' | 'no' — whether the affiliate offer was declined
+      earnAt: 0,              // decisions at the last showing
+      earnShown: 0,           // times it has been shown, ever
+
       enjoy: '',              // '' | 'yes' | 'no' | 'later'
       enjoyAt: 0,             // when it was last put to them
       enjoyShown: 0           // how many times it has been shown, ever
