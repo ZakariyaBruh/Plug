@@ -207,6 +207,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
     blurb: 'Everything above works better the longer you use it.',
     items: [
       ['Picks tuned to you', 'Rate a dish and it changes what comes up next.'],
+      ['Something new', 'Two questions, then a few dishes you have not had — chosen from the ones you actually liked, each with a reason for why it follows. Only ever real dishes off this menu, so every suggestion has its recipe behind it.'],
       ['Save unlimited dishes', 'Standard saves none. Premium keeps everything you like.'],
       ['Five extra looks', 'Ember, matcha, ink, paper, neon.'],
     ],
