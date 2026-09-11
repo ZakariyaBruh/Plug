@@ -62,8 +62,52 @@ function stampServiceWorker(): Plugin {
       }
 
       const id = hash.digest('hex').slice(0, 12)
-      writeFileSync(worker, source.replace('__BUILD__', id))
-      this.info(`stamp-sw: cache is morsels45-${id}`)
+
+      /*
+       * The same id goes onto the URL of every script and stylesheet, in the
+       * page that asks for them and in the worker's precache list alike.
+       *
+       * WHY, given the cache is already named after the build. Because the
+       * sweep happens too late. index.html is fetched network-first, so a
+       * deploy reaches the browser on the next visit — but the page that
+       * arrives is still controlled by the PREVIOUS worker, and that worker
+       * answers `js/app.js` from its own cache and refreshes it in the
+       * background. So the first load after every deploy ran a brand new
+       * index.html against the previous build's JavaScript, and only the
+       * visit after that got a matching pair. New markup driven by old code:
+       * a panel nothing opens, a button nothing is listening to, a query
+       * parameter the script has never heard of.
+       *
+       * With the id on the URL there is nothing to get wrong. The new page
+       * asks for js/app.js?v=<new>, which no old cache can contain, so it
+       * misses and goes to the network — correct on the first load, not the
+       * second. A repeat visit still hits an exact match and still starts
+       * instantly, and the worker still precaches the lot for offline.
+       *
+       * index.html itself is deliberately left unversioned: it is the one
+       * file whose URL people type, link to and pin to a home screen.
+       */
+      const versioned = SHELL.filter((f) => f.endsWith('.js') || f.endsWith('.css'))
+
+      const stamp = (text: string, quote: string) => {
+        let out = text
+        for (const file of versioned) {
+          out = out.split(`${quote}${file}${quote}`).join(`${quote}${file}?v=${id}${quote}`)
+        }
+        return out
+      }
+
+      const page = join(dir, 'index.html')
+      try {
+        writeFileSync(page, stamp(readFileSync(page, 'utf8'), '"'))
+      } catch {
+        this.warn('stamp-sw: no index.html to version')
+      }
+
+      // The worker's own SHELL list, so what it precaches is what the page
+      // will ask for. Single quotes there; double quotes in the markup.
+      writeFileSync(worker, stamp(source, "'").replace('__BUILD__', id))
+      this.info(`stamp-sw: cache is morsels45-${id}, ${versioned.length} assets versioned`)
     },
   }
 }
