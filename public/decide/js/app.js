@@ -991,6 +991,28 @@
     $('beam-dish').textContent = dish || '';
     $('beam-state').textContent = 'Opening a browser you can both use\u2026';
     $('beam-state').hidden = false;
+
+    /*
+     * The way out goes up now, not when the browser arrives.
+     *
+     * Inside somebody else's frame it is shown either way (see paintBeam: a
+     * permission withheld further up can never be recovered from in here), so
+     * revealing it at the end meant the stage was one row taller while the
+     * browser was starting and one row shorter the moment it appeared — the
+     * picture arriving and then immediately changing size. Up front, the stage
+     * is its final height before anything is asked for, so the frame mounts
+     * into the size it keeps.
+     *
+     * It also makes stageSize() right: that measures the stage to ask
+     * Hyperbeam for a stream of the same shape, and it was measuring a stage
+     * 66px taller than the one the stream would be shown in.
+     *
+     * The link has no href until the session comes back, which is a second in
+     * which it does nothing — and nobody reaches for "nothing showing" while
+     * the panel still says it is opening.
+     */
+    $('beam-escape').hidden = !framed;
+
     $('beam').hidden = false;
     document.body.classList.add('is-beaming');
     Sound.tick();

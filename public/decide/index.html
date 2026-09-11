@@ -104,11 +104,11 @@
   <div class="landing-glow" aria-hidden="true"></div>
 
   <div class="landing-inner">
-    <p class="mechanic landing-mark">morsels45
-      <svg class="squiggle" viewBox="0 0 60 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
-        <path d="M1 5c4-5 8 1 12 0s8-5 12-4 8 6 12 5 8-5 12-4"/>
-      </svg>
-    </p>
+    <!-- The name and its squiggle used to be here. The top bar now keeps its
+         word on this screen, so this was the same name twice; and the squiggle
+         was the flourish UNDER that name, so on its own it read as a stray
+         mark rather than a flourish. The reel below is the decoration this
+         screen actually wants. -->
 
     <!-- The reel spins through real dishes from the catalogue. It is the one
          piece of pure decoration in the app, and it is here because the
@@ -345,18 +345,29 @@
 
   <div class="beam-stage" id="beam-stage">
     <p class="beam-state" id="beam-state">Opening a browser you can both use&hellip;</p>
-
-    <!-- Shown only if the frame is still blank after a few seconds. The frame
-         is the one part of this the page cannot check from inside: the session
-         is live and the URL is right, and it still renders nothing if a
-         permission was withheld somewhere up the chain of frames. Opened as a
-         page instead, none of that applies. -->
-    <p class="beam-escape" id="beam-escape" hidden>
-      Nothing showing?
-      <a class="link-btn" id="beam-open" target="_blank" rel="noopener noreferrer">Open it in a new tab</a>
-      &mdash; same browser, same session.
-    </p>
   </div>
+
+  <!-- BELOW the stage, not inside it. The frame is the one part of this the
+       page cannot check from inside: the session is live and the URL is right,
+       and it still renders nothing if a permission was withheld somewhere up
+       the chain of frames. Opened as a page instead, none of that applies.
+
+       It used to sit inside the stage, before the frame in the markup, and the
+       stage gave every child a row of its own — so revealing this line took
+       the first row and shoved the shared browser 277px down it. That is the
+       "it starts in the right place then jumps down", and it only ever
+       happened inside a whop, because that is the case where this line goes up
+       immediately rather than after six seconds.
+
+       Out here it is a row of the panel that comes after the stage, and the
+       stage is the row that absorbs the space. So the picture stays where it
+       is and gives up a line of height, rather than being pushed off the
+       bottom or having a banner laid over it. -->
+  <p class="beam-escape" id="beam-escape" hidden>
+    Nothing showing?
+    <a class="link-btn" id="beam-open" target="_blank" rel="noopener noreferrer">Open it in a new tab</a>
+    &mdash; same browser, same session.
+  </p>
 </div>
 
 <div class="app">

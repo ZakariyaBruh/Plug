@@ -232,11 +232,10 @@ button { font-family: inherit; }
 .mechanic {
   display: inline-flex;
   align-items: baseline;
-  /* The squiggle drops to its own line rather than forcing the label's row to
-     be 290px wide. Without this, a decorative flourish set the minimum width of
-     the whole landing screen at 175% text on a 320px phone, and the page
-     scrolled sideways. It only ever wraps at sizes where it was going to be a
-     problem anyway. */
+  /* Wraps rather than setting a minimum width. A label with anything beside
+     it — the tag next to a gated control, once a decorative squiggle — used to
+     set the minimum width of the whole landing screen at 175% text on a 320px
+     phone, and the page scrolled sideways. */
   flex-wrap: wrap;
   gap: var(--s2);
   font-family: var(--display);
@@ -246,8 +245,6 @@ button { font-family: inherit; }
   text-transform: uppercase;
   color: var(--ink-3);
 }
-
-.squiggle { width: 3.75rem; height: .5rem; color: var(--amber); opacity: .85; }
 
 /* A boxed, bordered, uppercase label next to every gated control meant three
    of them shouting over the result screen — the upsell drawn louder than the
@@ -2756,7 +2753,10 @@ body.is-landing { overflow: hidden; }
   inset: var(--topbar-h) 0 0 0;
   z-index: 50;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  /* bar, hint, stage, escape. The stage is the only row that grows, so a
+     revealed escape line costs the picture a little height and moves nothing:
+     rows after a 1fr row cannot push it down. */
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   gap: var(--s3);
   padding: var(--s4) var(--s4) var(--s5);
   background: var(--void);
@@ -2793,16 +2793,41 @@ body.is-beaming { overflow: hidden; }
 
 /* The stage keeps the browser's own 16:9 shape whatever the window does, so
    the stream is never letterboxed into a sliver on a phone held upright. */
+/*
+ * ONE CELL, and everything in the stage shares it.
+ *
+ * This was an implicit grid with `place-items: center`, which meant every
+ * child took a row of its own. #beam-escape — "Nothing showing? Open it in a
+ * new tab" — is a sibling that comes BEFORE the frame in the markup, so the
+ * moment it was revealed it claimed the first row and pushed the picture down
+ * it. Measured: rows became `275px 359px` and the frame sat 277px below the
+ * top of a 637px stage, so the shared browser both jumped down and shrank to
+ * a bit over half the height.
+ *
+ * Which is why this only ever happened on Whop. The escape line waits six
+ * seconds at the top level, but goes up immediately when the app is inside
+ * somebody else's frame — a permission withheld further up can never be
+ * recovered from in here, so the way out is offered at once. Inside the whop
+ * that is every session, one frame after the browser appears.
+ *
+ * Now the frame fills the cell and the other two sit on top of it: the state
+ * line centred, the escape line along the bottom. Nothing in here can move
+ * the picture, whenever it is shown.
+ */
 .beam-stage {
   position: relative;
   min-height: 0;
   display: grid;
-  place-items: center;
+  grid-template-areas: 'stage';
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   border: 1px solid var(--hair);
   border-radius: 6px;
   background: var(--char);
   overflow: hidden;
 }
+
+.beam-stage > * { grid-area: stage; }
 
 /* An iframe with no size of its own is 300x150 with a border, which is what a
    shared browser looks like when this rule goes missing: a small grey box in
@@ -2814,10 +2839,21 @@ body.is-beaming { overflow: hidden; }
   border: 0;
 }
 
-.beam-escape { font-size: var(--t-sm); color: var(--ink-3); text-align: center; margin: 0; }
+/* A row of the panel under the stage, so it never overlaps the picture and
+   never precedes it. */
+.beam-escape {
+  margin: 0;
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+  text-align: center;
+}
+
 .beam-escape .link-btn { font-size: inherit; }
 
+/* Centred in the cell: this is what is on screen while there is no frame yet,
+   and what goes back over it if the frame never arrives. */
 .beam-state {
+  place-self: center;
   padding: var(--s5);
   font-size: var(--t-sm);
   color: var(--ink-3);
@@ -2830,11 +2866,15 @@ body.is-beaming { overflow: hidden; }
   .beam-tools { width: 100%; justify-content: space-between; }
 }
 
-/* One wordmark on screen at a time. The top bar carries the brand everywhere
-   in the app; the landing draws its own, larger, as part of its layout. Both
-   at once put "morsels45" twice in the first 90 pixels of the page, so on the
-   landing the bar keeps its glyph and drops its word. */
-body.is-landing .topbar-brand .mark-word { display: none; }
+/* The top bar carries the brand everywhere in the app, the landing included.
+   It used to drop its word there, on the grounds that the landing drew its
+   own larger one and two at once put "morsels45" twice in the first 90 pixels
+   of the page. That reasoning held when they really were 90px apart. It does
+   not now: on a phone the rail sits between them, and the landing's own mark
+   is small-caps rather than large, so the first screen of the app read as a
+   bare glyph with no name attached to it — which is the one screen where the
+   name has a job to do. The bar keeps its word, and the landing's duplicate
+   is gone instead. */
 
 /* One wash of colour, behind everything, and the only gradient in the app. It
    is here because a flat charcoal rectangle is the correct answer to every
@@ -2880,7 +2920,6 @@ body.is-landing .topbar-brand .mark-word { display: none; }
   to   { opacity: 1; transform: none; }
 }
 
-.landing-mark { margin: 0; }
 
 /* ---- the reel -----------------------------------------------------------
    Decoration, and it knows it. "112 dishes" as a number does not land the way
