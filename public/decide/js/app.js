@@ -5984,7 +5984,7 @@
    */
   var SWIPE_PICKS = 3;
 
-  var swipe = { deck: [], seen: [], picks: [], live: false, choosing: false, drag: null, busy: false };
+  var swipe = { deck: [], seen: [], picks: [], live: false, choosing: false, drag: null };
 
   function startSwipe() {
     if (!premium('Swipe')) return;
@@ -5992,7 +5992,6 @@
     resetGame();
     setView('decide');
     swipe.live = true;
-    swipe.busy = false;
     swipe.choosing = false;
     swipe.seen = [];
     swipe.picks = [];
@@ -6040,8 +6039,37 @@
    * have" are the same screen reached two different ways, and the deck being
    * non-empty does not tell them apart.
    */
+  // The card a finger would actually land on: the last one that is not already
+  // on its way out.
+  function topSwipeCard() {
+    var kids = $('swipe-deck').children;
+    for (var i = kids.length - 1; i >= 0; i--) {
+      if (!kids[i].classList.contains('is-gone')) return kids[i];
+    }
+    return null;
+  }
+
   function renderSwipe(choosing) {
     var deck = $('swipe-deck');
+
+    /*
+     * Cards still in flight are kept, and this is what unfroze the mode.
+     *
+     * Clearing the deck outright took any card mid-throw with it, so the only
+     * way to make a throw look like a throw was to freeze everything until the
+     * animation had finished — and that freeze silently ate the next swipe.
+     * Measured: anything under 350ms between swipes was dropped, which is
+     * ordinary swiping speed, so a deck gone through at a normal pace lost
+     * most of it.
+     *
+     * A thrown card removes itself when it lands (see flingCard), so it does
+     * not need this function's help to disappear. It only needs not to be
+     * destroyed on the way out.
+     */
+    var flying = [];
+    Array.prototype.forEach.call(deck.children, function (el) {
+      if (el.classList.contains('is-gone')) flying.push(el);
+    });
     deck.innerHTML = '';
     // Held on the state, not just in this call, so the keyboard and the drag
     // handler know the deck is paused. Without it the arrow keys go on
@@ -6063,6 +6091,9 @@
       swipe.deck.slice(0, 3).reverse().forEach(function (entry, i, all) {
         deck.appendChild(swipeCard(entry.item, all.length - 1 - i));
       });
+      // Last in the DOM is the top of the stack, so the one being thrown goes
+      // back on the end — it should fly over the new card, not under it.
+      flying.forEach(function (el) { deck.appendChild(el); });
       // What is left to do, not what has been done: the count that matters in
       // this mode is how many more yeses end it. Past three there is no count
       // left to give — this is somebody who came back from the shortlist for
@@ -6204,9 +6235,23 @@
       if (!drag || drag.id !== event.pointerId) return;
       swipe.drag = null;
       card.classList.remove('is-dragging');
+
+      /*
+       * A throw that is not accepted has to come back.
+       *
+       * takeSwipe refuses while the previous card is still in flight, and this
+       * used to hand that refusal straight back as `return takeSwipe(...)` —
+       * so the card was left lying wherever the finger let go of it, tilted,
+       * having done nothing at all. Two swipes out of three inside the fling
+       * window vanished that way, which is exactly what a broken mode looks
+       * like from the outside.
+       *
+       * Now the throw is only over if it was taken; otherwise the card snaps
+       * home and the swipe can simply be made again.
+       */
       var far = card.offsetWidth * SWIPE_THROW;
-      if (drag.dx > far) return takeSwipe('yes');
-      if (drag.dx < -far) return takeSwipe('no');
+      var thrown = drag.dx > far ? 'yes' : drag.dx < -far ? 'no' : '';
+      if (thrown && takeSwipe(thrown)) return;
       leanCard(card, 0, 0);
     };
     card.addEventListener('pointerup', release);
@@ -6219,10 +6264,18 @@
     card.style.setProperty('--no', String(Math.max(0, Math.min(1, -dx / SWIPE_LEAN))));
   }
 
+  // Answers whether the swipe was taken. The drag handler needs to know: a
+  // refusal means the card has to be put back rather than left where it fell.
+  // Answers whether the swipe was taken. The drag handler needs to know: a
+  // refusal means the card has to be put back rather than left where it fell.
   function takeSwipe(dir) {
-    if (!swipe.live || swipe.choosing || swipe.busy || !swipe.deck.length) return;
+    if (!swipe.live || swipe.choosing || !swipe.deck.length) return false;
     var dish = swipe.deck[0].item;
-    var card = $('swipe-deck').lastElementChild;
+    // The last child is not reliably the top card any more: a card still
+    // flying is parked at the end of the deck so it draws over the new stack.
+    // Throwing that one again would animate a card that has already left and
+    // leave the real top card sitting there.
+    var card = topSwipeCard();
 
     // The whole deck is banked before the change, so undo is a restore rather
     // than an attempt to run the re-sort backwards. The shortlist is banked
@@ -6233,31 +6286,46 @@
     if (dir === 'yes') {
       swipe.picks.push(dish);
       Sound.roll();
-      swipe.busy = true;
-      flingCard(card, 1, function () {
-        swipe.busy = false;
-        // Three, or the deck ran out — either way there is nothing left to
-        // swipe and something to choose between.
-        if (swipe.picks.length >= SWIPE_PICKS || !swipe.deck.length) return chooseSwipe();
-        renderSwipe();
-      });
-      return;
+    } else {
+      coolOn(dish);
+      Sound.tick();
     }
-    coolOn(dish);
-    Sound.tick();
-    // Let the card actually leave before the stack behind it re-renders.
-    // Rendering straight away empties the deck element and takes the card in
-    // flight with it, so the swipe reads as a card blinking out of existence
-    // rather than one being thrown away.
-    swipe.busy = true;
-    flingCard(card, -1, function () {
-      swipe.busy = false;
-      // The deck ending with something on the shortlist is a decision to make,
-      // not a dead end. With nothing on it, renderSwipe falls through to the
-      // screen that says so.
-      if (!swipe.deck.length && swipe.picks.length) return chooseSwipe();
-      renderSwipe();
-    });
+
+    /*
+     * Thrown and redrawn in the same breath.
+     *
+     * The card leaves under its own animation and takes itself out of the DOM
+     * when it lands; the deck behind it is rebuilt straight away, so the next
+     * card is on top and draggable immediately rather than in three hundred
+     * milliseconds. renderSwipe leaves the card in flight alone, which is what
+     * makes doing both at once possible.
+     */
+    var way = dir === 'yes' ? 1 : -1;
+
+    /*
+     * Three liked, or the deck ran dry — either way this was the last swipe
+     * and the shortlist is next.
+     *
+     * The ending keeps the old order: the card flies, THEN the screen changes.
+     * Switching while it is still in the air makes it disappear rather than
+     * leave, and this is the one throw worth watching. Nothing is lost by
+     * waiting here because there is nothing left to swipe — choosing is set
+     * straight away so a hurried extra swipe in those few hundred
+     * milliseconds is turned down rather than half-applied.
+     */
+    if (swipe.picks.length >= SWIPE_PICKS || (!swipe.deck.length && swipe.picks.length)) {
+      swipe.choosing = true;
+      flingCard(card, way, chooseSwipe);
+      return true;
+    }
+
+    // The ordinary case: the card leaves under its own animation and removes
+    // itself when it lands, while the deck behind it is rebuilt immediately,
+    // so the next card is draggable now rather than in three hundred
+    // milliseconds.
+    flingCard(card, way, null);
+    renderSwipe();
+    return true;
   }
 
   // Stop dealing and put the shortlist up. `live` stays on: the deck is not
