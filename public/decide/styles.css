@@ -2582,7 +2582,40 @@ body.is-premium .tag-premium { display: none; }
 .sheet .vault.is-locked .vault-body { max-height: 14rem; }
 .sheet-flag { margin-bottom: var(--s4); color: var(--danger); }
 
-.sheet::backdrop { background: rgba(10, 10, 12, .78); }
+.sheet::backdrop { background: rgba(10, 10, 12, .78); animation: sheet-veil var(--mid) var(--ease) both; }
+
+/* The sheets used to be simply present: one frame nothing, the next frame a
+   dialog over the whole screen. That reads as an interruption fired at you
+   rather than the app answering, which matters most for the three prompts
+   that are asking for something. Rising a few pixels while it fades in is the
+   difference between a pop-up and a card being put down. Short on purpose —
+   long enough to be followed, not long enough to be waited for. */
+.sheet[open] { animation: sheet-in var(--mid) var(--ease) both; }
+
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(10px) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes sheet-veil {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* The emoji lands a beat after the card, so the eye arrives at the art rather
+   than starting on it. Only inside the prompts: the dish sheet's art is the
+   subject, not an accent, and should not keep bouncing every time it opens. */
+.enjoy-sheet[open] .sheet-art { animation: sheet-art 420ms var(--ease) 60ms both; }
+
+@keyframes sheet-art {
+  0%   { opacity: 0; transform: scale(.6) rotate(-8deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(2deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open], .sheet::backdrop, .enjoy-sheet[open] .sheet-art { animation: none; }
+}
 
 .sheet-x {
   top: 0; right: 0;
@@ -3935,7 +3968,7 @@ body.is-landing .topbar-brand .mark-word { display: none; }
 .menu-course {
   display: grid;
   grid-template-columns: auto 1fr;
-  grid-template-areas: 'when when' 'art name' '. note';
+  grid-template-areas: 'when when' 'art name' '. note' '. acts';
   gap: var(--s1) var(--s3);
   align-items: center;
   padding: var(--s4) 0;
@@ -3967,6 +4000,49 @@ body.is-landing .topbar-brand .mark-word { display: none; }
 }
 
 .menu-note { grid-area: note; font-size: var(--t-sm); color: var(--ink-3); }
+
+/* Keep and Swap. On their own row under the dish rather than squeezed beside
+   it: at 390px a name like "Spaghetti bolognese" and two buttons on one line
+   leaves the buttons under the tap target size, and these are the controls
+   the section exists for. */
+.menu-acts {
+  grid-area: acts;
+  display: flex;
+  gap: var(--s2);
+  margin-top: var(--s2);
+}
+
+.course-btn {
+  min-height: var(--tap);
+  padding: 0 var(--s4);
+  border: 1px solid var(--hair-lit);
+  border-radius: 2px;
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease),
+              background var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+
+.course-btn:hover { color: var(--ink); border-color: var(--ink-3); background: var(--raise); }
+.course-btn:active { transform: scale(.96); }
+
+/* Kept reads as on, not as selected-and-waiting. The amber is the same one
+   the course label uses, so a pinned course is one colour throughout. */
+.course-keep[aria-pressed='true'] {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 12%, transparent);
+}
+
+/* The whole row, when it is staying. Quiet — a left edge, not a highlight;
+   three highlighted rows would be no signal at all. */
+.menu-course.is-kept { border-left: 2px solid var(--amber); padding-left: var(--s3); }
+.menu-course.is-kept .course-swap { opacity: .5; }
 
 @media (prefers-reduced-motion: reduce) { .menu-course { animation: none; } }
 

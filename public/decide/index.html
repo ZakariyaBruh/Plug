@@ -1338,7 +1338,9 @@
         <p class="mechanic">Feeding people</p>
         <h1 class="head-title">Tonight&rsquo;s menu</h1>
         <p class="head-sub">A starter, a main and a pudding that actually go together &mdash;
-        not three heavy things, and not three cold ones. Built from what you already like.</p>
+        not three heavy things, and not three cold ones. Built from what you already like.
+        <b>Keep</b> the courses that are right and <b>swap</b> the ones that are not &mdash;
+        whatever is kept, the rest is chosen to go with it.</p>
       </header>
 
       <div id="menu-wrap-view" hidden>
@@ -1596,14 +1598,32 @@
      shown to somebody who has not already said they like this. -->
 <dialog class="sheet enjoy-sheet" id="share-sheet" aria-labelledby="share-title">
   <button class="sheet-x" id="share-close" aria-label="Close">&times;</button>
-  <span class="sheet-art" aria-hidden="true">&#128172;</span>
-  <h2 class="sheet-name" id="share-title">Know somebody who can never decide?</h2>
-  <p class="sheet-note" id="share-line">Send them this. It takes five questions and it settles
-  the argument.</p>
-  <p class="fine">No sign-up at the other end &mdash; the link just works.</p>
-  <div class="enjoy-actions">
-    <button class="go go-sm" id="share-go" type="button">Send it to someone</button>
-    <button class="quiet" id="share-no" type="button">Not now</button>
+
+  <div id="share-ask">
+    <span class="sheet-art" aria-hidden="true">&#128172;</span>
+    <h2 class="sheet-name" id="share-title">Know somebody who can never decide?</h2>
+    <p class="sheet-note" id="share-line">Send them this. It takes five questions and it settles
+    the argument.</p>
+    <p class="fine">No sign-up at the other end &mdash; the link just works.</p>
+    <!-- Two real actions, because one button that silently either opens the
+         share sheet or copies to the clipboard, depending on the browser, is
+         a button whose behaviour nobody can predict. Send is hidden where the
+         browser has nothing to send with. -->
+    <div class="enjoy-actions">
+      <button class="go go-sm" id="share-go" type="button" hidden>Send it</button>
+      <button class="quiet" id="share-copy" type="button">Copy the link</button>
+      <button class="quiet" id="share-no" type="button">Not now</button>
+    </div>
+  </div>
+
+  <!-- Said after the deed, in the sheet, rather than closing on a guess. -->
+  <div id="share-done" hidden>
+    <span class="sheet-art" aria-hidden="true">&#9989;</span>
+    <h2 class="sheet-name" id="share-done-title">Copied.</h2>
+    <p class="sheet-note" id="share-done-line">Paste it to whoever is being difficult about dinner.</p>
+    <div class="enjoy-actions">
+      <button class="go go-sm" id="share-done-ok" type="button">Carry on</button>
+    </div>
   </div>
 </dialog>
 
@@ -1611,9 +1631,13 @@
   <button class="sheet-x" id="earn-close" aria-label="Close">&times;</button>
   <span class="sheet-art" aria-hidden="true">&#128176;</span>
   <h2 class="sheet-name" id="earn-title">Want to earn some money?</h2>
-  <p class="sheet-note">If you like morsels45, you can get paid for telling people about it.
-  Share your link, and when somebody signs up through it you take a cut &mdash; for as long
-  as they stay.</p>
+  <!-- Opens with what this person has actually done, filled in by app.js. A
+       pitch that starts by telling you something true about yourself is read;
+       one that starts "if you like morsels45" is skipped, because it opens by
+       admitting it does not know. -->
+  <p class="sheet-note" id="earn-lead"></p>
+  <p class="sheet-note">Share your link, and when somebody signs up through it you take a
+  cut &mdash; for as long as they stay.</p>
   <p class="fine">Free to join, nothing to pay, and it costs the people you send nothing extra.</p>
   <div class="enjoy-actions">
     <a class="go go-sm" id="earn-go" href="https://whop.com/morsels45/affiliates" target="_blank" rel="noopener noreferrer">Show me how</a>

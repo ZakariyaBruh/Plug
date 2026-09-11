@@ -2467,19 +2467,45 @@
    */
   var MENU_BAND = 8;
 
-  function buildMenu() {
+  /*
+   * Build a menu, optionally around courses that are staying put.
+   *
+   * `keep` maps a course id to a dish that has been kept and must come back
+   * unchanged; `avoid` maps a course id to a dish that must NOT come back,
+   * which is what makes "swap this one" mean something in a catalogue where
+   * one dish can be the best answer several times running.
+   *
+   * Everything kept goes into `taken` before any picking starts, so a course
+   * being re-chosen is scored against what is staying rather than against
+   * nothing. Keep the main and the starter now knows about it — which is the
+   * whole reason keeping is worth having rather than just rerolling until
+   * something sticks.
+   */
+  function buildMenu(opts) {
+    var keep = (opts && opts.keep) || {};
+    var avoid = (opts && opts.avoid) || {};
+
     // favouredDishes has already applied bans, avoids and snoozes, so nothing
     // chosen here can break a rule somebody set.
     var pool = favouredDishes().map(function (r) { return r.item; });
     if (pool.length < 12) pool = Data.ITEMS.slice();
 
     var taken = [];
+    COURSES.forEach(function (course) {
+      if (keep[course.id]) taken.push(keep[course.id]);
+    });
+
     var menu = [];
     COURSES.forEach(function (course) {
+      if (keep[course.id]) {
+        menu.push({ course: course, dish: keep[course.id], kept: true });
+        return;
+      }
       var ranked = [];
       pool.forEach(function (dish) {
         if (!courseAllows(course, dish)) return;
         if (taken.indexOf(dish) !== -1) return;
+        if (avoid[course.id] === dish) return;
         ranked.push({ dish: dish, score: courseScore(course, dish, taken) });
       });
       ranked.sort(function (a, b) { return b.score - a.score; });
@@ -2488,35 +2514,130 @@
       // A course with nothing eligible is left out rather than filled with
       // something wrong — a vegetarian with every pudding banned gets two
       // courses, not a steak for afters.
-      if (best) { taken.push(best); menu.push({ course: course, dish: best }); }
+      if (best) { taken.push(best); menu.push({ course: course, dish: best, kept: false }); }
     });
     return menu;
   }
 
-  function renderMenu(menu) {
-    var list = $('menu-list');
-    list.innerHTML = '';
-    menu.forEach(function (entry, i) {
-      var li = document.createElement('li');
-      li.className = 'menu-course';
-      li.style.animationDelay = (i * 70) + 'ms';
-      li.innerHTML = '<span class="menu-when"></span>' +
-        '<span class="menu-art" aria-hidden="true"></span>' +
-        '<button class="menu-name plain" type="button"></button>' +
-        '<span class="menu-note"></span>';
-      li.querySelector('.menu-when').textContent = entry.course.label;
-      li.querySelector('.menu-art').textContent = entry.dish.icon;
-      var btn = li.querySelector('.menu-name');
-      btn.textContent = entry.dish.name;
-      btn.addEventListener('click', function () { openSheet(entry.dish); });
-      li.querySelector('.menu-note').textContent = entry.dish.blurb;
-      list.appendChild(li);
+  /*
+   * The menu on screen, and which of it is being kept.
+   *
+   * Held here rather than read back out of the DOM: a course is identified by
+   * its dish, and a dish is an object from the catalogue, not a name. Kept
+   * state is for this sitting only — nobody wants last Tuesday's locked
+   * pudding waiting for them.
+   */
+  var menuNow = [];
+  var menuKept = {};
+
+  function keptDishes() {
+    var keep = {};
+    menuNow.forEach(function (entry) {
+      if (menuKept[entry.course.id]) keep[entry.course.id] = entry.dish;
+    });
+    return keep;
+  }
+
+  /*
+   * One course, with the two things you can do to it.
+   *
+   * KEEP and SWAP, because a menu you can only throw away whole is a slot
+   * machine. The useful case is almost always "that main is right, the rest
+   * is not" — and rerolling until the main comes back is not a feature, it is
+   * a chore. Keep pins it; swap re-picks one course and only that one; reroll
+   * re-picks everything not pinned.
+   *
+   * Both buttons carry the course name, because "Keep" on its own is three
+   * identical buttons to anything reading the page aloud.
+   */
+  function courseRow(entry, i) {
+    var li = document.createElement('li');
+    li.className = 'menu-course' + (entry.kept ? ' is-kept' : '');
+    li.style.animationDelay = (i * 70) + 'ms';
+    li.innerHTML = '<span class="menu-when"></span>' +
+      '<span class="menu-art" aria-hidden="true"></span>' +
+      '<button class="menu-name plain" type="button"></button>' +
+      '<span class="menu-note"></span>' +
+      '<span class="menu-acts">' +
+        '<button class="course-btn course-keep" type="button"></button>' +
+        '<button class="course-btn course-swap" type="button"></button>' +
+      '</span>';
+
+    li.querySelector('.menu-when').textContent = entry.course.label;
+    li.querySelector('.menu-art').textContent = entry.dish.icon;
+    li.querySelector('.menu-note').textContent = entry.dish.blurb;
+
+    var name = li.querySelector('.menu-name');
+    name.textContent = entry.dish.name;
+    name.addEventListener('click', function () { Sound.tick(); openSheet(entry.dish); });
+
+    var keep = li.querySelector('.course-keep');
+    keep.textContent = entry.kept ? 'Keeping' : 'Keep';
+    keep.setAttribute('aria-pressed', entry.kept ? 'true' : 'false');
+    keep.setAttribute('aria-label', (entry.kept ? 'Stop keeping ' : 'Keep ') + entry.dish.name);
+    keep.addEventListener('click', function () {
+      Sound.tick();
+      menuKept[entry.course.id] = !menuKept[entry.course.id];
+      // Repaint from what is already chosen — toggling a pin must not quietly
+      // re-pick anything.
+      paintMenu(menuNow);
     });
 
-    var cooking = menu.filter(function (e) { return Recipes.has(e.dish.name); }).length;
-    $('menu-note').textContent = cooking === menu.length
-      ? 'Every course has a recipe behind it — tap one to read it.'
-      : 'Tap a course to read about it.';
+    var swap = li.querySelector('.course-swap');
+    swap.textContent = 'Swap';
+    swap.setAttribute('aria-label', 'Swap ' + entry.dish.name + ' for something else');
+    swap.addEventListener('click', function () {
+      Sound.tick();
+      swapCourse(entry.course.id);
+    });
+
+    return li;
+  }
+
+  /* Draw a menu that has already been chosen. Chooses nothing itself. */
+  function paintMenu(menu) {
+    menuNow = menu.map(function (e) {
+      return { course: e.course, dish: e.dish, kept: !!menuKept[e.course.id] };
+    });
+
+    var list = $('menu-list');
+    list.innerHTML = '';
+    menuNow.forEach(function (entry, i) { list.appendChild(courseRow(entry, i)); });
+
+    var keptCount = menuNow.filter(function (e) { return e.kept; }).length;
+    var cooking = menuNow.filter(function (e) { return Recipes.has(e.dish.name); }).length;
+
+    var note;
+    if (keptCount === menuNow.length && keptCount) {
+      note = 'All three kept — nothing left for a reroll to change.';
+    } else if (keptCount) {
+      note = keptCount + ' of ' + menuNow.length + ' kept. A reroll leaves ' +
+        (keptCount === 1 ? 'that one' : 'those') + ' alone.';
+    } else if (cooking === menuNow.length) {
+      note = 'Every course has a recipe behind it — tap one to read it.';
+    } else {
+      note = 'Tap a course to read about it.';
+    }
+    $('menu-note').textContent = note;
+  }
+
+  /* Re-pick one course, keeping the rest and refusing the dish it had. */
+  function swapCourse(id) {
+    var keep = {};
+    var avoid = {};
+    menuNow.forEach(function (entry) {
+      if (entry.course.id === id) avoid[id] = entry.dish;
+      else keep[entry.course.id] = entry.dish;
+    });
+    var next = buildMenu({ keep: keep, avoid: avoid });
+    // Nothing else this course could be: say so rather than repaint the same
+    // three dishes and look like a dead button.
+    if (!next.some(function (e) { return e.course.id === id; })) {
+      Sound.reject();
+      return toast('\u{1F37D}\u{FE0F}', 'Nothing else fits',
+        'Your rules have left only one thing that works for that course.');
+    }
+    paintMenu(next);
   }
 
   /*
@@ -2538,13 +2659,24 @@
     $('menu-empty').hidden = true;
     if (locked) return;
 
-    var menu = buildMenu();
+    rollMenu(true);
+  }
+
+  /*
+   * Choose a menu and draw it. `fresh` throws away what is kept — that is
+   * what arriving at the section means; a reroll does not.
+   */
+  function rollMenu(fresh) {
+    if (fresh) menuKept = {};
+    var menu = buildMenu({ keep: keptDishes() });
     if (!menu.length) {
       $('menu-wrap-view').hidden = true;
       $('menu-empty').hidden = false;
       return;
     }
-    renderMenu(menu);
+    $('menu-wrap-view').hidden = false;
+    $('menu-empty').hidden = true;
+    paintMenu(menu);
   }
 
   function openMenu() {
@@ -2553,7 +2685,7 @@
   }
 
   $('menu-btn').addEventListener('click', function () { Sound.tick(); openMenu(); });
-  $('menu-reroll').addEventListener('click', function () { Sound.tick(); renderMenuView(); });
+  $('menu-reroll').addEventListener('click', function () { Sound.tick(); rollMenu(false); });
 
   function openWeek(fresh) {
     if (!premium('The week plan')) return;
@@ -3305,6 +3437,23 @@
       progress.save();
     }
 
+    /*
+     * Open with what they have actually done here.
+     *
+     * The line was "if you like morsels45, you can get paid for telling
+     * people about it" — a pitch that begins by admitting it does not know
+     * whether you like it. Somebody twenty-five decisions deep has answered
+     * that question with their thumbs. The streak is only mentioned from
+     * three days, because two days is not a streak.
+     */
+    var decisions = st.decisions || 0;
+    var streak = st.streak || 0;
+    var lead = 'You have settled ' + decisions + ' ' +
+      (decisions === 1 ? 'dinner' : 'dinners') + ' in here';
+    if (streak >= 3) lead += ', ' + streak + ' days running';
+    lead += '. If it is worth that to you, it is worth something to whoever you tell.';
+    $('earn-lead').textContent = lead;
+
     earnOpener = document.activeElement;
     var dlg = $('earn-sheet');
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
@@ -3363,16 +3512,48 @@
       progress.save();
     }
 
+    $('share-ask').hidden = false;
+    $('share-done').hidden = true;
+
     // The dish on screen is what gets sent, so the line names it — "send them
     // this" about nothing in particular is a link nobody clicks.
-    $('share-line').textContent = shownItem
-      ? 'Send them tonight\u2019s answer \u2014 ' + shownItem.name + ' \u2014 and they can have a go themselves.'
+    var dish = acceptedItem || shownItem;
+    $('share-line').textContent = dish
+      ? 'Send them tonight\u2019s answer \u2014 ' + dish.name + ' \u2014 and they can have a go themselves.'
       : 'Send them this. It takes five questions and it settles the argument.';
+
+    // Only offered where there is something to offer it with. On a desktop
+    // browser navigator.share does not exist, and a Send button that silently
+    // falls back to the clipboard is a button that lied.
+    var canSend = !!navigator.share;
+    $('share-go').hidden = !canSend;
 
     shareOpener = document.activeElement;
     var dlg = $('share-sheet');
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
-    focusQuietly($('share-go'));
+    focusQuietly(canSend ? $('share-go') : $('share-copy'));
+  }
+
+  /* What goes out: the dish, the streak if it is one, and a link to the dish. */
+  function shareText() {
+    var dish = acceptedItem || shownItem;
+    var text = dish ? 'morsels45 says eat ' + dish.name + '.' : 'morsels45 decides what to eat.';
+    var streak = progress.state.streak;
+    if (dish && streak >= 3) text += ' ' + streak + ' days running now.';
+    var slug = dish ? slugFor(dish.name) : '';
+    var url = (typeof location !== 'undefined' && location.origin)
+      ? location.origin + (slug ? '/eat/' + slug : '/decide/')
+      : '';
+    return { text: text, url: url };
+  }
+
+  /* Swap the sheet to its confirmation, rather than closing on a guess. */
+  function shareConfirm(title, line) {
+    $('share-done-title').textContent = title;
+    $('share-done-line').textContent = line;
+    $('share-ask').hidden = true;
+    $('share-done').hidden = false;
+    focusQuietly($('share-done-ok'));
   }
 
   function closeShare() {
@@ -3383,9 +3564,37 @@
 
   $('share-go').addEventListener('click', function () {
     Sound.tick();
-    closeShare();
-    shareVerdict();
+    var out = shareText();
+    if (!navigator.share) return;
+    navigator.share({ title: 'morsels45', text: out.text, url: out.url })
+      .then(function () {
+        Sound.badge();
+        shareConfirm('Sent.', 'That is one fewer argument about dinner.');
+      })
+      // A cancelled share is not a failure and gets no message: the sheet is
+      // still open with the same two buttons on it.
+      .catch(function () {});
   });
+
+  $('share-copy').addEventListener('click', function () {
+    Sound.tick();
+    var out = shareText();
+    var whole = out.text + (out.url ? ' ' + out.url : '');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(whole).then(function () {
+        Sound.badge();
+        shareConfirm('Copied.', 'Paste it to whoever is being difficult about dinner.');
+      }).catch(function () {
+        // No clipboard permission: show the thing itself, which can at least
+        // be selected by hand.
+        shareConfirm('Here it is', whole);
+      });
+      return;
+    }
+    shareConfirm('Here it is', whole);
+  });
+
+  $('share-done-ok').addEventListener('click', closeShare);
 
   $('share-no').addEventListener('click', function () {
     progress.state.share = 'no';
