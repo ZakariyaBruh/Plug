@@ -450,6 +450,44 @@
     return Data.ITEMS.filter(function (d) { return d.name === name; })[0] || null;
   }
 
+  /*
+   * Hello, for somebody who has been here before.
+   *
+   * The landing already opens with the best line in the app — "You're hungry.
+   * You don't know what you want. That's alright, I might." — and a first-timer
+   * should get that with nothing in front of it. Somebody on their ninth visit
+   * has read it eight times, and a word that knows what time it is and that
+   * they kept a streak going is worth more to them than the pitch is.
+   *
+   * Same voice: pleased to see you, not delighted to see you.
+   */
+  var HELLOS = [
+    { until: 11, lines: ['Morning. Breakfast counts as a decision too.',
+                         'Morning. Let us get the first one out of the way.'] },
+    { until: 15, lines: ['Afternoon. Lunch, then.',
+                         'Afternoon. Something to eat, is it?'] },
+    { until: 21, lines: ['Evening. This is the big one.',
+                         'Evening. The one everybody argues about.'] },
+    { until: 24, lines: ['Late one. Let us be quick about it.',
+                         'Late. No judgement here.'] }
+  ];
+
+  function paintHello(state, played) {
+    var el = $('landing-hello');
+    if (!el) return;
+    el.hidden = !played;
+    if (!played) return;
+
+    var hour = new Date().getHours();
+    var band = HELLOS.filter(function (h) { return hour < h.until; })[0] || HELLOS[HELLOS.length - 1];
+    var line = band.lines[Math.floor(Math.random() * band.lines.length)];
+
+    // A streak is the one fact about somebody that is worth saying out loud
+    // here: it is theirs, it took effort, and it is the reason they came back.
+    var streak = state.streak || 0;
+    el.textContent = streak > 1 ? line + ' ' + streak + ' days running, by the way.' : line;
+  }
+
   function renderIntro() {
     var state = progress.state;
     var played = state.decisions > 0;
@@ -457,6 +495,7 @@
 
     $('intro-fav-wrap').hidden = favourites.length === 0;
     label('landing-start', played ? 'Decide again' : 'Decide for me');
+    paintHello(state, played);
     paintEndlessCard();
 
     // "Surprise me" and the week plan need a profile worth shortcutting to:
@@ -2598,7 +2637,21 @@
 
     $('done-icon').textContent = item.icon;
     $('done-name').textContent = item.name + '.';
-    $('done-text').textContent = 'Sorted. Go and enjoy it.';
+    /*
+     * The closing line, varied.
+     *
+     * It was one fixed sentence, which is fine the first time and wallpaper by
+     * the fifth — and the fifth is the one that matters, because somebody on
+     * their fifth decision is somebody who came back. These are the same voice
+     * the rest of the app is written in, just pleased with you: dry and warm,
+     * not peppy. Nothing here congratulates anybody on tapping a button.
+     */
+    $('done-text').textContent = DONE_LINES[Math.floor(Math.random() * DONE_LINES.length)];
+
+    // The one moment in the app that is already a resting point, which is why
+    // the prompt is allowed here and nowhere else. Delayed so it lands after
+    // the answer has been read rather than on top of it.
+    if (enjoyDue()) setTimeout(function () { if (panel === 'done') openEnjoy(); }, 1400);
     $('xp-total').textContent = '+' + outcome.total;
 
     var list = $('awards');
@@ -2726,6 +2779,153 @@
       nextToast();
     }, 2750);
   }
+
+  /* ------------------------------------------------------------ enjoying it? */
+  /*
+   * Asked once, at a good moment, and then never again.
+   *
+   * THE TENSION THIS HAS TO LIVE WITH. This app's own rule, written on the
+   * Endless card and meant everywhere, is that nothing is blurred, nothing is
+   * teased, and nobody is told what they are missing until they have had it.
+   * A prompt that asks whether you like something and then tries to sell you
+   * the paid version is, done carelessly, exactly the thing that rule exists
+   * to prevent.
+   *
+   * So the rules are tight:
+   *
+   *   earned      it only appears after somebody has actually decided things
+   *               with it. Not on the first open, not to a visitor, not to
+   *               somebody who has bounced off it.
+   *   never mid-  only on the screen you land on after an answer, which is the
+   *   anything    one moment in the app that is already a resting point. Never
+   *               during a run, a duel, or a questionnaire.
+   *   once        the answer is kept for good. "Not really" is a complete
+   *               answer and is never followed by a pitch, or by the question
+   *               again. Closing it is a "not now" and costs another handful
+   *               of decisions before it returns, twice at most, ever.
+   *   honest      a Premium subscriber is never shown it, because there is
+   *               nothing to sell them and the question on its own is a survey
+   *               nobody asked for.
+   */
+  var ENJOY_AFTER = 6;        // decisions before it is first put to anybody
+  var ENJOY_AGAIN = 12;       // ...and more decisions before a dismissal returns
+  var ENJOY_MAX_SHOWS = 3;    // times it may ever appear, dismissals included
+
+  function enjoyDue() {
+    if (isPlus()) return false;
+    var st = progress.state;
+    // Answered, either way, is answered.
+    if (st.enjoy === 'yes' || st.enjoy === 'no') return false;
+    if ((st.enjoyShown || 0) >= ENJOY_MAX_SHOWS) return false;
+
+    var decisions = st.decisions || 0;
+    var need = st.enjoy === 'later'
+      ? (st.enjoyAt || 0) + ENJOY_AGAIN
+      : ENJOY_AFTER;
+    return decisions >= need;
+  }
+
+  function openEnjoy() {
+    var st = progress.state;
+    st.enjoyShown = (st.enjoyShown || 0) + 1;
+    progress.save();
+
+    $('enjoy-ask').hidden = false;
+    $('enjoy-pitch').hidden = true;
+    $('enjoy-thanks').hidden = true;
+    $('enjoy-line').textContent = (st.decisions || 0) + ' decisions in — honestly, is it any good?';
+
+    enjoyOpener = document.activeElement;
+    var dlg = $('enjoy-sheet');
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    focusQuietly($('enjoy-yes'));
+  }
+
+  function closeEnjoy() {
+    var dlg = $('enjoy-sheet');
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+    focusQuietly(enjoyOpener);
+  }
+
+  // A dismissal is not a no. It comes back, later, and not many more times.
+  function enjoyLater() {
+    var st = progress.state;
+    if (st.enjoy !== 'yes' && st.enjoy !== 'no') {
+      st.enjoy = 'later';
+      st.enjoyAt = st.decisions || 0;
+      progress.save();
+    }
+    closeEnjoy();
+  }
+
+  var enjoyOpener = null;
+
+  $('enjoy-yes').addEventListener('click', function () {
+    var st = progress.state;
+    st.enjoy = 'yes';
+    st.enjoyAt = st.decisions || 0;
+    progress.save();
+    Sound.badge();
+    Confetti.burst({ y: window.innerHeight * 0.35 });
+
+    /*
+     * The price, put next to something everybody has bought this week.
+     *
+     * £3.45 a month is an abstraction; a coffee is not. The comparison is only
+     * worth making because it is true — a month of this really does cost less
+     * than one cup — and it is written as "a month of it" rather than a bare
+     * price so it cannot be read as a one-off.
+     */
+    $('enjoy-pitch-line').textContent =
+      'There is a Premium version with the other six ways to play, cook mode, ' +
+      'and rules it never asks you about twice. A whole month of it costs less ' +
+      'than one cup of coffee.';
+    $('enjoy-pitch-fine').textContent =
+      'Three days free first, and the game you are playing stays free forever either way.';
+
+    $('enjoy-ask').hidden = true;
+    $('enjoy-pitch').hidden = false;
+    focusQuietly($('enjoy-try'));
+  });
+
+  $('enjoy-no').addEventListener('click', function () {
+    var st = progress.state;
+    st.enjoy = 'no';
+    st.enjoyAt = st.decisions || 0;
+    progress.save();
+    Sound.tick();
+    // Deliberately no pitch on this branch. Somebody who has just said they
+    // are not enjoying it is the last person who should be sold anything.
+    $('enjoy-ask').hidden = true;
+    $('enjoy-thanks').hidden = false;
+    focusQuietly($('enjoy-done'));
+  });
+
+  $('enjoy-try').addEventListener('click', function () {
+    closeEnjoy();
+    goPremium('Everything');
+  });
+
+  $('enjoy-nothanks').addEventListener('click', closeEnjoy);
+  $('enjoy-done').addEventListener('click', closeEnjoy);
+  $('enjoy-close').addEventListener('click', enjoyLater);
+  $('enjoy-sheet').addEventListener('cancel', function (e) { e.preventDefault(); enjoyLater(); });
+
+  /*
+   * Said when the app has just answered the question it exists to answer. In
+   * its own voice — pleased, and still dry. "Sorted." survives because it was
+   * the right line; the rest are there so it is not the only one.
+   */
+  var DONE_LINES = [
+    'Sorted. Go and enjoy it.',
+    'That is dinner. Nicely done.',
+    'Decided. The hard part is behind you.',
+    'There it is. Off you go.',
+    'Settled — nothing left to think about.',
+    'Good shout. And it took about a minute.',
+    'Done. That is the deciding out of the way.',
+    'Locked in. Enjoy the bit that comes next.'
+  ];
 
   function rejectCurrent() {
     if (busy) return;

@@ -147,7 +147,19 @@
        * between samples by interpolation anyway.
        */
       endlessCurve: [],       // [score@10, score@20, ...] from the best run
-      endlessTheme: ''        // '' | a tag — which pool Endless draws from
+      endlessTheme: '',       // '' | a tag — which pool Endless draws from
+
+      /*
+       * Whether we have asked how they are getting on, and what they said.
+       *
+       * Stored so it is asked once and then never again. 'no' is as final as
+       * 'yes': somebody who told us they are not enjoying it has answered the
+       * question, and asking a second time is not a survey, it is nagging.
+       * 'later' is a dismissal — it comes back, but not soon.
+       */
+      enjoy: '',              // '' | 'yes' | 'no' | 'later'
+      enjoyAt: 0,             // when it was last put to them
+      enjoyShown: 0           // how many times it has been shown, ever
     };
   }
 

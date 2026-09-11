@@ -3875,3 +3875,36 @@ body.is-landing .topbar-brand .mark-word { display: none; }
      during one, and the summary says it too. */
   .endless-pace { display: none; }
 }
+
+/* -------------------------------------------------------- enjoying it? */
+/*
+ * Deliberately the same sheet as everything else. A prompt that arrives
+ * wearing a different skin from the rest of the app reads as an advert that
+ * got in, which is the exact impression this must not give — it is the app
+ * asking, so it looks like the app.
+ */
+.enjoy-sheet { text-align: center; }
+
+.enjoy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  justify-content: center;
+  margin-top: var(--s4);
+}
+
+/* The refusal is a real button, the same size as the other one, not a grey
+   whisper under it. A "no" that is hard to find is a dark pattern, and the
+   answer is worth having honestly or not at all. */
+.enjoy-sheet .quiet { min-width: 9rem; }
+.enjoy-sheet .go    { min-width: 9rem; }
+
+.enjoy-sheet .fine { margin-top: var(--s2); }
+
+/* A word for somebody who has been here before, above the pitch they have
+   already read. Quiet on purpose — it is a greeting, not a headline. */
+.landing-hello {
+  margin: 0 0 var(--s2);
+  font-size: var(--t-sm);
+  color: var(--amber);
+}

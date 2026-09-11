@@ -117,6 +117,10 @@
       <span class="reel-item is-on">🍜</span>
     </div>
 
+    <!-- Only for somebody who has been here before. A first-timer gets the
+         pitch clean, with nothing in front of it. -->
+    <p class="landing-hello" id="landing-hello" hidden></p>
+
     <h1 class="landing-ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s alright &mdash; I might.</em></h1>
     <p class="landing-sub">A few easy either-ors &mdash; sweet or savoury, hot or cold, hands or cutlery &mdash;
     and we&rsquo;ll work out what you actually feel like. Usually in about eight questions.</p>
@@ -1487,6 +1491,45 @@
 
   </main>
 </div>
+
+<!--
+  "Getting on all right?" — asked once, at a good moment, and then never again.
+  Two panes in one dialog: the question, and the offer that only the yes branch
+  ever sees. A "not really" is a complete answer and gets no pitch at all.
+-->
+<dialog class="sheet enjoy-sheet" id="enjoy-sheet" aria-labelledby="enjoy-title">
+  <button class="sheet-x" id="enjoy-close" aria-label="Close">&times;</button>
+
+  <div id="enjoy-ask">
+    <span class="sheet-art" aria-hidden="true">&#128512;</span>
+    <h2 class="sheet-name" id="enjoy-title">Getting on all right?</h2>
+    <p class="sheet-note" id="enjoy-line">You have used this a fair few times now, so &mdash; honestly, is it any good?</p>
+    <div class="enjoy-actions">
+      <button class="go go-sm" id="enjoy-yes" type="button">Yeah, I like it</button>
+      <button class="quiet" id="enjoy-no" type="button">Not really</button>
+    </div>
+  </div>
+
+  <div id="enjoy-pitch" hidden>
+    <span class="sheet-art" aria-hidden="true">&#127881;</span>
+    <h2 class="sheet-name">Glad to hear it.</h2>
+    <p class="sheet-note" id="enjoy-pitch-line"></p>
+    <p class="fine" id="enjoy-pitch-fine"></p>
+    <div class="enjoy-actions">
+      <button class="go go-sm" id="enjoy-try" type="button">Three days free</button>
+      <button class="quiet" id="enjoy-nothanks" type="button">Maybe later</button>
+    </div>
+  </div>
+
+  <div id="enjoy-thanks" hidden>
+    <span class="sheet-art" aria-hidden="true">&#128172;</span>
+    <h2 class="sheet-name">Fair enough.</h2>
+    <p class="sheet-note">That is useful to know, and you will not be asked again. The game stays free either way.</p>
+    <div class="enjoy-actions">
+      <button class="go go-sm" id="enjoy-done" type="button">Carry on</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog class="sheet" id="dish-sheet" aria-label="Dish details">
   <button class="sheet-x" id="sheet-close" aria-label="Close">&times;</button>
