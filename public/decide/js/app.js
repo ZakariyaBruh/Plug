@@ -3299,8 +3299,22 @@
    *               nothing to sell them and the question on its own is a survey
    *               nobody asked for.
    */
-  var ENJOY_AFTER = 6;        // decisions before it is first put to anybody
-  var ENJOY_AGAIN = 12;       // ...and more decisions before a dismissal returns
+  /*
+   * HOW OFTEN, and the one rule that makes raising it safe.
+   *
+   * These three blocks of numbers are the whole frequency of the app's asks,
+   * and they were set for an app with strangers in it. This one has almost
+   * nobody in it yet, which is a different problem: a pitch nobody reaches is
+   * worth less than a pitch somebody shrugs at. So they are turned up.
+   *
+   * What is NOT turned up is the refusals. "Not really" and "Not for me" are
+   * still final and still honoured forever, and closing a prompt is still a
+   * soft no that costs it a full run of decisions before it returns. That is
+   * what stops "more often" becoming "until they leave": the ceiling on how
+   * many times anybody sees these is set by them, not by the numbers here.
+   */
+  var ENJOY_AFTER = 4;        // decisions before it is first put to anybody
+  var ENJOY_AGAIN = 8;        // ...and more decisions before a dismissal returns
   var ENJOY_MAX_SHOWS = 3;    // times it may ever appear, dismissals included
 
   function enjoyDue() {
@@ -3425,18 +3439,19 @@
   /*
    * The affiliate offer, on the same terms as the enjoy prompt.
    *
-   * Shown later than that one, and never in the same sitting: being asked
-   * whether you like something and then asked to go and sell it, one after the
-   * other, is two asks in a row and reads as a sales funnel rather than an
-   * app. So this waits for somebody who has really stuck around, and only if
-   * the other prompt is not what is due.
+   * Never in the same sitting as it: being asked whether you like something
+   * and then asked to go and sell it, one after the other, is two asks in a
+   * row and reads as a sales funnel rather than an app. So this only comes up
+   * when the other prompt is not what is due — which is the rule that still
+   * holds now the two are only a few decisions apart rather than twenty.
    *
    * "Not for me" is final. There is no later on this one — somebody who does
    * not want to sell your app is not going to want to in a fortnight, and
-   * asking again would just be nagging with extra steps.
+   * asking again would just be nagging with extra steps. That refusal is the
+   * ceiling on this prompt, not EARN_MAX_SHOWS.
    */
-  var EARN_AFTER = 25;        // decisions before it is offered at all
-  var EARN_MAX_SHOWS = 2;     // times it may ever appear
+  var EARN_AFTER = 8;         // decisions before it is offered at all, and between showings
+  var EARN_MAX_SHOWS = 4;     // times it may ever appear
 
   function earnDue() {
     var st = progress.state;
@@ -3502,19 +3517,23 @@
    * made that judgement with their own money and does not need to be asked
    * twice.
    *
-   * Twice ever, a full run of decisions apart, and never in the same breath as
-   * one of the other two. Three prompts stacked on one screen is not three
-   * chances, it is one person closing three things.
+   * A run of decisions apart, and never in the same breath as one of the other
+   * two. Three prompts stacked on one screen is not three chances, it is one
+   * person closing three things.
    */
-  var SHARE_AFTER = 15;       // decisions before it is offered at all
-  var SHARE_MAX_SHOWS = 2;    // times it may ever appear
+  var SHARE_AFTER = 5;        // decisions before it is offered at all, and between showings
+  var SHARE_MAX_SHOWS = 4;    // times it may ever appear
 
   function shareDue() {
     var st = progress.state;
     if (st.share === 'no') return false;
     if ((st.shareShown || 0) >= SHARE_MAX_SHOWS) return false;
-    // Only for somebody who has already said this is any good, one way or
-    // the other.
+    // Only for somebody who has said, in so many words, that this is good:
+    // answered "yeah, I like it", or paid. Not "one way or the other" — a
+    // favour asked of somebody who said "not really" is worse than no ask,
+    // and one asked of somebody who has dismissed the question twice is an
+    // advert wearing a favour's clothes. This is the last real throttle on
+    // this prompt; the numbers above are not.
     if (!isPlus() && st.enjoy !== 'yes') return false;
     // Never on top of, or in the same run as, one of the other prompts.
     if (enjoyDue() || earnDue()) return false;
