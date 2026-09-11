@@ -322,6 +322,9 @@
     if (name === 'nearby') renderNearby();
     if (name === 'news') renderNews();
     if (name === 'chat') renderChat();
+    // A half-written answer left running in a section nobody is looking at
+    // keeps scrolling it into view from somewhere else in the app.
+    else stopTyping();
     window.scrollTo(0, 0);
   }
 
@@ -3824,7 +3827,61 @@
     'Give me a tip for today'
   ];
 
-  var chat = { turns: [], busy: false };
+  var chat = { turns: [], busy: false, typing: null };
+
+  /*
+   * The answer arriving as it is written, rather than all at once.
+   *
+   * NOT streaming, and worth being clear about that: /api/chat waits for the
+   * whole reply and hands it over in one piece, so nothing here makes the
+   * answer arrive sooner. What it changes is the reading — a paragraph that
+   * appears instantly is a wall to be started, and one that writes itself is
+   * already being read by the time it finishes.
+   *
+   * Capped in total, not just per character, so a long answer does not turn
+   * into a long wait. Past about two seconds the effect has done its job and
+   * anything more is just making somebody sit there.
+   */
+  var CHAT_TYPE_MS = 14;      // per character, at a comfortable pace
+  var CHAT_TYPE_CAP = 1800;   // ...but never longer than this in total
+
+  function stopTyping() {
+    if (chat.typing) { clearInterval(chat.typing.timer); chat.typing = null; }
+  }
+
+  /*
+   * Written with textContent one slice at a time. Never innerHTML: this is a
+   * model's words, and the rest of the app is careful about that for a reason.
+   * `then` runs when the last character lands, which is where the dish buttons
+   * are added — they belong under a finished sentence, not a half-written one.
+   */
+  function typeInto(body, text, then) {
+    stopTyping();
+    if (reduceMotion || !text) {
+      body.textContent = text;
+      if (then) then();
+      return;
+    }
+
+    body.textContent = '';
+    var step = Math.max(1, Math.ceil(text.length / (CHAT_TYPE_CAP / CHAT_TYPE_MS)));
+    var at = 0;
+    var state = { timer: null };
+    state.timer = setInterval(function () {
+      at = Math.min(text.length, at + step);
+      body.textContent = text.slice(0, at);
+      // Kept in view as it grows, or a long answer writes itself off the
+      // bottom of the screen.
+      if (body.parentNode && body.parentNode.scrollIntoView) {
+        body.parentNode.scrollIntoView({ block: 'nearest' });
+      }
+      if (at >= text.length) {
+        stopTyping();
+        if (then) then();
+      }
+    }, CHAT_TYPE_MS);
+    chat.typing = state;
+  }
 
   function renderChat() {
     paintChatSeeds();
@@ -3872,6 +3929,9 @@
     if (!text) return;
 
     field.value = '';
+    // Asking again while the last answer is still writing itself: the old one
+    // stops where it is rather than carrying on underneath the new question.
+    stopTyping();
     $('chat-empty').hidden = true;
     // The chips stay. They were hidden after the first question, which left a
     // hungry person with nothing but a keyboard — and typing is the slowest
@@ -3910,10 +3970,15 @@
       if (answer.ok && answer.body && answer.body.reply) {
         var reply = String(answer.body.reply);
         chat.turns.push({ role: 'model', text: reply });
-        var row = chatRow('bot', reply, false);
-        addDishTaps(row, reply);
+        // Built empty, then written into. The dish buttons wait for the last
+        // character so they do not appear under half a sentence.
+        var row = chatRow('bot', '', false);
         waiting.replaceWith(row);
         row.scrollIntoView({ block: 'nearest' });
+        typeInto(row.querySelector('.chat-text'), reply, function () {
+          addDishTaps(row, reply);
+          row.scrollIntoView({ block: 'nearest' });
+        });
         return;
       }
 
