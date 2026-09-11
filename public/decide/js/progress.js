@@ -178,7 +178,11 @@
        */
       plusAd: '',             // '' | 'no' — whether the Premium pitch was ended
       adAt: 0,                // rotation cursor into ADS
-      adShown: 0              // offers shown, ever — for the record, not a cap
+      adShown: 0,             // offers shown, ever — for the record, not a cap
+
+      // Decisions at the last prompt shown to a paying member. They only ever
+      // see the affiliate one, and only once every PLUS_PROMPT_EVERY.
+      plusPromptAt: 0
     };
   }
 

@@ -3582,7 +3582,32 @@
    */
   var GAME_BUDGET_MIN = 2;
   var GAME_BUDGET_MAX = 5;
+
+  /*
+   * A MEMBER GETS ONE KIND OF PROMPT, RARELY.
+   *
+   * One per game was already a tenth of what Standard sees, and it was still
+   * wrong: one every game is every game. Somebody paying has bought the thing
+   * two thirds of this roster is selling, and what they bought includes not
+   * being sold to. So the only prompt they are ever shown is the affiliate
+   * one — the only one that might pay them something back rather than ask
+   * them for something — and it waits a dozen decisions between showings.
+   *
+   * Not asked at all until the first dozen, either. A prompt on the day
+   * somebody pays reads as the app having been waiting for the money to clear.
+   */
   var GAME_BUDGET_PLUS = 1;
+  var PLUS_PROMPT_EVERY = 12;  // decisions between money prompts for a member
+
+  function plusPromptDue() {
+    var st = progress.state;
+    // The same refusal that ends the affiliate offers for everybody. A member
+    // who has said "not for me" is then done with prompts entirely, which is
+    // the quietest this app can be and is exactly right.
+    if (st.earn === 'no') return false;
+    var decisions = st.decisions || 0;
+    return decisions >= (st.plusPromptAt || 0) + PLUS_PROMPT_EVERY;
+  }
 
   var gameBudget = 0;
   var gameSpent = 0;
@@ -3618,18 +3643,32 @@
     // game: Premium is settled by a request to the server, so the very first
     // game of a session can begin before the answer is back. Reading isPlus()
     // here means a member never spends a Standard-sized budget.
-    var cap = isPlus() ? Math.min(gameBudget, GAME_BUDGET_PLUS) : gameBudget;
+    var plus = isPlus();
+    var cap = plus ? Math.min(gameBudget, GAME_BUDGET_PLUS) : gameBudget;
     if (gameSpent >= cap) return false;
     if (anySheetOpen()) return false;
+    if (plus && !plusPromptDue()) return false;
 
+    /*
+     * enjoyDue and shareDue already refuse a member on their own, so the two
+     * of them could be left in the chain and would simply never fire. They
+     * are guarded here as well because this is the line that has to be read
+     * to answer "what does a member see?", and the answer should be legible
+     * from it rather than from three functions in other places.
+     */
     var shown = null;
-    if (enjoyDue()) { openEnjoy(); shown = 'enjoy-sheet'; }
+    if (!plus && enjoyDue()) { openEnjoy(); shown = 'enjoy-sheet'; }
     else if (earnDue()) { openEarn(); shown = 'earn-sheet'; }
-    else if (shareDue()) { openShare(); shown = 'share-sheet'; }
+    else if (!plus && shareDue()) { openShare(); shown = 'share-sheet'; }
     else if (openAd(nextAd())) { shown = 'ad-sheet'; }
 
     if (!shown) return false;
     gameSpent += 1;
+
+    if (plus) {
+      progress.state.plusPromptAt = progress.state.decisions || 0;
+      progress.save();
+    }
 
     if (chain) {
       var dlg = $(shown);
@@ -3825,10 +3864,13 @@
    * It is deliberately last in the queue and deliberately the narrowest. The
    * other two are pitches; this one is a favour, and a favour asked of
    * somebody who has not yet said they like the thing is just another advert.
-   * So it is only ever put to a profile that has already answered "yeah, I
-   * like it" to the enjoy prompt, or that is paying — a Premium member has
-   * made that judgement with their own money and does not need to be asked
-   * twice.
+   * So it is only put to a profile that has already answered "yeah, I like
+   * it" to the enjoy prompt.
+   *
+   * NOT TO MEMBERS. It used to go to anybody paying, on the grounds that they
+   * had made that judgement with their own money. They had — and a member has
+   * still paid to be left alone. The only prompt a member gets now is the one
+   * that might pay them something back, and this is not it.
    *
    * A run of decisions apart, and never in the same breath as one of the other
    * two. Three prompts stacked on one screen is not three chances, it is one
@@ -3841,13 +3883,14 @@
     var st = progress.state;
     if (st.share === 'no') return false;
     if ((st.shareShown || 0) >= SHARE_MAX_SHOWS) return false;
-    // Only for somebody who has said, in so many words, that this is good:
-    // answered "yeah, I like it", or paid. Not "one way or the other" — a
-    // favour asked of somebody who said "not really" is worse than no ask,
-    // and one asked of somebody who has dismissed the question twice is an
-    // advert wearing a favour's clothes. This is the last real throttle on
-    // this prompt; the numbers above are not.
-    if (!isPlus() && st.enjoy !== 'yes') return false;
+    // Never to a member: they are owed quiet, not a favour.
+    if (isPlus()) return false;
+    // And only to somebody who has said, in so many words, that this is good.
+    // Not "one way or the other" — a favour asked of somebody who said "not
+    // really" is worse than no ask, and one asked of somebody who has
+    // dismissed the question twice is an advert wearing a favour's clothes.
+    // This is the last real throttle on this prompt; the numbers are not.
+    if (st.enjoy !== 'yes') return false;
     // Never on top of, or in the same run as, one of the other prompts.
     if (enjoyDue() || earnDue()) return false;
     var decisions = st.decisions || 0;
