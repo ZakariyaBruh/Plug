@@ -1415,6 +1415,201 @@
               'Pour from as high as you dare. The foam on top is the point.'] }
   ]);
 
+  /* ---- the second intake ------------------------------------------------
+     One route each, written the same way as the rest: metric, rough, and a
+     prompt to start cooking rather than a reference text. */
+
+  recipes('Birria tacos', [
+    { name: 'The shortcut stew', time: 150, serves: 4, level: 'Worth the wait',
+      ingredients: ['1kg beef shin or chuck, in big pieces', '4 dried chillies, stems out', '1 onion, halved', '4 garlic cloves', '1 tsp cumin', '1 tsp oregano', '1 cinnamon stick', 'Corn tortillas', 'Grated cheese, coriander, lime'],
+      steps: ['Cover the chillies in boiling water for 15 minutes, then blend with the onion, garlic, cumin and oregano and a ladle of the soaking water.',
+              'Brown the beef hard in a heavy pot. Pour the paste over, add the cinnamon and enough water to almost cover.',
+              'Lid on, lowest heat, two hours, until it falls apart. Shred the meat and keep the broth.',
+              'Dip a tortilla in the red fat on top of the broth, griddle it, fill with meat and cheese, fold and crisp both sides.',
+              'Serve with a bowl of the broth for dipping. That is the whole point.'] }
+  ]);
+
+  recipes('Khao soi', [
+    { name: 'Northern curry noodles', time: 35, serves: 2, level: 'Easy',
+      ingredients: ['200g egg noodles, plus a handful extra to fry', '2 tbsp red curry paste', '1 tsp curry powder', '400ml coconut milk', '300ml chicken stock', '2 chicken thighs, sliced', 'Fish sauce, lime, sugar', 'Shallot and pickles, to finish'],
+      steps: ['Fry the spare noodles in a little oil until they puff and go gold. Drain and set aside.',
+              'Fry the paste and curry powder in a splash of the thick coconut cream for a minute, until it smells like more than paste.',
+              'Add the chicken, then the rest of the coconut milk and the stock. Simmer 12 minutes.',
+              'Season with fish sauce, a squeeze of lime and a pinch of sugar until it tastes sharp as well as rich.',
+              'Boil the soft noodles, bowl them, ladle over, and pile the crisp ones on top with shallot and pickles.'] }
+  ]);
+
+  recipes('Okonomiyaki', [
+    { name: 'Cabbage pancake', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['150g plain flour', '120ml dashi or light stock', '2 eggs', '400g white cabbage, shredded fine', '2 spring onions', 'Oil', 'Brown sauce and mayonnaise, to finish'],
+      steps: ['Whisk the flour, stock and eggs to a thick batter and rest it 10 minutes.',
+              'Fold in the cabbage and spring onions. It should look like far too much cabbage for the batter. It is not.',
+              'Oil a pan on medium, spoon in half the mix and shape it into a thick round. Lid on, 6 minutes.',
+              'Flip once — commit, do not dither — and give it 5 more minutes uncovered.',
+              'Zigzag with sauce and mayo. Repeat for the second one.'] }
+  ]);
+
+  recipes('Rendang', [
+    { name: 'Dry beef curry', time: 180, serves: 4, level: 'Worth the wait',
+      ingredients: ['800g beef shin, cubed', '400ml coconut milk', '6 shallots', '4 garlic cloves', 'Thumb of ginger and galangal', '3 red chillies', '1 lemongrass stalk, bruised', '3 kaffir lime leaves', '1 tsp turmeric'],
+      steps: ['Blend the shallots, garlic, ginger, galangal, chillies and turmeric to a paste.',
+              'Fry the paste in oil until it darkens and stops smelling raw, about 8 minutes.',
+              'Add the beef, coconut milk, lemongrass and lime leaves. Bring up, then drop to the barest simmer.',
+              'Leave it two to three hours, uncovered, stirring now and then. The liquid goes from soup to sauce to a coating.',
+              'It is done when the oil separates and the beef is dark. Do not stop early — that is a curry, not a rendang.'] }
+  ]);
+
+  recipes('Hainanese chicken rice', [
+    { name: 'Poached and quiet', time: 60, serves: 4, level: 'Not hard, just fussy',
+      ingredients: ['1 whole chicken', 'Thumb of ginger, sliced', '4 spring onions', '300g jasmine rice', '2 garlic cloves, minced', 'Sesame oil', 'Soy, chilli and ginger, for the sauces'],
+      steps: ['Sit the chicken in a pot with the ginger and spring onions, cover with water, bring to a bare tremble.',
+              'Poach 35 minutes at that tremble — never a boil — then lift it out into iced water for 5 minutes. That is what makes the skin.',
+              'Keep the stock. Fry the rice with the garlic in a little sesame oil, then cook it in the stock instead of water.',
+              'Joint the chicken. Serve on the rice with a bowl of the remaining stock.',
+              'Make two sauces: soy with a little sesame, and chilli pounded with ginger. Both, not one.'] }
+  ]);
+
+  recipes('Paella', [
+    { name: 'One pan, no stirring', time: 45, serves: 4, level: 'Easy',
+      ingredients: ['300g paella or bomba rice', '900ml hot stock', 'Pinch of saffron', '200g prawns', '200g chicken thigh, diced', '1 onion, 2 garlic cloves', '1 red pepper', '100g green beans', 'Smoked paprika'],
+      steps: ['Brown the chicken in a wide shallow pan, then the pepper and beans, then the onion and garlic.',
+              'Stir in the paprika and rice for a minute so every grain is coated.',
+              'Pour in the hot stock with the saffron. Spread everything flat and then do not stir it again.',
+              'Simmer 18 minutes, adding the prawns for the last 5.',
+              'Turn the heat up for a final minute to catch the bottom — the crust is the best part — then rest it off the heat for 5.'] }
+  ]);
+
+  recipes('Risotto', [
+    { name: 'Creamy without cream', time: 30, serves: 2, level: 'Easy',
+      ingredients: ['180g arborio rice', '1 litre hot stock', '1 shallot, minced', '100ml white wine', '40g butter', '40g parmesan', 'Olive oil'],
+      steps: ['Soften the shallot in oil without colouring it. Add the rice and toast 2 minutes until the edges go translucent.',
+              'Wine in, let it vanish.',
+              'Add hot stock a ladle at a time, stirring, waiting for each to be almost gone before the next. About 18 minutes.',
+              'Taste for bite. It should be loose enough to spread slowly on a tilted plate.',
+              'Off the heat, beat in the cold butter and the parmesan hard. That is where the creaminess comes from.'] }
+  ]);
+
+  recipes('Carbonara', [
+    { name: 'Four ingredients, no cream', time: 20, serves: 2, level: 'Easy',
+      ingredients: ['200g spaghetti', '100g guanciale or pancetta, cubed', '2 eggs plus 1 yolk', '50g pecorino, grated', 'Black pepper, lots'],
+      steps: ['Render the guanciale slowly in a cold dry pan until the fat runs and the edges crisp.',
+              'Boil the pasta. Beat the eggs with the pecorino and a great deal of pepper.',
+              'Drag the drained pasta into the pan of fat, off the heat. Wait thirty seconds — this is the step everyone skips.',
+              'Pour in the egg mixture and toss hard, adding splashes of pasta water until it turns glossy.',
+              'If it scrambles, the pan was too hot. Nothing to do but eat it and go again.'] }
+  ]);
+
+  recipes('Moussaka', [
+    { name: 'The proper bake', time: 105, serves: 6, level: 'A project',
+      ingredients: ['3 aubergines, sliced', '500g lamb mince', '1 onion, 3 garlic cloves', '400g chopped tomatoes', '1 tsp cinnamon', '50g butter, 50g flour, 600ml milk', '1 egg yolk', '60g cheese'],
+      steps: ['Salt the aubergine slices for 20 minutes, pat dry, then griddle or roast until soft and bronzed.',
+              'Brown the lamb with the onion and garlic. Add tomatoes and cinnamon and cook down 25 minutes until thick, not wet.',
+              'Make a béchamel: butter, flour, then milk in slowly. Off the heat, beat in the yolk and half the cheese.',
+              'Layer aubergine, lamb, aubergine, then all the sauce. Rest of the cheese over.',
+              'Bake at 180C for 40 minutes. Then leave it 20 minutes before cutting or it will run away from you.'] }
+  ]);
+
+  recipes('Schnitzel', [
+    { name: 'Thin, gold, lemon', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['2 pork or chicken escalopes', '60g flour', '2 eggs, beaten', '120g fine breadcrumbs', 'Oil or clarified butter, for frying', 'Lemon'],
+      steps: ['Put each escalope between two sheets and beat it out to about 5mm. Thinner than feels right.',
+              'Flour, then egg, then crumbs — press the crumbs on lightly rather than packing them.',
+              'Shallow fry in 1cm of hot fat, about 2 minutes a side, spooning fat over so the coating puffs away from the meat.',
+              'Drain briefly on paper. Lemon over it at the table, not before.'] }
+  ]);
+
+  recipes('Croque monsieur', [
+    { name: 'The grown-up toastie', time: 20, serves: 2, level: 'Easy',
+      ingredients: ['4 slices of good white bread', '4 slices of ham', '100g gruyère, grated', '20g butter, 20g flour, 250ml milk', 'Dijon mustard', 'Nutmeg'],
+      steps: ['Make a small thick béchamel and season it with mustard and a scrape of nutmeg.',
+              'Butter the bread on the outside. Inside: a smear of sauce, ham, some cheese.',
+              'Fry both sides in a pan until deep gold.',
+              'Move to a tray, blanket the tops with the rest of the sauce and cheese, and grill until it blisters.'] }
+  ]);
+
+  recipes('Chilaquiles', [
+    { name: 'Breakfast from leftovers', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['A big bag of tortilla chips, or yesterday\'s tortillas fried', '400g chopped tomatoes', '2 chipotle chillies in adobo', '1 onion, 2 garlic cloves', '2 eggs', 'Feta or queso fresco, coriander, soured cream'],
+      steps: ['Blend the tomatoes with the chipotles, onion and garlic. Fry the lot in oil for 8 minutes until it darkens and thickens.',
+              'Fry the eggs, however you like them.',
+              'Tip the chips into the sauce and fold twice. Twice — any more and they go to mush.',
+              'Straight onto plates, eggs on top, then cheese, coriander and cream. Eat immediately; this dish does not wait.'] }
+  ]);
+
+  recipes('Elote', [
+    { name: 'Corn, done properly', time: 15, serves: 4, level: 'Very easy',
+      ingredients: ['4 corn cobs', '4 tbsp mayonnaise', '60g feta or cotija, crumbled fine', 'Chilli powder', '2 limes', 'Butter'],
+      steps: ['Griddle or barbecue the cobs dry, turning, until properly charred in patches — not merely warm.',
+              'Rub with butter while hot, then paint with mayonnaise.',
+              'Roll in the cheese so it sticks all over.',
+              'Chilli powder, then lime squeezed over the top. Eat over a plate.'] }
+  ]);
+
+  recipes('Pupusas', [
+    { name: 'Stuffed and griddled', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['400g masa harina', '500ml warm water', '200g mozzarella or queso, grated', '200g refried beans', 'Oil'],
+      steps: ['Mix the masa and water to a soft dough like plasticine. Rest 10 minutes.',
+              'Roll golf balls, press a hollow in each, fill with cheese and beans, then close the dough over and flatten gently to a disc.',
+              'Dry griddle on medium for 4 minutes a side until freckled and puffed.',
+              'Serve with something sharp and pickled — curtido if you have it, vinegary slaw if you do not.'] }
+  ]);
+
+  recipes('Congee', [
+    { name: 'Rice cooked to a whisper', time: 75, serves: 4, level: 'Very easy',
+      ingredients: ['150g jasmine rice', '2 litres chicken or vegetable stock', 'Thumb of ginger, sliced', 'Spring onions', 'Soy sauce, sesame oil', 'Whatever tops it: egg, chicken, peanuts, chilli oil'],
+      steps: ['Rinse the rice until the water runs clear.',
+              'Simmer it in the stock with the ginger, lid ajar, for an hour. Stir occasionally so the bottom does not catch.',
+              'It is ready when the grains have collapsed and it pours like thick cream. Loosen with more stock if it goes past that.',
+              'Season at the end with soy and sesame. Top with anything — the plainness underneath is the point.'] }
+  ]);
+
+  recipes('Japchae', [
+    { name: 'Glass noodles with snap', time: 30, serves: 4, level: 'Easy',
+      ingredients: ['200g sweet potato glass noodles', '1 carrot, 1 onion, 1 pepper, all in strips', '100g spinach', '3 tbsp soy sauce', '1 tbsp sugar', '2 tbsp sesame oil', 'Sesame seeds'],
+      steps: ['Boil the noodles 6 minutes, rinse cold, then cut through the tangle a few times with scissors.',
+              'Fry each vegetable separately and briefly, so each keeps its own texture. This is the whole technique.',
+              'Wilt the spinach last, squeeze it dry.',
+              'Toss everything with soy, sugar and sesame oil while still warm. Sesame seeds over. Good hot or at room temperature.'] }
+  ]);
+
+  recipes('Souvlaki', [
+    { name: 'Wrapped, with the chips inside', time: 35, serves: 4, level: 'Easy',
+      ingredients: ['600g pork shoulder or chicken thigh, cubed', 'Olive oil, lemon, oregano, garlic', '4 pitta breads', 'Tzatziki', 'Tomato, red onion', 'Chips'],
+      steps: ['Marinate the meat in oil, lemon, plenty of oregano and crushed garlic for as long as you have. Twenty minutes will do.',
+              'Thread onto skewers and griddle hard, turning, until charred at the edges and just done through.',
+              'Warm the pitta on the same griddle so it takes on some of the fat.',
+              'Tzatziki, meat, tomato, onion, and chips inside the wrap. Inside. Roll tightly in paper.'] }
+  ]);
+
+  recipes('Basque cheesecake', [
+    { name: 'Burnt on purpose', time: 60, serves: 8, level: 'Easy',
+      ingredients: ['600g cream cheese, room temperature', '200g caster sugar', '4 eggs', '300ml double cream', '25g plain flour', 'Pinch of salt'],
+      steps: ['Heat the oven as high as it will go, around 220C. Line a tin with baking paper, crumpled, letting it stick up over the sides.',
+              'Beat the cream cheese and sugar smooth, then the eggs one at a time, then the cream, then the flour. Do not whip air into it.',
+              'Pour in and bake 40 minutes. The top should go properly dark — further than instinct allows — and the middle should still wobble.',
+              'Cool completely in the tin. It sinks and cracks. That is what it looks like.'] }
+  ]);
+
+  recipes('Kunafa', [
+    { name: 'Cheese under syrup', time: 45, serves: 8, level: 'Easy',
+      ingredients: ['400g kataifi pastry, pulled apart', '150g butter, melted', '400g mozzarella or akkawi, sliced', '200g sugar', '150ml water', 'Squeeze of lemon', 'Pistachios'],
+      steps: ['Boil the sugar, water and lemon for 5 minutes into a syrup and then leave it to go cold. Cold syrup, hot pastry — that rule matters.',
+              'Toss the shredded pastry through the melted butter until every strand is coated.',
+              'Press half into a tin, lay the cheese over, press the rest on top.',
+              'Bake at 190C for 30 minutes until deep gold.',
+              'Pour the cold syrup over the moment it leaves the oven. Pistachios, and eat it while the cheese still pulls.'] }
+  ]);
+
+  recipes('Sticky toffee pudding', [
+    { name: 'More sauce than seems wise', time: 55, serves: 6, level: 'Easy',
+      ingredients: ['200g dates, chopped', '250ml boiling water', '1 tsp bicarbonate of soda', '75g butter', '150g dark brown sugar', '2 eggs', '175g self-raising flour', 'For the sauce: 150g butter, 200g brown sugar, 250ml double cream'],
+      steps: ['Pour the boiling water over the dates with the bicarb and leave 10 minutes, then mash roughly.',
+              'Cream the butter and sugar, beat in the eggs, fold in the flour, then stir through the dates and their liquid. It will look far too wet. Trust it.',
+              'Bake at 180C for 30 minutes.',
+              'For the sauce, melt everything together and bubble for 3 minutes until it thickens and goes glossy.',
+              'Skewer holes in the warm sponge and pour half the sauce in. The rest goes over at the table.'] }
+  ]);
+
   return {
     BOOK: BOOK,
     scale: scale,

@@ -605,7 +605,53 @@
     // Filling rather than light, which is the entire point of drinking one —
     // and which stops it being offered to somebody who asked for a light bite.
     item('Protein shake', '\u{1F95B}', 'Not glamorous. Does the job.',
-      'drink healthy quick filling homemade', 'sweet chocolate')
+      'drink healthy quick filling homemade', 'sweet chocolate'),
+
+    // ---- the second intake ----------------------------------------------
+    // Chosen for what the first hundred and twelve did not have rather than
+    // for being obvious: a Spanish rice pan, a Greek bake, a Thai curry
+    // noodle, a Mexican breakfast. `veg` is never written here — item()
+    // works it out from meat and seafood so the two can never contradict.
+    item('Birria tacos', '\u{1F32E}', 'Dipped in the broth it was cooked in. Bring napkins.',
+      'hot meat messy indulgent handheld comfort filling soft', 'spicy shareable'),
+    item('Khao soi', '\u{1F35C}', 'Curry broth, soft noodles, and a tangle of crisp ones on top.',
+      'hot soupy spicy carby comfort chicken filling', 'crunchy'),
+    item('Okonomiyaki', '\u{1F373}', 'A cabbage pancake under sauce, mayo and dancing flakes.',
+      'hot shareable homemade filling soft messy', 'veg cheap'),
+    item('Rendang', '\u{1F35B}', 'Beef cooked down until the sauce is a coating. Deeply serious.',
+      'hot meat spicy filling comfort soft', 'homemade'),
+    item('Hainanese chicken rice', '\u{1F35A}', 'Poached chicken, rice cooked in the stock. Quietly perfect.',
+      'hot chicken meat carby light comfort soft', 'healthy'),
+    item('Paella', '\u{1F958}', 'One pan, socarrat on the bottom, everyone round it.',
+      'hot shareable seafood carby filling homemade', 'chicken'),
+    item('Risotto', '\u{1F35A}', 'Stirred until it goes creamy without any cream in it.',
+      'hot carby comfort soft homemade filling cheesy', 'veg'),
+    item('Carbonara', '\u{1F35D}', 'Egg, cheese, pepper, pork. No cream, ever.',
+      'hot carby cheesy meat comfort filling quick', 'indulgent'),
+    item('Moussaka', '\u{1F346}', 'Aubergine, lamb and a lid of béchamel gone golden.',
+      'hot meat cheesy filling comfort indulgent soft', 'homemade'),
+    item('Schnitzel', '\u{1F356}', 'Hammered thin, fried gold, lemon over the top.',
+      'hot meat fried crunchy filling', 'quick'),
+    item('Croque monsieur', '\u{1F956}', 'A cheese toastie that went to finishing school.',
+      'hot cheesy bready meat indulgent filling quick', 'comfort'),
+    item('Chilaquiles', '\u{1F336}', 'Last night\'s tortilla chips, this morning\'s breakfast.',
+      'hot breakfast spicy messy cheesy comfort crunchy', 'veg cheap'),
+    item('Elote', '\u{1F33D}', 'Corn, mayo, chilli, lime, cheese. Eaten off the cob, badly.',
+      'hot handheld messy cheesy spicy cheap shareable', 'veg quick'),
+    item('Pupusas', '\u{1FAD3}', 'Stuffed griddled corn cakes with something sharp on the side.',
+      'hot cheesy filling soft handheld cheap comfort', 'veg'),
+    item('Congee', '\u{1F963}', 'Rice cooked to a whisper. What you want when nothing else appeals.',
+      'hot soupy soft light comfort breakfast healthy cheap', 'chicken'),
+    item('Japchae', '\u{1F35C}', 'Glass noodles, sesame, vegetables that still have a snap.',
+      'carby light shareable soft healthy', 'veg meat quick'),
+    item('Souvlaki', '\u{1F959}', 'Skewered, griddled, wrapped with chips inside. Correctly.',
+      'hot meat handheld filling messy quick', 'cheap'),
+    item('Basque cheesecake', '\u{1F370}', 'Burnt on purpose. The middle barely sets.',
+      'sweet indulgent soft homemade shareable', 'fruity'),
+    item('Kunafa', '\u{1F36E}', 'Shredded pastry, melting cheese, syrup. Hot, somehow.',
+      'sweet hot cheesy indulgent shareable crunchy', 'homemade'),
+    item('Sticky toffee pudding', '\u{1F36E}', 'Dates, sponge, and more sauce than seems wise.',
+      'sweet hot soft indulgent comfort homemade filling', 'shareable')
   ];
 
   return { QUESTIONS: QUESTIONS, TAGS: TAGS, TASTES: TASTES, ITEMS: ITEMS,
