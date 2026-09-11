@@ -22,6 +22,7 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
 import { Route as ApiOrderTogetherRouteImport } from './routes/api/order-together'
 import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-status'
+import { Route as ApiSuggestRouteImport } from './routes/api/suggest'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as DecideSplatRouteImport } from './routes/decide/$'
 import { Route as EatIndexRouteImport } from './routes/eat.index'
@@ -97,6 +98,11 @@ const ApiPremiumStatusRoute = ApiPremiumStatusRouteImport.update({
   path: '/api/premium-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSuggestRoute = ApiSuggestRouteImport.update({
+  id: '/api/suggest',
+  path: '/api/suggest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CheckoutPlanIdRoute = CheckoutPlanIdRouteImport.update({
   id: '/checkout/$planId',
   path: '/checkout/$planId',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/suggest': typeof ApiSuggestRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/suggest': typeof ApiSuggestRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/suggest': typeof ApiSuggestRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
@@ -232,6 +241,7 @@ export interface FileRouteTypes {
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
+    | '/api/suggest'
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
@@ -256,6 +266,7 @@ export interface FileRouteTypes {
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
+    | '/api/suggest'
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
@@ -280,6 +291,7 @@ export interface FileRouteTypes {
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
+    | '/api/suggest'
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
@@ -305,6 +317,7 @@ export interface RootRouteChildren {
   ApiNewsRoute: typeof ApiNewsRoute
   ApiOrderTogetherRoute: typeof ApiOrderTogetherRoute
   ApiPremiumStatusRoute: typeof ApiPremiumStatusRoute
+  ApiSuggestRoute: typeof ApiSuggestRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
   EatDishRoute: typeof EatDishRoute
   ExperiencesExperienceIdRoute: typeof ExperiencesExperienceIdRoute
@@ -408,6 +421,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPremiumStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/suggest': {
+      id: '/api/suggest'
+      path: '/api/suggest'
+      fullPath: '/api/suggest'
+      preLoaderRoute: typeof ApiSuggestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/checkout/$planId': {
       id: '/checkout/$planId'
       path: '/checkout/$planId'
@@ -499,6 +519,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiNewsRoute: ApiNewsRoute,
   ApiOrderTogetherRoute: ApiOrderTogetherRoute,
   ApiPremiumStatusRoute: ApiPremiumStatusRoute,
+  ApiSuggestRoute: ApiSuggestRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
   EatDishRoute: EatDishRoute,
   ExperiencesExperienceIdRoute: ExperiencesExperienceIdRoute,

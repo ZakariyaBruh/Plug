@@ -261,6 +261,13 @@
       <button class="plain" id="surprise-btn" hidden>Surprise me <span class="tag-premium">Premium</span></button>
     </div>
 
+    <section class="strip" id="picks-wrap">
+      <h2 class="strip-title">Something new <span class="tag-premium">Premium</span></h2>
+      <p class="fine">Two questions, then a few things you have not had, chosen from what you
+      already liked &mdash; with a reason for each.</p>
+      <button class="plain" id="picks-btn">Find me something new</button>
+    </section>
+
     <section class="strip" id="menu-wrap">
       <h2 class="strip-title">Feeding people <span class="tag-premium">Premium</span></h2>
       <p class="fine" id="menu-blurb">A starter, a main and a pudding that actually go together &mdash; not three heavy
@@ -1024,6 +1031,40 @@
         <p class="pane-line" id="week-intro">Seven dishes, picked from what you actually like.</p>
         <ol class="week" id="week-list"></ol>
         <button class="plain" id="week-done">Back to the start</button>
+      </div>
+
+      <!-- picks: a few questions, then suggestions argued from your history -->
+      <div class="panel" id="panel-picks">
+        <div class="q-bar">
+          <button class="ghost-btn" id="picks-back" aria-label="Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+          </button>
+          <p class="q-step" id="picks-step">Two questions</p>
+          <span></span>
+        </div>
+
+        <div id="picks-ask">
+          <h2 class="q-title" id="picks-question">What kind of evening is it?</h2>
+          <div class="knobs" id="picks-options" role="group" aria-label="Answer"></div>
+        </div>
+
+        <div id="picks-waiting" hidden>
+          <div class="bone bone-row"></div>
+          <p class="fine">Reading what you have liked&hellip;</p>
+        </div>
+
+        <div id="picks-out" hidden>
+          <p class="pane-line" id="picks-intro">Because of what you have liked before.</p>
+          <ul class="picks-list" id="picks-list"></ul>
+          <button class="plain" id="picks-again">Ask me again</button>
+        </div>
+
+        <div class="notice" id="picks-error" hidden>
+          <p id="picks-error-text">That did not come back.</p>
+          <div class="locate-actions"><button class="quiet" id="picks-retry">Try again</button></div>
+        </div>
+
+        <button class="plain" id="picks-done">Back to the start</button>
       </div>
 
       <!-- menu: three courses that go together -->

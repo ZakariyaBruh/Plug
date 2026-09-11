@@ -3952,3 +3952,36 @@ body.is-landing .topbar-brand .mark-word { display: none; }
 .menu-note { grid-area: note; font-size: var(--t-sm); color: var(--ink-3); }
 
 @media (prefers-reduced-motion: reduce) { .menu-course { animation: none; } }
+
+/* --------------------------------------------------------- something new */
+.picks-list { list-style: none; margin: var(--s4) 0 var(--s5); padding: 0; }
+
+.picks-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'art name' '. why';
+  gap: var(--s1) var(--s3);
+  align-items: center;
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--hair);
+  animation: lift var(--mid) var(--ease) both;
+}
+
+.picks-row:last-child { border-bottom: 0; }
+.picks-art { grid-area: art; font-size: var(--t-xl); }
+
+.picks-name {
+  grid-area: name;
+  justify-self: start;
+  font-family: var(--display);
+  font-size: var(--t-lg);
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+}
+
+/* The reason, which is the whole point of this screen — a list of dishes
+   without one is just another shuffle. */
+.picks-why { grid-area: why; font-size: var(--t-sm); color: var(--ink-3); }
+
+@media (prefers-reduced-motion: reduce) { .picks-row { animation: none; } }

@@ -2233,6 +2233,170 @@
       ' dishes, no two the same sort of thing. Tap one to read about it.';
   }
 
+  /* ------------------------------------------------- something new */
+  /*
+   * A few questions, then suggestions argued from what somebody already liked.
+   *
+   * WHAT IT SENDS. Dish names, and only dish names: the ones rated well and
+   * the ones landed on most, plus two answers about tonight. No profile, no
+   * tag weights, nothing about who anybody is — the model is being asked to
+   * reason about food, and everything it does not need is something not to
+   * send.
+   *
+   * WHAT IT TRUSTS BACK. Nothing. /api/suggest matches every name it returns
+   * against the real catalogue and drops the rest, so a dish this app does not
+   * have can never reach this screen. That matters more than it sounds: an
+   * invented dish has no recipe and no page, so it would be a dead end in the
+   * app's own voice.
+   *
+   * WHY IT IS TWO QUESTIONS AND NOT EIGHT. The questionnaire already exists
+   * and is better at that job. This is for the other case — you are not asking
+   * it to decide, you are asking what you have been missing — so it needs
+   * enough to know the occasion and no more.
+   */
+  var PICKS_QUESTIONS = [
+    { key: 'occasion', text: 'What kind of evening is it?',
+      options: ['Quick and easy', 'Worth some effort', 'Feeding other people', 'Comfort, badly needed'] },
+    { key: 'mood', text: 'And what are you after?',
+      options: ['Something new to me', 'Close to what I know', 'Lighter than usual', 'Properly indulgent'] }
+  ];
+
+  var picks = { at: 0, answers: {}, busy: false };
+
+  function startPicks() {
+    if (!premium('Something new')) return;
+    hideLanding();
+    picks.at = 0;
+    picks.answers = {};
+    picks.busy = false;
+    setView('decide');
+    setPanel('picks');
+    paintPicksQuestion();
+  }
+
+  function paintPicksQuestion() {
+    var q = PICKS_QUESTIONS[picks.at];
+    $('picks-ask').hidden = false;
+    $('picks-waiting').hidden = true;
+    $('picks-out').hidden = true;
+    $('picks-error').hidden = true;
+    $('picks-step').textContent = 'Question ' + (picks.at + 1) + ' of ' + PICKS_QUESTIONS.length;
+    $('picks-question').textContent = q.text;
+
+    var wrap = $('picks-options');
+    wrap.innerHTML = '';
+    q.options.forEach(function (label) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'knob';
+      btn.textContent = label;
+      btn.addEventListener('click', function () {
+        Sound.tick();
+        picks.answers[q.key] = label;
+        picks.at += 1;
+        if (picks.at < PICKS_QUESTIONS.length) return paintPicksQuestion();
+        askPicks();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  /*
+   * What this person has actually enjoyed, in the order it is worth knowing.
+   *
+   * Rated 'loved' first, because that is a judgement they made on purpose;
+   * then the dishes they keep landing on, which is a judgement they made
+   * without noticing. Anything rated 'no' goes on the do-not-suggest list —
+   * being handed back something you rejected is the fastest way to stop
+   * trusting a recommendation.
+   */
+  function pickedHistory() {
+    var st = progress.state;
+    var ratings = st.ratings || {};
+    var counts = st.picks || {};
+    var loved = [];
+    var no = [];
+    Object.keys(ratings).forEach(function (name) {
+      if (ratings[name] === 'loved') loved.push(name);
+      else if (ratings[name] === 'no') no.push(name);
+    });
+    var often = Object.keys(counts)
+      .filter(function (n) { return loved.indexOf(n) === -1 && no.indexOf(n) === -1; })
+      .sort(function (a, b) { return counts[b] - counts[a]; })
+      .slice(0, 16);
+    // Banned dishes are a standing rule, not a preference, so they go on the
+    // same list as the ones that were rejected.
+    Object.keys(st.banned || {}).forEach(function (n) { if (no.indexOf(n) === -1) no.push(n); });
+    return { liked: loved.concat(often), avoid: no };
+  }
+
+  function askPicks() {
+    if (picks.busy) return;
+    picks.busy = true;
+    $('picks-ask').hidden = true;
+    $('picks-error').hidden = true;
+    $('picks-out').hidden = true;
+    $('picks-waiting').hidden = false;
+    $('picks-step').textContent = 'Thinking';
+
+    var history = pickedHistory();
+    fetch('/api/suggest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ liked: history.liked, avoid: history.avoid, answers: picks.answers })
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (body) {
+        return { ok: res.ok, body: body };
+      });
+    }).catch(function () {
+      return { ok: false, body: {} };
+    }).then(function (answer) {
+      picks.busy = false;
+      $('picks-waiting').hidden = true;
+      if (answer.ok && answer.body && answer.body.picks && answer.body.picks.length) {
+        return paintPicks(answer.body.picks, history.liked.length);
+      }
+      $('picks-step').textContent = 'No luck';
+      $('picks-error').hidden = false;
+      $('picks-error-text').textContent = answer.body && answer.body.error === 'busy'
+        ? 'The suggester is busy — that one is on us, not you.'
+        : 'That did not come back. It usually works second time.';
+    });
+  }
+
+  function paintPicks(list, known) {
+    $('picks-step').textContent = 'Worth a try';
+    $('picks-out').hidden = false;
+    $('picks-intro').textContent = known
+      ? 'Chosen from what you have liked before — none of these are dishes you already order.'
+      : 'You have not rated much yet, so these are a starting point rather than a read on you.';
+
+    var ul = $('picks-list');
+    ul.innerHTML = '';
+    list.forEach(function (pick, i) {
+      var dish = dishByName(pick.name);
+      var li = document.createElement('li');
+      li.className = 'picks-row';
+      li.style.animationDelay = (i * 70) + 'ms';
+      li.innerHTML = '<span class="picks-art" aria-hidden="true"></span>' +
+        '<button class="picks-name plain" type="button"></button>' +
+        '<span class="picks-why"></span>';
+      li.querySelector('.picks-art').textContent = pick.icon || (dish && dish.icon) || '';
+      var btn = li.querySelector('.picks-name');
+      btn.textContent = pick.name;
+      btn.addEventListener('click', function () { if (dish) openSheet(dish); });
+      // Written by a model, so it goes in as text and never as markup.
+      li.querySelector('.picks-why').textContent = pick.why || '';
+      ul.appendChild(li);
+    });
+  }
+
+  $('picks-btn').addEventListener('click', function () { Sound.tick(); startPicks(); });
+  $('picks-again').addEventListener('click', function () { Sound.tick(); startPicks(); });
+  $('picks-retry').addEventListener('click', function () { Sound.tick(); askPicks(); });
+  $('picks-back').addEventListener('click', goHome);
+  $('picks-done').addEventListener('click', goHome);
+
   /* ------------------------------------------------------------ the menu */
   /*
    * Three courses that belong on the same table.
@@ -5011,6 +5175,7 @@
       name: 'It gets to know you',
       items: [
         'Picks tuned to what you have actually liked',
+        'Something new: two questions, then dishes chosen from what you liked',
         'Rate a dish and it changes what comes up next',
         'Save as many dishes as you like \u2014 the free tier saves none',
         'Streak freezes, so one missed day costs nothing',
