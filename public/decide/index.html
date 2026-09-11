@@ -100,7 +100,80 @@
      one place a bit of noise earns its keep is the moment somebody is deciding
      whether to bother.
      =========================================================================== -->
-<div class="landing" id="landing" hidden>
+
+<!-- ===========================================================================
+     Order it together — one browser, driven by both of you.
+
+     The game says what to eat and has never had an answer to how to get it.
+     "Search Maps near me" is one tab on one phone, which is no help at all to
+     two people who have just agreed on a dish: one of them orders and the
+     other reads over their shoulder. This is a real browser, running
+     elsewhere, that both of them control from their own devices — send the
+     link, and there are two cursors in the same window.
+
+     It is torn down when this panel closes: the session bills for as long as
+     it is up.
+     =========================================================================== -->
+<div class="beam" id="beam" hidden>
+  <div class="beam-bar">
+    <div class="beam-titles">
+      <p class="mechanic" id="beam-kind">Order it together</p>
+      <p class="beam-dish" id="beam-dish"></p>
+    </div>
+    <div class="beam-tools">
+      <button class="plain" id="beam-copy">Copy the link</button>
+      <button class="ghost-btn" id="beam-close" aria-label="Close the shared browser">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <p class="beam-hint" id="beam-hint">Send the link to whoever you&rsquo;re eating with &mdash;
+  you both get a cursor in the same window.</p>
+
+  <div class="beam-stage" id="beam-stage">
+    <p class="beam-state" id="beam-state">Opening a browser you can both use&hellip;</p>
+
+    <!-- Shown only if the frame is still blank after a few seconds. The frame
+         is the one part of this the page cannot check from inside: the session
+         is live and the URL is right, and it still renders nothing if a
+         permission was withheld somewhere up the chain of frames. Opened as a
+         page instead, none of that applies. -->
+    <p class="beam-escape" id="beam-escape" hidden>
+      Nothing showing?
+      <a class="link-btn" id="beam-open" target="_blank" rel="noopener noreferrer">Open it in a new tab</a>
+      &mdash; same browser, same session.
+    </p>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- ============================ rail ============================ -->
+  <nav class="rail" aria-label="Sections">
+    <ul class="rail-list">
+      <li><button class="rail-link is-current" data-view="home">Home</button></li>
+      <li><button class="rail-link" data-view="decide">Decide</button></li>
+      <li><button class="rail-link" data-view="dishes">Dishes</button></li>
+      <li><button class="rail-link" data-view="nearby">Nearby</button></li>
+      <li><button class="rail-link" data-view="chat">Ask</button></li>
+      <li><button class="rail-link" data-view="news">News</button></li>
+      <li><button class="rail-link" data-view="profile">Profile</button></li>
+    </ul>
+
+    <p class="rail-foot" id="rail-streak" hidden><b id="streak-count">0</b> day streak</p>
+  </nav>
+
+  <!-- ============================ content ============================ -->
+  <main class="content" id="content">
+
+  <!-- ------------------------- HOME -------------------------
+       Was a fixed overlay that made the whole shell inert, which is why
+       nothing could transition into or out of it: home and everywhere else
+       were disjoint layers, so going between them was a cut, not a move.
+       As a view it shares the rail, the scroll container and the same
+       transition as every other section. -->
+    <section class="view landing is-current" id="view-home" aria-label="Home">
   <div class="landing-glow" aria-hidden="true"></div>
 
   <div class="landing-inner">
@@ -297,75 +370,11 @@
       <button class="link-btn" id="landing-premium">See what Premium adds</button>
     </p>
   </div>
-</div>
+    </section>
 
-<!-- ===========================================================================
-     Order it together — one browser, driven by both of you.
-
-     The game says what to eat and has never had an answer to how to get it.
-     "Search Maps near me" is one tab on one phone, which is no help at all to
-     two people who have just agreed on a dish: one of them orders and the
-     other reads over their shoulder. This is a real browser, running
-     elsewhere, that both of them control from their own devices — send the
-     link, and there are two cursors in the same window.
-
-     It is torn down when this panel closes: the session bills for as long as
-     it is up.
-     =========================================================================== -->
-<div class="beam" id="beam" hidden>
-  <div class="beam-bar">
-    <div class="beam-titles">
-      <p class="mechanic" id="beam-kind">Order it together</p>
-      <p class="beam-dish" id="beam-dish"></p>
-    </div>
-    <div class="beam-tools">
-      <button class="plain" id="beam-copy">Copy the link</button>
-      <button class="ghost-btn" id="beam-close" aria-label="Close the shared browser">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
-    </div>
-  </div>
-
-  <p class="beam-hint" id="beam-hint">Send the link to whoever you&rsquo;re eating with &mdash;
-  you both get a cursor in the same window.</p>
-
-  <div class="beam-stage" id="beam-stage">
-    <p class="beam-state" id="beam-state">Opening a browser you can both use&hellip;</p>
-
-    <!-- Shown only if the frame is still blank after a few seconds. The frame
-         is the one part of this the page cannot check from inside: the session
-         is live and the URL is right, and it still renders nothing if a
-         permission was withheld somewhere up the chain of frames. Opened as a
-         page instead, none of that applies. -->
-    <p class="beam-escape" id="beam-escape" hidden>
-      Nothing showing?
-      <a class="link-btn" id="beam-open" target="_blank" rel="noopener noreferrer">Open it in a new tab</a>
-      &mdash; same browser, same session.
-    </p>
-  </div>
-</div>
-
-<div class="app">
-
-  <!-- ============================ rail ============================ -->
-  <nav class="rail" aria-label="Sections">
-    <ul class="rail-list">
-      <li><button class="rail-link is-current" data-view="decide">Decide</button></li>
-      <li><button class="rail-link" data-view="dishes">Dishes</button></li>
-      <li><button class="rail-link" data-view="nearby">Nearby</button></li>
-      <li><button class="rail-link" data-view="chat">Ask</button></li>
-      <li><button class="rail-link" data-view="news">News</button></li>
-      <li><button class="rail-link" data-view="profile">Profile</button></li>
-    </ul>
-
-    <p class="rail-foot" id="rail-streak" hidden><b id="streak-count">0</b> day streak</p>
-  </nav>
-
-  <!-- ============================ content ============================ -->
-  <main class="content" id="content">
 
     <!-- ------------------------- DECIDE ------------------------- -->
-    <section class="view is-current" id="view-decide" aria-label="Decide">
+    <section class="view" id="view-decide" aria-label="Decide">
 
       <!-- intro -->
       <!-- question -->
@@ -389,7 +398,7 @@
         <p class="reaction" id="reaction" aria-live="polite">&nbsp;</p>
         <h2 class="q-title" id="q-text">What sounds better?</h2>
 
-        <div class="picks">
+        <div class="picks" id="q-picks">
           <button class="pick" id="choice-yes">
             <span class="pick-no">01</span>
             <span class="pick-body">
