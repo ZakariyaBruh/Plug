@@ -57,12 +57,17 @@
 
 <!-- The Whop pixel is NOT installed here, and that is deliberate.
 
-     Whop's hosting injects it into every response itself, at request time —
-     a <script data-whop-pixel="platform"> just before </head>, already scoped
-     to the account and already calling track("page"), and carrying the app id
-     and build id as well, which a hand-written copy cannot. It is absent from
-     the build output and present in the served page, so it is added on the
-     way out and there is nothing to opt into.
+     Whop's hosting injects it into every response itself, at request time:
+     a script tag marked data-whop-pixel="platform", placed last in the head,
+     already scoped to the account and already tracking page views, and
+     carrying the app id and build id as well, which a hand-written copy
+     cannot. It is absent from the build output and present in the served
+     page, so it is added on the way out and there is nothing to opt into.
+
+     (Written without the angle brackets on purpose. Quoting the tag verbatim
+     here put a literal script tag inside a comment, which browsers are fine
+     with and every grep for "how many pixels are on this page" is not — it
+     counted this sentence as one of them.)
 
      A snippet was pasted here first and it was redundant: two loaders, two
      setScope calls, one page event. The only thing worth adding by hand is the
