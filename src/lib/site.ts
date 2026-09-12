@@ -35,41 +35,6 @@ export const DISH_COUNT = 133
  */
 export const AFFILIATES_URL = 'https://whop.com/morsels45/affiliates'
 
-/*
- * The Whop pixel.
- *
- * WHY IT HAS TO EXIST. The Meta campaign optimises for conversions, and every
- * number Whop reports about an ad is attributed by this pixel rather than by
- * the ad network. Without it, Meta has nothing to optimise toward and the
- * campaign reports zero conversions however well it actually does — money
- * spent with no way to tell whether it worked.
- *
- * ON EVERY PAGE IN THE FUNNEL, which the docs are explicit about: landing
- * pages, not just the homepage. Ads point at /decide/, so the game needs it
- * as much as the marketing site does — and the game is a separate static app
- * with its own <head>, so its copy is written out in public/decide/index.html
- * rather than imported from here.
- *
- * WHAT IT SENDS. Page views, and whatever whop.track() is called with. It is a
- * third-party script that sets an identifier so a visit can be joined to a
- * purchase later. Worth knowing rather than glossing over, given who plays
- * this.
- */
-export const WHOP_ACCOUNT_ID = 'biz_6yKUB6bZeE3ANl'
-
-const PIXEL_LOADER =
-  '!function(w,d,s,u,n,a,b){if(w[n])return;a=w[n]={q:[],t:+new Date,s:[],o:u,' +
-  'track:function(){a.q.push([+new Date].concat([].slice.call(arguments)))},' +
-  'setScope:function(){a.s=[].slice.call(arguments).filter(function(x){return typeof x==="string"});' +
-  'a.q.push([+new Date,"setScope"].concat(a.s))},' +
-  'scope:function(){var c=[].slice.call(arguments);return{track:function(){' +
-  'a.q.push([+new Date].concat([].slice.call(arguments)).concat([{__scope:c}]))}}}};' +
-  'b=d.createElement(s);b.async=1;b.src=u+"/s.js";' +
-  'd.getElementsByTagName(s)[0].parentNode.insertBefore(b,d.getElementsByTagName(s)[0])}' +
-  '(window,document,"script","https://t.whop.tw","whop");'
-
-export const WHOP_PIXEL =
-  `${PIXEL_LOADER}\nwhop.setScope("${WHOP_ACCOUNT_ID}");\nwhop.track("page");`
 
 export const ANDROID_APK = '/morsels45.apk'
 export const ANDROID_VERSION = '1.0.0'

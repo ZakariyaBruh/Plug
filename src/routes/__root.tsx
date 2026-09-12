@@ -2,7 +2,7 @@ import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-rou
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
-import { SITE_DESCRIPTION, SITE_TITLE, WHOP_PIXEL } from '#/lib/site'
+import { SITE_DESCRIPTION, SITE_TITLE } from '#/lib/site'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -100,14 +100,11 @@ function NotFound() {
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
+      {/* No Whop pixel here: the host injects one into every response at
+          request time, already scoped and already tracking page views. See
+          the note in public/decide/index.html. */}
       <head>
         <HeadContent />
-        {/* The Whop pixel, in the head of every page on the marketing site.
-            Every conversion number Whop reports about an ad is attributed by
-            this and not by the ad network, so without it a campaign reports
-            zero however well it does. The game at /decide/ is a separate
-            static app and carries its own copy. */}
-        <script dangerouslySetInnerHTML={{ __html: WHOP_PIXEL }} />
       </head>
       <body>
         {children}
