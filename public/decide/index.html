@@ -54,6 +54,29 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+
+<!-- ===========================================================================
+     The Whop pixel.
+
+     This page is where the Meta ads point, which makes it the one page in the
+     funnel that cannot do without it: every conversion number Whop reports
+     about an ad is attributed by this pixel rather than by the ad network, so
+     a campaign without it reports zero however well it actually does.
+
+     Written out here rather than imported from src/lib/site.ts because this is
+     a separate static app served byte for byte — nothing on the request path
+     substitutes anything into it. The account id and the loader are the same
+     in both places; if one changes, change both.
+
+     It also reports one event of its own further down, when somebody actually
+     accepts a dish. Landing is not using it, and the difference between the
+     two is the only honest measure of whether an ad found the right people.
+     =========================================================================== -->
+<script>
+!function(w,d,s,u,n,a,b){if(w[n])return;a=w[n]={q:[],t:+new Date,s:[],o:u,track:function(){a.q.push([+new Date].concat([].slice.call(arguments)))},setScope:function(){a.s=[].slice.call(arguments).filter(function(x){return typeof x==="string"});a.q.push([+new Date,"setScope"].concat(a.s))},scope:function(){var c=[].slice.call(arguments);return{track:function(){a.q.push([+new Date].concat([].slice.call(arguments)).concat([{__scope:c}]))}}}};b=d.createElement(s);b.async=1;b.src=u+"/s.js";d.getElementsByTagName(s)[0].parentNode.insertBefore(b,d.getElementsByTagName(s)[0])}(window,document,"script","https://t.whop.tw","whop");
+whop.setScope("biz_6yKUB6bZeE3ANl");
+whop.track("page");
+</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
 </head>

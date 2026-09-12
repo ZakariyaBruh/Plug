@@ -3193,6 +3193,27 @@
       progress.snoozeFor(item.name, 7 * 86400000);
     }
 
+    /*
+     * Told to the Whop pixel: somebody got an answer and took it.
+     *
+     * This is the only event this app reports, and it is this one because it
+     * is the only moment the product has actually done its job. A page view
+     * says an ad was clicked; this says the person who clicked it stayed long
+     * enough to decide what to eat, which is the number worth judging an ad
+     * on. Landing and using are different things and a campaign optimising on
+     * the first will happily buy the wrong people all day.
+     *
+     * Guarded because the pixel is a third-party script that can be blocked,
+     * fail to load, or be missing entirely when this file is opened from
+     * something other than the real site. Nothing here is allowed to take the
+     * game down over a metric.
+     */
+    try {
+      if (typeof whop !== 'undefined' && whop && typeof whop.track === 'function') {
+        whop.track('decided', { dish: item.name });
+      }
+    } catch (err) { /* a measurement is never worth an exception */ }
+
     $('done-icon').textContent = item.icon;
     $('done-name').textContent = item.name + '.';
     /*
