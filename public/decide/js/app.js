@@ -524,13 +524,28 @@
    */
   var HELLOS = [
     { until: 11, lines: ['Morning. Breakfast counts as a decision too.',
-                         'Morning. Let us get the first one out of the way.'] },
+                         'Morning. Let us get the first one out of the way.',
+                         'Morning. Nothing has gone wrong yet.'] },
     { until: 15, lines: ['Afternoon. Lunch, then.',
-                         'Afternoon. Something to eat, is it?'] },
-    { until: 21, lines: ['Evening. This is the big one.',
-                         'Evening. The one everybody argues about.'] },
+                         'Afternoon. Something to eat, is it?',
+                         'Afternoon. Whatever is left in the fridge, probably.'] },
+    /*
+     * "Evening. This is the big one." was doing nothing. It announced that
+     * something important was about to happen and then the same screen
+     * appeared, which is the shape of a joke with no punchline — and worse,
+     * it made a person's dinner sound like an event they had to rise to. The
+     * evening ones now say something true about the evening instead: it is
+     * the meal people actually argue about, the one where the answer is
+     * usually "I don't mind", and the one you have been putting off since
+     * about four o'clock.
+     */
+    { until: 21, lines: ['Evening. The one everybody argues about.',
+                         'Evening. Nobody minds, apparently.',
+                         'Evening. You have been putting this off since four.',
+                         'Evening. Right then.'] },
     { until: 24, lines: ['Late one. Let us be quick about it.',
-                         'Late. No judgement here.'] }
+                         'Late. No judgement here.',
+                         'Late. Toast is a valid answer, for the record.'] }
   ];
 
   function paintHello(state, played) {
@@ -2676,7 +2691,11 @@
     var keep = li.querySelector('.course-keep');
     keep.textContent = entry.kept ? 'Keeping' : 'Keep';
     keep.setAttribute('aria-pressed', entry.kept ? 'true' : 'false');
-    keep.setAttribute('aria-label', (entry.kept ? 'Stop keeping ' : 'Keep ') + entry.dish.name);
+    keep.setAttribute('aria-label', (entry.kept ? 'Stop keeping ' : 'Keep ') + entry.dish.name +
+      (entry.kept ? '' : ' and build the rest of the meal around it'));
+    keep.title = entry.kept
+      ? 'Write another one and this course stays'
+      : 'Pin this course; the rest is rebuilt around it';
     keep.addEventListener('click', function () {
       Sound.tick();
       menuKept[entry.course.id] = !menuKept[entry.course.id];
@@ -2696,35 +2715,92 @@
     return li;
   }
 
+  /*
+   * The menu landing, as an event rather than a repaint.
+   *
+   * Finishing one of these is the most work this app asks of anybody — five
+   * questions or a typed sentence, then a wait on a model — and it used to
+   * end with three rows quietly appearing. Every other place in here that
+   * costs effort pays it back: a decision gets a sound, confetti and XP; a
+   * badge gets a toast. This got nothing at all.
+   *
+   * So the courses arrive one at a time rather than together, with the
+   * confetti timed to the last one so it lands on a finished menu and not on
+   * an empty list. Only on a real arrival — repainting after a keep or a swap
+   * calls paintMenu directly and stays quiet, because celebrating a button
+   * press is how a celebration stops meaning anything.
+   */
+  function landMenu(menu) {
+    paintMenu(menu, true);
+    Sound.reveal();
+
+    var last = 240 + (menu.length - 1) * 220;
+    setTimeout(function () {
+      if (view !== 'menu') return;
+      Sound.badge();
+      if (!reduceMotion) Confetti.burst({ y: window.innerHeight * 0.3 });
+    }, last);
+  }
+
   /* Draw a menu that has already been chosen. Chooses nothing itself. */
-  function paintMenu(menu) {
+  function paintMenu(menu, staged) {
     menuNow = menu.map(function (e) {
       return { course: e.course, dish: e.dish, kept: !!menuKept[e.course.id], why: e.why || '' };
     });
 
     var list = $('menu-list');
     list.innerHTML = '';
-    menuNow.forEach(function (entry, i) { list.appendChild(courseRow(entry, i)); });
+    menuNow.forEach(function (entry, i) {
+      var row = courseRow(entry, i);
+      // A staged arrival walks the courses in one at a time; a repaint after a
+      // keep or a swap has no reason to re-animate what did not move.
+      if (staged) row.style.animationDelay = (240 + i * 220) + 'ms';
+      list.appendChild(row);
+    });
 
     var keptCount = menuNow.filter(function (e) { return e.kept; }).length;
     var cooking = menuNow.filter(function (e) { return Recipes.has(e.dish.name); }).length;
 
+    /*
+     * The note says the one thing that is true and useful right now, in this
+     * order: what keeping will do, then what swapping has left, then what the
+     * courses are.
+     */
+    var swapsLeft = isPlus() ? Infinity : Math.max(0, MENU_SWAPS_FREE - menuSwaps);
     var note;
     if (keptCount === menuNow.length && keptCount) {
-      note = 'All three kept — nothing left for a reroll to change.';
+      note = 'All three kept — write another one and you will get these three back.';
     } else if (keptCount) {
-      note = keptCount + ' of ' + menuNow.length + ' kept. A reroll leaves ' +
-        (keptCount === 1 ? 'that one' : 'those') + ' alone.';
+      note = keptCount + ' kept. Write another one and it builds the rest of the ' +
+        'meal around ' + (keptCount === 1 ? 'it' : 'them') + '.';
+    } else if (swapsLeft === 0) {
+      note = 'That is both swaps used. Keep what is right and write another one, ' +
+        'or come back for a fresh menu.';
+    } else if (swapsLeft !== Infinity && swapsLeft < MENU_SWAPS_FREE) {
+      note = swapsLeft === 1 ? 'One more swap on this menu.' : swapsLeft + ' swaps left on this menu.';
     } else if (cooking === menuNow.length) {
       note = 'Every course has a recipe behind it — tap one to read it.';
     } else {
       note = 'Tap a course to read about it.';
     }
     $('menu-note').textContent = note;
+
+    // Swapping that cannot happen should not look like it can.
+    var spent = swapsLeft === 0;
+    [].forEach.call(list.querySelectorAll('.course-swap'), function (btn) {
+      btn.disabled = spent;
+      if (spent) btn.title = 'Both swaps used on this menu';
+    });
   }
 
   /* Re-pick one course, keeping the rest and refusing the dish it had. */
   function swapCourse(id) {
+    if (!isPlus() && menuSwaps >= MENU_SWAPS_FREE) {
+      Sound.reject();
+      return toast('\u{1F504}', 'That is both swaps',
+        'Two changes to a menu on the free version. Premium swaps as many as you like.');
+    }
+
     var keep = {};
     var avoid = {};
     menuNow.forEach(function (entry) {
@@ -2754,6 +2830,9 @@
       if (entry.course.id !== id) entry.why = whyBefore[entry.course.id] || '';
     });
 
+    // Spent only once the swap is really happening — a course with nothing
+    // else it could be returns above without costing anything.
+    menuSwaps += 1;
     paintMenu(next);
   }
 
@@ -2849,12 +2928,35 @@
    * evening it is meant to be.
    */
   var MENU_QUESTIONS = [
+    /*
+     * WHERE IT IS HAPPENING COMES FIRST, because it changes what every other
+     * answer means. Three courses to cook at home and three courses to order
+     * are different problems: effort is about your hob in one and about the
+     * bill in the other, and a menu that assumes you are cooking when you
+     * meant to go out is useless however well it is chosen. It was not asked
+     * at all, so the model guessed, and it guessed "cooking" every time.
+     */
+    { key: 'where', text: 'Where is this happening?',
+      options: ['Cooking at home', 'Ordering in', 'Going out somewhere'] },
     { key: 'who', text: 'Who is eating?',
-      options: ['Just me', 'Two of us', 'A few of us', 'A houseful'] },
-    { key: 'effort', text: 'How much effort is on offer?',
-      options: ['Barely any', 'A normal amount', 'I want a project'] },
-    { key: 'evening', text: 'And what kind of evening?',
-      options: ['Comfort', 'Impressing someone', 'Light and fresh', 'Proper feast'] }
+      options: ['Just me', 'Two of us', 'Three or four', 'A houseful'] },
+    /*
+     * Time rather than "effort". Effort is a feeling and everyone scores it
+     * differently; an hour is an hour, and it is the thing that actually
+     * rules dishes in and out.
+     */
+    { key: 'time', text: 'How long have you got?',
+      options: ['Half an hour', 'About an hour', 'All afternoon'] },
+    { key: 'evening', text: 'What is the evening for?',
+      options: ['Comfort', 'Showing off a bit', 'Light and fresh', 'A proper feast'] },
+    /*
+     * The one that saves a menu from being wrong for a reason nothing else
+     * would have caught. Left as a skip rather than a list of allergies,
+     * because a wrong list is worse than no list and the typed box is there
+     * for anybody whose answer is more complicated than these.
+     */
+    { key: 'avoid', text: 'Anything off the table?',
+      options: ['Nothing, all good', 'No meat', 'No fish or seafood', 'Nothing too spicy'] }
   ];
 
   var menuQ = { at: 0, answers: {} };
@@ -2909,6 +3011,22 @@
   var menuAsked = null;
 
   function askMenu(ask) {
+    /*
+     * THE GATE LIVES HERE, and nowhere else.
+     *
+     * It was on renderMenuView and on the reroll button, which covered two of
+     * the five ways into this function and none of the ones people actually
+     * found. Finishing the questions, submitting the typed box and "Start
+     * again" all called straight through, so a Standard profile could have as
+     * many menus as it liked by pressing Start again — the allowance was
+     * decorative.
+     *
+     * One choke point. Every route in passes through this function, so this is
+     * the only place the check can be complete, and any new route added later
+     * gets it for free.
+     */
+    if (!menuAllowed()) return renderMenuView();
+
     menuAsked = ask;
     menuPanels('menu-waiting');
 
@@ -2919,6 +3037,10 @@
       body: JSON.stringify({
         prompt: ask.prompt || '',
         answers: ask.answers || null,
+        // What is being kept, so a reroll is asked to work around it rather
+        // than told to start from nothing. This is what makes Keep worth
+        // pressing (see the note on menuKept).
+        keep: ask.keep || null,
         liked: liked.liked,
         avoid: liked.avoid
       })
@@ -2946,7 +3068,8 @@
       }
       menuPanels('menu-wrap-view');
       menuKept = {};
-      paintMenu(menu);
+      menuSwaps = 0;
+      landMenu(menu);
     });
   }
 
@@ -2960,7 +3083,8 @@
     if (!menu.length) return menuPanels('menu-empty');
     menuPanels('menu-wrap-view');
     menuKept = {};
-    paintMenu(menu);
+    menuSwaps = 0;
+    landMenu(menu);
     $('menu-note').textContent =
       'Written from what you like rather than from what you said — the model did not ' +
       'answer, and this has not used up your go.';
@@ -3005,9 +3129,14 @@
    */
   $('menu-reroll').addEventListener('click', function () {
     Sound.tick();
-    if (!menuAllowed()) return renderMenuView();
-    if (menuAsked) return askMenu(menuAsked);
-    menuAsk();
+    if (!menuAsked) return menuAsk();
+    // Whatever is pinned goes with the request, so "write another one" means
+    // "keep these, change the rest" rather than "throw it all away".
+    var keep = {};
+    menuNow.forEach(function (entry) {
+      if (menuKept[entry.course.id]) keep[entry.course.id] = entry.dish.name;
+    });
+    askMenu({ prompt: menuAsked.prompt, answers: menuAsked.answers, keep: keep });
   });
 
   function openWeek(fresh) {
@@ -3930,6 +4059,22 @@
     var decisions = st.decisions || 0;
     return decisions >= (st.plusPromptAt || 0) + PLUS_PROMPT_EVERY;
   }
+
+  /*
+   * HOW MANY SWAPS A MENU IS WORTH ON STANDARD.
+   *
+   * Swapping is local and free — it re-scores from the catalogue rather than
+   * asking the model — and with three courses, three swaps is a brand new
+   * menu for nothing. That made the one-every-two-days allowance a formality:
+   * take your menu, then swap every course until you like it.
+   *
+   * Two is the number because two is what the feature is actually for: "the
+   * main is right, the other two are not". Changing all three is not
+   * adjusting a menu, it is asking for a different one, and that is what the
+   * allowance covers. Premium swaps as much as it likes.
+   */
+  var MENU_SWAPS_FREE = 2;
+  var menuSwaps = 0;
 
   var gameBudget = 0;
   var gameSpent = 0;
@@ -7357,7 +7502,7 @@
    * the mood for, and it spins what is left. Two has to survive, because a
    * shortlist of one is not a shortlist and there is nothing to spin.
    */
-  var spin = { pool: [], out: [] };
+  var spin = { pool: [], out: [], running: false, stopping: 0, at: 0 };
 
   function startSpin() {
     if (!premium('Shortlist')) return;
@@ -7394,7 +7539,7 @@
       li.setAttribute('aria-pressed', out ? 'true' : 'false');
       li.title = out ? 'Put it back' : 'Not in the mood for this one';
       var toggle = function () {
-        if (spinTimer) return;                       // not mid-spin
+        if (spin.running) return;                    // not mid-spin
         if (out) spin.out = spin.out.filter(function (d) { return d !== dish; });
         else if (spinLeft().length > 2) spin.out.push(dish);
         else return toast('\u{1F914}', 'Keep at least two',
@@ -7410,9 +7555,13 @@
     });
 
     var left = spinLeft().length;
+    // Repainting while the reel is running would overwrite "Stop it" with
+    // "Spin all eight" — the one label that must not lie mid-spin.
+    if (spin.running) return;
+
     $('spin-status').textContent = spin.out.length
-      ? 'Tap any back in, or spin the ' + left + ' still standing.'
-      : 'Eight on the table. Tap out anything you are not in the mood for.';
+      ? 'Tap any back in, then stop the reel on the one you want.'
+      : 'Eight on the table. Tap out anything you are not in the mood for, then stop the reel yourself.';
     $('spin-go-label').textContent = left === spin.pool.length
       ? 'Spin all ' + left
       : 'Spin the ' + left;
@@ -7420,48 +7569,118 @@
     paintThinNote($('spin-thin'), 'these are ranked on what you have liked before');
   }
 
+  /*
+   * YOU STOP IT. That is the whole mode.
+   *
+   * Striking dishes out first was the fix for "eight appeared and one landed
+   * and I had no say", and it only got halfway: it made the odds yours, then
+   * played an eighteen-tick cutscene and told you the answer. The moment the
+   * thing actually lands — the only moment anybody cares about — was still
+   * something you watched.
+   *
+   * So the reel does not stop on its own. It runs until you hit Stop, and
+   * then it slows and lands on whatever it is showing. Where it stops really
+   * is where you stopped it: the winner is read off the reel rather than
+   * drawn separately, so timing it is a real thing you can get good at and a
+   * real thing you can fluff.
+   *
+   * There is a ceiling on it anyway. A reel nobody stops would spin forever,
+   * including after the phone goes in a pocket, so it gives up on its own
+   * after a while and lands where it is.
+   */
+  var SPIN_MAX_TICKS = 90;      // about twelve seconds, then it lands itself
+  var SPIN_SLOWING = 7;         // ticks spent decelerating after Stop
+
   function runSpin() {
     var pool = spinLeft();
-    if (pool.length < 2 || spinTimer) return;
+    if (pool.length < 2) return;
+
+    // Already spinning: this press is the Stop.
+    if (spin.running) return stopSpin();
+
     var list = $('spin-list');
     var live = Array.prototype.filter.call(list.children, function (li) {
       return !li.classList.contains('is-out');
     });
 
-    if (spinTimer) clearTimeout(spinTimer);
-    var ticks = reduceMotion ? 1 : 18;
-    var n = 0;
+    spin.running = true;
+    spin.stopping = 0;
+    spin.at = 0;
+    $('spin-go-label').textContent = 'Stop it';
+    $('spin-go').classList.add('is-stopping');
+    $('spin-refill').hidden = true;
+    $('spin-status').textContent = 'Stop it where you want it.';
+
+    // reduceMotion still gets a choice, just a much shorter one to make.
+    var floor = reduceMotion ? 220 : 70;
+
     (function tick() {
-      var dish = pool[n % pool.length];
+      // Walked away mid-spin — the rail, the back button, a shared link. The
+      // reel stops where it is and lands nobody anywhere: without this the
+      // timer kept running in a panel nobody was looking at and then yanked
+      // them onto a result screen out of a section they had left.
+      if (panel !== 'spin') return abandonSpin();
+
+      var dish = pool[spin.at % pool.length];
       $('spin-face').textContent = dish.icon;
       $('spin-name').textContent = dish.name;
       live.forEach(function (li, i) { li.classList.toggle('is-on', pool[i % pool.length] === dish); });
       Sound.roll();
-      n++;
-      if (n < ticks) {
-        spinTimer = setTimeout(tick, 70 + n * 12);
+      spin.at += 1;
+
+      if (spin.stopping) {
+        spin.stopping += 1;
+        if (spin.stopping > SPIN_SLOWING) return landSpin(pool, dish);
+        // Each tick after Stop is slower than the last, so it visibly runs
+        // out rather than being cut off.
+        spinTimer = setTimeout(tick, floor + spin.stopping * spin.stopping * 14);
         return;
       }
-      spinTimer = null;
-      resetGame();
-      shortcut = true;
-      // Only what survived: "not quite" should never hand back something the
-      // player has just struck off the list themselves.
-      rankedItems = pool.slice();
-      setPanel('result');
-      $('result-icon').classList.add('is-landed');
-      // The winner is drawn from what survived, so striking dishes out
-      // genuinely changes the odds rather than only the picture.
-      var winner = pool[Math.floor(Math.random() * pool.length)];
-      showResult(winner, { animate: false });
-      $('result-eyebrow').textContent = spin.out.length
-        ? 'The ' + pool.length + ' you kept landed on'
-        : 'The shortlist landed on';
-      $('accept-btn').disabled = false;
-      $('reject-btn').disabled = false;
-      Sound.reveal();
-      Confetti.burst({ y: window.innerHeight * 0.3 });
+
+      if (spin.at >= SPIN_MAX_TICKS) return landSpin(pool, dish);
+      spinTimer = setTimeout(tick, floor);
     })();
+  }
+
+  /* Stop the reel and leave everything as it was. Lands nothing. */
+  function abandonSpin() {
+    if (spinTimer) clearTimeout(spinTimer);
+    spinTimer = null;
+    spin.running = false;
+    spin.stopping = 0;
+    $('spin-go').classList.remove('is-stopping');
+  }
+
+  function stopSpin() {
+    if (!spin.running || spin.stopping) return;
+    Sound.tick();
+    spin.stopping = 1;
+    $('spin-go-label').textContent = 'Landing\u2026';
+  }
+
+  /* Whatever the reel is showing is the answer. */
+  function landSpin(pool, winner) {
+    if (spinTimer) clearTimeout(spinTimer);
+    spinTimer = null;
+    spin.running = false;
+    spin.stopping = 0;
+    $('spin-go').classList.remove('is-stopping');
+
+    resetGame();
+    shortcut = true;
+    // Only what survived: "not quite" should never hand back something the
+    // player has just struck off the list themselves.
+    rankedItems = pool.slice();
+    setPanel('result');
+    $('result-icon').classList.add('is-landed');
+    showResult(winner, { animate: false });
+    $('result-eyebrow').textContent = spin.out.length
+      ? 'You stopped the ' + pool.length + ' you kept on'
+      : 'You stopped it on';
+    $('accept-btn').disabled = false;
+    $('reject-btn').disabled = false;
+    Sound.reveal();
+    Confetti.burst({ y: window.innerHeight * 0.3 });
   }
 
   $('spin-btn').addEventListener('click', startSpin);
@@ -7471,7 +7690,7 @@
     Sound.tick();
     paintSpin();
   });
-  $('spin-cancel').addEventListener('click', goHome);
+  $('spin-cancel').addEventListener('click', function () { abandonSpin(); goHome(); });
 
   /* ------------------------------------------------------------------ swipe */
   // A deck, one dish at a time: right for yes, left for no, and three yeses

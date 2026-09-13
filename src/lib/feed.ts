@@ -20,11 +20,31 @@
  * desk, a restaurant title, a paper of record, and a baking blog — so the
  * page is not four versions of the same restaurant opening.
  */
+/*
+ * Every one of these was fetched with this app's own User-Agent and Accept
+ * headers before it went in, and only the ones that answered 200 with real
+ * items are here. Several obvious candidates are missing on purpose and it is
+ * worth writing down which, so nobody spends an afternoon rediscovering it:
+ *
+ *   Serious Eats      402 on every path tried
+ *   Simply Recipes     402
+ *   Epicurious         404 — the old services/rss path is gone
+ *   Food52             429, rate limited even on a first request
+ *   BBC Good Food      301 to something that is not a feed
+ *   Bon Appétit        200, and exactly one item in it
+ *
+ * Note smittenkitchen.com/feed has no trailing slash: with one it answers 302
+ * and the redirect is not followed here.
+ */
 export const FEEDS = [
   { source: 'The Guardian', url: 'https://www.theguardian.com/food/rss' },
+  { source: 'Guardian Restaurants', url: 'https://www.theguardian.com/food/restaurants/rss' },
   { source: 'Eater', url: 'https://www.eater.com/rss/index.xml' },
   { source: 'NYT Dining', url: 'https://rss.nytimes.com/services/xml/rss/nyt/DiningandWine.xml' },
   { source: 'King Arthur Baking', url: 'https://www.kingarthurbaking.com/blog/feed' },
+  { source: 'The Kitchn', url: 'https://www.thekitchn.com/main.rss' },
+  { source: 'Smitten Kitchen', url: 'https://smittenkitchen.com/feed' },
+  { source: 'Saveur', url: 'https://www.saveur.com/feed/' },
 ]
 
 /*

@@ -1279,7 +1279,7 @@
     <!--
       Food news. Free, and deliberately so: it is the one screen with a reason
       to come back on a day you are not deciding anything. The stories come
-      from four publishers' own feeds through /api/news — an RSS feed sends no
+      from the publishers' own feeds through /api/news — an RSS feed sends no
       CORS headers, so the worker has to fetch them, which also means four
       publishers get one request rather than one per reader.
 
@@ -1338,7 +1338,8 @@
         <p class="mechanic">Worth reading</p>
         <h1 class="head-title">Food news</h1>
         <p class="head-sub">Recipes, restaurants and the odd argument about bread &mdash;
-        from <b>the Guardian</b>, <b>Eater</b>, <b>NYT Dining</b> and <b>King Arthur Baking</b>.</p>
+        from <b>the Guardian</b>, <b>Eater</b>, <b>NYT Dining</b>, <b>The Kitchn</b>,
+        <b>Smitten Kitchen</b>, <b>Saveur</b> and <b>King Arthur Baking</b>.</p>
       </header>
 
       <div class="out-loading" id="news-loading">

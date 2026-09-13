@@ -4002,6 +4002,22 @@ body.is-beaming { overflow: hidden; }
   color: var(--amber);
 }
 
+/* The reel is running and this button is now the only thing that matters on
+   the screen. Amber, and breathing, so it reads as "act now" rather than as
+   the same button it was a second ago. */
+.go.is-stopping {
+  background: var(--amber);
+  color: var(--paper-ink);
+  animation: stop-pulse 900ms var(--ease) infinite;
+}
+
+@keyframes stop-pulse {
+  0%, 100% { transform: none; }
+  50%      { transform: scale(1.035); }
+}
+
+@media (prefers-reduced-motion: reduce) { .go.is-stopping { animation: none; } }
+
 /* ------------------------------------------------------------------ menu */
 /* Three courses, read down the page in the order they arrive at the table.
    Same shape as the week list, which is the other place this app hands over

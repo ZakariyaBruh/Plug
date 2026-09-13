@@ -30,7 +30,35 @@ const MAX_PROMPT = 400
 const TIMEOUT_MS = 12000
 const MAX_OUTPUT_TOKENS = 700
 
-type Ask = { mode?: unknown; prompt?: unknown; answers?: unknown; liked?: unknown; avoid?: unknown }
+type Ask = {
+  mode?: unknown
+  prompt?: unknown
+  answers?: unknown
+  liked?: unknown
+  avoid?: unknown
+  keep?: unknown
+}
+
+/*
+ * Courses the person has pinned, as {course: dish name}.
+ *
+ * Only names that are really in the catalogue survive, and only for the three
+ * real courses — this arrives from a browser and a pinned dish is about to be
+ * quoted into a prompt, so it is checked on the way in like everything else.
+ */
+function kept(raw: unknown): { course: string; name: string }[] {
+  if (!raw || typeof raw !== 'object') return []
+  const byName = new Map(ALL_DISHES.map((d) => [d.name.toLowerCase(), d]))
+  const out: { course: string; name: string }[] = []
+  for (const [course, value] of Object.entries(raw as Record<string, unknown>)) {
+    const slot = String(course).toLowerCase()
+    if (!COURSES.includes(slot as (typeof COURSES)[number])) continue
+    if (typeof value !== 'string') continue
+    const dish = byName.get(value.trim().toLowerCase())
+    if (dish) out.push({ course: slot, name: dish.name })
+  }
+  return out
+}
 
 function names(raw: unknown, cap: number): string[] {
   if (!Array.isArray(raw)) return []
@@ -55,7 +83,12 @@ function answerLines(raw: unknown): string[] {
   return out
 }
 
-function instruction(said: string, liked: string[], avoid: string[]) {
+function instruction(
+  said: string,
+  liked: string[],
+  avoid: string[],
+  pinned: { course: string; name: string }[],
+) {
   return [
     'You write a three course menu from one fixed catalogue of dishes.',
     '',
@@ -65,6 +98,17 @@ function instruction(said: string, liked: string[], avoid: string[]) {
     said ? 'What they told you: ' + said : '',
     liked.length ? 'Dishes they have enjoyed before: ' + liked.join(', ') : '',
     avoid.length ? 'Never choose these: ' + avoid.join(', ') : '',
+    /*
+     * A kept course is settled, and the rest of the meal is chosen around it.
+     * This is the whole point of the Keep button: "the main is right, fix the
+     * rest of the evening to it" is a different and much better instruction
+     * than "try again".
+     */
+    pinned.length
+      ? 'These courses are already decided and must come back EXACTLY as they are: ' +
+        pinned.map((p) => `${p.course} = ${p.name}`).join(', ') +
+        '. Choose the other courses to go with them.'
+      : '',
     '',
     'Pick exactly three dishes — a starter, a main and a pudding — and they',
     'have to work as one meal. Not three heavy things. Not three cold ones.',
@@ -74,6 +118,14 @@ function instruction(said: string, liked: string[], avoid: string[]) {
     '',
     'If what they told you rules something out — a diet, an allergy, no oven,',
     'no time, a fussy guest, the weather — that governs all three choices.',
+    '',
+    'WHERE THEY ARE EATING CHANGES THE ANSWER. If they are going out or',
+    'ordering in, choose dishes worth paying somebody else to make — the ones',
+    'that are a faff at home, or better from a kitchen with the right kit —',
+    'and ignore how long they said they have, because that is a waiting time',
+    'and not a cooking time. If they are cooking, the time they gave is a hard',
+    'limit across all three courses together, and a starter or pudding that',
+    'needs no cooking is a good way to spend it on the main.',
     '',
     'Answer as JSON and nothing else, in this exact shape:',
     '{"courses":[{"course":"starter","name":"<exact catalogue name>","why":"<one short sentence>"},',
@@ -122,6 +174,7 @@ export const Route = createFileRoute('/api/menu')({
 
         const liked = names(ask.liked, MAX_LIKED)
         const avoid = names(ask.avoid, MAX_LIKED)
+        const pinned = kept(ask.keep)
 
         const control = new AbortController()
         const timer = setTimeout(() => control.abort(), TIMEOUT_MS)
@@ -133,7 +186,7 @@ export const Route = createFileRoute('/api/menu')({
             signal: control.signal,
             headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              systemInstruction: { parts: [{ text: instruction(said, liked, avoid) }] },
+              systemInstruction: { parts: [{ text: instruction(said, liked, avoid, pinned) }] },
               contents: [{ role: 'user', parts: [{ text: 'Write me the menu.' }] }],
               generationConfig: {
                 maxOutputTokens: MAX_OUTPUT_TOKENS,
@@ -185,6 +238,23 @@ export const Route = createFileRoute('/api/menu')({
           filled.add(slot)
           const why = typeof raw.why === 'string' ? raw.why.trim().slice(0, 160) : ''
           courses.push({ course: slot, name: dish.name, slug: dish.slug, icon: dish.icon, why })
+        }
+
+        /*
+         * Whatever the model did, a kept course comes back kept.
+         *
+         * "Keep this one" is a promise the app makes, and a promise that holds
+         * only when a model feels like honouring it is not one. If it swapped
+         * a pinned course, or dropped it, the pinned dish is put back into its
+         * slot here and whatever the model put there is discarded.
+         */
+        for (const pin of pinned) {
+          const dish = ALL_DISHES.find((d) => d.name === pin.name)
+          if (!dish) continue
+          const at = courses.findIndex((c) => c.course === pin.course)
+          const row = { course: pin.course, name: dish.name, slug: dish.slug, icon: dish.icon, why: '' }
+          if (at === -1) courses.push(row)
+          else if (courses[at].name !== dish.name) courses[at] = row
         }
 
         // Fewer than two survivors is not a menu worth showing. The app falls
