@@ -2994,6 +2994,29 @@ body.is-beaming { overflow: hidden; }
   font-size: var(--t-sm);
 }
 
+/* The rest of the site, from the front door. Quiet: these are for somebody
+   who wants to read about the thing rather than use it, and the point of this
+   screen is to be used. */
+.landing-more {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--s3) var(--s5);
+  margin-top: var(--s5);
+}
+
+.landing-more a {
+  color: var(--ink-3);
+  font-size: var(--t-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+}
+
+.landing-more a:hover { color: var(--ink); }
+
 .landing-free {
   font-size: var(--t-sm);
   color: var(--ink-3);

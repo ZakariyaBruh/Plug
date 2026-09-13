@@ -16,8 +16,10 @@ import { SITE_URL } from '#/lib/site'
  * here; they carry noindex and belong to one person mid-purchase.
  */
 const PAGES: Array<[path: string, priority: string]> = [
-  ['/', '1.0'],
-  ['/decide/', '0.9'],
+  // The game is the home page now: / redirects to it, so it is what should be
+  // indexed and what everything else ranks beneath. Listing a URL that only
+  // redirects tells a crawler to go and find that out for itself.
+  ['/decide/', '1.0'],
   // The hub that makes the 112 dish pages reachable. It was missing here for
   // the same reason it was missing everywhere: it did not exist, and the dish
   // pages were URLs only this file knew about.
