@@ -15,7 +15,22 @@ import { AGENT, FEEDS, FEED_ACCEPT, type Story, parseFeed } from '#/lib/feed'
  * actually send: `bun tools/feed-check.mjs`.
  */
 
-const KEEP = 40
+/*
+ * HOW MANY STORIES, AND WHOSE.
+ *
+ * PER_SOURCE exists because a straight "newest 40 across everything" quietly
+ * deletes the quiet publishers. Smitten Kitchen posts every week or two and
+ * The Kitchn posts all day; merged and sorted by date, The Kitchn filled a
+ * third of the list and Smitten Kitchen appeared exactly never — it had been
+ * added, fetched, parsed and thrown away, and the only sign was a chip that
+ * was not there.
+ *
+ * So each publisher's newest few are taken first, and only then is the lot
+ * sorted by date. Everybody who filed today is on the page, the newest still
+ * lead it, and a publisher having a busy afternoon cannot crowd the rest out.
+ */
+const PER_SOURCE = 8
+const KEEP = 60
 const FEED_TIMEOUT_MS = 10000
 
 async function readFeed(feed: (typeof FEEDS)[number]): Promise<Story[]> {
@@ -43,10 +58,18 @@ export const Route = createFileRoute('/api/news')({
   server: {
     handlers: {
       GET: async () => {
-        // One slow publisher must not hold up the other three, and one broken
-        // one must not empty the page: each feed is settled on its own.
+        // One slow publisher must not hold up the rest, and one broken one
+        // must not empty the page: each feed is settled on its own.
         const lists = await Promise.all(FEEDS.map((feed) => readFeed(feed).catch(() => [])))
         const stories = lists
+          // Each publisher's own newest first, so a prolific one cannot push a
+          // quiet one off the page entirely.
+          .map((list) =>
+            list
+              .slice()
+              .sort((a, b) => (b.published ?? 0) - (a.published ?? 0))
+              .slice(0, PER_SOURCE),
+          )
           .flat()
           .sort((a, b) => (b.published ?? 0) - (a.published ?? 0))
           .slice(0, KEEP)
