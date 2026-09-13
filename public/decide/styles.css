@@ -4027,7 +4027,7 @@ body.is-beaming { overflow: hidden; }
 .menu-course {
   display: grid;
   grid-template-columns: auto 1fr;
-  grid-template-areas: 'when when' 'art name' '. note' '. acts';
+  grid-template-areas: 'when when' 'art name' '. note';
   gap: var(--s1) var(--s3);
   align-items: center;
   padding: var(--s4) 0;
@@ -4060,50 +4060,95 @@ body.is-beaming { overflow: hidden; }
 
 .menu-note { grid-area: note; font-size: var(--t-sm); color: var(--ink-3); }
 
-/* Keep and Swap. On their own row under the dish rather than squeezed beside
-   it: at 390px a name like "Spaghetti bolognese" and two buttons on one line
-   leaves the buttons under the tap target size, and these are the controls
-   the section exists for. */
-.menu-acts {
-  grid-area: acts;
-  display: flex;
-  gap: var(--s2);
-  margin-top: var(--s2);
+@media (prefers-reduced-motion: reduce) { .menu-course { animation: none; } }
+
+/* ---------------------------------------------------------- the run */
+/* Courses already agreed to, above the one being asked about. Smaller and
+   dimmer than the course in hand: they are context now, not a choice, and
+   the eye should go straight past them to the thing with buttons on it. */
+.menu-settled { margin: 0 0 var(--s4); opacity: .62; }
+.menu-settled .menu-course { padding: var(--s3) 0; }
+.menu-settled .menu-art { font-size: var(--t-lg); }
+.menu-settled .menu-name { font-size: var(--t-md); }
+
+/* The course in hand. One dish, big, with nothing else competing for the
+   tap — the whole reason for showing them one at a time is that there is
+   only ever one question on screen. */
+.course-now {
+  padding: var(--s5) 0 var(--s2);
+  border-top: 1px solid var(--hair);
+  text-align: center;
 }
 
-.course-btn {
-  min-height: var(--tap);
-  padding: 0 var(--s4);
-  border: 1px solid var(--hair-lit);
-  border-radius: 2px;
-  background: none;
-  color: var(--ink-2);
+.menu-settled[hidden] + .course-now { border-top: 0; padding-top: var(--s2); }
+
+.course-now-when {
   font-family: var(--display);
   font-size: var(--t-xs);
-  letter-spacing: .06em;
+  letter-spacing: .1em;
   text-transform: uppercase;
-  cursor: pointer;
-  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease),
-              background var(--fast) var(--ease), transform var(--fast) var(--ease);
-}
-
-.course-btn:hover { color: var(--ink); border-color: var(--ink-3); background: var(--raise); }
-.course-btn:active { transform: scale(.96); }
-
-/* Kept reads as on, not as selected-and-waiting. The amber is the same one
-   the course label uses, so a pinned course is one colour throughout. */
-.course-keep[aria-pressed='true'] {
   color: var(--amber);
-  border-color: var(--amber);
-  background: color-mix(in srgb, var(--amber) 12%, transparent);
+  margin: var(--s1) 0 0;
 }
 
-/* The whole row, when it is staying. Quiet — a left edge, not a highlight;
-   three highlighted rows would be no signal at all. */
-.menu-course.is-kept { border-left: 2px solid var(--amber); padding-left: var(--s3); }
-.menu-course.is-kept .course-swap { opacity: .5; }
+.course-now-art {
+  display: block;
+  font-size: clamp(3rem, 18vw, 4.5rem);
+  line-height: 1.1;
+  margin: var(--s3) 0 var(--s2);
+}
 
-@media (prefers-reduced-motion: reduce) { .menu-course { animation: none; } }
+.course-now-name {
+  display: block;
+  width: 100%;
+  font-family: var(--display);
+  /* Scales down rather than wrapping to three lines: "Slow-roast lamb
+     shoulder" at 3rem is four lines on a 390px phone. */
+  font-size: clamp(1.65rem, 8.5vw, var(--t-2xl));
+  font-weight: 700;
+  color: var(--ink);
+  text-align: center;
+  line-height: 1.12;
+}
+
+.course-now-why {
+  max-width: 34ch;
+  margin: var(--s2) auto var(--s5);
+  font-size: var(--t-sm);
+  color: var(--ink-3);
+}
+
+/* Yes first and big, "something else" quiet beside it. Stacked on a narrow
+   phone so neither drops under the tap target. */
+.course-now-acts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--s3);
+}
+
+.course-now-acts .quiet { min-height: var(--tap); }
+.course-now-acts .quiet[disabled] { opacity: .45; cursor: not-allowed; }
+
+.course-now .fine { margin: var(--s3) 0 0; }
+
+/* A course arriving is an event; a course being swapped is a correction.
+   Different movement, so the two never feel like the same thing. */
+.course-now.is-arriving { animation: lift var(--mid) var(--ease) both; }
+.course-now.is-swapped .course-now-art,
+.course-now.is-swapped .course-now-name { animation: swapIn var(--fast) var(--ease) both; }
+
+@keyframes swapIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .course-now.is-arriving,
+  .course-now.is-swapped .course-now-art,
+  .course-now.is-swapped .course-now-name { animation: none; }
+}
 
 /* The two ways into the menu, side by side on anything but a small phone.
    Reuses .mode-card so they read as the same kind of choice as the games. */

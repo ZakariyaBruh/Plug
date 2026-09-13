@@ -196,7 +196,24 @@
        * when the last one was.
        */
       chatAsks: 0,            // questions asked of the assistant, ever
-      menuAt: 0               // ms timestamp of the last menu built
+      menuAt: 0,              // ms timestamp of the last menu built
+
+      /*
+       * The menu itself, so a reload does not eat it.
+       *
+       * The go is spent the moment the model answers, and a menu is agreed to
+       * one course at a time — so without this, closing the tab halfway
+       * through costs somebody both the menu and their next two days. Kept as
+       * course id plus dish name rather than as dish objects: the catalogue
+       * grows, and a stored object would be a stale copy of a dish that has
+       * since changed.
+       *
+       * menuRun is the run in progress; menuDone is the finished meal, which
+       * is worth keeping around because it is the answer to "what am I
+       * cooking tonight" and that question gets asked again at six o'clock.
+       */
+      menuRun: null,
+      menuDone: null
     };
   }
 

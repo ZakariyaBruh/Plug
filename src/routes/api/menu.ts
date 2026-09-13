@@ -36,6 +36,14 @@ type Ask = {
   answers?: unknown
   liked?: unknown
   avoid?: unknown
+  /*
+   * Courses to leave alone. The game stopped sending this when the menu
+   * became a run of one course at a time (there is nothing to pin: a course
+   * you have agreed to is already settled and never re-asked). Still honoured,
+   * because a browser holding a cached copy of the old game will keep sending
+   * it for as long as its service worker takes to catch up, and answering
+   * those requests worse than before is not an upgrade.
+   */
   keep?: unknown
 }
 

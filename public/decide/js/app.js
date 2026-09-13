@@ -2534,14 +2534,17 @@
    * chosen — which is what stops this being three separate random picks with
    * a menu drawn round them.
    */
+  // `word` is how the course is named when it is being agreed to, because
+  // "That's it" three times running tells nobody which it they just agreed
+  // to. The labels are the table's order; the words are the plate's name.
   var COURSES = [
-    { id: 'starter', label: 'To start',
+    { id: 'starter', label: 'To start', word: 'the starter',
       likes: ['light', 'fresh', 'shareable', 'soupy', 'crunchy'],
       dislikes: ['filling', 'indulgent', 'carby'] },
-    { id: 'main', label: 'Then',
+    { id: 'main', label: 'Then', word: 'the main',
       likes: ['filling', 'hot', 'comfort', 'carby', 'meat'],
       dislikes: ['light', 'breakfast'] },
-    { id: 'pudding', label: 'And after',
+    { id: 'pudding', label: 'And after', word: 'pudding',
       likes: ['sweet', 'indulgent', 'soft', 'fruity'],
       dislikes: [] }
   ];
@@ -2620,16 +2623,8 @@
         menu.push({ course: course, dish: keep[course.id], kept: true });
         return;
       }
-      var ranked = [];
-      pool.forEach(function (dish) {
-        if (!courseAllows(course, dish)) return;
-        if (taken.indexOf(dish) !== -1) return;
-        if (avoid[course.id] === dish) return;
-        ranked.push({ dish: dish, score: courseScore(course, dish, taken) });
-      });
-      ranked.sort(function (a, b) { return b.score - a.score; });
-      var band = ranked.slice(0, MENU_BAND);
-      var best = band.length ? band[Math.floor(Math.random() * band.length)].dish : null;
+      var no = avoid[course.id] ? [avoid[course.id].name] : [];
+      var best = pickCourse(course, taken, no, pool);
       // A course with nothing eligible is left out rather than filled with
       // something wrong — a vegetarian with every pudding banned gets two
       // courses, not a steak for afters.
@@ -2639,40 +2634,65 @@
   }
 
   /*
-   * The menu on screen, and which of it is being kept.
+   * One course, scored against what is already on the table.
    *
-   * Held here rather than read back out of the DOM: a course is identified by
-   * its dish, and a dish is an object from the catalogue, not a name. Kept
-   * state is for this sitting only — nobody wants last Tuesday's locked
-   * pudding waiting for them.
+   * Pulled out of buildMenu because the run (below) picks a single course at a
+   * time and has to score it against the courses already agreed to — the same
+   * arithmetic, asked one plate at a time instead of three. `refused` is a
+   * list of names rather than one dish, because somebody can turn down the
+   * same course three times and none of those three should come back.
+   *
+   * Not a top pick: a band of the best few, chosen from at random. Always
+   * returning the single highest score would mean the same starter every
+   * evening for the same profile, which is the opposite of what this is for.
    */
-  var menuNow = [];
-  var menuKept = {};
+  function pickCourse(course, taken, refused, pool) {
+    if (!pool) {
+      pool = favouredDishes().map(function (r) { return r.item; });
+      if (pool.length < 12) pool = Data.ITEMS.slice();
+    }
+    refused = refused || [];
+    var ranked = [];
+    pool.forEach(function (dish) {
+      if (!courseAllows(course, dish)) return;
+      if (taken.indexOf(dish) !== -1) return;
+      if (refused.indexOf(dish.name) !== -1) return;
+      ranked.push({ dish: dish, score: courseScore(course, dish, taken) });
+    });
+    ranked.sort(function (a, b) { return b.score - a.score; });
+    var band = ranked.slice(0, MENU_BAND);
+    return band.length ? band[Math.floor(Math.random() * band.length)].dish : null;
+  }
 
   /*
-   * One course, with the two things you can do to it.
+   * The finished menu on screen.
    *
-   * KEEP and SWAP, because a menu you can only throw away whole is a slot
-   * machine. The useful case is almost always "that main is right, the rest
-   * is not" — and rerolling until the main comes back is not a feature, it is
-   * a chore. Keep pins it; swap re-picks one course and only that one; reroll
-   * re-picks everything not pinned.
+   * Held here rather than read back out of the DOM: a course is identified by
+   * its dish, and a dish is an object from the catalogue, not a name.
+   */
+  var menuNow = [];
+
+  /*
+   * One course, as a row of a finished menu.
    *
-   * Both buttons carry the course name, because "Keep" on its own is three
-   * identical buttons to anything reading the page aloud.
+   * No buttons on it any more. Keep and Swap lived here, and between them they
+   * turned the menu into a slot machine: whatever the model chose could be
+   * shuffled away one course at a time until three dishes somebody already
+   * fancied happened to line up. Choosing is now done during the run, one
+   * course at a time, before the row exists — so by the time a row is drawn
+   * the answer is settled and there is nothing left to press.
+   *
+   * The name is still a button, because reading about a dish is not changing
+   * it.
    */
   function courseRow(entry, i) {
     var li = document.createElement('li');
-    li.className = 'menu-course' + (entry.kept ? ' is-kept' : '');
+    li.className = 'menu-course';
     li.style.animationDelay = (i * 70) + 'ms';
     li.innerHTML = '<span class="menu-when"></span>' +
       '<span class="menu-art" aria-hidden="true"></span>' +
       '<button class="menu-name plain" type="button"></button>' +
-      '<span class="menu-note"></span>' +
-      '<span class="menu-acts">' +
-        '<button class="course-btn course-keep" type="button"></button>' +
-        '<button class="course-btn course-swap" type="button"></button>' +
-      '</span>';
+      '<span class="menu-note"></span>';
 
     li.querySelector('.menu-when').textContent = entry.course.label;
     li.querySelector('.menu-art').textContent = entry.dish.icon;
@@ -2680,7 +2700,7 @@
      * The model's reason, when there is one, in place of the dish's own
      * blurb. The blurb says what the dish is; the reason says why it is in
      * THIS meal, which is the only thing asking a model bought us. A locally
-     * scored menu has no reason to give and falls back to the blurb.
+     * scored course has no reason to give and falls back to the blurb.
      */
     li.querySelector('.menu-note').textContent = entry.why || entry.dish.blurb;
 
@@ -2688,47 +2708,311 @@
     name.textContent = entry.dish.name;
     name.addEventListener('click', function () { Sound.tick(); openSheet(entry.dish); });
 
-    var keep = li.querySelector('.course-keep');
-    keep.textContent = entry.kept ? 'Keeping' : 'Keep';
-    keep.setAttribute('aria-pressed', entry.kept ? 'true' : 'false');
-    keep.setAttribute('aria-label', (entry.kept ? 'Stop keeping ' : 'Keep ') + entry.dish.name +
-      (entry.kept ? '' : ' and build the rest of the meal around it'));
-    keep.title = entry.kept
-      ? 'Write another one and this course stays'
-      : 'Pin this course; the rest is rebuilt around it';
-    keep.addEventListener('click', function () {
-      Sound.tick();
-      menuKept[entry.course.id] = !menuKept[entry.course.id];
-      // Repaint from what is already chosen — toggling a pin must not quietly
-      // re-pick anything.
-      paintMenu(menuNow);
-    });
-
-    var swap = li.querySelector('.course-swap');
-    swap.textContent = 'Swap';
-    swap.setAttribute('aria-label', 'Swap ' + entry.dish.name + ' for something else');
-    swap.addEventListener('click', function () {
-      Sound.tick();
-      swapCourse(entry.course.id);
-    });
-
     return li;
+  }
+
+  /* ------------------------------------------------------------- the run */
+  /*
+   * A MENU IS A RUN OF COURSES, NOT A PAGE OF THEM.
+   *
+   * All three used to arrive together. That sounds more generous and is
+   * worse: with everything visible at once the only sensible move is to judge
+   * the three as a set, reject the set, and press again — so the thing being
+   * chosen was never a meal, it was a hand of cards. It also made saying yes
+   * meaningless, because there was nothing left to say yes to.
+   *
+   * So: the starter alone, then the main, then the pudding, and each one only
+   * after the last has been agreed. Two things follow from that, and both are
+   * the point.
+   *
+   *   - Agreeing is final. A course that has been said yes to moves up into
+   *     the settled list and has no buttons on it. You cannot go back and
+   *     re-roll the starter once you have seen the main, which is exactly the
+   *     hole the old screen had.
+   *
+   *   - Every course after the first is chosen against the ones already
+   *     agreed (see pickCourse and courseScore's penalty for repeating a
+   *     tag), so a heavy starter really does get a lighter main. That was
+   *     always the arithmetic; nothing was ever in a position to use it.
+   *
+   * MENU_SWITCHES_PER_COURSE is the pressure valve. A first suggestion you
+   * would never eat should not be the whole evening, but an unlimited switch
+   * is the slot machine again with one extra tap. Three, per course, on the
+   * free version — so nine across a menu, which is plenty to land somewhere
+   * you are happy with and not enough to grind the catalogue. Premium is
+   * unlimited, because the thing being sold is not having to ration this.
+   */
+  var MENU_SWITCHES_PER_COURSE = 3;
+
+  /*
+   * The run in progress, or null.
+   *
+   * `menu` is what the model (or the local scorer) proposed, one entry per
+   * course, edited in place as courses are switched. `step` is how far down it
+   * we are — and because a switch replaces the entry at `step` rather than
+   * appending, everything before `step` is by definition what has been agreed,
+   * so there is no second list to keep in step with this one. `used` is
+   * switches spent on THIS course only and resets at each one; `refused`
+   * remembers every dish turned down for a course id, so none of them comes
+   * back later in the same run.
+   */
+  var menuRun = null;
+
+  /* Is there a finished menu worth returning to rather than re-asking? */
+  var menuWrapped = false;
+
+  /*
+   * A RUN HAS TO SURVIVE THE TAB CLOSING.
+   *
+   * The go is spent the moment the model answers, and the menu is then agreed
+   * to one course at a time. Held only in memory, a reload between the starter
+   * and the pudding would cost somebody the menu AND the next two days of
+   * allowance, for nothing they did wrong — which is the single worst thing
+   * this feature could do to a Standard profile.
+   *
+   * Stored as course ids and dish names. Dish objects would be stale copies of
+   * a catalogue that gets added to, and a name that has since gone is a run
+   * that should be dropped rather than half-restored.
+   */
+  function thinCourse(e) { return { c: e.course.id, n: e.dish.name, w: e.why || '' }; }
+
+  function fatCourse(t) {
+    var course = COURSES.filter(function (x) { return x.id === t.c; })[0];
+    var dish = dishByName(t.n);
+    return course && dish ? { course: course, dish: dish, why: t.w || '' } : null;
+  }
+
+  function thinMenu(menu) { return menu.map(thinCourse); }
+
+  function fatMenu(thin) {
+    if (!thin || !thin.length) return null;
+    var out = [];
+    for (var i = 0; i < thin.length; i++) {
+      var e = fatCourse(thin[i]);
+      if (!e) return null;                      // a dish has gone: drop the lot
+      out.push(e);
+    }
+    return out;
+  }
+
+  function saveRun() {
+    progress.state.menuRun = menuRun ? {
+      menu: thinMenu(menuRun.menu),
+      step: menuRun.step,
+      used: menuRun.used,
+      refused: menuRun.refused
+    } : null;
+    progress.save();
+  }
+
+  /* Pick the run back up after a reload, or answer no. */
+  function restoreRun() {
+    var saved = progress.state.menuRun;
+    if (!saved || !saved.menu) return false;
+    var menu = fatMenu(saved.menu);
+    if (!menu || saved.step >= menu.length) { progress.state.menuRun = null; progress.save(); return false; }
+    menuRun = {
+      menu: menu,
+      step: saved.step || 0,
+      used: saved.used || 0,
+      refused: saved.refused || {}
+    };
+    return true;
+  }
+
+  function restoreDone() {
+    var menu = fatMenu(progress.state.menuDone);
+    if (!menu) return false;
+    menuNow = menu;
+    return true;
+  }
+
+  function startRun(menu) {
+    menuRun = { menu: menu, step: 0, used: 0, refused: {} };
+    menuWrapped = false;
+    progress.state.menuDone = null;
+    saveRun();
+    menuPanels('menu-run');
+    paintRun(true);
+  }
+
+  /* What has been agreed, in order, and the dishes in it. */
+  function settledCourses() {
+    return menuRun.menu.slice(0, menuRun.step);
+  }
+
+  function settledDishes() {
+    return settledCourses().map(function (e) { return e.dish; });
+  }
+
+  function paintRun(arriving) {
+    if (!menuRun) return;
+
+    // What is already agreed, above the course being asked about. Drawn every
+    // time rather than appended, so the run survives leaving the tab and
+    // coming back.
+    var settled = $('menu-settled');
+    var agreed = settledCourses();
+    settled.innerHTML = '';
+    agreed.forEach(function (entry, i) { settled.appendChild(courseRow(entry, i)); });
+    settled.hidden = !agreed.length;
+
+    var entry = menuRun.menu[menuRun.step];
+    if (!entry) return finishRun();
+
+    $('menu-now-step').textContent =
+      'Course ' + (menuRun.step + 1) + ' of ' + menuRun.menu.length;
+    $('menu-now-when').textContent = entry.course.label;
+    $('menu-now-art').textContent = entry.dish.icon;
+    $('menu-now-why').textContent = entry.why || entry.dish.blurb;
+    $('menu-take-label').textContent = 'That’s ' + entry.course.word;
+
+    var name = $('menu-now-name');
+    name.textContent = entry.dish.name;
+    name.setAttribute('aria-label', 'Read about ' + entry.dish.name);
+
+    /*
+     * How many switches are left, said plainly. A budget nobody can see is
+     * indistinguishable from a button that randomly stops working.
+     */
+    var left = isPlus() ? Infinity : Math.max(0, MENU_SWITCHES_PER_COURSE - menuRun.used);
+    var line = $('menu-switches');
+    var swap = $('menu-switch');
+    if (left === Infinity) {
+      line.textContent = 'Change it as many times as you like.';
+      swap.disabled = false;
+      swap.textContent = 'Something else';
+    } else if (left === 0) {
+      line.textContent = 'That is all three changes on this course. Premium changes as ' +
+        'many times as you like.';
+      swap.disabled = true;
+      swap.textContent = 'No changes left';
+    } else {
+      line.textContent = left === 1
+        ? 'One more change on this course.'
+        : left + ' changes left on this course.';
+      swap.disabled = false;
+      swap.textContent = 'Something else';
+    }
+
+    // Arriving is an event; a switch is a correction. Only the first gets the
+    // entrance and the sound, or every tap would feel like a new course.
+    var card = $('menu-now');
+    card.classList.remove('is-arriving', 'is-swapped');
+    void card.offsetWidth;                       // restart the animation
+    if (!reduceMotion) card.classList.add(arriving ? 'is-arriving' : 'is-swapped');
+    if (arriving) Sound.reveal();
+  }
+
+  /*
+   * Yes to this course. Final, deliberately.
+   *
+   * The pudding is the end of the run for everybody; what differs afterwards
+   * is whether there is another go to be had, and paintMenuTail says which.
+   */
+  function takeCourse() {
+    if (!menuRun) return;
+    var entry = menuRun.menu[menuRun.step];
+    if (!entry) return;
+
+    // Agreeing to a course is progress, not a tap — the same note the app
+    // uses everywhere else something moves forward.
+    Sound.climb();
+    menuRun.step += 1;
+    menuRun.used = 0;
+
+    if (menuRun.step >= menuRun.menu.length) return finishRun();
+    saveRun();
+    paintRun(true);
+  }
+
+  /*
+   * Not that one. Re-picks THIS course only, against what is already agreed.
+   *
+   * Local, not another model call: one menu is one request, and a switch is a
+   * correction inside it rather than a fresh ask. The reason line goes with
+   * it — the model never saw this dish, so printing its sentence under a dish
+   * it did not choose would be a lie about where the sentence came from.
+   */
+  function switchCourse() {
+    if (!menuRun) return;
+    var entry = menuRun.menu[menuRun.step];
+    if (!entry) return;
+
+    if (!isPlus() && menuRun.used >= MENU_SWITCHES_PER_COURSE) {
+      Sound.reject();
+      return toast('\u{1F504}', 'That is all three',
+        'Three changes a course on the free version. Premium changes as many times ' +
+        'as you like.');
+    }
+
+    var id = entry.course.id;
+    var refused = menuRun.refused[id] || (menuRun.refused[id] = []);
+    if (refused.indexOf(entry.dish.name) === -1) refused.push(entry.dish.name);
+
+    var next = pickCourse(entry.course, settledDishes(), refused);
+    // Nothing else this course could be: say so rather than repaint the same
+    // dish and look like a dead button. Costs nothing, because nothing changed.
+    if (!next) {
+      Sound.reject();
+      return toast('\u{1F37D}\u{FE0F}', 'Nothing else fits',
+        'Your rules have left only one thing that works for that course.');
+    }
+
+    Sound.tick();
+    menuRun.menu[menuRun.step] = { course: entry.course, dish: next, why: '' };
+    menuRun.used += 1;
+    saveRun();
+    paintRun(false);
+  }
+
+  /* The pudding was agreed. Show the meal, and celebrate it. */
+  function finishRun() {
+    var menu = menuRun ? settledCourses() : [];
+    menuRun = null;
+    if (!menu.length) { saveRun(); return menuPanels('menu-empty'); }
+    menuWrapped = true;
+    // The run is over; the meal it produced is what is worth keeping, and it
+    // is worth keeping because "what am I cooking tonight" gets asked again at
+    // six o'clock, on a reloaded tab.
+    progress.state.menuRun = null;
+    progress.state.menuDone = thinMenu(menu);
+    progress.save();
+    menuPanels('menu-wrap-view');
+    landMenu(menu);
+  }
+
+  /*
+   * What happens after the meal, which is not the same question for everybody.
+   *
+   * Premium goes again straight away. A Standard profile that has spent its go
+   * is told when the next one is — not that the feature is not theirs, because
+   * they just used it. A Standard profile whose go was NOT spent (the model
+   * did not answer and the local scorer stood in) still has it, and gets the
+   * button.
+   */
+  function paintMenuTail() {
+    var another = isPlus() || menuAllowed();
+    $('menu-again').hidden = !another;
+    $('menu-after').hidden = another;
+    if (!another) {
+      $('menu-after-line').textContent =
+        'That is your menu for now. The next free one is ready ' + menuWaitWords() + '.';
+    }
   }
 
   /*
    * The menu landing, as an event rather than a repaint.
    *
    * Finishing one of these is the most work this app asks of anybody — five
-   * questions or a typed sentence, then a wait on a model — and it used to
-   * end with three rows quietly appearing. Every other place in here that
-   * costs effort pays it back: a decision gets a sound, confetti and XP; a
-   * badge gets a toast. This got nothing at all.
+   * questions or a typed sentence, a wait on a model, then three courses to
+   * agree to one at a time — and it used to end with three rows quietly
+   * appearing. Every other place in here that costs effort pays it back: a
+   * decision gets a sound, confetti and XP; a badge gets a toast.
    *
-   * So the courses arrive one at a time rather than together, with the
-   * confetti timed to the last one so it lands on a finished menu and not on
-   * an empty list. Only on a real arrival — repainting after a keep or a swap
-   * calls paintMenu directly and stays quiet, because celebrating a button
-   * press is how a celebration stops meaning anything.
+   * So the courses walk in in the order they will be eaten, with the confetti
+   * timed to the last one so it lands on a finished menu and not on an empty
+   * list.
    */
   function landMenu(menu) {
     paintMenu(menu, true);
@@ -2745,95 +3029,25 @@
   /* Draw a menu that has already been chosen. Chooses nothing itself. */
   function paintMenu(menu, staged) {
     menuNow = menu.map(function (e) {
-      return { course: e.course, dish: e.dish, kept: !!menuKept[e.course.id], why: e.why || '' };
+      return { course: e.course, dish: e.dish, why: e.why || '' };
     });
 
     var list = $('menu-list');
     list.innerHTML = '';
     menuNow.forEach(function (entry, i) {
       var row = courseRow(entry, i);
-      // A staged arrival walks the courses in one at a time; a repaint after a
-      // keep or a swap has no reason to re-animate what did not move.
+      // A staged arrival walks the courses in one at a time; a repaint has no
+      // reason to re-animate what did not move.
       if (staged) row.style.animationDelay = (240 + i * 220) + 'ms';
       list.appendChild(row);
     });
 
-    var keptCount = menuNow.filter(function (e) { return e.kept; }).length;
     var cooking = menuNow.filter(function (e) { return Recipes.has(e.dish.name); }).length;
+    $('menu-note').textContent = cooking === menuNow.length
+      ? 'Every course has a recipe behind it — tap one to read it.'
+      : 'Tap a course to read about it.';
 
-    /*
-     * The note says the one thing that is true and useful right now, in this
-     * order: what keeping will do, then what swapping has left, then what the
-     * courses are.
-     */
-    var swapsLeft = isPlus() ? Infinity : Math.max(0, MENU_SWAPS_FREE - menuSwaps);
-    var note;
-    if (keptCount === menuNow.length && keptCount) {
-      note = 'All three kept — write another one and you will get these three back.';
-    } else if (keptCount) {
-      note = keptCount + ' kept. Write another one and it builds the rest of the ' +
-        'meal around ' + (keptCount === 1 ? 'it' : 'them') + '.';
-    } else if (swapsLeft === 0) {
-      note = 'That is both swaps used. Keep what is right and write another one, ' +
-        'or come back for a fresh menu.';
-    } else if (swapsLeft !== Infinity && swapsLeft < MENU_SWAPS_FREE) {
-      note = swapsLeft === 1 ? 'One more swap on this menu.' : swapsLeft + ' swaps left on this menu.';
-    } else if (cooking === menuNow.length) {
-      note = 'Every course has a recipe behind it — tap one to read it.';
-    } else {
-      note = 'Tap a course to read about it.';
-    }
-    $('menu-note').textContent = note;
-
-    // Swapping that cannot happen should not look like it can.
-    var spent = swapsLeft === 0;
-    [].forEach.call(list.querySelectorAll('.course-swap'), function (btn) {
-      btn.disabled = spent;
-      if (spent) btn.title = 'Both swaps used on this menu';
-    });
-  }
-
-  /* Re-pick one course, keeping the rest and refusing the dish it had. */
-  function swapCourse(id) {
-    if (!isPlus() && menuSwaps >= MENU_SWAPS_FREE) {
-      Sound.reject();
-      return toast('\u{1F504}', 'That is both swaps',
-        'Two changes to a menu on the free version. Premium swaps as many as you like.');
-    }
-
-    var keep = {};
-    var avoid = {};
-    menuNow.forEach(function (entry) {
-      if (entry.course.id === id) avoid[id] = entry.dish;
-      else keep[entry.course.id] = entry.dish;
-    });
-    var next = buildMenu({ keep: keep, avoid: avoid });
-    // Nothing else this course could be: say so rather than repaint the same
-    // three dishes and look like a dead button.
-    if (!next.some(function (e) { return e.course.id === id; })) {
-      Sound.reject();
-      return toast('\u{1F37D}\u{FE0F}', 'Nothing else fits',
-        'Your rules have left only one thing that works for that course.');
-    }
-
-    /*
-     * Carry the model's reasons across for the courses that did not move.
-     * buildMenu is the local scorer and has no reasons to give, so without
-     * this a swap would quietly strip the explanation off the two courses
-     * nobody touched — and they are still in this meal for exactly the reason
-     * that was printed under them a second ago. The swapped one gets no
-     * reason, correctly: the model never saw this dish.
-     */
-    var whyBefore = {};
-    menuNow.forEach(function (entry) { whyBefore[entry.course.id] = entry.why || ''; });
-    next.forEach(function (entry) {
-      if (entry.course.id !== id) entry.why = whyBefore[entry.course.id] || '';
-    });
-
-    // Spent only once the swap is really happening — a course with nothing
-    // else it could be returns above without costing anything.
-    menuSwaps += 1;
-    paintMenu(next);
+    paintMenuTail();
   }
 
   /*
@@ -2898,11 +3112,31 @@
 
   /* Every panel in this section, so each state can be set by naming it. */
   function menuPanels(which) {
-    ['menu-ask', 'menu-waiting', 'menu-wrap-view', 'menu-spent', 'menu-error', 'menu-empty']
+    ['menu-ask', 'menu-waiting', 'menu-run', 'menu-wrap-view', 'menu-spent',
+     'menu-error', 'menu-empty']
       .forEach(function (id) { $(id).hidden = id !== which; });
   }
 
   function renderMenuView() {
+    /*
+     * A RUN IN PROGRESS OUTRANKS EVERYTHING BELOW.
+     *
+     * The go is spent the moment the model answers, so a Standard profile is
+     * already out of allowance while it is still agreeing to its starter.
+     * Checking the allowance first would therefore throw away the menu they
+     * are in the middle of and show them the "come back in two days" screen —
+     * for the menu they are standing in. Tab away, tab back, and it is gone.
+     *
+     * So: mid-run first, finished menu second, and only then the allowance.
+     */
+    if (!menuRun && !menuWrapped) {
+      // First look since a reload: pick up whatever was left on the table.
+      if (restoreRun()) menuWrapped = false;
+      else if (restoreDone()) menuWrapped = true;
+    }
+    if (menuRun) { menuPanels('menu-run'); paintRun(false); return; }
+    if (menuWrapped) { menuPanels('menu-wrap-view'); paintMenu(menuNow); return; }
+
     if (!menuAllowed()) {
       menuPanels('menu-spent');
       $('menu-spent-line').textContent =
@@ -2914,6 +3148,10 @@
 
   /* Back to the two ways in. */
   function menuAsk() {
+    menuRun = null;
+    menuWrapped = false;
+    progress.state.menuRun = null;
+    progress.save();
     menuPanels('menu-ask');
     $('menu-ways').hidden = false;
     $('menu-questions').hidden = true;
@@ -3037,10 +3275,6 @@
       body: JSON.stringify({
         prompt: ask.prompt || '',
         answers: ask.answers || null,
-        // What is being kept, so a reroll is asked to work around it rather
-        // than told to start from nothing. This is what makes Keep worth
-        // pressing (see the note on menuKept).
-        keep: ask.keep || null,
         liked: liked.liked,
         avoid: liked.avoid
       })
@@ -3058,18 +3292,21 @@
       courses.forEach(function (c) {
         var course = COURSES.filter(function (x) { return x.id === c.course; })[0];
         var dish = dishByName(c.name);
-        if (course && dish) menu.push({ course: course, dish: dish, kept: false, why: c.why || '' });
+        if (course && dish) menu.push({ course: course, dish: dish, why: c.why || '' });
       });
       if (menu.length < 2) return menuFellBack();
+
+      // Eating order, whatever order the answer came back in — the run walks
+      // this list, so the starter has to actually be first.
+      menu.sort(function (a, b) {
+        return COURSES.indexOf(a.course) - COURSES.indexOf(b.course);
+      });
 
       if (!isPlus()) {
         progress.state.menuAt = Date.now();
         progress.save();
       }
-      menuPanels('menu-wrap-view');
-      menuKept = {};
-      menuSwaps = 0;
-      landMenu(menu);
+      startRun(menu);
     });
   }
 
@@ -3081,13 +3318,12 @@
   function menuFellBack() {
     var menu = buildMenu({ keep: {} });
     if (!menu.length) return menuPanels('menu-empty');
-    menuPanels('menu-wrap-view');
-    menuKept = {};
-    menuSwaps = 0;
-    landMenu(menu);
-    $('menu-note').textContent =
-      'Written from what you like rather than from what you said — the model did not ' +
-      'answer, and this has not used up your go.';
+    startRun(menu);
+    // Said on the course in hand rather than at the end, because at the end it
+    // is too late to matter and they have already agreed to two courses on the
+    // strength of something they think the model wrote.
+    $('menu-now-why').textContent = 'Chosen from what you like rather than from what you ' +
+      'said \u2014 the model did not answer, and this has not used up your go.';
   }
 
   $('menu-way-questions').addEventListener('click', function () { Sound.tick(); menuStartQuestions(); });
@@ -3095,6 +3331,15 @@
   $('menu-q-back').addEventListener('click', function () { Sound.tick(); menuAsk(); });
   $('menu-prompt-back').addEventListener('click', function () { Sound.tick(); menuAsk(); });
   $('menu-restart').addEventListener('click', function () { Sound.tick(); menuAsk(); });
+  $('menu-take').addEventListener('click', function () { takeCourse(); });
+  $('menu-switch').addEventListener('click', function () { switchCourse(); });
+  $('menu-now-name').addEventListener('click', function () {
+    if (!menuRun) return;
+    var entry = menuRun.menu[menuRun.step];
+    if (!entry) return;
+    Sound.tick();
+    openSheet(entry.dish);
+  });
   $('menu-retry').addEventListener('click', function () {
     Sound.tick();
     if (menuAsked) askMenu(menuAsked); else menuAsk();
@@ -3115,28 +3360,20 @@
   $('menu-btn').addEventListener('click', function () { Sound.tick(); openMenu(); });
 
   /*
-   * "Write another one" re-asks, with whatever was said the first time.
+   * "Go again" re-asks, with whatever was said the first time.
    *
-   * Deliberately not the local scorer. It was, and that quietly swapped the
-   * answer for a different kind of answer: somebody who typed "one of us is
-   * vegetarian" and pressed this got a menu chosen from tags, which knows
-   * nothing about that, with no sign that anything had changed. If a fresh
-   * one cannot be had — a Standard profile inside its two days — then saying
-   * so is the honest answer, and askMenu's own gate says it.
-   *
-   * Keep and swap stay local and stay free, because they work on the menu
-   * that is already on screen rather than asking for a new one.
+   * A whole new run from the top, which is what Premium is buying here: the
+   * pudding ends the meal for everybody, and the difference is whether there
+   * is another meal to be had straight afterwards. Deliberately not the local
+   * scorer — somebody who typed "one of us is vegetarian" and pressed this
+   * used to get a menu chosen from tags, which knows nothing about that, with
+   * no sign anything had changed. askMenu's own gate is the honest answer if
+   * there is no go left.
    */
   $('menu-reroll').addEventListener('click', function () {
     Sound.tick();
     if (!menuAsked) return menuAsk();
-    // Whatever is pinned goes with the request, so "write another one" means
-    // "keep these, change the rest" rather than "throw it all away".
-    var keep = {};
-    menuNow.forEach(function (entry) {
-      if (menuKept[entry.course.id]) keep[entry.course.id] = entry.dish.name;
-    });
-    askMenu({ prompt: menuAsked.prompt, answers: menuAsked.answers, keep: keep });
+    askMenu({ prompt: menuAsked.prompt, answers: menuAsked.answers });
   });
 
   function openWeek(fresh) {
@@ -4073,8 +4310,6 @@
    * adjusting a menu, it is asking for a different one, and that is what the
    * allowance covers. Premium swaps as much as it likes.
    */
-  var MENU_SWAPS_FREE = 2;
-  var menuSwaps = 0;
 
   var gameBudget = 0;
   var gameSpent = 0;

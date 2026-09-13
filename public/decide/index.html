@@ -1391,9 +1391,9 @@
         <p class="mechanic">Feeding people</p>
         <h1 class="head-title">Tonight&rsquo;s menu</h1>
         <p class="head-sub">A starter, a main and a pudding that actually go together &mdash;
-        not three heavy things, and not three cold ones. Built from what you already like.
-        <b>Keep</b> the courses that are right and <b>swap</b> the ones that are not &mdash;
-        whatever is kept, the rest is chosen to go with it.</p>
+        not three heavy things, and not three cold ones. They come <b>one at a time</b>:
+        say yes to the starter before you are shown the main, and each one is chosen to go
+        with what you have already said yes to.</p>
       </header>
 
       <!-- ===================================================================
@@ -1460,12 +1460,75 @@
         <p class="fine">Working out what goes with what&hellip;</p>
       </div>
 
+      <!-- ===================================================================
+           ONE COURSE AT A TIME.
+
+           The menu used to land as three rows with Keep and Swap on each,
+           which meant the only way to use it was to sit there pressing Swap
+           until all three happened to be things you fancied. That is not
+           deciding, it is a fruit machine with extra steps, and it made the
+           model's work pointless: whatever it chose got shuffled away.
+
+           So it is a run now. The starter is shown on its own and has to be
+           said yes to before the main is shown at all, and the main before
+           the pudding. Each course is chosen against the ones already agreed,
+           so saying yes actually shapes what comes next — and a course that
+           has been agreed is gone, which is the bit that cannot be cheated.
+
+           Three switches per course on the free version, because a first
+           suggestion you hate should not end the whole thing; unlimited on
+           Premium.
+           =================================================================== -->
+      <div id="menu-run" hidden>
+        <!-- What has already been agreed. No buttons: that is the point. -->
+        <ol class="menu-courses menu-settled" id="menu-settled"></ol>
+
+        <div class="course-now" id="menu-now">
+          <p class="mechanic" id="menu-now-step">Course 1 of 3</p>
+          <p class="course-now-when" id="menu-now-when"></p>
+          <span class="course-now-art" id="menu-now-art" aria-hidden="true"></span>
+          <button class="course-now-name plain" id="menu-now-name" type="button"></button>
+          <p class="course-now-why" id="menu-now-why"></p>
+          <div class="course-now-acts">
+            <button class="go go-sm" id="menu-take" type="button">
+              <span class="go-label" id="menu-take-label">That&rsquo;s the starter</span>
+              <span class="go-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+              </span>
+            </button>
+            <button class="quiet" id="menu-switch" type="button">Something else</button>
+          </div>
+          <p class="fine" id="menu-switches"></p>
+        </div>
+      </div>
+
       <div id="menu-wrap-view" hidden>
         <ol class="menu-courses" id="menu-list"></ol>
         <p class="fine" id="menu-note"></p>
-        <div class="locate-actions">
-          <button class="quiet" id="menu-reroll">Write another one</button>
-          <button class="quiet" id="menu-restart">Start again</button>
+
+        <!-- Another go, for anybody who has one. -->
+        <div class="locate-actions" id="menu-again" hidden>
+          <button class="go go-sm" id="menu-reroll" type="button">
+            <span class="go-label">Go again</span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </button>
+          <button class="quiet" id="menu-restart" type="button">Change the answers</button>
+        </div>
+
+        <!-- No go left. Says when the next one is, not that this is not yours. -->
+        <div class="notice" id="menu-after" hidden>
+          <p class="mechanic">That is the meal</p>
+          <p id="menu-after-line"></p>
+          <div class="locate-actions">
+            <button class="go go-sm" data-unlock="The menu, whenever you like">
+              <span class="go-label">Premium goes again straight away</span>
+              <span class="go-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
