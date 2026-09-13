@@ -84,7 +84,37 @@ const byNewest = (a: Story, b: Story) => (b.published ?? 0) - (a.published ?? 0)
  * having a busy afternoon still cannot crowd the rest out.
  */
 function inRounds(lists: Story[][]): Story[] {
-  const sorted = lists.map((list) => list.slice().sort(byNewest))
+  /*
+   * ONE STORY, ONE ROW, however many feeds carry it.
+   *
+   * The Guardian files its restaurant reviews into both the food feed and the
+   * restaurants feed, so three of the same reviews came back twice, credited
+   * to two different "publishers". That was always true and always wrong; it
+   * became worth fixing when the page started being read in batches, because
+   * the two copies can now land in different ones — and a button that promises
+   * something else to read handing back a review you read four taps ago is the
+   * one thing it must not do.
+   *
+   * Keyed on the link, which is what "the same article" actually means: the
+   * titles differ between those two feeds (one carries a section suffix) and
+   * the dates can differ by a republish, so either would have missed it.
+   *
+   * First feed to carry it keeps it, so the winner is decided by the order in
+   * lib/feed.ts rather than by which publisher happened to answer first. The
+   * chip counts then match what is really on the page.
+   */
+  const claimed = new Set<string>()
+  const lists_ = lists.map((list) =>
+    list.filter((story) => {
+      const key = (story.link || '').trim()
+      if (!key) return true // nothing to compare; the row is still readable
+      if (claimed.has(key)) return false
+      claimed.add(key)
+      return true
+    }),
+  )
+
+  const sorted = lists_.map((list) => list.slice().sort(byNewest))
   const deepest = sorted.reduce((most, list) => Math.max(most, list.length), 0)
   const out: Story[] = []
   for (let at = 0; at < deepest; at += PER_SOURCE) {
