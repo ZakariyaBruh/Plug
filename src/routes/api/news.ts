@@ -30,7 +30,16 @@ import { AGENT, FEEDS, FEED_ACCEPT, type Story, parseFeed } from '#/lib/feed'
  * lead it, and a publisher having a busy afternoon cannot crowd the rest out.
  */
 const PER_SOURCE = 8
-const KEEP = 60
+
+/*
+ * KEEP is a ceiling on the response, not a page length. The reader is shown a
+ * batch at a time (see NEWS_PAGE in the game) and reads on from there, so what
+ * comes back here is the whole pile rather than a first screenful — seven
+ * publishers currently file well under this between them, and it exists so a
+ * publisher with a thousand-item feed cannot turn one response into a
+ * megabyte.
+ */
+const KEEP = 160
 const FEED_TIMEOUT_MS = 10000
 
 async function readFeed(feed: (typeof FEEDS)[number]): Promise<Story[]> {
@@ -54,6 +63,38 @@ async function readFeed(feed: (typeof FEEDS)[number]): Promise<Story[]> {
   return stories
 }
 
+const byNewest = (a: Story, b: Story) => (b.published ?? 0) - (a.published ?? 0)
+
+/*
+ * The whole pile, ordered so that any window into it is fair.
+ *
+ * PER_SOURCE used to be a cut: each publisher's newest eight, merged, sorted,
+ * truncated to KEEP, and everything past that thrown away. That was fine while
+ * the page was one long list. It stops being fine the moment the page is read
+ * in batches — "something else to read" can only mean something if there is
+ * something else, and what was left on the floor was roughly a third of what
+ * seven publishers had filed.
+ *
+ * So the same fairness, as an ORDER rather than a limit. Round one is every
+ * publisher's newest eight, sorted by date among themselves — which is exactly
+ * the list the page used to show, unchanged. Round two is everybody's next
+ * eight, and so on until the feeds are empty. Read a window of any size from
+ * anywhere in the result and it is drawn from as many publishers as had
+ * anything to give at that depth, newest first within the round; a publisher
+ * having a busy afternoon still cannot crowd the rest out.
+ */
+function inRounds(lists: Story[][]): Story[] {
+  const sorted = lists.map((list) => list.slice().sort(byNewest))
+  const deepest = sorted.reduce((most, list) => Math.max(most, list.length), 0)
+  const out: Story[] = []
+  for (let at = 0; at < deepest; at += PER_SOURCE) {
+    const round = sorted.map((list) => list.slice(at, at + PER_SOURCE)).flat()
+    round.sort(byNewest)
+    out.push(...round)
+  }
+  return out
+}
+
 export const Route = createFileRoute('/api/news')({
   server: {
     handlers: {
@@ -61,24 +102,13 @@ export const Route = createFileRoute('/api/news')({
         // One slow publisher must not hold up the rest, and one broken one
         // must not empty the page: each feed is settled on its own.
         const lists = await Promise.all(FEEDS.map((feed) => readFeed(feed).catch(() => [])))
-        const stories = lists
-          // Each publisher's own newest first, so a prolific one cannot push a
-          // quiet one off the page entirely.
-          .map((list) =>
-            list
-              .slice()
-              .sort((a, b) => (b.published ?? 0) - (a.published ?? 0))
-              .slice(0, PER_SOURCE),
-          )
-          .flat()
-          .sort((a, b) => (b.published ?? 0) - (a.published ?? 0))
-          .slice(0, KEEP)
+        const stories = inRounds(lists).slice(0, KEEP)
 
         return new Response(JSON.stringify({ stories }), {
           headers: {
             'Content-Type': 'application/json',
             // Fifteen minutes. Food writing does not move faster than that, and
-            // the alternative is four publishers taking a request per reader.
+            // the alternative is seven publishers taking a request per reader.
             'Cache-Control': 'public, max-age=900',
           },
         })

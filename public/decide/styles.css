@@ -3538,6 +3538,24 @@ body.is-beaming { overflow: hidden; }
 .story-sum { font-size: var(--t-sm); color: var(--ink-2); line-height: 1.6; max-width: 42rem; }
 .story-sum:empty { display: none; }
 
+/* Where in the feed you are, and the way on. The count sits above the button
+   on a narrow phone rather than beside it: "Stories 19-36 of 54" and a button
+   on one line at 390px leaves the button under the tap target. */
+.news-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2) var(--s4);
+  margin-top: var(--s5);
+  padding-top: var(--s4);
+  border-top: 1px solid var(--hair);
+}
+
+.news-bar .fine { margin: 0; }
+.news-bar .quiet { min-height: var(--tap); }
+.news-bar .quiet[disabled] { opacity: .5; cursor: progress; }
+
 .news-foot { margin-top: var(--s5); }
 
 /* ==========================================================================

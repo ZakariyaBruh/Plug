@@ -5863,7 +5863,7 @@
    * anything that is not plain http(s). There is no innerHTML in here except
    * to empty a list.
    */
-  var news = { stories: null, filter: '', open: null, busy: false, failed: false };
+  var news = { stories: null, filter: '', open: null, busy: false, failed: false, at: 0 };
 
   function renderNews() {
     // Fetched once per visit and then kept. The worker already caches for
@@ -5872,13 +5872,25 @@
     loadNews();
   }
 
-  function loadNews() {
+  /*
+   * Fetch the feed. `again` means there is already a list on screen.
+   *
+   * A reload keeps the old list up and the skeleton down: blanking a page
+   * somebody is reading, to replace it with the same stories a moment later,
+   * is a worse answer than a button that goes quiet for a second. It also
+   * means a failed reload costs nothing — the stories that were there are
+   * still there, and the error goes in a toast rather than over the page.
+   */
+  function loadNews(again, then) {
     if (news.busy) return;
     news.busy = true;
     news.failed = false;
-    $('news-loading').hidden = false;
-    $('news-wrap').hidden = true;
-    $('news-error').hidden = true;
+    if (!again) {
+      $('news-loading').hidden = false;
+      $('news-wrap').hidden = true;
+      $('news-error').hidden = true;
+    }
+    paintNewsBar();
 
     fetch('/api/news', { headers: { Accept: 'application/json' } })
       .then(function (res) {
@@ -5888,12 +5900,22 @@
       .then(function (data) {
         var list = (data && data.stories) || [];
         if (!list.length) throw new Error('no stories');
+        var had = news.stories ? news.stories.length : 0;
         news.stories = list;
         news.busy = false;
+        news.at = 0;
         paintNews();
+        if (then) then({ fresh: list.length !== had });
       })
       .catch(function () {
         news.busy = false;
+        if (again) {
+          // There is a readable page underneath. Leave it there.
+          Sound.reject();
+          toast('\u{1F4F0}', 'Could not reach the feeds',
+            'The stories you have are still here. Try again in a minute.');
+          return paintNews();
+        }
         news.failed = true;
         $('news-loading').hidden = true;
         $('news-wrap').hidden = true;
@@ -5902,6 +5924,21 @@
   }
 
   var NEWS_FREE = 6;   // headlines a Standard profile is shown
+
+  /*
+   * A BATCH, FOR A PROFILE THAT HAS THE WHOLE FEED.
+   *
+   * Premium used to get the lot in one list — fifty-odd headlines, which
+   * nobody reads. Worse, it left nothing for a reader who had been through it
+   * to do except leave, because "the lot" has no next.
+   *
+   * So it is read a batch at a time, with a button that moves on. Eighteen is
+   * about a screen and a half on a phone: long enough that it does not feel
+   * rationed, short enough that reaching the end of it is a thing that
+   * actually happens. Nothing is hidden — the line above the button says which
+   * stories these are out of how many, and the button walks the rest of them.
+   */
+  var NEWS_PAGE = 18;
 
   function paintNews() {
     if (!news.stories) return;
@@ -5932,11 +5969,44 @@
      * number in a chip is honest even when the list under it is cut.
      */
     var cut = !isPlus() && shown.length > NEWS_FREE;
-    var list = $('news-list');
-    list.innerHTML = '';
-    (cut ? shown.slice(0, NEWS_FREE) : shown).forEach(function (story, i) {
-      list.appendChild(storyRow(story, i));
+
+    /*
+     * Which stories this is. Standard gets the newest six of the filtered
+     * feed; Premium gets a batch, wherever it has read up to.
+     */
+    var batch;
+    news.pages = 1;
+    if (!isPlus()) {
+      batch = cut ? shown.slice(0, NEWS_FREE) : shown;
+    } else {
+      news.pages = Math.max(1, Math.ceil(shown.length / NEWS_PAGE));
+      // A filter that just got narrower can leave the window past the end.
+      if (news.at >= news.pages) news.at = 0;
+      batch = shown.slice(news.at * NEWS_PAGE, news.at * NEWS_PAGE + NEWS_PAGE);
+    }
+
+    /*
+     * Newest first inside the batch.
+     *
+     * The worker hands back the whole pile ordered in rounds — everybody's
+     * newest eight, then everybody's next eight — so that a window anywhere in
+     * it draws from as many publishers as had something to give. A batch
+     * boundary need not land on a round boundary, though, so a batch can
+     * straddle the join and read Tuesday, Monday, Tuesday. The order the
+     * worker chose decides WHICH stories are in this batch; the date decides
+     * what order they are read in.
+     */
+    batch = batch.slice().sort(function (a, b) {
+      return (b.published || 0) - (a.published || 0);
     });
+
+    var list = $('news-list');
+    // The open story is about to be thrown away with the rest of the list;
+    // holding a reference to a row that is no longer on the page is how the
+    // accordion ends up with two things open at once.
+    news.open = null;
+    list.innerHTML = '';
+    batch.forEach(function (story, i) { list.appendChild(storyRow(story, i)); });
 
     var more = $('news-more');
     more.hidden = !cut;
@@ -5946,6 +6016,40 @@
         ? 'One more story today, and the rest of every day, with Premium.'
         : held + ' more stories today, and the rest of every day, with Premium.';
     }
+
+    paintNewsBar(shown.length);
+  }
+
+  /*
+   * "Something else to read", and where in the feed you are.
+   *
+   * PREMIUM ONLY, and hidden rather than disabled for everybody else. A
+   * Standard profile is already being told, six stories down, exactly what it
+   * is not getting and what that costs; a second greyed-out control saying the
+   * same thing again is nagging, and this one would sit under a list that has
+   * been cut at six, where "something else to read" is not even the right
+   * offer. One pitch per screen.
+   *
+   * The line above it counts the whole filtered feed, so moving through it
+   * never feels like being handed a random selection: eighteen of fifty-four,
+   * then the next eighteen, and the button says when it has wrapped.
+   */
+  function paintNewsBar(total) {
+    var bar = $('news-bar');
+    if (!bar) return;
+    if (!isPlus() || !news.stories) { bar.hidden = true; return; }
+    bar.hidden = false;
+
+    var btn = $('news-fresh');
+    btn.disabled = news.busy;
+    btn.textContent = news.busy ? 'Finding more\u2026' : 'Something else to read';
+
+    if (total === undefined) return;
+    var from = news.at * NEWS_PAGE + 1;
+    var to = Math.min(total, from + NEWS_PAGE - 1);
+    $('news-at').textContent = news.pages > 1
+      ? 'Stories ' + from + '\u2013' + to + ' of ' + total
+      : total === 1 ? 'One story' : 'All ' + total + ' of today\u2019s stories';
   }
 
   // One chip per publisher, with how many they filed. Tapping the one that is
@@ -5975,6 +6079,10 @@
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     btn.addEventListener('click', function () {
       news.filter = on ? '' : value;
+      // Back to the newest of whatever was just picked. Landing on batch three
+      // of a publisher because that is where you were in the merged feed is
+      // not a filter, it is a shuffle.
+      news.at = 0;
       Sound.tick();
       paintNews();
     });
@@ -6089,6 +6197,66 @@
     news.stories = null;
     loadNews();
   });
+
+  /*
+   * READ ON, and what happens at the end of the pile.
+   *
+   * Two different jobs behind one button, because from the reader's side they
+   * are the same request. While there is another batch it moves to it: no
+   * network, instant, and genuinely different writing rather than the same
+   * headlines re-sorted. At the end of the pile it goes back to the feeds
+   * instead — the worker caches for a quarter of an hour, so a reader who has
+   * got through everything may well be handed something that was not there
+   * when they arrived, and if nothing has been filed since they are told they
+   * are back at the top rather than left wondering why it looks familiar.
+   *
+   * A dead end would have been the easy version of this, and it is the one
+   * thing the button must never be.
+   */
+  $('news-fresh').addEventListener('click', function () {
+    if (news.busy || !news.stories) return;
+
+    if (news.at + 1 < (news.pages || 1)) {
+      Sound.tick();
+      news.at += 1;
+      paintNews();
+      scrollNewsUp();
+      return;
+    }
+
+    /*
+     * At the end of the pile, so go back to the publishers. Said afterwards
+     * rather than on a timer, so the words describe the list that is actually
+     * on screen — and only one page deep, because a reader who has been
+     * through several batches is told they have wrapped, while a reader whose
+     * whole feed fits in one batch is told there is nothing new yet. Those are
+     * different facts and the same button produced both.
+     */
+    var oneBatch = (news.pages || 1) < 2;
+    Sound.tick();
+    loadNews(true, function (result) {
+      if (view !== 'news') return;
+      scrollNewsUp();
+      if (oneBatch && !result.fresh) {
+        toast('\u{1F4F0}', 'Nothing new yet',
+          'You have read everything the publishers have filed. There will be more ' +
+          'by this evening.');
+      } else {
+        toast('\u{1F4F0}', 'Back to the top', 'Newest first again.');
+      }
+    });
+  });
+
+  /* The top of the list, not the top of the page: the header has not moved. */
+  function scrollNewsUp() {
+    var list = $('news-sources') || $('news-list');
+    if (!list) return;
+    try {
+      list.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' });
+    } catch (e) {
+      list.scrollIntoView(true);
+    }
+  }
 
   // One row, built once. Both the dish search and the aggregator list the same
   // thing in the same shape, and two copies of this markup was two places to
@@ -6814,6 +6982,11 @@
       renderProfile();
       renderIntro();
       repaintVaults();
+      // The news page reads isPlus() to decide how much of the feed to show
+      // and whether to offer the rest of it. Somebody sitting on that page
+      // when their status lands would otherwise keep the free six, and the
+      // only way out of it was to leave the tab and come back.
+      if (news.stories) paintNews();
       if (announce && status.hasPremium && !was) {
         Sound.win();
         Confetti.burst({ y: window.innerHeight * 0.35 });
