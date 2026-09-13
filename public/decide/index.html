@@ -55,68 +55,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 
-<!-- Structured data for the front door.
-
-     This lived on the React homepage at / until that became a redirect to
-     here. It has to move with the front door rather than stay behind it: the
-     name a search result shows comes from WebSite data on whatever page is
-     the site's home, and the WebApplication entity is what describes the app
-     itself. Left on a page that only redirects, neither would be read.
-
-     The counts are written out because this file is static and nothing
-     substitutes into it — but the build fails if the dish count here stops
-     matching data.js, same guard as the rest of the app (see vite.config.ts). -->
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "morsels45",
-  "alternateName": "morsels45 — what should you eat?",
-  "url": "https://morsels45-app.whop.site"
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "morsels45",
-  "url": "https://morsels45-app.whop.site",
-  "description": "A handful of either-or questions and you have an answer. 133 dishes, no sign-up, and it still works with no signal.",
-  "image": "https://morsels45-app.whop.site/site-card.png",
-  "applicationCategory": "LifestyleApplication",
-  "operatingSystem": "Any",
-  "browserRequirements": "Requires JavaScript.",
-  "publisher": {
-    "@type": "Organization",
-    "name": "morsels45",
-    "url": "https://morsels45-app.whop.site",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "https://morsels45-app.whop.site/icon-512.png",
-      "width": 512,
-      "height": 512
-    }
-  },
-  "offers": [
-    {
-      "@type": "Offer",
-      "name": "Standard",
-      "price": "0",
-      "priceCurrency": "USD",
-      "description": "The Decide game, all 133 dishes, browse and search, XP and streaks."
-    },
-    {
-      "@type": "Offer",
-      "name": "Premium",
-      "price": "3.45",
-      "priceCurrency": "USD",
-      "description": "Always avoid, the extra modes, cook mode, the shared browser, unlimited saves. Three days free, then $3.45 a month.",
-      "url": "https://morsels45-app.whop.site/premium"
-    }
-  ]
-}
-</script>
-
 <!-- The Whop pixel is NOT installed here, and that is deliberate.
 
      Whop's hosting injects it into every response itself, at request time:
@@ -247,19 +185,6 @@
     </p>
 
     <p class="landing-free">No account. No email. Nothing to fill in.</p>
-
-    <!-- The rest of the site.
-
-         / used to be a marketing page that linked to all of these, and it is
-         now a redirect to this screen. Without this row those pages would be
-         reachable only from each other — orphaned from the front door, which
-         is the exact problem the /eat hub was built to fix once already. -->
-    <nav class="landing-more" aria-label="More about morsels45">
-      <a href="/how-it-works">How it works</a>
-      <a href="/eat">All 133 dishes</a>
-      <a href="/premium">Premium</a>
-      <a href="/faq">Questions</a>
-    </nav>
 
     <!-- Real numbers, read out of the catalogue at load rather than written
          here, so they cannot drift into being a claim nobody checks. -->
