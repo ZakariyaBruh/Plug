@@ -88,11 +88,14 @@ function EatIndex() {
               game — a handful of either-ors and it picks one for you.
             </p>
             <div className="mt-8">
+              {/* A link into the app, so it is named for going there rather
+                  than for the thing the app does — same reasoning as the
+                  homepage. */}
               <a
                 href="/decide/"
                 className="inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
               >
-                Decide for me
+                Play now
               </a>
             </div>
           </header>

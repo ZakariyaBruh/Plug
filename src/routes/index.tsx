@@ -133,12 +133,21 @@ function HomePage() {
               A few easy either-ors — sweet or savoury, hot or cold, hands or cutlery — and
               we&rsquo;ll work out what you actually feel like. Usually in about eight questions.
             </p>
+            {/* "Play now", not "Decide for me".
+                This page and the app's own opening screen looked like the same
+                screen and said the same words: the same headline, the same
+                either-ors paragraph, the same counts — and the same button. So
+                the button here read as the thing that does the deciding, when
+                it is a link to somewhere else that does it, and there was no
+                way to tell from looking which of the two pages was the app.
+                "Decide for me" still exists, once, on the screen where it is
+                literally true. Here it is an invitation in, and says so. */}
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <a
                 href="/decide/"
                 className="inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
               >
-                Decide for me
+                Play now
               </a>
               <Link
                 to="/premium"
@@ -288,7 +297,7 @@ function HomePage() {
               href="/decide/"
               className="mt-8 inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
             >
-              Decide for me
+              Play now
             </a>
           </div>
         </section>
