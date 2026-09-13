@@ -7951,24 +7951,111 @@
    * the mood for, and it spins what is left. Two has to survive, because a
    * shortlist of one is not a shortlist and there is nothing to spin.
    */
-  var spin = { pool: [], out: [], running: false, stopping: 0, at: 0 };
+  var SPIN_SIZE = 8;
+
+  /*
+   * Small numbers as words, because this screen says "one in eight" in one
+   * breath and would otherwise say "one in 5" in the next. Only ever asked
+   * about a shortlist, so it stops where a shortlist does.
+   */
+  var SPIN_WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
+  function spinWord(n) { return SPIN_WORDS[n] || String(n); }
+  function spinWordCap(n) {
+    var w = spinWord(n);
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }
+
+  /*
+   * `reserve` is everything the ranking had to offer past the eight on the
+   * table, and `dealt` is every dish that has been on it this sitting.
+   *
+   * Both exist so that striking a dish out can mean "and give me a different
+   * one" rather than only "and leave me with fewer". Cutting the list down was
+   * the only move there was: if none of the eight appealed, the whole mode had
+   * nothing for you but Put them all back, which deals the same eight again.
+   * The ranking knows about dozens more.
+   *
+   * `dealt` is by name rather than by object because a replacement must never
+   * be something already turned down earlier in the same sitting — getting the
+   * dish you just struck handed back to you is the specific thing that makes a
+   * shuffle feel rigged.
+   */
+  var spin = { pool: [], out: [], reserve: [], dealt: {}, running: false, stopping: 0, at: 0 };
 
   function startSpin() {
     if (!premium('Shortlist')) return;
     hideLanding();
-    var ranked = favouredDishes();
-    var pool = ranked.slice(0, 8).map(function (r) { return r.item; });
-    if (pool.length < 4) {
-      pool = shuffled(Data.ITEMS, Math.random).slice(0, 8);
-    }
-    spin.pool = pool;
+    var ranked = favouredDishes().map(function (r) { return r.item; });
+    if (ranked.length < SPIN_SIZE) ranked = shuffled(Data.ITEMS, Math.random);
+
+    spin.pool = ranked.slice(0, SPIN_SIZE);
+    spin.reserve = ranked.slice(SPIN_SIZE);
     spin.out = [];
+    spin.dealt = {};
+    spin.pool.forEach(function (d) { spin.dealt[d.name] = true; });
 
     setView('decide');
     setPanel('spin');
     $('spin-name').textContent = 'Eight on the table';
-    $('spin-face').textContent = pool[0].icon;
+    $('spin-face').textContent = spin.pool[0].icon;
     paintSpin();
+  }
+
+  /*
+   * A dish that has not been on the table this sitting.
+   *
+   * The ranking first, because these are meant to be dishes you would plausibly
+   * eat; the rest of the catalogue after it, because running out of ranking is
+   * not a reason to stop being able to swap. Returns null only when the whole
+   * catalogue has been through, which is the one case worth saying out loud.
+   */
+  function spinFresh() {
+    var i;
+    for (i = 0; i < spin.reserve.length; i++) {
+      if (!spin.dealt[spin.reserve[i].name]) return spin.reserve.splice(i, 1)[0];
+    }
+    var rest = shuffled(Data.ITEMS, Math.random);
+    for (i = 0; i < rest.length; i++) {
+      if (!spin.dealt[rest[i].name]) return rest[i];
+    }
+    return null;
+  }
+
+  /*
+   * Swap the struck dishes for ones that have not been seen.
+   *
+   * This is the move the mode was missing. Striking out narrows; this refills,
+   * so the eight on the table end up being eight you actually chose rather
+   * than eight you were dealt and grudgingly accepted. Keeping the list at
+   * eight also keeps the odds legible: whatever you do, it is one in however
+   * many are still standing, and the status line says so.
+   */
+  function replaceStruck() {
+    if (spin.running || !spin.out.length) return;
+
+    var swapped = 0;
+    spin.pool = spin.pool.map(function (dish) {
+      if (spin.out.indexOf(dish) < 0) return dish;
+      var next = spinFresh();
+      if (!next) return dish;                 // nothing left to offer
+      spin.dealt[next.name] = true;
+      swapped += 1;
+      return next;
+    });
+
+    if (!swapped) {
+      Sound.reject();
+      return toast('\u{1F37D}\u{FE0F}', 'That is the whole catalogue',
+        'Every dish has been on the table this go. Put them all back to start over.');
+    }
+
+    spin.out = [];
+    Sound.reveal();
+    paintSpin();
+    // Named, because eight names quietly changing is hard to notice and the
+    // whole point is that the press did something.
+    toast('\u{1F504}', swapped === 1 ? 'One swapped out' : swapped + ' swapped out',
+      'Fresh ones in their place, none you have already turned down.');
   }
 
   function spinLeft() {
@@ -7992,7 +8079,8 @@
         if (out) spin.out = spin.out.filter(function (d) { return d !== dish; });
         else if (spinLeft().length > 2) spin.out.push(dish);
         else return toast('\u{1F914}', 'Keep at least two',
-          'A shortlist of one is just a dish.');
+          'A shortlist of one is just a dish. Swap the struck ones out and cut ' +
+          'again if none of these are it.');
         Sound.tick();
         paintSpin();
       };
@@ -8008,12 +8096,32 @@
     // "Spin all eight" — the one label that must not lie mid-spin.
     if (spin.running) return;
 
+    /*
+     * THE ODDS, OUT LOUD.
+     *
+     * Striking a dish out changed the chances and said nothing about it, so
+     * the one consequence of the only interaction the screen had was invisible.
+     * "One in five" is the whole reason to bother whittling, and it is the
+     * difference between tidying a list and shortening the odds.
+     */
     $('spin-status').textContent = spin.out.length
-      ? 'Tap any back in, then stop the reel on the one you want.'
-      : 'Eight on the table. Tap out anything you are not in the mood for, then stop the reel yourself.';
+      ? 'One in ' + spinWord(left) + ' now. Swap the struck ones out, tap any back ' +
+        'in, or stop the reel on the one you want.'
+      : spinWordCap(spin.pool.length) + ' on the table, one in ' +
+        spinWord(spin.pool.length) + ' each. Tap out anything you are not in the ' +
+        'mood for \u2014 they get replaced \u2014 then stop the reel yourself.';
     $('spin-go-label').textContent = left === spin.pool.length
       ? 'Spin all ' + left
       : 'Spin the ' + left;
+
+    // Both only mean anything with something struck out.
+    var swap = $('spin-swap');
+    swap.hidden = !spin.out.length;
+    if (spin.out.length) {
+      swap.textContent = spin.out.length === 1
+        ? 'Swap that one for a different dish'
+        : 'Swap those ' + spin.out.length + ' for different dishes';
+    }
     $('spin-refill').hidden = !spin.out.length;
     paintThinNote($('spin-thin'), 'these are ranked on what you have liked before');
   }
@@ -8134,6 +8242,7 @@
 
   $('spin-btn').addEventListener('click', startSpin);
   $('spin-go').addEventListener('click', runSpin);
+  $('spin-swap').addEventListener('click', replaceStruck);
   $('spin-refill').addEventListener('click', function () {
     spin.out = [];
     Sound.tick();

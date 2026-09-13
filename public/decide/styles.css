@@ -4080,6 +4080,14 @@ body.is-beaming { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) { .menu-course { animation: none; } }
 
+/* The line under the finished menu.
+   .fine carries no margin — it is usually the last thing in a block, where
+   the block's own padding spaces it. Here it is followed by either the
+   "go again" row or the bordered notice, and with nothing between them the
+   sentence sat directly on the notice's top rule, reading as that panel's
+   heading rather than as the note belonging to the list above it. */
+#menu-note { margin: 0 0 var(--s5); }
+
 /* ---------------------------------------------------------- the run */
 /* Courses already agreed to, above the one being asked about. Smaller and
    dimmer than the course in hand: they are context now, not a choice, and

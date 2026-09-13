@@ -763,6 +763,10 @@
               </span>
             </button>
           </div>
+          <!-- The move the mode was missing: striking a dish out narrows the
+               list, this refills it with ones you have not seen, so the eight
+               end up being eight you chose rather than eight you were dealt. -->
+          <button class="plain" id="spin-swap" hidden>Swap those for different dishes</button>
           <button class="plain" id="spin-refill" hidden>Put them all back</button>
           <button class="plain" id="spin-cancel">Never mind, take me back</button>
         </div>
@@ -1534,7 +1538,7 @@
           <p id="menu-after-line"></p>
           <div class="locate-actions">
             <button class="go go-sm" data-unlock="The menu, whenever you like">
-              <span class="go-label">Premium goes again straight away</span>
+              <span class="go-label">Go again with Premium</span>
               <span class="go-arrow" aria-hidden="true">
                 <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
               </span>
@@ -1551,7 +1555,7 @@
         <p id="menu-spent-line"></p>
         <div class="locate-actions">
           <button class="go go-sm" data-unlock="The menu, whenever you like">
-            <span class="go-label">Premium writes as many as you like</span>
+            <span class="go-label">Write as many as you like</span>
             <span class="go-arrow" aria-hidden="true">
               <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
             </span>
