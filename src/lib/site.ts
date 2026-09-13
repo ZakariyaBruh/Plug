@@ -114,11 +114,11 @@ export function pageHead(page: PageHead) {
  * amount written the way a person reads it.
  */
 export const TRIAL_DAYS = 3
-export const PRICE_VALUE = 5.99
-export const PRICE = '$5.99'
+export const PRICE_VALUE = 4.99
+export const PRICE = '$4.99'
 export const PRICE_MONTHLY = `${PRICE}/month`
 
-/** "3 days free, then $5.99/month" — the whole offer, for body copy. */
+/** "3 days free, then $4.99/month" — the whole offer, for body copy. */
 export const OFFER = `${TRIAL_DAYS} days free, then ${PRICE_MONTHLY}`
 /** For a title or a button, where the price alone is the wrong emphasis. */
 export const OFFER_SHORT = `${TRIAL_DAYS} days free`
@@ -127,7 +127,7 @@ export const OFFER_SHORT = `${TRIAL_DAYS} days free`
  *
  * The plan is set to tax-inclusive with tax collection and adaptive pricing
  * both on, so what somebody actually pays depends on where they are: the total
- * is $5.99 in some places and a little over in others. Which rule produces
+ * is $4.99 in some places and a little over in others. Which rule produces
  * which total is Whop's to decide and not knowable from here, so this promises
  * only what is certainly true — the number on the checkout page is the number
  * that gets charged.

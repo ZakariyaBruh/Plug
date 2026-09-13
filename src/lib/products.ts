@@ -5,7 +5,7 @@ export const PREMIUM_PRODUCT_ID = 'prod_cq5YnoQQr6BGa'
 /*
  * THE PLAN PEOPLE BUY, AND WHY IT IS NOT THE FIRST ONE.
  *
- * Premium went from $3.45 to $5.99 a month. Whop will not reprice a plan that
+ * Premium went from $3.45 to $4.99 a month. Whop will not reprice a plan that
  * has sold memberships — it answers HTTP 400, "You cannot change the renewal
  * price of a plan that has sold memberships" — so the price lives on a second
  * plan rather than on the original.
