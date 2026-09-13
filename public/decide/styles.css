@@ -3456,6 +3456,10 @@ body.is-beaming { overflow: hidden; }
 .chat-input:focus { outline: 2px solid var(--amber); outline-offset: 2px; border-color: transparent; }
 
 .chat-form .go { flex: none; }
+/* The free-questions count. Amber because it is the one line here somebody
+   needs to have read, and this app uses amber for the things that cost. */
+.chat-left { margin-top: var(--s4); color: var(--amber); }
+
 .chat-foot { margin-top: var(--s4); }
 
 @media (max-width: 30rem) {
@@ -4084,6 +4088,23 @@ body.is-beaming { overflow: hidden; }
 .menu-course.is-kept .course-swap { opacity: .5; }
 
 @media (prefers-reduced-motion: reduce) { .menu-course { animation: none; } }
+
+/* The two ways into the menu, side by side on anything but a small phone.
+   Reuses .mode-card so they read as the same kind of choice as the games. */
+.menu-ways {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--s3);
+  margin: var(--s5) 0;
+}
+
+.menu-left { margin-top: var(--s4); color: var(--amber); }
+
+#menu-questions .q-title, #menu-prompt .q-title { margin: var(--s3) 0 var(--s4); }
+#menu-prompt .chat-form { margin: var(--s4) 0; }
+#menu-questions .q-step { margin-bottom: var(--s2); }
+
+.menu-why { grid-area: note; font-size: var(--t-sm); color: var(--ink-2); }
 
 /* --------------------------------------------------------- something new */
 .picks-list { list-style: none; margin: var(--s4) 0 var(--s5); padding: 0; }

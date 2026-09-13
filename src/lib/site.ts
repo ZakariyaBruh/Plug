@@ -156,6 +156,9 @@ export const STANDARD = [
   'The 20-question Decide game',
   'Endless — two dishes and a clock. Every pick buys time back, and buys back less each time. 200 picks a day',
   `All ${DISH_COUNT} dishes in the catalogue`,
+  'Ask anything — three free questions, then it is Premium',
+  'Food news — the latest six headlines a day',
+  'Write me a menu — one every couple of days',
   'Browse, search, and filter the menu',
   'XP, levels, streaks, and badges',
   'Endless races your own best run — it tells you, mid-run, whether you are ahead of it',
@@ -224,7 +227,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Somewhere that serves it', 'Find the dish near you, matched on what a place actually sells rather than on being open and close by.'],
       ['A side with that', 'A drink or a light plate that actually sits next to the answer.'],
       ['A planned week', 'Seven dishes, no two alike.'],
-      ['Write me a menu', 'A starter, a main and a pudding that belong on the same table — not three heavy things, and not three cold ones. Each course scored against the others so the evening goes somewhere, and every one has its recipe behind it.'],
+      ['Write me a menu', 'A starter, a main and a pudding that belong on the same table — not three heavy things, and not three cold ones. Tell it the situation in your own words, or answer three quick questions, and it picks all three from the catalogue with a reason for each. Standard gets one every couple of days; Premium as many as you like.'],
     ],
   },
   {

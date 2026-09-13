@@ -2634,14 +2634,6 @@
   var menuNow = [];
   var menuKept = {};
 
-  function keptDishes() {
-    var keep = {};
-    menuNow.forEach(function (entry) {
-      if (menuKept[entry.course.id]) keep[entry.course.id] = entry.dish;
-    });
-    return keep;
-  }
-
   /*
    * One course, with the two things you can do to it.
    *
@@ -2669,7 +2661,13 @@
 
     li.querySelector('.menu-when').textContent = entry.course.label;
     li.querySelector('.menu-art').textContent = entry.dish.icon;
-    li.querySelector('.menu-note').textContent = entry.dish.blurb;
+    /*
+     * The model's reason, when there is one, in place of the dish's own
+     * blurb. The blurb says what the dish is; the reason says why it is in
+     * THIS meal, which is the only thing asking a model bought us. A locally
+     * scored menu has no reason to give and falls back to the blurb.
+     */
+    li.querySelector('.menu-note').textContent = entry.why || entry.dish.blurb;
 
     var name = li.querySelector('.menu-name');
     name.textContent = entry.dish.name;
@@ -2701,7 +2699,7 @@
   /* Draw a menu that has already been chosen. Chooses nothing itself. */
   function paintMenu(menu) {
     menuNow = menu.map(function (e) {
-      return { course: e.course, dish: e.dish, kept: !!menuKept[e.course.id] };
+      return { course: e.course, dish: e.dish, kept: !!menuKept[e.course.id], why: e.why || '' };
     });
 
     var list = $('menu-list');
@@ -2741,6 +2739,21 @@
       return toast('\u{1F37D}\u{FE0F}', 'Nothing else fits',
         'Your rules have left only one thing that works for that course.');
     }
+
+    /*
+     * Carry the model's reasons across for the courses that did not move.
+     * buildMenu is the local scorer and has no reasons to give, so without
+     * this a swap would quietly strip the explanation off the two courses
+     * nobody touched — and they are still in this meal for exactly the reason
+     * that was printed under them a second ago. The swapped one gets no
+     * reason, correctly: the model never saw this dish.
+     */
+    var whyBefore = {};
+    menuNow.forEach(function (entry) { whyBefore[entry.course.id] = entry.why || ''; });
+    next.forEach(function (entry) {
+      if (entry.course.id !== id) entry.why = whyBefore[entry.course.id] || '';
+    });
+
     paintMenu(next);
   }
 
@@ -2756,32 +2769,219 @@
    * Called from setView, so every route in — the rail, the button on the
    * opening screen, a reload with the section already open — lands here.
    */
-  function renderMenuView() {
-    var locked = !isPlus();
-    $('menu-locked').hidden = !locked;
-    $('menu-wrap-view').hidden = locked;
-    $('menu-empty').hidden = true;
-    if (locked) return;
+  /* ------------------------------------------------------ the menu, asked for */
+  /*
+   * ONE GO EVERY COUPLE OF DAYS ON STANDARD.
+   *
+   * This section used to be Premium or nothing, which meant a Standard
+   * profile could see the pitch for it and never once find out whether it was
+   * any good. A feature nobody has used is a feature nobody misses. One go
+   * every forty-eight hours is enough to be worth having and not enough to be
+   * the reason to not pay.
+   *
+   * Stored as the timestamp of the last menu rather than a count, because
+   * that is the only fact needed: a count would also need resetting, and
+   * something has to decide when, and that is a second thing to get wrong.
+   *
+   * Spent is not the same state as locked, and they say different things. A
+   * spent profile has had the thing and is told when the next one is due; a
+   * locked one never had it. Being told "this is not for you" when you used
+   * it yesterday is the kind of wrong that reads as a bug.
+   */
+  var MENU_EVERY_MS = 2 * 24 * 60 * 60 * 1000;
 
-    rollMenu(true);
+  function menuNextAt() {
+    return (progress.state.menuAt || 0) + MENU_EVERY_MS;
+  }
+
+  function menuAllowed() {
+    return isPlus() || Date.now() >= menuNextAt();
+  }
+
+  /* "in about five hours", "tomorrow" — a wait nobody has to do arithmetic on. */
+  function menuWaitWords() {
+    var ms = menuNextAt() - Date.now();
+    if (ms <= 0) return 'now';
+    var hours = Math.ceil(ms / 3600000);
+    if (hours <= 1) return 'in under an hour';
+    if (hours < 24) return 'in about ' + hours + ' hours';
+    var days = Math.round(hours / 24);
+    return days <= 1 ? 'tomorrow' : 'in ' + days + ' days';
+  }
+
+  function paintMenuLeft() {
+    var el = $('menu-left');
+    if (isPlus()) { el.hidden = true; return; }
+    el.hidden = false;
+    el.textContent = 'One menu every couple of days on the free version. ' +
+      'Premium writes as many as you like.';
+  }
+
+  /* Every panel in this section, so each state can be set by naming it. */
+  function menuPanels(which) {
+    ['menu-ask', 'menu-waiting', 'menu-wrap-view', 'menu-spent', 'menu-error', 'menu-empty']
+      .forEach(function (id) { $(id).hidden = id !== which; });
+  }
+
+  function renderMenuView() {
+    if (!menuAllowed()) {
+      menuPanels('menu-spent');
+      $('menu-spent-line').textContent =
+        'You have had this one. The next free menu is ready ' + menuWaitWords() + '.';
+      return;
+    }
+    menuAsk();
+  }
+
+  /* Back to the two ways in. */
+  function menuAsk() {
+    menuPanels('menu-ask');
+    $('menu-ways').hidden = false;
+    $('menu-questions').hidden = true;
+    $('menu-prompt').hidden = true;
+    paintMenuLeft();
   }
 
   /*
-   * Choose a menu and draw it. `fresh` throws away what is kept — that is
-   * what arriving at the section means; a reroll does not.
+   * The questions. Three, and none of them about food — the catalogue already
+   * knows what this person likes (see favouredDishes). What it cannot know is
+   * the room: how many chairs, how much effort is on offer, what kind of
+   * evening it is meant to be.
    */
-  function rollMenu(fresh) {
-    if (fresh) menuKept = {};
-    var menu = buildMenu({ keep: keptDishes() });
-    if (!menu.length) {
-      $('menu-wrap-view').hidden = true;
-      $('menu-empty').hidden = false;
-      return;
-    }
-    $('menu-wrap-view').hidden = false;
-    $('menu-empty').hidden = true;
-    paintMenu(menu);
+  var MENU_QUESTIONS = [
+    { key: 'who', text: 'Who is eating?',
+      options: ['Just me', 'Two of us', 'A few of us', 'A houseful'] },
+    { key: 'effort', text: 'How much effort is on offer?',
+      options: ['Barely any', 'A normal amount', 'I want a project'] },
+    { key: 'evening', text: 'And what kind of evening?',
+      options: ['Comfort', 'Impressing someone', 'Light and fresh', 'Proper feast'] }
+  ];
+
+  var menuQ = { at: 0, answers: {} };
+
+  function menuStartQuestions() {
+    menuQ = { at: 0, answers: {} };
+    menuPanels('menu-ask');
+    $('menu-ways').hidden = true;
+    $('menu-prompt').hidden = true;
+    $('menu-questions').hidden = false;
+    paintMenuQuestion();
   }
+
+  function paintMenuQuestion() {
+    var q = MENU_QUESTIONS[menuQ.at];
+    $('menu-q-step').textContent = 'Question ' + (menuQ.at + 1) + ' of ' + MENU_QUESTIONS.length;
+    $('menu-q-title').textContent = q.text;
+    var wrap = $('menu-q-options');
+    wrap.innerHTML = '';
+    q.options.forEach(function (opt) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'knob';
+      btn.textContent = opt;
+      btn.addEventListener('click', function () {
+        Sound.tick();
+        menuQ.answers[q.key] = opt;
+        menuQ.at += 1;
+        if (menuQ.at < MENU_QUESTIONS.length) return paintMenuQuestion();
+        askMenu({ answers: menuQ.answers });
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  function menuStartPrompt() {
+    menuPanels('menu-ask');
+    $('menu-ways').hidden = true;
+    $('menu-questions').hidden = true;
+    $('menu-prompt').hidden = false;
+    focusQuietly($('menu-prompt-input'));
+  }
+
+  /*
+   * Ask the model, and fall back to the app's own scorer if it will not answer.
+   *
+   * The go is spent on a menu that arrives, not on a request that is made: a
+   * model that times out has cost this person nothing and should cost them
+   * nothing. The fallback does not spend it either — a locally scored menu is
+   * not the thing they asked for.
+   */
+  var menuAsked = null;
+
+  function askMenu(ask) {
+    menuAsked = ask;
+    menuPanels('menu-waiting');
+
+    var liked = pickedHistory();
+    fetch('/api/menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        prompt: ask.prompt || '',
+        answers: ask.answers || null,
+        liked: liked.liked,
+        avoid: liked.avoid
+      })
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (body) {
+        return { ok: res.ok, body: body };
+      });
+    }).catch(function () {
+      return { ok: false, body: {} };
+    }).then(function (answer) {
+      var courses = answer.ok && answer.body && answer.body.courses;
+      if (!courses || !courses.length) return menuFellBack();
+
+      var menu = [];
+      courses.forEach(function (c) {
+        var course = COURSES.filter(function (x) { return x.id === c.course; })[0];
+        var dish = dishByName(c.name);
+        if (course && dish) menu.push({ course: course, dish: dish, kept: false, why: c.why || '' });
+      });
+      if (menu.length < 2) return menuFellBack();
+
+      if (!isPlus()) {
+        progress.state.menuAt = Date.now();
+        progress.save();
+      }
+      menuPanels('menu-wrap-view');
+      menuKept = {};
+      paintMenu(menu);
+    });
+  }
+
+  /*
+   * The model did not answer, so the app answers. Says so, because a menu
+   * that ignores what somebody just typed and does not admit it is worse than
+   * an error — they would think it had read them and disagreed.
+   */
+  function menuFellBack() {
+    var menu = buildMenu({ keep: {} });
+    if (!menu.length) return menuPanels('menu-empty');
+    menuPanels('menu-wrap-view');
+    menuKept = {};
+    paintMenu(menu);
+    $('menu-note').textContent =
+      'Written from what you like rather than from what you said — the model did not ' +
+      'answer, and this has not used up your go.';
+  }
+
+  $('menu-way-questions').addEventListener('click', function () { Sound.tick(); menuStartQuestions(); });
+  $('menu-way-prompt').addEventListener('click', function () { Sound.tick(); menuStartPrompt(); });
+  $('menu-q-back').addEventListener('click', function () { Sound.tick(); menuAsk(); });
+  $('menu-prompt-back').addEventListener('click', function () { Sound.tick(); menuAsk(); });
+  $('menu-restart').addEventListener('click', function () { Sound.tick(); menuAsk(); });
+  $('menu-retry').addEventListener('click', function () {
+    Sound.tick();
+    if (menuAsked) askMenu(menuAsked); else menuAsk();
+  });
+
+  $('menu-prompt-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var text = $('menu-prompt-input').value.trim();
+    if (!text) return;
+    askMenu({ prompt: text });
+  });
 
   function openMenu() {
     hideLanding();
@@ -2789,7 +2989,26 @@
   }
 
   $('menu-btn').addEventListener('click', function () { Sound.tick(); openMenu(); });
-  $('menu-reroll').addEventListener('click', function () { Sound.tick(); rollMenu(false); });
+
+  /*
+   * "Write another one" re-asks, with whatever was said the first time.
+   *
+   * Deliberately not the local scorer. It was, and that quietly swapped the
+   * answer for a different kind of answer: somebody who typed "one of us is
+   * vegetarian" and pressed this got a menu chosen from tags, which knows
+   * nothing about that, with no sign that anything had changed. If a fresh
+   * one cannot be had — a Standard profile inside its two days — then saying
+   * so is the honest answer, and askMenu's own gate says it.
+   *
+   * Keep and swap stay local and stay free, because they work on the menu
+   * that is already on screen rather than asking for a new one.
+   */
+  $('menu-reroll').addEventListener('click', function () {
+    Sound.tick();
+    if (!menuAllowed()) return renderMenuView();
+    if (menuAsked) return askMenu(menuAsked);
+    menuAsk();
+  });
 
   function openWeek(fresh) {
     if (!premium('The week plan')) return;
@@ -5041,6 +5260,7 @@
 
   function renderChat() {
     paintChatSeeds();
+    paintChatLeft();
     // Deliberately not focused: on a phone, focus throws the keyboard up over
     // half the screen, including the chips that mean you need not type at all.
   }
@@ -5078,11 +5298,48 @@
     return li;
   }
 
+  /*
+   * THE FREE THREE.
+   *
+   * The assistant costs money per question — a real model behind a real API
+   * — and it was the one thing in here a Standard profile could use without
+   * limit. Three is a trial: enough to find out whether it answers anything
+   * useful, not enough to be the product.
+   *
+   * Counted for life rather than per day, deliberately. Three a day is not a
+   * trial, it is a free tier, and somebody who wants this every day is
+   * somebody the paid version is for.
+   */
+  var CHAT_FREE = 3;
+
+  function chatLeft() {
+    return Math.max(0, CHAT_FREE - (progress.state.chatAsks || 0));
+  }
+
+  /* Said before the last one is spent, not after it. */
+  function paintChatLeft() {
+    var el = $('chat-left');
+    if (isPlus()) { el.hidden = true; return; }
+    var left = chatLeft();
+    el.hidden = false;
+    el.textContent = left > 0
+      ? left + (left === 1 ? ' free question left' : ' of ' + CHAT_FREE + ' free questions left') +
+        '. Premium asks as many as you like.'
+      : 'That is the three free questions used. Premium asks as many as you like.';
+  }
+
   function askChat() {
     if (chat.busy) return;
     var field = $('chat-input');
     var text = field.value.trim().slice(0, 500);
     if (!text) return;
+
+    // Checked before the question is sent, so nothing is spent on a request
+    // that is about to be refused.
+    if (!isPlus() && chatLeft() <= 0) {
+      field.value = '';
+      return goPremium('Asking anything');
+    }
 
     field.value = '';
     // Asking again while the last answer is still writing itself: the old one
@@ -5106,6 +5363,12 @@
     Sound.tick();
 
     chat.turns.push({ role: 'user', text: text });
+
+    if (!isPlus()) {
+      progress.state.chatAsks = (progress.state.chatAsks || 0) + 1;
+      progress.save();
+      paintChatLeft();
+    }
 
     fetch('/api/chat', {
       method: 'POST',
@@ -5258,6 +5521,8 @@
       });
   }
 
+  var NEWS_FREE = 6;   // headlines a Standard profile is shown
+
   function paintNews() {
     if (!news.stories) return;
     $('news-loading').hidden = true;
@@ -5270,11 +5535,37 @@
 
     paintNewsSources();
 
+    /*
+     * HOW MUCH OF THE FEED STANDARD GETS.
+     *
+     * Six headlines, newest first, out of however many the four publishers
+     * filed — usually three or four times that. Premium reads the lot.
+     *
+     * Chosen as a slice rather than a lockout because this section is worth
+     * having at six: somebody who only wants to know whether anything
+     * interesting happened gets an answer, and somebody who reads food
+     * writing properly hits the end of it and can see exactly what is behind
+     * the wall and how much. A section that refuses to open teaches nobody
+     * what they are missing.
+     *
+     * The filter chips still count and still filter the whole feed, so the
+     * number in a chip is honest even when the list under it is cut.
+     */
+    var cut = !isPlus() && shown.length > NEWS_FREE;
     var list = $('news-list');
     list.innerHTML = '';
-    shown.forEach(function (story, i) {
+    (cut ? shown.slice(0, NEWS_FREE) : shown).forEach(function (story, i) {
       list.appendChild(storyRow(story, i));
     });
+
+    var more = $('news-more');
+    more.hidden = !cut;
+    if (cut) {
+      var held = shown.length - NEWS_FREE;
+      $('news-more-line').textContent = held === 1
+        ? 'One more story today, and the rest of every day, with Premium.'
+        : held + ' more stories today, and the rest of every day, with Premium.';
+    }
   }
 
   // One chip per publisher, with how many they filed. Tapping the one that is

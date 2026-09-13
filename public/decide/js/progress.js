@@ -182,7 +182,21 @@
 
       // Decisions at the last prompt shown to a paying member. They only ever
       // see the affiliate one, and only once every PLUS_PROMPT_EVERY.
-      plusPromptAt: 0
+      plusPromptAt: 0,
+
+      /*
+       * What a Standard profile has used up of the AI features.
+       *
+       * chatAsks is a lifetime count of questions put to the assistant, not a
+       * daily one: the free three are a trial of the thing, and a trial that
+       * refills every morning is not a trial, it is the product.
+       *
+       * menuAt is a timestamp rather than a count, because the meal creator
+       * is one go every couple of days and the only thing worth storing is
+       * when the last one was.
+       */
+      chatAsks: 0,            // questions asked of the assistant, ever
+      menuAt: 0               // ms timestamp of the last menu built
     };
   }
 

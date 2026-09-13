@@ -1322,6 +1322,12 @@
         </button>
       </form>
 
+      <!-- How many free questions are left, said before they run out rather
+           than after. A wall you could see coming is a price; one that
+           arrives without warning is a trick. Hidden entirely on Premium,
+           where there is no number to report. -->
+      <p class="fine chat-left" id="chat-left" hidden></p>
+
       <p class="fine chat-foot">Answers come from a model and can be wrong &mdash; worth checking
       anything that matters. It cannot see your kitchen, your location, or what you have eaten
       before, and it is not a doctor, a lawyer or an accountant.</p>
@@ -1345,6 +1351,22 @@
       <div id="news-wrap" hidden>
         <div class="filters" id="news-sources" role="group" aria-label="Filter by publisher"></div>
         <ul class="stories" id="news-list"></ul>
+
+        <!-- What is behind the wall, and how much of it. Named rather than
+             implied: "more stories with Premium" with no number is a guess,
+             and a guess is easy to assume is small. -->
+        <div class="notice news-more" id="news-more" hidden>
+          <p class="mechanic">Premium</p>
+          <p id="news-more-line"></p>
+          <div class="locate-actions">
+            <button class="go go-sm" data-unlock="The rest of the news">
+              <span class="go-label">Read everything</span>
+              <span class="go-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+              </span>
+            </button>
+          </div>
+        </div>
         <p class="fine news-foot">Headlines and summaries belong to the publishers.
         Tapping through opens their page.</p>
       </div>
@@ -1373,21 +1395,88 @@
         whatever is kept, the rest is chosen to go with it.</p>
       </header>
 
+      <!-- ===================================================================
+           HOW IT IS ASKED, and why there are two ways.
+
+           People arrive at this in two moods. Some want to be asked — they do
+           not know what the constraints are until somebody names them. Others
+           already know exactly what the problem is ("six of us, one does not
+           eat fish, and I have got an hour") and being made to click through
+           three multiple-choice questions to say it is a worse way to say it.
+
+           So both. The questions are the same shape as the rest of the app
+           and need no typing; the box is one line and needs no reading. They
+           end up in the same place.
+           =================================================================== -->
+      <div id="menu-ask">
+        <div class="menu-ways" id="menu-ways">
+          <button class="mode-card" id="menu-way-questions" type="button">
+            <span class="mode-icon" aria-hidden="true">&#129335;</span>
+            <span class="mode-name">Ask me a few things</span>
+            <span class="mode-hook">Three taps, no typing. Who is eating, how much effort, what
+            sort of evening.</span>
+          </button>
+          <button class="mode-card" id="menu-way-prompt" type="button">
+            <span class="mode-icon" aria-hidden="true">&#9997;&#65039;</span>
+            <span class="mode-name">I&rsquo;ll just say it</span>
+            <span class="mode-hook">Type the situation in your own words and it works the rest
+            out.</span>
+          </button>
+        </div>
+
+        <!-- the question path -->
+        <div id="menu-questions" hidden>
+          <p class="q-step" id="menu-q-step">Question 1 of 3</p>
+          <h2 class="q-title" id="menu-q-title"></h2>
+          <div class="knobs" id="menu-q-options" role="group" aria-label="Answer"></div>
+          <button class="plain" id="menu-q-back">Back</button>
+        </div>
+
+        <!-- the typed path -->
+        <div id="menu-prompt" hidden>
+          <label class="q-title" for="menu-prompt-input">What is the situation?</label>
+          <p class="fine">Anything that matters: how many, what nobody eats, how long you have,
+          what the weather is doing.</p>
+          <form class="chat-form" id="menu-prompt-form">
+            <input class="chat-input" id="menu-prompt-input" autocomplete="off" maxlength="400"
+                   placeholder="Six of us, one vegetarian, and it is roasting&hellip;">
+            <button class="go go-sm" id="menu-prompt-send" type="submit">
+              <span class="go-label">Write it</span>
+              <span class="go-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+              </span>
+            </button>
+          </form>
+          <button class="plain" id="menu-prompt-back">Back</button>
+        </div>
+
+        <!-- How many goes are left, for a profile that has a number. -->
+        <p class="fine menu-left" id="menu-left" hidden></p>
+      </div>
+
+      <div id="menu-waiting" hidden>
+        <div class="bone bone-row"></div>
+        <p class="fine">Working out what goes with what&hellip;</p>
+      </div>
+
       <div id="menu-wrap-view" hidden>
         <ol class="menu-courses" id="menu-list"></ol>
         <p class="fine" id="menu-note"></p>
         <div class="locate-actions">
           <button class="quiet" id="menu-reroll">Write another one</button>
+          <button class="quiet" id="menu-restart">Start again</button>
         </div>
       </div>
 
-      <div class="notice" id="menu-locked" hidden>
-        <p class="mechanic">Premium</p>
-        <p id="menu-locked-line">Writing a menu comes with Premium &mdash; three days free,
-        then cheaper than a cup of coffee.</p>
+      <!-- Spent, for a Standard profile inside its two days. Not the same
+           thing as locked: they have had it, and it says when the next one
+           is due rather than pretending the feature is not theirs. -->
+      <div class="notice" id="menu-spent" hidden>
+        <p class="mechanic">One every couple of days</p>
+        <p id="menu-spent-line"></p>
         <div class="locate-actions">
-          <button class="go go-sm" data-unlock="The menu">
-            <span class="go-label">See what Premium gets you</span>
+          <button class="go go-sm" data-unlock="The menu, whenever you like">
+            <span class="go-label">Premium writes as many as you like</span>
             <span class="go-arrow" aria-hidden="true">
               <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
             </span>
@@ -1395,10 +1484,18 @@
         </div>
       </div>
 
+      <div class="notice" id="menu-error" hidden>
+        <p id="menu-error-text">That did not come back.</p>
+        <p class="fine">It happens &mdash; the model is busy a lot of the time. This has not used
+        up your go.</p>
+        <div class="locate-actions"><button class="quiet" id="menu-retry">Try again</button></div>
+      </div>
+
       <div class="notice" id="menu-empty" hidden>
         <p>Your rules have ruled out too much to build three courses from.</p>
         <p class="fine">Loosen a ban or two on your profile and try again.</p>
       </div>
+
     </section>
 
     <section class="view" id="view-dishes" aria-label="Dishes">
