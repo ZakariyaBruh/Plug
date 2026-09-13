@@ -555,7 +555,32 @@
     var favourites = state.favourites || [];
 
     $('intro-fav-wrap').hidden = favourites.length === 0;
-    label('landing-start', played ? 'Decide again' : 'Decide for me');
+
+    /*
+     * ALWAYS "Decide for me" HERE, never "Decide again".
+     *
+     * This read `played ? 'Decide again' : 'Decide for me'`, and `played` is
+     * `state.decisions > 0` — a lifetime count. Two things were wrong with
+     * that, and they compound.
+     *
+     * It never goes back. One accepted dish, ever, and this button says
+     * "again" on every visit for the rest of the profile's life: opening the
+     * app cold three weeks later was greeted as though a decision were still
+     * in progress. "Again" is about a session and the number was about a
+     * lifetime.
+     *
+     * And it counts accepts from every mode, because recordDecision is called
+     * from accept() and every mode lands on the result screen — so a run of
+     * Endless, Blitz or Swipe that ended in "That's the one" flipped this
+     * label too. Somebody who has only ever played Endless has never once
+     * used the thing this button does, and was still being told to do it
+     * again.
+     *
+     * This screen is the way in. "Decide again" belongs on the screen you
+     * reach by deciding, and that is where it still is — done-again-btn on
+     * the reward panel, where it is true by construction.
+     */
+    label('landing-start', 'Decide for me');
     paintHello(state, played);
     paintEndlessCard();
 
