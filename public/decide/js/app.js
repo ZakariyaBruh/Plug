@@ -398,8 +398,9 @@
     el.addEventListener('click', function () {
       // Decide means "take me to the deciding screen". Mid-question that is
       // where you already are, so the answers survive; anywhere else — a
-      // finished result, a recipe — it means start again.
-      if (el.dataset.view === 'decide' && panel !== 'question') return goHome();
+      // finished result, a recipe, or never having started — it means start
+      // again, which is a question on screen and not the home screen.
+      if (el.dataset.view === 'decide' && panel !== 'question') return goDecide();
       leaveEndless();
       // Now that the rail is reachable from the landing, going anywhere from
       // there has to put the landing away — otherwise the section loads
@@ -7422,7 +7423,15 @@
     step();
   }
 
-  function goHome() {
+  /*
+   * Put down whatever was being played, wherever it is being left for.
+   *
+   * Shared by the two ways out of a mode — back to the home screen, and
+   * straight into a fresh ordinary game — because the tidying up is the same
+   * either way and having it in only one of them is how a live deck ends up
+   * answering the arrow keys from three screens away.
+   */
+  function leaveGames() {
     // Walking away from a half-finished run still counts: those were real
     // preferences. Only an explicit restart throws them away.
     if (duel.pending.length) bankDuel();
@@ -7444,10 +7453,42 @@
     swipe.choosing = false;
     swipe.drag = null;
     leaveEndless();
+  }
+
+  /* The home screen: the modes, the moods, Lately, Saved. */
+  function goHome() {
+    leaveGames();
     renderIntro();
     setPanel('home');
     setView('decide');
     showLanding();
+  }
+
+  /*
+   * THE DECIDE TAB MEANS A QUESTION ON SCREEN.
+   *
+   * It used to mean goHome(), which put the landing back up — so from the
+   * Dishes tab, tapping Decide took you to the front page of the app rather
+   * than to anything that decides. Tap it again and you got the front page
+   * again. There is no third screen behind that tab: `panel-home` does not
+   * exist, the home screen IS the landing, so "go to the decide view" had
+   * nowhere to go and fell back to the overlay.
+   *
+   * It looked intermittent, which is why it took a while to find. Once a game
+   * is actually in progress the rail takes the other branch and returns you to
+   * your half-answered question, correctly; it is only from a standing start —
+   * open the app, tap Dishes, tap Decide — that the tab appears to do nothing
+   * but bounce you home.
+   *
+   * The comment on that branch always said this should "start again"; it just
+   * started the home screen instead of a game. So it starts a game. Nothing is
+   * lost by it: the wordmark in the top bar is on every screen and still goes
+   * home, so the modes and the moods are one tap away from here as well.
+   */
+  function goDecide() {
+    leaveGames();
+    // restart() hides the landing and sets the view itself.
+    restart();
   }
 
   /* ----------------------------------------------------------------- wiring */
