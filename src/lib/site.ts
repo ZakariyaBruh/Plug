@@ -114,11 +114,11 @@ export function pageHead(page: PageHead) {
  * amount written the way a person reads it.
  */
 export const TRIAL_DAYS = 3
-export const PRICE_VALUE = 3.45
-export const PRICE = '$3.45'
+export const PRICE_VALUE = 5.99
+export const PRICE = '$5.99'
 export const PRICE_MONTHLY = `${PRICE}/month`
 
-/** "3 days free, then $3.45/month" — the whole offer, for body copy. */
+/** "3 days free, then $5.99/month" — the whole offer, for body copy. */
 export const OFFER = `${TRIAL_DAYS} days free, then ${PRICE_MONTHLY}`
 /** For a title or a button, where the price alone is the wrong emphasis. */
 export const OFFER_SHORT = `${TRIAL_DAYS} days free`
@@ -127,7 +127,7 @@ export const OFFER_SHORT = `${TRIAL_DAYS} days free`
  *
  * The plan is set to tax-inclusive with tax collection and adaptive pricing
  * both on, so what somebody actually pays depends on where they are: the total
- * is $3.45 in some places and a little over in others. Which rule produces
+ * is $5.99 in some places and a little over in others. Which rule produces
  * which total is Whop's to decide and not knowable from here, so this promises
  * only what is certainly true — the number on the checkout page is the number
  * that gets charged.
@@ -188,7 +188,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Knockout', 'An 8-dish bracket. Round of 8, semifinal, final.'],
       ['Blitz', 'Thirty seconds on the clock, and rounds that change the rules — a third card, a blind pick, a round that counts double, one that asks which you would NOT eat.'],
       ['This or that', 'A running champion defends its streak against whatever challenges it next.'],
-      ['Shortlist', 'Eight dishes from what you like. Tap out the ones you are not in the mood for and spin what is left.'],
+      ['Shortlist', 'Eight dishes from what you like. Tap out the ones you are not in the mood for, swap them for ones you have not seen, and stop the reel yourself on what is left.'],
       ['Together', 'Up to six of you round one phone. Five either-ors each, then one dish the whole table can live with — and what you all turned out to agree on.'],
       ['Swipe', 'A deck, one dish at a time. Right for yes, left for no. Every no re-sorts what is left away from it, and three yeses end it with a choice between the three.'],
       ['Endless, with no count on it', 'Endless itself is free and always will be — but a free profile gets 200 picks a day and then it stops until tomorrow. Premium takes the daily count off entirely: the only thing that ends a run is the clock.'],

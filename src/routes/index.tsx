@@ -10,6 +10,7 @@ import {
   DISH_COUNT,
   OFFER,
   OFFER_SHORT,
+  PRICE,
   PRICE_MONTHLY,
   PRICE_VALUE,
   PREMIUM_SECTIONS,
@@ -89,7 +90,7 @@ const APP_SCHEMA = {
     {
       '@type': 'Offer',
       name: 'Premium',
-      price: '3.45',
+      price: String(PRICE_VALUE),
       priceCurrency: 'USD',
       description: `Always avoid, the extra modes, cook mode, the shared browser, unlimited saves. ${OFFER}.`,
       url: `${SITE_URL}/premium`,
@@ -165,7 +166,7 @@ function HomePage() {
               {[
                 [String(DISH_COUNT), 'dishes'],
                 ['8', 'questions to an answer'],
-                ['$3.45', `a month, after ${TRIAL_DAYS} free days`],
+                [PRICE, `a month, after ${TRIAL_DAYS} free days`],
               ].map(([n, label]) => (
                 <li key={label} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-raised)] px-3 py-5">
                   <b className="block text-2xl font-bold sm:text-3xl">{n}</b>

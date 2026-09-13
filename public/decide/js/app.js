@@ -4113,15 +4113,20 @@
     /*
      * The price, put next to something everybody has bought this week.
      *
-     * £3.45 a month is an abstraction; a coffee is not. The comparison is only
-     * worth making because it is true — a month of this really does cost less
-     * than one cup — and it is written as "a month of it" rather than a bare
-     * price so it cannot be read as a one-off.
+     * A number on its own is an abstraction; a takeaway is not. The comparison
+     * is only worth making because it is TRUE, so it changed when the price
+     * did: at $3.45 this said "less than one cup of coffee", which was fair
+     * then and is not at $5.99 — a coffee is about five dollars. A single
+     * takeaway is fifteen to twenty-five, so a month of this costs less than
+     * one of them by a wide margin, and it is the thing the app is about.
+     *
+     * Written as "a whole month of it" rather than a bare price so it cannot
+     * be read as a one-off charge.
      */
     $('enjoy-pitch-line').textContent =
       'There is a Premium version with the other six ways to play, cook mode, ' +
       'and rules it never asks you about twice. A whole month of it costs less ' +
-      'than one cup of coffee.';
+      'than one takeaway.';
     $('enjoy-pitch-fine').textContent =
       'Three days free first, and the game you are playing stays free forever either way.';
 
@@ -4406,14 +4411,22 @@
   var AFFILIATES_URL = 'https://whop.com/morsels45/affiliates';
 
   var ADS = [
+    /*
+     * This used to be titled "Cheaper than a cup of coffee", which was true at
+     * $3.45 and is not at $5.99 — a coffee is about five dollars. A pitch that
+     * claims a price it does not charge is the one kind of wrong worth being
+     * careful about, so the comparison moved to a takeaway: fifteen to
+     * twenty-five dollars, which a month of this is comfortably under, and it
+     * is the spend this app is actually competing with.
+     */
     {
-      id: 'plus-coffee',
+      id: 'plus-takeaway',
       kind: 'plus',
       icon: '✨',
-      title: 'Cheaper than a cup of coffee',
+      title: 'Less than one takeaway',
       body: 'Premium is the other six ways to play, cook mode, the menu builder, ' +
             'and rules it never asks you about twice. A whole month of it costs less ' +
-            'than one coffee.',
+            'than a single delivery order.',
       fine: 'Three days free first. The game you are playing stays free either way.',
       cta: 'Three days free'
     },
@@ -4425,7 +4438,7 @@
       body: 'Knockout, Blitz, This or that, Shortlist, Swipe and Together are all ' +
             'sitting behind one switch. Same catalogue, six different ways to argue ' +
             'with it.',
-      fine: 'Three days free, then less than a coffee a month.',
+      fine: 'Three days free, then $5.99 a month.',
       cta: 'Have a look'
     },
     {
@@ -4523,7 +4536,7 @@
       // Never the same card twice in one game. With most of the roster
       // refused the cursor wraps inside a single game, and it did: a profile
       // that had ended the affiliate offers got "six more games in here",
-      // then the coffee line, then both again, in one sitting. The same pitch
+      // then the takeaway line, then both again, in one sitting. The same pitch
       // twice in five minutes is the exact thing that makes somebody leave.
       // Nothing new to say means the slot goes unfilled and the budget simply
       // is not spent — fewer prompts for somebody who has refused most of
@@ -6909,7 +6922,7 @@
     $('buy-note').textContent = on
       ? 'Cancel any time — you keep Premium until the period you already paid for ' +
         'runs out.'
-      : 'Free for three days, then $3.45/month — cancel before it ends and you ' +
+      : 'Free for three days, then $5.99/month — cancel before it ends and you ' +
         'are not charged. Tax may be added depending on where you are, so the ' +
         'total can come to a little over that; checkout shows it before you pay. ' +
         'Sign in on any device and Premium is already on.';
