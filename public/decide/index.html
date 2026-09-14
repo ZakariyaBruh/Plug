@@ -99,7 +99,7 @@
     <span class="mark-word">morsels45</span>
   </a>
   <nav class="topbar-nav" aria-label="Account">
-    <a class="topbar-link" id="topbar-premium" href="/premium">Premium</a>
+    <a class="topbar-link" id="topbar-premium" data-i18n="top.premium" href="/premium">Premium</a>
     <a class="topbar-link topbar-account" id="topbar-account" href="/api/oauth/login?redirect_to=%2Fdecide%2F">Sign in</a>
   </nav>
 </header>
@@ -119,6 +119,31 @@
      one place a bit of noise earns its keep is the moment somebody is deciding
      whether to bother.
      =========================================================================== -->
+<!-- ===========================================================================
+     The first-run language chooser.
+
+     Shown once, before anything else, because every other screen is written in
+     a language the reader may not have. It is not a guess acted on silently:
+     the browser's preference only decides which row starts selected, and
+     somebody whose phone is set to one language and whose head is in another
+     gets to say so before they read a word of the app.
+     =========================================================================== -->
+<div class="lang-gate" id="lang-gate" hidden>
+  <div class="lang-gate-inner">
+    <p class="lang-gate-mark" aria-hidden="true">&#127760;</p>
+    <h1 class="lang-gate-title" data-i18n="lang.title">Choose your language</h1>
+    <ul class="lang-list" id="lang-gate-list"></ul>
+    <button class="go go-sm" id="lang-gate-go" type="button">
+      <span class="go-label" data-i18n="lang.choose">Continue</span>
+      <span class="go-arrow" aria-hidden="true">
+        <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+      </span>
+    </button>
+    <p class="fine" data-i18n="lang.note">Dishes, recipes and the news stay in English for
+    now &mdash; your browser can translate those if you ask it to.</p>
+  </div>
+</div>
+
 <div class="landing" id="landing" hidden>
   <div class="landing-glow" aria-hidden="true"></div>
 
@@ -140,23 +165,23 @@
          pitch clean, with nothing in front of it. -->
     <p class="landing-hello" id="landing-hello" hidden></p>
 
-    <h1 class="landing-ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s alright &mdash; I might.</em></h1>
-    <p class="landing-sub">A few easy either-ors &mdash; sweet or savoury, hot or cold, hands or cutlery &mdash;
+    <h1 class="landing-ask" data-i18n-html="landing.ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s alright &mdash; I might.</em></h1>
+    <p class="landing-sub" data-i18n="landing.sub">A few easy either-ors &mdash; sweet or savoury, hot or cold, hands or cutlery &mdash;
     and we&rsquo;ll work out what you actually feel like. Usually in about eight questions.</p>
 
     <div class="landing-actions">
       <button class="go go-big" id="landing-start">
-        <span class="go-label">Decide for me</span>
+        <span class="go-label" data-i18n="landing.start">Decide for me</span>
         <span class="go-arrow" aria-hidden="true">
           <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
         </span>
       </button>
-      <button class="plain landing-plain" id="tonight-btn">Tonight&rsquo;s pick</button>
-      <button class="plain landing-plain" id="landing-browse">Browse the menu</button>
-      <button class="plain landing-plain" id="landing-nearby">See what&rsquo;s near you</button>
-      <button class="plain landing-plain" id="landing-ask">Ask what to eat</button>
-      <button class="plain landing-plain" id="landing-news">Read about food</button>
-      <button class="plain landing-plain" id="landing-invite">Decide with a friend</button>
+      <button class="plain landing-plain" id="tonight-btn" data-i18n="landing.tonight">Tonight&rsquo;s pick</button>
+      <button class="plain landing-plain" id="landing-browse" data-i18n="landing.browse">Browse the menu</button>
+      <button class="plain landing-plain" id="landing-nearby" data-i18n="landing.nearby">See what&rsquo;s near you</button>
+      <button class="plain landing-plain" id="landing-ask" data-i18n="landing.askai">Ask what to eat</button>
+      <button class="plain landing-plain" id="landing-news" data-i18n="landing.news">Read about food</button>
+      <button class="plain landing-plain" id="landing-invite" data-i18n="landing.invite">Decide with a friend</button>
     </div>
 
     <div class="knob-block" id="party-wrap">
@@ -394,13 +419,16 @@
   <!-- ============================ rail ============================ -->
   <nav class="rail" aria-label="Sections">
     <ul class="rail-list">
-      <li><button class="rail-link is-current" data-view="decide">Decide</button></li>
-      <li><button class="rail-link" data-view="dishes">Dishes</button></li>
-      <li><button class="rail-link" data-view="menu">Menu</button></li>
-      <li><button class="rail-link" data-view="nearby">Nearby</button></li>
-      <li><button class="rail-link" data-view="chat">Ask</button></li>
-      <li><button class="rail-link" data-view="news">News</button></li>
-      <li><button class="rail-link" data-view="profile">Profile</button></li>
+      <li><button class="rail-link is-current" data-i18n="nav.decide" data-view="decide">Decide</button></li>
+      <li><button class="rail-link" data-i18n="nav.dishes" data-view="dishes">Dishes</button></li>
+      <li><button class="rail-link" data-i18n="nav.menu" data-view="menu">Menu</button></li>
+      <li><button class="rail-link" data-i18n="nav.nearby" data-view="nearby">Nearby</button></li>
+      <li><button class="rail-link" data-i18n="nav.ask" data-view="chat">Ask</button></li>
+      <li><button class="rail-link" data-i18n="nav.news" data-view="news">News</button></li>
+      <li><button class="rail-link" data-i18n="nav.profile" data-view="profile">Profile</button></li>
+      <!-- Asked for as a tab at the top. It is a setting rather than a section,
+           so it sits last, after the things you actually came to do. -->
+      <li><button class="rail-link" data-i18n="nav.language" data-view="language">Language</button></li>
     </ul>
 
     <p class="rail-foot" id="rail-streak" hidden><b id="streak-count">0</b> day streak</p>
@@ -1220,8 +1248,8 @@
          ========================================================================= -->
     <section class="view" id="view-nearby" aria-label="Nearby">
       <header class="head">
-        <p class="mechanic">Around you</p>
-        <h1 class="head-title">Nearby</h1>
+        <p class="mechanic" data-i18n="eyebrow.aroundyou">Around you</p>
+        <h1 class="head-title" data-i18n="view.nearby">Nearby</h1>
       </header>
 
           <div class="locate" id="near-locate">
@@ -1302,7 +1330,7 @@
     <section class="view" id="view-chat" aria-label="Ask">
       <header class="head">
         <p class="mechanic">Ask <span class="tag-beta">Beta</span></p>
-        <h1 class="head-title">Ask anything</h1>
+        <h1 class="head-title" data-i18n="view.ask">Ask anything</h1>
         <p class="head-sub">Food is what it knows best &mdash; what to eat, what goes with what,
         what to do with half a cabbage &mdash; but it will have a go at whatever you ask.</p>
         <p class="fine chat-beta">Beta &mdash; it runs on a service that is busy a lot of the
@@ -1339,8 +1367,8 @@
 
     <section class="view" id="view-news" aria-label="Food news">
       <header class="head">
-        <p class="mechanic">Worth reading</p>
-        <h1 class="head-title">Food news</h1>
+        <p class="mechanic" data-i18n="eyebrow.worthreading">Worth reading</p>
+        <h1 class="head-title" data-i18n="view.news">Food news</h1>
         <p class="head-sub">Recipes, restaurants and the odd argument about bread &mdash;
         from <b>the Guardian</b>, <b>Eater</b>, <b>NYT Dining</b>, <b>The Kitchn</b>,
         <b>Smitten Kitchen</b>, <b>Saveur</b> and <b>King Arthur Baking</b>.</p>
@@ -1403,8 +1431,8 @@
          scrolling the opening screen to the bottom and finding one button. -->
     <section class="view" id="view-menu" aria-label="Tonight&rsquo;s menu">
       <header class="head">
-        <p class="mechanic">Feeding people</p>
-        <h1 class="head-title">Tonight&rsquo;s menu</h1>
+        <p class="mechanic" data-i18n="eyebrow.feeding">Feeding people</p>
+        <h1 class="head-title" data-i18n="view.menu">Tonight&rsquo;s menu</h1>
         <p class="head-sub">A starter, a main and a pudding that actually go together &mdash;
         not three heavy things, and not three cold ones. They come <b>one at a time</b>:
         say yes to the starter before you are shown the main, and each one is chosen to go
@@ -1579,8 +1607,8 @@
 
     <section class="view" id="view-dishes" aria-label="Dishes">
       <header class="head">
-        <p class="mechanic">The list</p>
-        <h1 class="head-title">Dishes</h1>
+        <p class="mechanic" data-i18n="eyebrow.thelist">The list</p>
+        <h1 class="head-title" data-i18n="view.dishes">Dishes</h1>
       </header>
 
       <div class="find">
@@ -1623,6 +1651,31 @@
     </section>
 
     <!-- ------------------------- PROFILE ------------------------- -->
+    <!-- ===================================================================
+         LANGUAGE.
+
+         A tab rather than a line buried in the profile, because somebody who
+         needs this cannot read the profile tab to find it. It is the one
+         setting whose own label is the thing being set, so every option is
+         written in its own language: a reader looking for German is looking
+         for "Deutsch", not for "German".
+         =================================================================== -->
+    <section class="view" id="view-language" aria-label="Language">
+      <header class="head">
+        <p class="mechanic" data-i18n="lang.eyebrow">Language</p>
+        <h1 class="head-title" data-i18n="lang.title">Choose your language</h1>
+        <p class="head-sub" data-i18n="lang.sub">The app changes straight away. You can
+        change it again whenever you like, from this tab.</p>
+      </header>
+
+      <ul class="lang-list" id="lang-list"></ul>
+
+      <p class="fine" data-i18n="lang.ai">Answers from the AI will come back in your
+      language.</p>
+      <p class="fine" data-i18n="lang.note">Dishes, recipes and the news stay in English
+      for now &mdash; your browser can translate those if you ask it to.</p>
+    </section>
+
     <section class="view" id="view-profile" aria-label="Your profile">
       <header class="head">
         <p class="mechanic">You</p>
@@ -2083,6 +2136,7 @@
 <script src="js/config.js"></script>
 <!-- Premium is the site's own Whop session, asked through /api/premium-status —
      no licence key, no per-browser account. -->
+<script src="js/i18n.js"></script>
 <script src="js/premium.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/sound.js"></script>

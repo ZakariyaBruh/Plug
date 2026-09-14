@@ -36,8 +36,8 @@ import { cloudflare } from '@cloudflare/vite-plugin'
 const SHELL = [
   'index.html', 'styles.css', 'manifest.webmanifest', 'icon.svg', 'icon-maskable.svg',
   'js/app.js', 'js/confetti.js', 'js/config.js', 'js/data.js', 'js/engine.js',
-  'js/flavor.js', 'js/mapview.js', 'js/places.js', 'js/premium.js', 'js/progress.js',
-  'js/recipes.js', 'js/sound.js', 'js/taste.js',
+  'js/flavor.js', 'js/i18n.js', 'js/mapview.js', 'js/places.js', 'js/premium.js',
+  'js/progress.js', 'js/recipes.js', 'js/sound.js', 'js/taste.js',
 ]
 
 /** The one build id, taken from the shell's sources. */

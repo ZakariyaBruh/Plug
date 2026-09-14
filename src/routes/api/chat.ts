@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
+import { langLine } from '#/lib/lang'
 
 /*
  * /api/chat — the food assistant.
@@ -265,16 +266,21 @@ export const Route = createFileRoute('/api/chat')({
         if (overLimit(who)) return json({ error: 'too_fast' }, 429)
 
         let turns: Turn[] = []
+        // Read out here rather than inside the try: `body` below is the
+        // OUTGOING request to the model, and one name for both is how the
+        // language ends up read from the wrong object.
+        let want: unknown = 'en'
         try {
-          const body = (await request.json()) as { messages?: unknown }
-          turns = cleanTurns(body?.messages)
+          const sent = (await request.json()) as { messages?: unknown; lang?: unknown }
+          turns = cleanTurns(sent?.messages)
+          want = sent?.lang
         } catch {
           return json({ error: 'bad_request' }, 400)
         }
         if (!turns.length) return json({ error: 'bad_request' }, 400)
 
         const body = JSON.stringify({
-            systemInstruction: { parts: [{ text: instruction() }] },
+            systemInstruction: { parts: [{ text: instruction() + langLine(want) }] },
             contents: turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
             generationConfig: {
               maxOutputTokens: MAX_OUTPUT_TOKENS,
