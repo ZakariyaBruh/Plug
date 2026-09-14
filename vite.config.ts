@@ -40,8 +40,37 @@ const SHELL = [
   'js/progress.js', 'js/recipes.js', 'js/sound.js', 'js/taste.js',
 ]
 
+/*
+ * EVERY SCRIPT THE PAGE ASKS FOR MUST BE IN THE SHELL, and the build says so
+ * rather than letting a missing one be discovered in production.
+ *
+ * There are three lists of these files and they have to agree: SHELL here,
+ * VERSIONED in routes/decide/$.ts (which serves the game from ?raw at request
+ * time), and the worker's own precache. Adding js/i18n.js to two of the three
+ * shipped a script with no ?v= on it — the exact stale-HTML-with-old-JS pairing
+ * this id exists to prevent, reintroduced by hand a few commits after it was
+ * fixed. A list that has to be edited in three places will be edited in two.
+ *
+ * Checked against the markup rather than against the other lists, because the
+ * markup is the only one that says what the page actually loads.
+ */
+function checkShell() {
+  const html = readFileSync(join(process.cwd(), 'public', 'decide', 'index.html'), 'utf8')
+  const asked = [...html.matchAll(/<script src="([^"?]+)"/g)].map((m) => m[1])
+  const missing = asked.filter((f) => !SHELL.includes(f))
+  if (missing.length) {
+    throw new Error(
+      `decide/index.html loads ${missing.join(', ')}, which ${missing.length === 1 ? 'is' : 'are'} ` +
+        `not in SHELL (vite.config.ts). Add ${missing.length === 1 ? 'it' : 'them'} there, to ` +
+        `VERSIONED and FILES in src/routes/decide/$.ts, and to the worker's precache in ` +
+        `public/decide/sw.js — all three, or the file ships unversioned.`,
+    )
+  }
+}
+
 /** The one build id, taken from the shell's sources. */
 function shellId(): string {
+  checkShell()
   const hash = createHash('sha256')
   for (const file of SHELL) {
     hash.update(readFileSync(join(process.cwd(), 'public', 'decide', file)))
