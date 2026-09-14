@@ -6526,7 +6526,14 @@
    * boot) so nobody sees English flash past on the way to Spanish.
    */
   function applyLang() {
-    I18n.set(progress.state.lang || 'en');
+    var code = I18n.set(progress.state.lang || 'en');
+    // Shown only when there is a translation to warn about. On English these
+    // words would be a warning about nothing, which teaches people to ignore
+    // the next one that matters.
+    ['lang-warn-view', 'lang-warn-gate'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.hidden = code === 'en';
+    });
     paintLangLists();
     /*
      * Anything written by JS rather than sitting in the markup has to be

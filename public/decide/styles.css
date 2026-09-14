@@ -4299,3 +4299,17 @@ body.is-beaming { overflow: hidden; }
 
 /* Nothing behind it scrolls while it is up. */
 body.is-lang-gate { overflow: hidden; }
+
+/* The translation warning. Amber-edged rather than red: it is a caveat on
+   something that is working, not an error, and the app's one alarm colour
+   should stay rare enough to mean something. */
+.lang-warn {
+  margin: var(--s4) 0 0;
+  padding: var(--s3) var(--s4);
+  border-left: 2px solid var(--amber);
+  background: color-mix(in srgb, var(--amber) 7%, transparent);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-align: left;
+}

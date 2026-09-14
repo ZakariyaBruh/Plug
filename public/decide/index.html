@@ -139,6 +139,11 @@
         <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
       </span>
     </button>
+    <!-- Only up when something has actually been translated. Saying "this may
+         be wrong" over the English original would be a warning about nothing. -->
+    <p class="lang-warn" id="lang-warn-gate" data-i18n="lang.warn" hidden>This page has been
+    translated. Some of it may read oddly or be wrong &mdash; the English is the
+    original.</p>
     <p class="fine" data-i18n="lang.note">Dishes, recipes and the news stay in English for
     now &mdash; your browser can translate those if you ask it to.</p>
   </div>
@@ -1670,6 +1675,11 @@
 
       <ul class="lang-list" id="lang-list"></ul>
 
+      <!-- Only up when something has actually been translated. Saying "this may
+           be wrong" over the English original would be a warning about nothing. -->
+      <p class="lang-warn" id="lang-warn-view" data-i18n="lang.warn" hidden>This page has been
+      translated. Some of it may read oddly or be wrong &mdash; the English is the
+      original.</p>
       <p class="fine" data-i18n="lang.ai">Answers from the AI will come back in your
       language.</p>
       <p class="fine" data-i18n="lang.note">Dishes, recipes and the news stay in English
