@@ -44,7 +44,6 @@ var SHELL = [
   'js/data.js',
   'js/engine.js',
   'js/flavor.js',
-  'js/i18n.js',
   'js/mapview.js',
   'js/places.js',
   'js/premium.js',

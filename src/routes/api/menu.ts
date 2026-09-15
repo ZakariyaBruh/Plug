@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
-import { langLine } from '#/lib/lang'
 
 /*
  * /api/menu — three courses that go together, argued for.
@@ -37,7 +36,6 @@ type Ask = {
   answers?: unknown
   liked?: unknown
   avoid?: unknown
-  lang?: unknown
   /*
    * Courses to leave alone. The game stopped sending this when the menu
    * became a run of one course at a time (there is nothing to pin: a course
@@ -196,9 +194,7 @@ export const Route = createFileRoute('/api/menu')({
             signal: control.signal,
             headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              systemInstruction: {
-                parts: [{ text: instruction(said, liked, avoid, pinned) + langLine(ask.lang) }],
-              },
+              systemInstruction: { parts: [{ text: instruction(said, liked, avoid, pinned) }] },
               contents: [{ role: 'user', parts: [{ text: 'Write me the menu.' }] }],
               generationConfig: {
                 maxOutputTokens: MAX_OUTPUT_TOKENS,

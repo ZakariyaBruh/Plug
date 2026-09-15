@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
-import { langLine } from '#/lib/lang'
 
 /*
  * /api/suggest — what to eat next, argued from what you already liked.
@@ -30,7 +29,7 @@ const WANT = 4 // dishes asked for
 const TIMEOUT_MS = 12000
 const MAX_OUTPUT_TOKENS = 700
 
-type Ask = { liked?: unknown; avoid?: unknown; answers?: unknown; lang?: unknown }
+type Ask = { liked?: unknown; avoid?: unknown; answers?: unknown }
 
 function names(raw: unknown, cap: number): string[] {
   if (!Array.isArray(raw)) return []
@@ -119,9 +118,7 @@ export const Route = createFileRoute('/api/suggest')({
             signal: control.signal,
             headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              systemInstruction: {
-                parts: [{ text: instruction(liked, avoid, answers) + langLine(ask.lang) }],
-              },
+              systemInstruction: { parts: [{ text: instruction(liked, avoid, answers) }] },
               contents: [{ role: 'user', parts: [{ text: 'What should I eat?' }] }],
               generationConfig: {
                 maxOutputTokens: MAX_OUTPUT_TOKENS,

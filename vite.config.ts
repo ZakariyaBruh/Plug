@@ -36,8 +36,8 @@ import { cloudflare } from '@cloudflare/vite-plugin'
 const SHELL = [
   'index.html', 'styles.css', 'manifest.webmanifest', 'icon.svg', 'icon-maskable.svg',
   'js/app.js', 'js/confetti.js', 'js/config.js', 'js/data.js', 'js/engine.js',
-  'js/flavor.js', 'js/i18n.js', 'js/mapview.js', 'js/places.js', 'js/premium.js',
-  'js/progress.js', 'js/recipes.js', 'js/sound.js', 'js/taste.js',
+  'js/flavor.js', 'js/mapview.js', 'js/places.js', 'js/premium.js', 'js/progress.js',
+  'js/recipes.js', 'js/sound.js', 'js/taste.js',
 ]
 
 /*
@@ -46,10 +46,9 @@ const SHELL = [
  *
  * There are three lists of these files and they have to agree: SHELL here,
  * VERSIONED in routes/decide/$.ts (which serves the game from ?raw at request
- * time), and the worker's own precache. Adding js/i18n.js to two of the three
- * shipped a script with no ?v= on it — the exact stale-HTML-with-old-JS pairing
- * this id exists to prevent, reintroduced by hand a few commits after it was
- * fixed. A list that has to be edited in three places will be edited in two.
+ * time), and the worker's own precache. A script added to the markup and to
+ * only two of the three ships with no ?v= on it — the stale-HTML-with-old-JS
+ * pairing this build id exists to prevent. That has happened twice.
  *
  * Checked against the markup rather than against the other lists, because the
  * markup is the only one that says what the page actually loads.

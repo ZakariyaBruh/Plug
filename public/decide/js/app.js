@@ -380,7 +380,6 @@
     if (name === 'nearby') renderNearby();
     if (name === 'news') renderNews();
     if (name === 'chat') renderChat();
-    if (name === 'language') paintLangLists();
     // A half-written answer left running in a section nobody is looking at
     // keeps scrolling it into view from somewhere else in the app.
     else stopTyping();
@@ -597,9 +596,7 @@
      * reach by deciding, and that is where it still is — done-again-btn on
      * the reward panel, where it is true by construction.
      */
-    // Through the dictionary, because this one is written by JS on every
-    // render and would otherwise overwrite whatever I18n.apply just put there.
-    label('landing-start', I18n.t('landing.start', 'Decide for me'));
+    label('landing-start', 'Decide for me');
     paintHello(state, played);
     paintEndlessCard();
 
@@ -2467,8 +2464,7 @@
     fetch('/api/suggest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ liked: history.liked, avoid: history.avoid, answers: picks.answers,
-        lang: I18n.get() })
+      body: JSON.stringify({ liked: history.liked, avoid: history.avoid, answers: picks.answers })
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
         return { ok: res.ok, body: body };
@@ -3281,10 +3277,7 @@
         prompt: ask.prompt || '',
         answers: ask.answers || null,
         liked: liked.liked,
-        avoid: liked.avoid,
-        // The model writes in whatever language the app is in. Free, and far
-        // better than anything this app could translate after the fact.
-        lang: I18n.get()
+        avoid: liked.avoid
       })
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
@@ -5779,7 +5772,7 @@
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       // A relative path, so this is whatever host the app is actually being
       // served from — the phone's, not a machine it was written on.
-      body: JSON.stringify({ messages: chat.turns.slice(-12), lang: I18n.get() })
+      body: JSON.stringify({ messages: chat.turns.slice(-12) })
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
         return { ok: res.ok, status: res.status, body: body };
@@ -6517,144 +6510,6 @@
     { id: 'neon', name: 'Neon', note: 'Loud on purpose' }
   ];
 
-  /* ------------------------------------------------------------- language */
-  /*
-   * The app's language, and the one screen that sets it.
-   *
-   * I18n.apply() is what actually swaps the words; everything here is about
-   * when it runs and who asked for it. Applied before the first paint (see
-   * boot) so nobody sees English flash past on the way to Spanish.
-   */
-  function applyLang() {
-    var code = I18n.set(progress.state.lang || 'en');
-    // Shown only when there is a translation to warn about. On English these
-    // words would be a warning about nothing, which teaches people to ignore
-    // the next one that matters.
-    ['lang-warn-view', 'lang-warn-gate'].forEach(function (id) {
-      var el = $(id);
-      if (el) el.hidden = code === 'en';
-    });
-    paintLangLists();
-    /*
-     * Anything written by JS rather than sitting in the markup has to be
-     * written again, because I18n.apply only walks the marked nodes and these
-     * were painted over the top of them. renderIntro is guarded because this
-     * runs at boot, before the landing exists.
-     */
-    if ($('landing-start')) renderIntro();
-    if (lastStatus) paintTopbar(lastStatus);
-  }
-
-  /*
-   * One row per language, in its own language, in both places that list them.
-   * Built rather than written out so the two lists cannot drift, and so adding
-   * a language is one entry in i18n.js and nothing here.
-   */
-  function langRow(entry, chosen, onPick) {
-    var li = document.createElement('li');
-    li.className = 'lang-row' + (chosen ? ' is-on' : '');
-
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'lang-btn';
-    btn.setAttribute('aria-pressed', chosen ? 'true' : 'false');
-
-    var flag = document.createElement('span');
-    flag.className = 'lang-flag';
-    flag.setAttribute('aria-hidden', 'true');
-    flag.textContent = entry.flag;
-
-    var name = document.createElement('span');
-    name.className = 'lang-name';
-    name.textContent = entry.native;
-
-    btn.appendChild(flag);
-    btn.appendChild(name);
-
-    // The English name underneath, for the reader who has landed in a language
-    // they did not choose and is looking for the way back out. Skipped where it
-    // would only repeat the line above it — "English / English" is noise, and
-    // the one row that needs no translating is the one in the reader's way.
-    if (entry.english !== entry.native) {
-      var sub = document.createElement('span');
-      sub.className = 'lang-sub';
-      sub.textContent = entry.english;
-      btn.appendChild(sub);
-    }
-    btn.addEventListener('click', function () { onPick(entry.id); });
-    li.appendChild(btn);
-    return li;
-  }
-
-  function paintLangLists() {
-    var now = I18n.get();
-
-    var list = $('lang-list');
-    if (list) {
-      list.innerHTML = '';
-      I18n.LANGS.forEach(function (entry) {
-        list.appendChild(langRow(entry, entry.id === now, pickLang));
-      });
-    }
-
-    var gate = $('lang-gate-list');
-    if (gate) {
-      gate.innerHTML = '';
-      I18n.LANGS.forEach(function (entry) {
-        gate.appendChild(langRow(entry, entry.id === now, function (id) {
-          // On the gate, picking only previews: the app switches so you can see
-          // you got the right one, and Continue is what commits it.
-          progress.state.lang = id;
-          applyLang();
-        }));
-      });
-    }
-  }
-
-  function pickLang(id) {
-    if (id === I18n.get()) return;
-    Sound.tick();
-    progress.state.lang = id;
-    progress.save();
-    applyLang();
-    renderProfile();
-  }
-
-  /*
-   * The first-run chooser.
-   *
-   * Asked once, before the landing, because every other screen is written in a
-   * language the reader may not have — including the one that would tell them
-   * where the language setting is. The browser's preference decides what starts
-   * selected and nothing more: switching somebody's app on a guess, with the
-   * way back written in the language they just failed to read, is the one
-   * failure here worth designing around.
-   */
-  function openLangGate() {
-    var gate = $('lang-gate');
-    if (!gate) return false;
-    /*
-     * The guess only applies to somebody who has never answered. Falling back
-     * on `lang || guess()` looked equivalent and was not: the stored default is
-     * 'en', which is truthy, so the browser's preference never got a look in
-     * and a Spanish phone opened the chooser with English preselected.
-     */
-    if (!progress.state.langAsked) progress.state.lang = I18n.guess();
-    applyLang();
-    gate.hidden = false;
-    document.body.classList.add('is-lang-gate');
-    focusQuietly($('lang-gate-go'));
-    return true;
-  }
-
-  function closeLangGate() {
-    var gate = $('lang-gate');
-    if (gate) gate.hidden = true;
-    document.body.classList.remove('is-lang-gate');
-    progress.state.langAsked = true;
-    progress.save();
-  }
-
   function applyTheme() {
     // A theme is Premium, so a lapsed subscription goes back to the one the app
     // ships with rather than keeping a perk it is no longer paying for.
@@ -7116,16 +6971,7 @@
   // The top bar is fixed above the whole page, landing included, so it is
   // the one place that always shows who is signed in — the same account
   // strip the rest of the site (home, /premium, /account) already carries.
-  /*
-   * The last answer from the premium check, kept so the top bar can be redrawn
-   * without asking again. Changing language has to repaint it — "Sign in" is
-   * written by JS, so I18n.apply cannot reach it — and re-running the whole
-   * status fetch to relabel one link would be a network round trip for a word.
-   */
-  var lastStatus = null;
-
   function paintTopbar(status) {
-    lastStatus = status;
     var account = $('topbar-account');
     if (account) {
       account.classList.toggle('is-premium', !!status.hasPremium);
@@ -7135,7 +6981,7 @@
           : status.username || 'Account';
         account.href = '/account';
       } else {
-        account.textContent = I18n.t('top.signin', 'Sign in');
+        account.textContent = 'Sign in';
         account.href = '/api/oauth/login?redirect_to=%2Fdecide%2F';
       }
     }
@@ -8412,12 +8258,6 @@
 
   $('spin-btn').addEventListener('click', startSpin);
   $('spin-go').addEventListener('click', runSpin);
-  $('lang-gate-go').addEventListener('click', function () {
-    Sound.tick();
-    closeLangGate();
-    focusQuietly($('landing-start'));
-  });
-
   $('spin-swap').addEventListener('click', replaceStruck);
   $('spin-refill').addEventListener('click', function () {
     spin.out = [];
@@ -10404,10 +10244,6 @@
   // this same profile straight from the Whop session.
   progress.reload();
   progress.tidySnoozes();
-  // Before applyTheme and before the landing: every string painted from here
-  // on should already be in the right language, rather than being swapped
-  // afterwards in front of the reader.
-  applyLang();
   applyTheme();
   repaintVaults();
   applyMute();
@@ -10415,12 +10251,6 @@
   applyTaste();
   goHome();
   renderProfile();
-  /*
-   * The chooser comes before the landing, once. goHome() has already put the
-   * landing up underneath it, so answering the gate reveals a screen that is
-   * already in the chosen language rather than building one afterwards.
-   */
-  if (!progress.state.langAsked) openLangGate();
   showLanding();
 
   // The home-screen shortcuts in the manifest promise to land somewhere
