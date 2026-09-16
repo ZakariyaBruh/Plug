@@ -58,9 +58,10 @@ function PremiumPage() {
             <h1 className="mt-3 text-4xl font-bold sm:text-5xl">{OFFER_SHORT}</h1>
             <p className="mt-2 text-lg text-[var(--text-dim)]">then {PRICE_MONTHLY}</p>
             <p className="mt-4 text-[var(--text-dim)]">
-              Standard is the decide game, Tonight’s pick, and how many plates. Premium is the
-              control: Always avoid, four extra modes, meal slot, heat, mix-it-up, cook mode, and
-              saves. Start here — nothing is charged for three days. Sign in with the same Whop
+              The decide game is free, and so is telling it what you do not eat. Premium is the
+              part that remembers: it learns what you actually like, stops offering the same thing
+              twice in a week, and opens a real browser two people can order in at once, with a
+              cursor each. Nothing is charged for {TRIAL_DAYS} days. Sign in with the same Whop
               account and it is already on.
             </p>
             {viewer.hasPremium ? (

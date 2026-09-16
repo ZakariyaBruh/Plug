@@ -108,6 +108,38 @@
   var shortcut = false;  // this result came off a list, not a game
   var tunedTo = null;    // the profile reasons behind the dish on screen, if any
   var guestTags = [];    // session-only extra avoids, from "guest at the table"
+
+  /*
+   * WHAT THIS PROFILE IS ACTUALLY AVOIDING, in one place.
+   *
+   * The six standing dietary rules are free; everything layered over them —
+   * custom tag bans, a guest's avoids, the heat dial — is Premium.
+   *
+   * It lives here because THREE places need the answer: the game's own bans,
+   * the ranked pool every shortcut draws from, and tonight's pick. Only two of
+   * them ever knew. tonightDish filtered on named never-agains and the time of
+   * day and nothing else, so it served a vegetarian with "No meat" on a
+   * chicken satay — and had been doing it to paying subscribers all along,
+   * where it was rarer and so never reported. A rule that holds on most
+   * screens is not a rule, it is a coin toss with extra steps.
+   */
+  function effectiveRules() {
+    var tags = (progress.state.rules || []).slice();
+    if (!isPlus()) return tags;
+    progress.allRules().forEach(function (tag) {
+      if (tags.indexOf(tag) === -1) tags.push(tag);
+    });
+    guestTags.forEach(function (tag) {
+      if (tags.indexOf(tag) === -1) tags.push(tag);
+    });
+    if (progress.state.heat === 'none' && tags.indexOf('spicy') === -1) tags.push('spicy');
+    return tags;
+  }
+
+  /* Does this dish break any of them? */
+  function breaksRules(dish, tags) {
+    return tags.some(function (tag) { return (dish.tags[tag] || 0) === 1; });
+  }
   var spinTimer = null;
 
   var reduceMotion = false;
@@ -302,7 +334,7 @@
 
   function favouredDishes(options) {
     options = options || {};
-    var rules = progress.allRules();
+    var rules = effectiveRules();
     var now = Date.now();
     var pool = Data.ITEMS.filter(function (dish) {
       if (progress.isBanned(dish.name)) return false;
@@ -6876,7 +6908,7 @@
     {
       name: 'Control what comes up',
       items: [
-        'Always avoid: ban anything, not just the six standing rules',
+        'Ban any tag you like \u2014 the six standing rules are free for everyone',
         'Meal slot, heat dial, and mix-it-up on every decision',
         'Guest at the table \u2014 extra avoids for this sitting only',
         '\u201cNot today\u201d to shelve a dish, and don\u2019t repeat this week'
@@ -7335,19 +7367,30 @@
     var wrap = $('diet-rules');
     wrap.innerHTML = '';
     ProgressLib.RULES.forEach(function (rule) {
-      var on = isPlus() && progress.hasRule(rule.tag);
+      var on = progress.hasRule(rule.tag);
       var btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'rule' + (on ? ' is-on' : '') + (isPlus() ? '' : ' is-locked');
+      btn.className = 'rule' + (on ? ' is-on' : '');
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
       btn.innerHTML = '<span></span><span class="rule-state"></span>';
       btn.children[0].textContent = rule.label;
-      btn.children[1].textContent = on ? 'On' : (isPlus() ? 'Off' : 'Premium');
-      btn.title = isPlus() ? rule.note : 'Always avoid is part of Premium';
+      btn.children[1].textContent = on ? 'On' : 'Off';
+      btn.title = rule.note;
       btn.addEventListener('click', function () {
-        // Always avoid is Premium. On Standard the buttons are visible so
-        // people can see the feature, but they must not actually ban anything.
-        if (!premium('Always avoid')) return;
+        /*
+         * FREE, and it used to be Premium. That was a mistake.
+         *
+         * Somebody who does not eat meat is not a conversion opportunity. They
+         * are somebody this app is simply WRONG for until it listens, and an
+         * app that keeps serving a vegetarian steak until they pay does not get
+         * paid — it gets closed, in about fifteen seconds, and never opened
+         * again. The six standing rules are the difference between the product
+         * working and not working, which is not a thing to charge for.
+         *
+         * What is built on top of them is still Premium: banning any tag you
+         * like, never-again on a named dish, a guest's rules, the heat dial.
+         * Those are refinements on an app that already works for you.
+         */
         var nowOn = progress.toggleRule(rule.tag);
         btn.classList.toggle('is-on', nowOn);
         btn.setAttribute('aria-pressed', nowOn ? 'true' : 'false');
@@ -7360,21 +7403,14 @@
   }
 
   function applyRules() {
-    // Standing bans (Always avoid, custom rules, Never again) are Premium.
-    // A Standard profile that somehow has them stored must not have them
-    // applied — otherwise the free tier quietly behaves like Premium.
-    if (!isPlus()) {
-      game.setBans([]);
-      game.setExcluded([]);
-      return;
-    }
-    var tags = progress.allRules().slice();
-    guestTags.forEach(function (tag) {
-      if (tags.indexOf(tag) === -1) tags.push(tag);
-    });
-    if (progress.state.heat === 'none' && tags.indexOf('spicy') === -1) tags.push('spicy');
-    game.setBans(tags);
-    game.setExcluded(progress.bannedNames());
+    /*
+     * The six standing dietary rules apply to everybody (see paintRules for
+     * why). Everything layered over them stays Premium, and a Standard profile
+     * that has those stored from a lapsed subscription must not keep getting
+     * them — otherwise the free tier quietly behaves like Premium.
+     */
+    game.setBans(effectiveRules());
+    game.setExcluded(isPlus() ? progress.bannedNames() : []);
   }
 
   // "Not today" has to hold inside a played game as well, or the promise only
@@ -7913,8 +7949,12 @@
     var now = new Date();
     var hour = now.getHours();
     var key = now.getFullYear() + '-' + (now.getMonth() + 1) + '-' + now.getDate();
+    var rules = effectiveRules();
     var pool = Data.ITEMS.filter(function (d) {
       if (progress.isBanned(d.name)) return false;
+      // The thing this used to skip. One dish a day, handed over with no
+      // questions asked, is the worst possible place to break somebody's diet.
+      if (breaksRules(d, rules)) return false;
       if (hour >= 5 && hour < 11) {
         return (d.tags.light === 1 || d.tags.sweet === 1 || d.tags.quick === 1) && d.tags.spicy !== 1;
       }
@@ -7926,7 +7966,12 @@
       }
       return d.tags.quick === 1 || d.tags.comfort === 1 || d.tags.fried === 1;
     });
-    if (!pool.length) pool = Data.ITEMS.slice();
+    // Falling back to the whole catalogue would undo the filter above, so the
+    // fallback is everything the rules allow rather than everything there is.
+    if (!pool.length) {
+      pool = Data.ITEMS.filter(function (d) { return !breaksRules(d, rules); });
+    }
+    if (!pool.length) return null;
     return pool[hashDay(key) % pool.length];
   }
 

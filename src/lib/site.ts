@@ -113,7 +113,15 @@ export function pageHead(page: PageHead) {
  * PRICE_VALUE is the number the analytics events carry; PRICE is the same
  * amount written the way a person reads it.
  */
-export const TRIAL_DAYS = 3
+/*
+ * Seven days, not three.
+ *
+ * This app gets opened at dinner time, two or three evenings a week. Three days
+ * is one or two sittings — not enough to hit the thing Premium is actually for,
+ * which is the app knowing you well enough to stop suggesting what you do not
+ * want. A trial shorter than the habit it is trying to start proves nothing.
+ */
+export const TRIAL_DAYS = 7
 export const PRICE_VALUE = 4.99
 export const PRICE = '$4.99'
 export const PRICE_MONTHLY = `${PRICE}/month`
@@ -139,7 +147,7 @@ export const TRIAL_TERMS = `Free for ${TRIAL_DAYS} days, then ${PRICE_MONTHLY}. 
 
 export const SITE_TITLE = 'morsels45 — stop scrolling, start eating'
 export const SITE_DESCRIPTION =
-  `A 20-second food-decision game. Free to play. Premium adds Always avoid, cook mode, Knockout, Blitz, Shortlist, Together, Swipe, the shared browser, and saved dishes \u2014 ${OFFER}.`
+  `A 20-second food-decision game. Free to play, and free to tell it what you do not eat. Premium learns what you like, stops repeating itself, and opens a real browser two people can order in at once \u2014 ${OFFER}.`
 
 declare global {
   interface Window {
@@ -182,17 +190,13 @@ export const STANDARD = [
  */
 export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, string][] }[] = [
   {
-    name: 'Ways to play',
-    blurb: 'Six more games than the questionnaire, for when the questionnaire is not the mood — and the daily count taken off the free one.',
+    name: 'It gets to know you',
+    blurb: 'Everything above works better the longer you use it.',
     items: [
-      ['Knockout', 'An 8-dish bracket. Round of 8, semifinal, final.'],
-      ['Blitz', 'Thirty seconds on the clock, and rounds that change the rules — a third card, a blind pick, a round that counts double, one that asks which you would NOT eat.'],
-      ['This or that', 'A running champion defends its streak against whatever challenges it next.'],
-      ['Shortlist', 'Eight dishes from what you like. Tap out the ones you are not in the mood for, swap them for ones you have not seen, and stop the reel yourself on what is left.'],
-      ['Together', 'Up to six of you round one phone. Five either-ors each, then one dish the whole table can live with — and what you all turned out to agree on.'],
-      ['Swipe', 'A deck, one dish at a time. Right for yes, left for no. Every no re-sorts what is left away from it, and three yeses end it with a choice between the three.'],
-      ['Endless, with no count on it', 'Endless itself is free and always will be — but a free profile gets 200 picks a day and then it stops until tomorrow. Premium takes the daily count off entirely: the only thing that ends a run is the clock.'],
-      ['A second wind', 'Once a run, the clock reaching zero does not end it. No prompt, no countdown, no button to press — it simply keeps going with a few seconds back and the streak reset. The one thing that kills a run, survived, once.'],
+      ['Picks tuned to you', 'Rate a dish and it changes what comes up next.'],
+      ['Something new', 'Two questions, then a few dishes you have not had — chosen from the ones you actually liked, each with a reason for why it follows. Only ever real dishes off this menu, so every suggestion has its recipe behind it.'],
+      ['Save unlimited dishes', 'Standard saves none. Premium keeps everything you like.'],
+      ['Five extra looks', 'Ember, matcha, ink, paper, neon.'],
     ],
   },
   {
@@ -209,7 +213,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
     name: 'Control what comes up',
     blurb: 'The difference between a game that guesses and one that knows the rules.',
     items: [
-      ['Always avoid', 'Ban meat, seafood, cheese, spice, fried food, caffeine — applied to every decision, never asked again. Not on Standard.'],
+      ['Ban anything, not just the six', 'No meat, no seafood, no cheese, nothing spicy, nothing fried, no caffeine — those six are free, because an app that keeps offering a vegetarian steak is not a trial, it is broken. Premium bans any tag you like on top of them, and never-agains a named dish for good.'],
       ['Meal slot', 'Lock breakfast, lunch, dinner or late. Every mode respects it.'],
       ['Heat dial', 'Keep spice off, or ask for a kick — applied to every decision.'],
       ['Mix it up', 'Stick to what you like, keep the usual mix, or reach for the long tail.'],
@@ -231,13 +235,17 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
     ],
   },
   {
-    name: 'It gets to know you',
-    blurb: 'Everything above works better the longer you use it.',
+    name: 'Ways to play',
+    blurb: 'Six more games than the questionnaire, for when the questionnaire is not the mood — and the daily count taken off the free one.',
     items: [
-      ['Picks tuned to you', 'Rate a dish and it changes what comes up next.'],
-      ['Something new', 'Two questions, then a few dishes you have not had — chosen from the ones you actually liked, each with a reason for why it follows. Only ever real dishes off this menu, so every suggestion has its recipe behind it.'],
-      ['Save unlimited dishes', 'Standard saves none. Premium keeps everything you like.'],
-      ['Five extra looks', 'Ember, matcha, ink, paper, neon.'],
+      ['Knockout', 'An 8-dish bracket. Round of 8, semifinal, final.'],
+      ['Blitz', 'Thirty seconds on the clock, and rounds that change the rules — a third card, a blind pick, a round that counts double, one that asks which you would NOT eat.'],
+      ['This or that', 'A running champion defends its streak against whatever challenges it next.'],
+      ['Shortlist', 'Eight dishes from what you like. Tap out the ones you are not in the mood for, swap them for ones you have not seen, and stop the reel yourself on what is left.'],
+      ['Together', 'Up to six of you round one phone. Five either-ors each, then one dish the whole table can live with — and what you all turned out to agree on.'],
+      ['Swipe', 'A deck, one dish at a time. Right for yes, left for no. Every no re-sorts what is left away from it, and three yeses end it with a choice between the three.'],
+      ['Endless, with no count on it', 'Endless itself is free and always will be — but a free profile gets 200 picks a day and then it stops until tomorrow. Premium takes the daily count off entirely: the only thing that ends a run is the clock.'],
+      ['A second wind', 'Once a run, the clock reaching zero does not end it. No prompt, no countdown, no button to press — it simply keeps going with a few seconds back and the streak reset. The one thing that kills a run, survived, once.'],
     ],
   },
 ]
