@@ -4225,3 +4225,38 @@ body.is-beaming { overflow: hidden; }
 .picks-why { grid-area: why; font-size: var(--t-sm); color: var(--ink-3); }
 
 @media (prefers-reduced-motion: reduce) { .picks-row { animation: none; } }
+
+/* ==========================================================================
+   Five to try today — the discovery shelf on the home screen
+   ========================================================================== */
+.daily-list { list-style: none; margin: var(--s4) 0 var(--s3); padding: 0; display: grid; gap: var(--s2); }
+
+.daily-item { animation: lift var(--mid) var(--ease) both; animation-delay: calc(var(--i) * 60ms); }
+
+.daily-btn {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'icon name' 'icon blurb';
+  align-items: center;
+  gap: 0 var(--s3);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s3);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+
+.daily-btn:hover { border-color: var(--ink-3); background: var(--raise); }
+.daily-icon  { grid-area: icon; font-size: var(--t-lg); line-height: 1; }
+.daily-name  { grid-area: name; font-family: var(--display); font-size: var(--t-base); font-weight: 700; color: var(--ink); }
+.daily-blurb { grid-area: blurb; font-size: var(--t-xs); color: var(--ink-3); line-height: 1.45; }
+
+/* Said quietly but said. Somebody cooking for an allergy needs to know a
+   machine wrote this, and needs to know it before they read the dish. */
+.daily-made { margin: 0; opacity: .8; }
+
+@media (prefers-reduced-motion: reduce) { .daily-item { animation: none; } }

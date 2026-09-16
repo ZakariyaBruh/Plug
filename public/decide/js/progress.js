@@ -122,6 +122,13 @@
       plan: null,             // { at, dishes: [{ name, icon }] }
       banned: {},             // dish name -> true, struck off for good
       theme: '',              // which palette, '' being the one it ships with
+
+      /*
+       * Today's five, kept so a second visit on the same day costs no request.
+       * Shaped {day, dishes} rather than a bare list: without the date there is
+       * no way to tell this morning's shelf from last Tuesday's.
+       */
+      daily: null,
       tuned: false,           // did they tell us what they like, on purpose
       loves: [],              // tags they said they like, as opposed to played
       pantry: [],             // what is in the cupboard, for "what can I make?"

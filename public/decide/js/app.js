@@ -8003,6 +8003,117 @@
 
   $('tonight-btn').addEventListener('click', showTonight);
 
+  /* ------------------------------------------------- five to try today */
+  /*
+   * A shelf of five dishes the catalogue does not have, written each morning.
+   *
+   * THEY ARE NOT CATALOGUE DISHES and never join it. The 133 in data.js have
+   * hand-checked tags that the question engine reasons over and the dietary
+   * rules filter on; these have a declared "contains" list and nothing more.
+   * Letting them into the engine would mean a plausible-but-wrong tag steering
+   * questions and, far worse, quietly clearing somebody's dietary rule. So they
+   * live here: read them, cook them, and the deciding half of the app carries
+   * on with the catalogue it can vouch for.
+   *
+   * Fetched once a day. The worker caches the answer for the day at the edge,
+   * and this caches it again in the profile, so a second visit on the same day
+   * costs nothing at all.
+   */
+  var daily = { day: '', dishes: [] };
+  // showLanding runs more than once on the way in — boot calls goHome(), which
+  // shows the landing, and then boot shows it again. Without this the shelf is
+  // fetched twice on every cold visit.
+  var dailyAsked = false;
+
+  function todayKey() {
+    var d = new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  function loadDaily() {
+    // The flag alone, not the day: while the first request is still in the air
+    // daily.day is empty, so checking it let the second call straight through
+    // and every cold visit asked twice.
+    if (dailyAsked) return paintDaily();
+    dailyAsked = true;
+
+    var today = todayKey();
+    // Today's five, still in the profile: show them at once rather than
+    // flashing an empty shelf in and then filling it.
+    var saved = progress.state.daily;
+    if (saved && saved.day === today && saved.dishes && saved.dishes.length) {
+      daily = { day: today, dishes: saved.dishes };
+      return paintDaily();
+    }
+
+    fetch('/api/daily', { headers: { Accept: 'application/json' } })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (body) {
+        var list = (body && body.dishes) || [];
+        if (!list.length) { dailyAsked = false; return; }
+        daily = { day: today, dishes: list };
+        progress.state.daily = { day: today, dishes: list };
+        progress.save();
+        paintDaily();
+      })
+      .catch(function () {
+        // A bonus shelf that cannot load is a shelf that is not there. No
+        // error, no empty state, nothing for anybody to have to dismiss —
+        // but the next visit gets to try again rather than being stuck.
+        dailyAsked = false;
+      });
+  }
+
+  function paintDaily() {
+    var wrap = $('daily-wrap');
+    if (!wrap) return;
+    if (!daily.dishes.length) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var list = $('daily-list');
+    list.innerHTML = '';
+    daily.dishes.forEach(function (raw, i) {
+      // Given the shape the rest of the app expects, so the sheet, the tag
+      // line and the recipe fallback all work without knowing where it came
+      // from. tags is whatever the model declared and nothing is inferred.
+      var dish = { name: raw.name, icon: raw.icon, blurb: raw.blurb, tags: raw.tags || {} };
+
+      var li = document.createElement('li');
+      li.className = 'daily-item';
+      li.style.setProperty('--i', String(i));
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'daily-btn';
+
+      var icon = document.createElement('span');
+      icon.className = 'daily-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = dish.icon;
+
+      var name = document.createElement('span');
+      name.className = 'daily-name';
+      name.textContent = dish.name;
+
+      var blurb = document.createElement('span');
+      blurb.className = 'daily-blurb';
+      blurb.textContent = dish.blurb;
+
+      btn.appendChild(icon);
+      btn.appendChild(name);
+      btn.appendChild(blurb);
+      btn.addEventListener('click', function () {
+        Sound.tick();
+        openSheet(dish);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  }
+
+
   /*
    * Shortlist: eight from what you like, and now a say in which eight.
    *
@@ -10134,6 +10245,7 @@
     // and not only when a view change happens to have run first.
     renderIntro();
     startReel();
+    loadDaily();
     focusQuietly($('landing-start'));
   }
 
