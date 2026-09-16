@@ -297,11 +297,15 @@ function HomePage() {
           <div className="mx-auto max-w-3xl px-6 fade-in-up">
             <h2 className="text-3xl font-bold">Hungry. Undecided. Sorted.</h2>
             <p className="mt-3 text-[var(--text-dim)]">Twenty seconds. One answer. Then go eat it.</p>
+            {/* Same words as the button at the top of this page. Two buttons
+                doing the same thing on one page should not disagree about what
+                the thing costs. The Premium column above keeps "Play now",
+                because somebody who has paid is not playing free. */}
             <a
               href="/decide/"
               className="mt-8 inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
             >
-              Play now
+              Play free
             </a>
           </div>
         </section>
