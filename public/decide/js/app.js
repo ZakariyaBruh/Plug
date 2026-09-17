@@ -5996,8 +5996,8 @@
         var why = $('news-error-why');
         if (why) {
           why.textContent = isOffline()
-            ? 'You are offline. The game, the dishes and the recipes still work — the ' +
-              'news needs a connection, because the headlines come from other people’s sites.'
+            ? 'The headlines come from other people’s sites, so this one needs a ' +
+              'connection. Come back when you have one.'
             : 'Nothing is wrong with your connection — this happens when a publisher is ' +
               'having a bad morning.';
         }
