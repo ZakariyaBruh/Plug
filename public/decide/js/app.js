@@ -237,10 +237,16 @@
   // "nothing here"; a blurred one says "something here, and not yours yet".
   // The blurred layer is made inert and hidden from assistive tech so what gets
   // announced is the notice, not scrambled recipe steps.
-  function paintVault(vaultId, lockId) {
+  /*
+   * `hasContent` defaults to true so every other vault in the app behaves as it
+   * always did; the dish sheet passes false when there is no recipe to gate.
+   * A lock over an empty panel is not a paywall, it is a bug that asks for
+   * money.
+   */
+  function paintVault(vaultId, lockId, hasContent) {
     var vault = $(vaultId);
     if (!vault) return;
-    var open = isPlus();
+    var open = isPlus() || hasContent === false;
     var body = vault.querySelector('.vault-body');
     vault.classList.toggle('is-locked', !open);
     $(lockId).hidden = open;
@@ -6713,13 +6719,33 @@
     list.forEach(function (recipe, i) {
       wrap.appendChild(recipeCard(recipe, i, dish, { compact: true }));
     });
-    if (!list.length) {
+
+    /*
+     * NEVER PUT A PAYWALL IN FRONT OF NOTHING.
+     *
+     * The lock and the "Premium" tag were unconditional markup, so a dish with
+     * no recipe written for it showed a free reader "Recipes are part of
+     * Premium" and an Unlock button — for a recipe that does not exist. Paying
+     * would have bought them the same empty panel. The daily shelf made it
+     * common rather than rare: those dishes are suggestions from the model and
+     * none of them has a recipe, so every one of the five did it.
+     *
+     * So the section only asks for money when there is something behind it. No
+     * recipe means no heading, no tag, no lock — just the plain sentence saying
+     * so, which is the honest answer and reads as information rather than as a
+     * pitch that failed.
+     */
+    var hasRecipe = list.length > 0;
+    $('sheet-recipe-title').hidden = !hasRecipe;
+    if (!hasRecipe) {
       var none = document.createElement('p');
       none.className = 'fine';
-      none.textContent = 'No recipe written for this one.';
+      none.textContent = 'No recipe written for this one \u2014 it is a suggestion to go and ' +
+        'look up, not something the app can walk you through.';
       wrap.appendChild(none);
     }
-    paintVault('sheet-vault', 'sheet-lock');
+    // Locked only when locking it withholds something.
+    paintVault('sheet-vault', 'sheet-lock', hasRecipe);
     paintSheetActions();
 
     if (sheet.showModal) sheet.showModal();
