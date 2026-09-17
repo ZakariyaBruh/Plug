@@ -6764,8 +6764,17 @@
      * so, which is the honest answer and reads as information rather than as a
      * pitch that failed.
      */
+    /*
+     * The heading STAYS; only the price tag and the lock go.
+     *
+     * Hiding the whole heading was the first attempt and it was wrong: it left
+     * the "no recipe" sentence with nothing above it, butted against the tag
+     * list, so it read as one more tag under "What it is" rather than as the
+     * answer to "how do I make this". The heading is what gives it a home. It
+     * was never the misleading part — "Premium" over an empty panel was.
+     */
     var hasRecipe = list.length > 0;
-    $('sheet-recipe-title').hidden = !hasRecipe;
+    $('sheet-recipe-tag').hidden = !hasRecipe;
     if (!hasRecipe) {
       var none = document.createElement('p');
       none.className = 'fine';

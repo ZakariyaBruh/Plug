@@ -4260,3 +4260,10 @@ body.is-beaming { overflow: hidden; }
 .daily-made { margin: 0; opacity: .8; }
 
 @media (prefers-reduced-motion: reduce) { .daily-item { animation: none; } }
+
+/* The recipe area of the dish sheet. A little air above it so the line that
+   says there is no recipe cannot read as the last item of the tag list
+   directly above — which is exactly how it looked when the heading was
+   hidden. */
+#sheet-vault { margin-top: var(--s2); }
+#sheet-recipes .fine { margin: 0; }
