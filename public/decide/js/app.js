@@ -254,10 +254,36 @@
    * A lock over an empty panel is not a paywall, it is a bug that asks for
    * money.
    */
+  /*
+   * A vault is locked only when locking it withholds something — and it has to
+   * STAY that way, which is what this remembers.
+   *
+   * Whether there is anything behind a vault is a fact about the dish on
+   * screen, and it is known only where the panel was filled. The lock, though,
+   * is repainted from somewhere else entirely every time the tier is
+   * re-checked: on load, on a profile reset, and on every single window focus
+   * (see syncPremium). Those repaints have no dish in hand and passed no third
+   * argument, which read as "there is content" and put a Premium lock over the
+   * one panel with nothing behind it.
+   *
+   * Which is exactly the bug the long comment in openSheet says was fixed. It
+   * was — in openSheet — and then undone a few hundred milliseconds later by
+   * the first focus event, so a free reader tapping one of today's five got
+   * the honest "nobody has written this up yet, here is a search for it", and
+   * then got "Recipes are part of Premium" over the top of it the moment they
+   * glanced at another tab. Locked or not locked depending on nothing they did.
+   *
+   * So the answer is written onto the element when somebody knows it, and read
+   * back when nobody does. The emptiness of a panel does not change when a
+   * subscription does, and now the lock does not pretend otherwise.
+   */
   function paintVault(vaultId, lockId, hasContent) {
     var vault = $(vaultId);
     if (!vault) return;
-    var open = isPlus() || hasContent === false;
+    if (hasContent !== undefined) vault.dataset.filled = hasContent ? 'yes' : 'no';
+    // Unknown counts as filled: every vault that never says is one that always
+    // has something behind it, and a lock that fails open is a giveaway.
+    var open = isPlus() || vault.dataset.filled === 'no';
     var body = vault.querySelector('.vault-body');
     vault.classList.toggle('is-locked', !open);
     $(lockId).hidden = open;
@@ -4925,7 +4951,11 @@
     if (cooking) renderRecipes();
     else resetPlaces();
 
-    paintVault('cook-vault', 'cook-lock');
+    // Same reasoning as the sheet: a dish nobody has written up has nothing
+    // behind the cook vault, so there is nothing there to sell. Eat out always
+    // has something — it is a search, not a book — so it says nothing and is
+    // treated as filled.
+    paintVault('cook-vault', 'cook-lock', Recipes.has(planDish.name));
     paintVault('out-vault', 'out-lock');
   }
 
