@@ -6967,8 +6967,7 @@
 
     renderPlus();
     renderFavourites();
-    renderDiets();
-    renderRules();
+    renderDietGroups('diet-groups', 'diet-caveats');
     renderCustomRules();
     renderBanned();
     renderInsights();
@@ -7505,99 +7504,188 @@
   // Standing rules feed straight into the engine, so a banned dish never comes
   // up and its question never gets asked again.
   /*
-   * The diets, on the profile screen.
+   * WHAT SOMEBODY DOES NOT EAT, in three groups, built once and used twice.
    *
-   * Same control as the standing rules below it and deliberately so: one row
-   * per thing, a word at the end saying whether it is on. What is different is
-   * that turning one on can turn several tags on at once, so the row carries
-   * what it actually does rather than only what it is called — somebody who
-   * picks Kosher and then finds a lasagne missing deserves to have been told
-   * which of the three parts did it.
+   * The same markup serves the last card of the welcome and the strip on the
+   * profile screen, because they are the same question and answering it in one
+   * place has to mean it is answered in the other. They were two renderers for
+   * about a day and the copy had already drifted between them.
+   *
+   *   Faith  — a tradition's rules under its own name. Several tags each.
+   *   Diet   — vegetarian, vegan, pescatarian. Several tags each.
+   *   Avoid  — one tag each, named the way somebody would say it.
+   *
+   * Everything stacks and nothing is exclusive: Hindu and Vegetarian together,
+   * or Halal with No alcohol turned back off, are ordinary combinations and
+   * the union of what is on is what applies.
    */
-  function renderDiets() {
-    var wrap = $('diet-list');
-    wrap.innerHTML = '';
+  var DIET_GROUPS = [
+    { id: 'faith', name: 'Faith',
+      note: 'Halal, Kosher, Hindu, Jain, Sattvic and five more \u2014 a tradition\u2019s ' +
+        'rules under its own name.' },
+    { id: 'diet', name: 'Diet',
+      note: 'Vegetarian, vegan, pescatarian.' },
+    { id: 'avoid', name: 'One thing at a time',
+      note: 'Anything you would rather not be handed \u2014 pork, dairy, onion, heat \u2014 on its own.' }
+  ];
 
-    ProgressLib.DIETS.forEach(function (diet) {
-      var on = progress.hasDiet(diet.id);
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'rule' + (on ? ' is-on' : '');
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.innerHTML = '<span class="rule-name"><b></b><i></i></span>' +
-        '<span class="rule-state"></span>';
-      btn.querySelector('b').textContent = diet.label;
-      btn.querySelector('i').textContent = diet.note;
-      btn.children[1].textContent = on ? 'On' : 'Off';
-      btn.addEventListener('click', function () {
-        // Free, for exactly the reason the standing rules below are free.
-        var nowOn = progress.toggleDiet(diet.id);
-        btn.classList.toggle('is-on', nowOn);
-        btn.setAttribute('aria-pressed', nowOn ? 'true' : 'false');
-        btn.children[1].textContent = nowOn ? 'On' : 'Off';
-        Sound.tick();
-        applyRules();
-        paintDietCaveats();
-        // Not renderDishes: the catalogue screen deliberately lists everything
-        // a rule has ruled out, because finding a dish is how you un-rule it.
-        renderIntro();
-      });
-      wrap.appendChild(btn);
+  /*
+   * One row. A diet and a standing rule are the same control, so they are the
+   * same function: a name, what it actually does under it, and a word at the
+   * end saying whether it is on.
+   *
+   * The note is not decoration. A diet turns several tags on at once, and the
+   * row is the only place that can say which — somebody who picks Kosher and
+   * then finds a lasagne missing deserves to have been told which of the three
+   * parts did it.
+   */
+  function dietRow(label, note, isOn, toggle, afterToggle) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'rule' + (isOn() ? ' is-on' : '');
+    btn.setAttribute('aria-pressed', isOn() ? 'true' : 'false');
+    btn.innerHTML = '<span class="rule-name"><b></b><i></i></span>' +
+      '<span class="rule-state"></span>';
+    btn.querySelector('b').textContent = label;
+    btn.querySelector('i').textContent = note;
+    btn.children[1].textContent = isOn() ? 'On' : 'Off';
+    btn.addEventListener('click', function () {
+      /*
+       * FREE, every one of them, and the standing rules used to be Premium.
+       * That was a mistake.
+       *
+       * Somebody who does not eat meat is not a conversion opportunity. They
+       * are somebody this app is simply WRONG for until it listens, and an app
+       * that keeps serving a vegetarian steak until they pay does not get paid
+       * — it gets closed, in about fifteen seconds, and never opened again.
+       * Everything in these three groups is the difference between the product
+       * working and not working, which is not a thing to charge for. It goes
+       * double for the faith group: an app that offers a Muslim pork until the
+       * card clears has not built a funnel, it has built an insult.
+       *
+       * What is layered ON TOP is still Premium: banning a style of food the
+       * questions ask about, never-again on a named dish, a guest's rules, the
+       * heat dial. Those are refinements on an app that already works for you.
+       */
+      var nowOn = toggle();
+      btn.classList.toggle('is-on', nowOn);
+      btn.setAttribute('aria-pressed', nowOn ? 'true' : 'false');
+      btn.children[1].textContent = nowOn ? 'On' : 'Off';
+      Sound.tick();
+      applyRules();
+      // Not renderDishes: the catalogue screen deliberately lists everything a
+      // rule has ruled out, because finding a dish is how you un-rule it. The
+      // front door is a different matter — what it offers has to be offerable.
+      renderIntro();
+      paintDaily();
+      afterToggle();
     });
-
-    paintDietCaveats();
+    return btn;
   }
 
-  // Only the diets actually switched on get to say what they cannot promise.
-  // Printing all of them all the time would turn an honest limit into a wall
-  // of small print, which is the reliable way to make sure nobody reads the
-  // one line that applies to them.
-  function paintDietCaveats() {
+  /** What is switched on inside one group, for the line on its summary. */
+  function dietGroupOn(group) {
+    if (group !== 'avoid') {
+      return progress.dietsIn(group).filter(function (d) {
+        return progress.hasDiet(d.id);
+      }).map(function (d) { return d.label; });
+    }
+    return ProgressLib.RULES.filter(function (r) {
+      return progress.hasRule(r.tag);
+    }).map(function (r) { return r.label; });
+  }
+
+  /*
+   * Build the three groups into a container.
+   *
+   * Shut unless something inside is already on, which is the whole reason the
+   * groups exist: flat, this is twenty-seven rows of other people's rules to
+   * scroll past on the way to your own. A group that IS carrying something
+   * opens itself, so nothing anybody chose is ever hidden behind a closed
+   * door they have to remember to look inside.
+   */
+  function renderDietGroups(rootId, caveatsId) {
+    var root = $(rootId);
+    if (!root) return;
+    root.innerHTML = '';
+
+    DIET_GROUPS.forEach(function (group) {
+      var box = document.createElement('details');
+      box.className = 'diet-group';
+      box.open = dietGroupOn(group.id).length > 0;
+
+      var head = document.createElement('summary');
+      head.className = 'diet-group-head';
+      head.innerHTML = '<span class="diet-group-name"></span>' +
+        '<span class="diet-group-note"></span><span class="diet-group-count"></span>';
+      head.querySelector('.diet-group-name').textContent = group.name;
+      head.querySelector('.diet-group-note').textContent = group.note;
+      box.appendChild(head);
+
+      var rows = document.createElement('div');
+      rows.className = 'rules';
+      box.appendChild(rows);
+
+      // Repainting the counts rather than the rows, because rebuilding a list
+      // under the finger that just tapped it would shut the group and throw
+      // away the focus.
+      var after = function () {
+        paintDietCounts(root);
+        paintDietCaveats(caveatsId);
+      };
+
+      if (group.id === 'avoid') {
+        ProgressLib.RULES.forEach(function (rule) {
+          rows.appendChild(dietRow(rule.label, rule.note,
+            function () { return progress.hasRule(rule.tag); },
+            function () { return progress.toggleRule(rule.tag); }, after));
+        });
+      } else {
+        progress.dietsIn(group.id).forEach(function (diet) {
+          rows.appendChild(dietRow(diet.label, diet.note,
+            function () { return progress.hasDiet(diet.id); },
+            function () { return progress.toggleDiet(diet.id); }, after));
+        });
+      }
+
+      root.appendChild(box);
+    });
+
+    paintDietCounts(root);
+    paintDietCaveats(caveatsId);
+  }
+
+  // The count on a shut group's summary, so it can still say what is inside.
+  function paintDietCounts(root) {
+    var boxes = root.querySelectorAll('.diet-group');
+    DIET_GROUPS.forEach(function (group, i) {
+      var box = boxes[i];
+      if (!box) return;
+      var on = dietGroupOn(group.id);
+      var slot = box.querySelector('.diet-group-count');
+      // The names themselves while they fit — "Halal" tells somebody more than
+      // "1 on" does, and at one or two it always fits.
+      slot.textContent = !on.length ? ''
+        : on.length <= 2 ? on.join(' \u00b7 ')
+        : on.length + ' on';
+      box.classList.toggle('has-on', on.length > 0);
+    });
+  }
+
+  /*
+   * Only the diets actually switched on get to say what they cannot promise.
+   * Printing all of them all the time would turn an honest limit into a wall
+   * of small print, which is the reliable way to make sure nobody reads the
+   * one line that applies to them.
+   */
+  function paintDietCaveats(caveatsId) {
+    var note = $(caveatsId);
+    if (!note) return;
     var lines = progress.dietsChosen()
       .filter(function (d) { return d.caveat; })
       .map(function (d) { return d.label + ': ' + d.caveat; });
-    var note = $('diet-caveats');
     note.hidden = lines.length === 0;
     note.textContent = lines.join(' ');
-  }
-
-  function renderRules() {
-    var wrap = $('diet-rules');
-    wrap.innerHTML = '';
-    ProgressLib.RULES.forEach(function (rule) {
-      var on = progress.hasRule(rule.tag);
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'rule' + (on ? ' is-on' : '');
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.innerHTML = '<span></span><span class="rule-state"></span>';
-      btn.children[0].textContent = rule.label;
-      btn.children[1].textContent = on ? 'On' : 'Off';
-      btn.title = rule.note;
-      btn.addEventListener('click', function () {
-        /*
-         * FREE, and it used to be Premium. That was a mistake.
-         *
-         * Somebody who does not eat meat is not a conversion opportunity. They
-         * are somebody this app is simply WRONG for until it listens, and an
-         * app that keeps serving a vegetarian steak until they pay does not get
-         * paid — it gets closed, in about fifteen seconds, and never opened
-         * again. The six standing rules are the difference between the product
-         * working and not working, which is not a thing to charge for.
-         *
-         * What is built on top of them is still Premium: banning any tag you
-         * like, never-again on a named dish, a guest's rules, the heat dial.
-         * Those are refinements on an app that already works for you.
-         */
-        var nowOn = progress.toggleRule(rule.tag);
-        btn.classList.toggle('is-on', nowOn);
-        btn.setAttribute('aria-pressed', nowOn ? 'true' : 'false');
-        btn.children[1].textContent = nowOn ? 'On' : 'Off';
-        applyRules();
-        Sound.tick();
-      });
-      wrap.appendChild(btn);
-    });
   }
 
   function applyRules() {
@@ -8219,6 +8307,9 @@
    * costs nothing at all.
    */
   var daily = { day: '', dishes: [] };
+  // Bumped whenever a dish can declare something it could not declare before.
+  // See loadDaily for what it is for.
+  var DAILY_VOCAB = 2;
   // showLanding runs more than once on the way in — boot calls goHome(), which
   // shows the landing, and then boot shows it again. Without this the shelf is
   // fetched twice on every cold visit.
@@ -8239,10 +8330,19 @@
     dailyAsked = true;
 
     var today = todayKey();
-    // Today's five, still in the profile: show them at once rather than
-    // flashing an empty shelf in and then filling it.
+    /*
+     * Today's five, still in the profile: show them at once rather than
+     * flashing an empty shelf in and then filling it.
+     *
+     * `vocab` is which version of the "contains" list the worker was speaking
+     * when these were written. A shelf saved before a dish could declare pork
+     * or dairy cannot be filtered for somebody who keeps halal — it would look
+     * filtered and not be — so an older one is dropped and refetched rather
+     * than shown. It costs one request, once, on the day this ships.
+     */
     var saved = progress.state.daily;
-    if (saved && saved.day === today && saved.dishes && saved.dishes.length) {
+    if (saved && saved.day === today && saved.vocab === DAILY_VOCAB &&
+        saved.dishes && saved.dishes.length) {
       daily = { day: today, dishes: saved.dishes };
       return paintDaily();
     }
@@ -8253,7 +8353,7 @@
         var list = (body && body.dishes) || [];
         if (!list.length) { dailyAsked = false; return; }
         daily = { day: today, dishes: list };
-        progress.state.daily = { day: today, dishes: list };
+        progress.state.daily = { day: today, vocab: DAILY_VOCAB, dishes: list };
         progress.save();
         paintDaily();
       })
@@ -8265,15 +8365,49 @@
       });
   }
 
+  // Five, unless a rule took some of them.
+  var DAILY_WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five'];
+
   function paintDaily() {
     var wrap = $('daily-wrap');
     if (!wrap) return;
-    if (!daily.dishes.length) { wrap.hidden = true; return; }
+
+    /*
+     * THE SHELF OBEYS THE RULES TOO, and for a while it did not.
+     *
+     * Everything else that puts a dish in front of somebody goes through
+     * effectiveRules(). This did not go through anything: it painted whatever
+     * the model sent, so a profile with Halal on was shown pork, and one with
+     * No meat on was shown a beef stew, on the front door, every morning. The
+     * profile screen promises these rules apply to "every decision, every mode
+     * and every list", and this was the list where that was not true.
+     *
+     * Filtered here rather than at the worker, because the answer is cached at
+     * the edge for the whole day and shared by every reader in a region — it
+     * cannot know whose menu it is on. What the worker does instead is let a
+     * dish DECLARE all of this (see CONTAINS in routes/api/daily.ts); the
+     * declaration travels, and the filtering happens where the profile is.
+     */
+    var rules = effectiveRules();
+    var shown = daily.dishes.filter(function (raw) {
+      var tags = raw.tags || {};
+      return !rules.some(function (tag) { return (tags[tag] || 0) === 1; });
+    });
+
+    if (!shown.length) { wrap.hidden = true; return; }
     wrap.hidden = false;
+
+    // The heading counted to five whatever was on the shelf, which is a small
+    // lie on an ordinary morning and an obvious one on a strict profile.
+    var count = DAILY_WORDS[shown.length] || String(shown.length);
+    $('daily-title').textContent = count + ' to try today';
+    $('daily-note').textContent = shown.length === daily.dishes.length
+      ? 'Dishes the app does not already know, written this morning. Tap one to read about it.'
+      : 'Written this morning, minus the ones your rules rule out. Tap one to read about it.';
 
     var list = $('daily-list');
     list.innerHTML = '';
-    daily.dishes.forEach(function (raw, i) {
+    shown.forEach(function (raw, i) {
       // Given the shape the rest of the app expects, so the sheet, the tag
       // line and the recipe fallback all work without knowing where it came
       // from. tags is whatever the model declared and nothing is inferred.
@@ -10541,62 +10675,13 @@
   /*
    * The diet card.
    *
-   * Two lists, and the split is the point. The named diets come first because
-   * they are what somebody would actually say about themselves; the six
-   * standing rules underneath are for everybody whose thing does not have a
-   * name — an allergy, a dislike they are done arguing about, a month off the
-   * spice. Both write straight through to the profile on tap, so there is
-   * nothing to submit and nothing to lose by leaving.
+   * The same three groups the profile screen carries, built by the same
+   * function — see renderDietGroups. Both write straight through to the
+   * profile on tap, so there is nothing to submit here and nothing to lose by
+   * walking away half way down.
    */
-  function welcomeRow(label, note, isOn, toggle) {
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'rule' + (isOn() ? ' is-on' : '');
-    btn.setAttribute('aria-pressed', isOn() ? 'true' : 'false');
-    btn.innerHTML = '<span class="rule-name"><b></b><i></i></span>' +
-      '<span class="rule-state"></span>';
-    btn.querySelector('b').textContent = label;
-    btn.querySelector('i').textContent = note;
-    btn.children[1].textContent = isOn() ? 'On' : 'Off';
-    btn.addEventListener('click', function () {
-      var nowOn = toggle();
-      btn.classList.toggle('is-on', nowOn);
-      btn.setAttribute('aria-pressed', nowOn ? 'true' : 'false');
-      btn.children[1].textContent = nowOn ? 'On' : 'Off';
-      Sound.tick();
-      applyRules();
-      paintWelcomeCaveats();
-    });
-    return btn;
-  }
-
   function renderWelcomeDiets() {
-    var diets = $('welcome-diets');
-    diets.innerHTML = '';
-    ProgressLib.DIETS.forEach(function (diet) {
-      diets.appendChild(welcomeRow(diet.label, diet.note,
-        function () { return progress.hasDiet(diet.id); },
-        function () { return progress.toggleDiet(diet.id); }));
-    });
-
-    var rules = $('welcome-rules');
-    rules.innerHTML = '';
-    ProgressLib.RULES.forEach(function (rule) {
-      rules.appendChild(welcomeRow(rule.label, rule.note,
-        function () { return progress.hasRule(rule.tag); },
-        function () { return progress.toggleRule(rule.tag); }));
-    });
-
-    paintWelcomeCaveats();
-  }
-
-  function paintWelcomeCaveats() {
-    var lines = progress.dietsChosen()
-      .filter(function (d) { return d.caveat; })
-      .map(function (d) { return d.label + ': ' + d.caveat; });
-    var note = $('welcome-caveats');
-    note.hidden = lines.length === 0;
-    note.textContent = lines.join(' ');
+    renderDietGroups('welcome-groups', 'welcome-caveats');
   }
 
   // Reachable again from the profile, because the diet question is worth

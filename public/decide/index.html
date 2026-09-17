@@ -209,16 +209,25 @@
       </ul>
     </section>
 
-    <!-- The one question this asks for. See renderWelcomeDiets in app.js. -->
+    <!-- ===================================================================
+         The one question this asks for.
+
+         THREE GROUPS, ALL SHUT. Flat, it was thirteen rows; with the faiths
+         it would be twenty-seven, which on a phone is a wall of other
+         people's rules to scroll past on the way to your own. Grouped and
+         closed, it is three lines and a choice about which one is yours.
+
+         <details> rather than a listbox or a script-driven accordion: it
+         opens from the keyboard, it is announced as expandable, it survives
+         with no JavaScript, and Find-in-page can still reach a shut one. The
+         summary carries a count so a shut group can still say what is on
+         inside it — see paintDietGroups in app.js.
+         =================================================================== -->
     <section class="welcome-pane" id="welcome-pane-diet" hidden>
-      <div class="rules" id="welcome-diets"></div>
-
-      <p class="strip-title welcome-sub-title">Anything else to keep off the menu</p>
-      <div class="rules" id="welcome-rules"></div>
-
+      <div class="diet-groups" id="welcome-groups"></div>
       <p class="fine diet-caveats" id="welcome-caveats" hidden></p>
-      <p class="fine">All of this is free, and you can change any of it later under
-      <em>You</em>. Nothing here is asked twice.</p>
+      <p class="fine">All of it is free, all of it stacks, and you can change any of
+      it later under <em>You</em>. Nothing here is asked twice.</p>
     </section>
 
     <div class="welcome-actions">
@@ -413,7 +422,7 @@
          worse than no shelf.
          =================================================================== -->
     <section class="strip" id="daily-wrap" hidden>
-      <h2 class="strip-title">Five to try today</h2>
+      <h2 class="strip-title" id="daily-title">Five to try today</h2>
       <p class="fine" id="daily-note">Five dishes the app does not already know,
       written this morning. Tap one to read about it.</p>
       <ul class="daily-list" id="daily-list"></ul>
@@ -1825,22 +1834,22 @@
       <!-- Free, and above the paid strips rather than among them. What
            somebody does not eat is not a feature of this app, it is a
            condition of it working at all — see the comment on the rule
-           buttons in app.js. -->
+           buttons in app.js.
+
+           This used to be two strips, "What you don't eat" over an "Always
+           avoid" that carried a Premium badge it had stopped meaning: the
+           rules under it were made free and the badge was left behind, which
+           is a worse lie than the badge ever was a sale. One strip now, the
+           same three groups the welcome uses, and no badge on any of it. -->
       <section class="strip">
         <h2 class="strip-title">What you don&rsquo;t eat</h2>
         <p class="fine">Answered once, applied to every decision, every mode and every
         list. Pick as many as fit &mdash; they stack.</p>
-        <div class="rules" id="diet-list"></div>
+        <div class="diet-groups" id="diet-groups"></div>
         <p class="fine diet-caveats" id="diet-caveats" hidden></p>
         <div class="locate-actions">
           <button class="quiet" id="replay-welcome">Run the welcome again</button>
         </div>
-      </section>
-
-      <section class="strip">
-        <h2 class="strip-title">Always avoid <span class="tag-premium">Premium</span></h2>
-        <p class="fine">Applied to every decision, so you stop being asked.</p>
-        <div class="rules" id="diet-rules"></div>
       </section>
 
       <section class="strip">
@@ -1851,8 +1860,9 @@
       </section>
 
       <section class="strip">
-        <h2 class="strip-title">Anything else <span class="tag-premium">Premium</span></h2>
-        <p class="fine">Ban any ingredient or style, not just the six above.</p>
+        <h2 class="strip-title">Ban a style of food <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Not what is in it &mdash; what it is. Anything the questions
+        ask about, struck off before they ask.</p>
         <div class="filters" id="custom-rules"></div>
       </section>
 

@@ -4376,9 +4376,103 @@ body.is-welcoming { overflow: hidden; }
   line-height: 1.55;
 }
 
-/* One row per thing, and on the diet card each row carries what it actually
-   does under its own name — a diet turns on more than one tag at a time, and
-   the row is the only place that can say which. */
+/* ----------------------------------------------------------------- diets
+
+   Three groups, shut until something inside them is on. Flat this is
+   twenty-seven rows, which on a phone is a wall of other people's rules to
+   scroll past on the way to your own.
+
+   <details>/<summary>, so the open and shut of it is the browser's job:
+   keyboard, announcement and find-in-page all work without a line of script.
+   The marker is replaced with a rule that turns, because the default triangle
+   is the one piece of chrome in here nothing else looks like. */
+.diet-groups { margin-top: var(--s3); border-top: 1px solid var(--hair); }
+
+.diet-group { border-bottom: 1px solid var(--hair); }
+
+.diet-group-head {
+  display: grid;
+  grid-template-columns: 1rem minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--s3);
+  min-height: var(--tap);
+  padding: var(--s3) 0;
+  cursor: pointer;
+  list-style: none;
+}
+
+.diet-group-head::-webkit-details-marker { display: none; }
+
+/* The turning rule, drawn rather than typed so it is the same hairline as
+   every other divider on the screen.
+
+   EVERY child is placed explicitly, the marker included. Left to auto-flow,
+   an item with a row but no column and an item with neither do not end up
+   where reading the rules suggests: the marker landed in the second column
+   and the group's name in the first, which is one rem wide, so "One thing at
+   a time" came out one word per line with a chevron floating in the middle of
+   the row above it. */
+.diet-group-head::before {
+  content: "";
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  width: .5rem;
+  height: .5rem;
+  border-right: 1.5px solid var(--ink-3);
+  border-bottom: 1.5px solid var(--ink-3);
+  transform: rotate(-45deg);
+  transform-origin: 60% 60%;
+  transition: transform var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+
+.diet-group[open] > .diet-group-head::before { transform: rotate(45deg); }
+.diet-group-head:hover::before { border-color: var(--ink); }
+
+.diet-group-name {
+  grid-column: 2;
+  grid-row: 1;
+  font-family: var(--display);
+  font-size: var(--t-base);
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.diet-group-head:hover .diet-group-name { color: var(--ink); }
+.diet-group.has-on .diet-group-name { color: var(--ink); }
+
+.diet-group-note {
+  grid-column: 2;
+  grid-row: 2;
+  margin-top: .15rem;
+  font-size: var(--t-xs);
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+/* What is on inside a shut group, so shutting one never hides a choice. */
+.diet-group-count {
+  grid-column: 3;
+  grid-row: 1;
+  font-family: var(--display);
+  font-size: var(--t-xs);
+  letter-spacing: .04em;
+  text-align: right;
+  color: var(--amber);
+}
+
+/* The rows inside sit under the summary rather than starting another list, so
+   the group reads as one block and not as three stacked tables. */
+.diet-group .rules { margin: 0 0 var(--s3); border-top: 0; padding-left: calc(1rem + var(--s3)); }
+.diet-group .rule:last-child { border-bottom: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .diet-group-head::before { transition: none; }
+}
+
+/* One row per thing, and each row carries what it actually does under its own
+   name — a diet turns on more than one tag at a time, and the row is the only
+   place that can say which. */
 .rule-name { display: grid; gap: .1rem; min-width: 0; }
 .rule-name b { font-family: var(--display); font-size: var(--t-base); font-weight: 600; color: inherit; }
 .rule-name i { font-style: normal; font-size: var(--t-xs); color: var(--ink-3); }

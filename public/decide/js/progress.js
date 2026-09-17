@@ -69,13 +69,35 @@
 
   // Standing dietary rules. Each one bans a tag outright, so those dishes never
   // come up and the matching question is never asked.
+  /*
+   * ONE TAG EACH, and that is what separates this list from DIETS below.
+   *
+   * A rule here is a single thing somebody does not want, named the way they
+   * would name it. A diet is a set of them under one word. Both are free, both
+   * end up in the same place, and the only reason they are two lists is that
+   * "I am vegan" and "no mushrooms, thanks" are different sentences and ought
+   * to be different controls.
+   *
+   * It started at six and is now thirteen, because the diets need the parts
+   * they are built from to be reachable on their own. Somebody who keeps halal
+   * but drinks is better served by turning Halal on and No alcohol off than by
+   * being told the shortcut does not fit them.
+   */
   var RULES = [
-    { tag: 'meat',     label: 'No meat',        note: 'Nothing with meat in it' },
-    { tag: 'seafood',  label: 'No seafood',     note: 'No fish, no shellfish' },
-    { tag: 'cheesy',   label: 'No cheese',      note: 'Skip anything cheese-led' },
-    { tag: 'spicy',    label: 'Nothing spicy',  note: 'Keep the heat off' },
-    { tag: 'fried',    label: 'Nothing fried',  note: 'No deep-fried anything' },
-    { tag: 'caffeine', label: 'No caffeine',    note: 'Decaf life' }
+    { tag: 'meat',      label: 'No meat',          note: 'Nothing with meat in it' },
+    { tag: 'seafood',   label: 'No seafood',       note: 'No fish, no shellfish' },
+    { tag: 'pork',      label: 'No pork',          note: 'Bacon, ham and sausage included' },
+    { tag: 'beef',      label: 'No beef',          note: 'Nothing with beef in it' },
+    { tag: 'shellfish', label: 'No shellfish',     note: 'Prawns, crab, lobster, mussels' },
+    { tag: 'dairy',     label: 'No dairy',         note: 'Milk, cream, butter and cheese' },
+    { tag: 'egg',       label: 'No egg',           note: 'Including egg in the batter' },
+    { tag: 'cheesy',    label: 'No cheese',        note: 'Skip anything cheese-led' },
+    { tag: 'allium',    label: 'No onion or garlic', note: 'Leeks, shallots and chives too' },
+    { tag: 'root',      label: 'Nothing from underground', note: 'Potato, carrot, ginger, turmeric' },
+    { tag: 'alcohol',   label: 'No alcohol',       note: 'Including wine cooked into a sauce' },
+    { tag: 'spicy',     label: 'Nothing spicy',    note: 'Keep the heat off' },
+    { tag: 'fried',     label: 'Nothing fried',    note: 'No deep-fried anything' },
+    { tag: 'caffeine',  label: 'No caffeine',      note: 'Coffee, tea, and the rest of it' }
   ];
 
   /*
@@ -83,47 +105,115 @@
    *
    * RULES above are single tags, and they work because "no cheese" is one
    * idea. Almost nothing anybody actually says about their diet is one idea:
-   * "I keep halal" is two, "I am vegan" is four, and asking somebody to
-   * assemble their own religion out of a tag list is asking them to do the
-   * app's homework. So a diet is a name with a set of tags behind it, picked
-   * once, and the tags are an implementation detail nobody has to see.
+   * "I keep halal" is two, "I am vegan" is four, and "I am Jain" is five. So a
+   * diet is a name with a set of tags behind it, picked once, and the tags are
+   * an implementation detail nobody has to see.
    *
    * FREE, all of them, and that is not a pricing oversight — see the comment
    * on the standing rules in app.js. An app that keeps serving a Muslim pork
    * until they pay is not running a clever funnel. It is being deleted.
    *
-   * WHAT THE `caveat` IS FOR. Three of these cannot be honoured by a tag, and
-   * pretending otherwise would be the worst thing in here. No catalogue knows
-   * whether an animal was slaughtered to a rite, whether a kitchen keeps meat
-   * and dairy pans apart, or whether the oil the chips went in had fish in it
-   * this morning. What this can do is keep the obvious things off the menu.
-   * The caveat says which part is which, and it is shown wherever the diet is
-   * offered rather than buried in a policy page — an honest limit stated up
-   * front is worth more to somebody who keeps a rule than a confident claim
-   * they will catch us out on by Thursday.
+   * THEY STACK, which is what stops this list having to hold every combination
+   * anybody lives by. Hindu and Vegetarian together is an ordinary thing to
+   * be, and so is Halal and No alcohol off; the union of whatever is switched
+   * on is the answer. That is why the faith entries below are the distinct
+   * RULES of a tradition rather than a guess at one person's whole practice,
+   * and why the ones that are commonly kept alongside vegetarianism say so
+   * instead of assuming it.
+   *
+   * WHAT THIS LIST IS NOT. It is not a ruling, and it is not a census. Every
+   * tradition here contains people who keep it differently, which is said out
+   * loud in the caveats rather than smoothed over: the entries that name a
+   * vegetarian form say "vegetarian" in the label so nothing here reads as the
+   * app telling somebody what their religion requires of them.
+   *
+   * WHAT THE `caveat` IS FOR. Several of these cannot be honoured by a tag,
+   * and pretending otherwise would be the worst thing in here. No catalogue
+   * knows whether an animal was slaughtered to a rite, whether a kitchen keeps
+   * meat and dairy pans apart, or whether the oil the chips went in had fish
+   * in it this morning. What this can do is keep the obvious things off the
+   * menu. The caveat says which part is which, and it is shown wherever the
+   * diet is offered rather than buried in a policy page — an honest limit
+   * stated up front is worth more to somebody who keeps a rule than a
+   * confident claim they will catch us out on by Thursday.
    */
   var DIETS = [
-    { id: 'vegetarian', label: 'Vegetarian', note: 'No meat, no fish',
-      tags: ['meat', 'seafood'] },
-    { id: 'vegan', label: 'Vegan', note: 'No meat, fish, dairy or egg',
-      tags: ['meat', 'seafood', 'dairy', 'egg'],
-      caveat: 'Tagged by how a dish is normally made. Honey, gelatine and what ' +
-        'the bread was brushed with are past what the catalogue knows.' },
-    { id: 'pescatarian', label: 'Pescatarian', note: 'Fish yes, meat no',
-      tags: ['meat'] },
-    { id: 'halal', label: 'Halal', note: 'No pork, no alcohol',
+    /* ---- by faith ---------------------------------------------------- */
+    { id: 'halal', group: 'faith', label: 'Halal', note: 'No pork, no alcohol',
       tags: ['pork', 'alcohol'],
       caveat: 'Keeps pork and alcohol off your menu. It cannot tell you whether ' +
         'meat is zabiha or a kitchen is certified \u2014 only the kitchen can.' },
-    { id: 'kosher', label: 'Kosher', note: 'No pork or shellfish, no meat with dairy',
+
+    { id: 'kosher', group: 'faith', label: 'Kosher',
+      note: 'No pork or shellfish, never meat with dairy',
       tags: ['pork', 'shellfish', 'meatdairy'],
       caveat: 'Keeps pork, shellfish and meat-with-dairy off your menu. Kashrut ' +
         'is a kitchen and a hechsher, and no app can stand in for either.' },
-    { id: 'nobeef', label: 'No beef', note: 'Nothing with beef in it',
-      tags: ['beef'] },
-    { id: 'nopork', label: 'No pork', note: 'Nothing with pork in it',
-      tags: ['pork'] }
+
+    { id: 'hindu', group: 'faith', label: 'Hindu', note: 'Nothing with beef in it',
+      tags: ['beef'],
+      caveat: 'Beef is the rule most widely kept. Many Hindus are vegetarian as ' +
+        'well \u2014 add Vegetarian, or use Sattvic below, if that is how you eat.' },
+
+    { id: 'sattvic', group: 'faith', label: 'Sattvic',
+      note: 'Vegetarian, and no onion, garlic, alcohol or caffeine',
+      tags: ['meat', 'seafood', 'allium', 'alcohol', 'caffeine'] },
+
+    { id: 'jain', group: 'faith', label: 'Jain',
+      note: 'No meat, fish or egg, and nothing grown underground',
+      tags: ['meat', 'seafood', 'egg', 'allium', 'root'],
+      caveat: 'The strictest thing in this list, and this catalogue is short on ' +
+        'Jain cooking \u2014 expect mostly sweet things and drinks. Honey, and ' +
+        'food kept overnight, are past what a tag can see.' },
+
+    { id: 'buddhist', group: 'faith', label: 'Buddhist, vegetarian',
+      note: 'No meat or fish, no onion or garlic',
+      tags: ['meat', 'seafood', 'allium'],
+      caveat: 'Practice varies enormously and a great many Buddhists eat meat. ' +
+        'This is the Mahayana vegetarian form, pungent roots and all.' },
+
+    { id: 'sikh', group: 'faith', label: 'Sikh, vegetarian', note: 'No meat or fish',
+      tags: ['meat', 'seafood'],
+      caveat: 'Sikhi does not require vegetarianism, but langar always is and many ' +
+        'Sikhs eat this way. The rule that does apply either way \u2014 no kutha ' +
+        'meat \u2014 is about how an animal was killed, which nothing here can see.' },
+
+    { id: 'adventist', group: 'faith', label: 'Seventh-day Adventist',
+      note: 'No pork or shellfish, no alcohol or caffeine',
+      tags: ['pork', 'shellfish', 'alcohol', 'caffeine'],
+      caveat: 'Many Adventists keep a vegetarian diet as well \u2014 add Vegetarian ' +
+        'on top if you do.' },
+
+    { id: 'wordofwisdom', group: 'faith', label: 'Word of Wisdom',
+      note: 'No alcohol, coffee or tea',
+      tags: ['alcohol', 'caffeine'],
+      caveat: 'The Latter-day Saint health code. Where exactly caffeine ends is ' +
+        'something members decide for themselves; this takes coffee, tea and the ' +
+        'caffeinated drinks off and leaves the rest to you.' },
+
+    { id: 'ital', group: 'faith', label: 'Ital',
+      note: 'No meat, fish, dairy, egg or alcohol',
+      tags: ['meat', 'seafood', 'dairy', 'egg', 'alcohol'],
+      caveat: 'Rastafari livity. Ital also turns on salt and on how processed a ' +
+        'thing is, neither of which this catalogue records.' },
+
+    /* ---- by diet ------------------------------------------------------ */
+    { id: 'vegetarian', group: 'diet', label: 'Vegetarian', note: 'No meat, no fish',
+      tags: ['meat', 'seafood'] },
+
+    { id: 'vegan', group: 'diet', label: 'Vegan', note: 'No meat, fish, dairy or egg',
+      tags: ['meat', 'seafood', 'dairy', 'egg'],
+      caveat: 'Tagged by how a dish is normally made. Honey, gelatine and what the ' +
+        'bread was brushed with are past what the catalogue knows.' },
+
+    { id: 'pescatarian', group: 'diet', label: 'Pescatarian', note: 'Fish yes, meat no',
+      tags: ['meat'] }
   ];
+
+  // The two entries that were single tags pretending to be diets. They are
+  // ordinary rules now — see RULES — so a profile that picked one before this
+  // split keeps exactly what it asked for rather than silently losing it.
+  var RETIRED_DIETS = { nobeef: 'beef', nopork: 'pork' };
 
   // The axes shown on the profile screen, drawn from how you tend to answer.
   var AXES = [
@@ -323,6 +413,25 @@
         if (saved[k] !== undefined && saved[k] !== null) this.state[k] = saved[k];
       }, this);
     }
+
+    /*
+     * A diet that has since become an ordinary rule keeps working.
+     *
+     * dietTags() looks a diet up by id and skips one it does not recognise,
+     * which is the right thing to do with a stored id from the future and
+     * quite the wrong thing to do with one from the past: somebody who chose
+     * "No pork" would have had it silently stop applying on the morning the
+     * list was reorganised, with the row still showing nothing at all. A
+     * dietary rule failing open and saying nothing is the one outcome this
+     * whole area exists to prevent, so the id is translated instead.
+     */
+    var rules = this.state.rules || (this.state.rules = []);
+    this.state.diets = (this.state.diets || []).filter(function (id) {
+      var tag = RETIRED_DIETS[id];
+      if (!tag) return true;
+      if (rules.indexOf(tag) === -1) rules.push(tag);
+      return false;
+    });
   };
 
   Progress.prototype.save = function () {
@@ -812,6 +921,13 @@
     this.state.favourites = [{ name: item.name, icon: item.icon }].concat(list).slice(0, 60);
     this.save();
     return 'saved';
+  };
+
+  // The diets in one group, in the order they are written. The UI asks for a
+  // group rather than filtering the list itself, so adding one never means
+  // remembering to update a screen.
+  Progress.prototype.dietsIn = function (group) {
+    return DIETS.filter(function (d) { return d.group === group; });
   };
 
   Progress.prototype.hasDiet = function (id) {

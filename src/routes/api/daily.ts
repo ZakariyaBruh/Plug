@@ -34,19 +34,54 @@ const MAX_OUTPUT_TOKENS = 1400
 /*
  * What a dish may declare it contains, and the tag each maps to.
  *
- * This is the whole safety story. The six standing dietary rules filter on
+ * This is the whole safety story. Every dietary rule in the app filters on
  * these tags, so a generated dish that fails to declare itself honestly is a
  * vegetarian being handed chicken. The model is asked for an explicit list
  * rather than left to omit things: a missing `contains` is a rejected dish, not
  * a dish assumed to be safe. Fail closed, every time.
+ *
+ * It used to be six words, chosen when the rules were six tags. The rules are
+ * not six tags any more — there are named diets now, including religious ones,
+ * and a shelf that can only declare "meat" cannot be filtered for somebody who
+ * keeps halal. Anything the app can rule out, a dish here has to be able to
+ * declare, or the shelf is the one screen in the app where the rules do not
+ * hold. The vocabulary is the app's own DIET_TAGS plus the handful of taste
+ * tags the standing rules use; see data.js, and keep the two in step.
  */
 const CONTAINS: Record<string, string> = {
   meat: 'meat',
+  pork: 'pork',
+  beef: 'beef',
   seafood: 'seafood',
+  shellfish: 'shellfish',
+  dairy: 'dairy',
   cheese: 'cheesy',
+  egg: 'egg',
+  alcohol: 'alcohol',
+  onion: 'allium',
+  garlic: 'allium',
+  root: 'root',
   spicy: 'spicy',
   fried: 'fried',
   caffeine: 'caffeine',
+}
+
+/*
+ * Tags nobody declares, worked out from the ones they did.
+ *
+ * Exactly the derivations item() makes in data.js, for exactly the same
+ * reason: they are facts about other tags, and letting the model author them
+ * separately is letting it contradict itself. `meatdairy` is what keeps a
+ * cheeseburger off a kosher menu when neither half of it is forbidden alone.
+ */
+function derive(tags: Record<string, number>) {
+  if (!('veg' in tags)) tags.veg = 1 - Math.max(tags.meat ?? 0, tags.seafood ?? 0)
+  if (tags.meat === 1 && tags.dairy === 1) tags.meatdairy = 1
+  // Pork and beef are meat; shellfish is seafood. A dish that named the child
+  // and not the parent would be hidden from one rule and served by the other.
+  if (tags.pork === 1 || tags.beef === 1) tags.meat = 1
+  if (tags.shellfish === 1) tags.seafood = 1
+  if (tags.cheesy === 1) tags.dairy = 1
 }
 
 function instruction(known: string[]) {
@@ -60,10 +95,16 @@ function instruction(known: string[]) {
     `blurb: one sentence, under 90 characters, plain and concrete — what it is and why it is ` +
     `worth eating. No marketing words, no exclamation marks.\n` +
     `contains: every one of these that applies, as an array of lowercase strings — ` +
-    `${Object.keys(CONTAINS).join(', ')}. Be strict and literal: include "meat" for any meat ` +
-    `including poultry, include "seafood" for any fish or shellfish, include "cheese" if cheese ` +
-    `is in it at all, include "caffeine" for coffee, tea, or chocolate-heavy dishes. If none ` +
-    `apply return an empty array. Somebody's diet depends on this list being right.\n\n` +
+    `${Object.keys(CONTAINS).join(', ')}. Be strict and literal, and judge the dish as it is ` +
+    `normally made rather than as it could be adapted. Include "meat" for any meat including ` +
+    `poultry and "pork" or "beef" as well when it is that; "seafood" for any fish or shellfish ` +
+    `and "shellfish" as well for prawns, crab, lobster or mussels; "dairy" for milk, cream, ` +
+    `butter, yoghurt or cheese, and "cheese" as well when cheese is in it; "egg" including egg ` +
+    `in a batter or a dressing; "alcohol" including wine or beer cooked into it; "onion" or ` +
+    `"garlic" for onion, garlic, leek, shallot, spring onion or chives; "root" for potato, ` +
+    `carrot, radish, beetroot, ginger, turmeric or galangal; "caffeine" for coffee, tea or ` +
+    `chocolate-heavy dishes. If none apply return an empty array. Somebody's religion or ` +
+    `allergy depends on this list being right, so err towards declaring.\n\n` +
     `Pick five from five different cuisines. Vary them: not five mains, not five from one ` +
     `region. Do not use any of these, which the app already has:\n${known.join(', ')}`
   )
@@ -118,6 +159,7 @@ function toDish(raw: unknown, taken: Set<string>): Made | null {
     if (!tag) continue // an unknown word is not fatal, but it is not a tag either
     tags[tag] = 1
   }
+  derive(tags)
 
   taken.add(key)
   return { name, icon, blurb, tags }
