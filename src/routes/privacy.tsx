@@ -42,7 +42,7 @@ const SECTIONS: Section[] = [
   {
     heading: 'What is stored in your browser',
     body: [
-      'One entry in your browser’s local storage, called whatShouldIEat.v1. It holds everything the game knows about you: which dishes you have picked and rated, how often, your level, XP, streak and badges, any dietary rules you have set, dishes you have saved or struck off, and today’s five suggestions so a second visit does not have to fetch them again.',
+      'One entry in your browser’s local storage, called whatShouldIEat.v1. It holds everything the game knows about you: which dishes you have picked and rated, how often, your level, XP, streak and badges, the diets and rules you have set — including any faith you picked one under — dishes you have saved or struck off, your settings, and today’s suggestions so a second visit does not have to fetch them again.',
       'It never leaves your device. We cannot read it, it is not backed up anywhere, and it is not tied to a name. Clearing your browser data for this site deletes it permanently — there is no copy to restore from, which is the trade for not having to make an account.',
     ],
   },

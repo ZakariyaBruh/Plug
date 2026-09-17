@@ -17,7 +17,7 @@ import { loadViewer } from '#/lib/viewer'
  * receive it was right: somebody sent you "morsels45 said Ramen", and this
  * names the dish in its own card and offers you a go. As a thing to find, it
  * was eighty-four words — a name, a one-line blurb and a button — repeated
- * across 112 URLs. Thin near-duplicates like that are what Google calls
+ * across every dish URL. Thin near-duplicates like that are what Google calls
  * doorway pages: it crawls them and declines to index them, which is why this
  * site had 117 pages in its sitemap and no organic traffic at all.
  *

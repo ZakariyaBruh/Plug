@@ -151,6 +151,34 @@
   function breaksRules(dish, tags) {
     return tags.some(function (tag) { return (dish.tags[tag] || 0) === 1; });
   }
+
+  /*
+   * WHAT A MODEL SUGGESTED, MINUS WHAT YOU DO NOT EAT.
+   *
+   * Both AI surfaces — "Something new" and the menu builder — ask for dish
+   * names, look each one up in the catalogue, and painted it straight to the
+   * screen. Neither consulted the rules, so a profile with Halal on could be
+   * handed a three-course menu with pork in the middle of it, and a vegetarian
+   * could be told the thing "worth a try" tonight was a steak. The offline
+   * fallback that builds a menu without the model has always filtered properly
+   * (it draws from favouredDishes), so the two halves of one feature disagreed
+   * about whether somebody's diet counted.
+   *
+   * FILTERED HERE RATHER THAN ASKED FOR UP THERE, on purpose. Telling the
+   * model "no pork, no alcohol" would work, and would also mean posting a fair
+   * inference about somebody's religion to a third party every time they asked
+   * for a menu. The privacy page says this profile stays on the device; it is
+   * cheaper to keep that true and drop a suggestion or two than to have to
+   * write the footnote. The model picks from the catalogue, the catalogue is
+   * tagged, and everything needed to check is already on this device.
+   */
+  function allowedDishes(list, nameOf) {
+    var rules = effectiveRules();
+    return list.filter(function (entry) {
+      var dish = dishByName(nameOf(entry));
+      return !!dish && !breaksRules(dish, rules);
+    });
+  }
   var spinTimer = null;
 
   var reduceMotion = false;
@@ -2550,14 +2578,18 @@
     }).then(function (answer) {
       picks.busy = false;
       $('picks-waiting').hidden = true;
-      if (answer.ok && answer.body && answer.body.picks && answer.body.picks.length) {
-        return paintPicks(answer.body.picks, history.liked.length);
-      }
+      var offered = (answer.ok && answer.body && answer.body.picks) || [];
+      var safe = allowedDishes(offered, function (pick) { return pick.name; });
+      if (safe.length) return paintPicks(safe, history.liked.length);
+
       $('picks-step').textContent = 'No luck';
       $('picks-error').hidden = false;
-      $('picks-error-text').textContent = answer.body && answer.body.error === 'busy'
-        ? 'The suggester is busy — that one is on us, not you.'
-        : 'That did not come back. It usually works second time.';
+      $('picks-error-text').textContent = offered.length
+        ? 'Everything it came back with is ruled out by what you do not eat. Try again — '
+          + 'it draws from a different corner each time.'
+        : answer.body && answer.body.error === 'busy'
+          ? 'The suggester is busy — that one is on us, not you.'
+          : 'That did not come back. It usually works second time.';
     });
   }
 
@@ -3195,6 +3227,16 @@
   }
 
   function renderMenuView() {
+    // Say which tier is reading before anything else on the screen does. The
+    // heading used to carry a Premium badge over a feature a free profile can
+    // use, which is the same lie in the other direction as a paywall over an
+    // empty panel.
+    $('menu-blurb').textContent = isPlus()
+      ? 'A starter, a main and a pudding that actually go together \u2014 not three heavy ' +
+        'things, and not three cold ones. As many as you like.'
+      : 'A starter, a main and a pudding that actually go together \u2014 not three heavy ' +
+        'things, and not three cold ones. One every couple of days on Standard.';
+
     /*
      * A RUN IN PROGRESS OUTRANKS EVERYTHING BELOW.
      *
@@ -3366,12 +3408,15 @@
       if (!courses || !courses.length) return menuFellBack();
 
       var menu = [];
-      courses.forEach(function (c) {
+      allowedDishes(courses, function (c) { return c.name; }).forEach(function (c) {
         var course = COURSES.filter(function (x) { return x.id === c.course; })[0];
         var dish = dishByName(c.name);
         if (course && dish) menu.push({ course: course, dish: dish, why: c.why || '' });
       });
-      if (menu.length < 2) return menuFellBack();
+      // A menu cut down to one course by the rules is not a menu. The offline
+      // builder draws from favouredDishes, which has the rules applied already,
+      // so falling back to it is the one route that cannot come back wrong.
+      if (menu.length < 2) return menuFellBack(courses.length > 0);
 
       // Eating order, whatever order the answer came back in — the run walks
       // this list, so the starter has to actually be first.
@@ -3388,19 +3433,28 @@
   }
 
   /*
-   * The model did not answer, so the app answers. Says so, because a menu
-   * that ignores what somebody just typed and does not admit it is worse than
-   * an error — they would think it had read them and disagreed.
+   * The model did not answer, or answered with food this profile does not
+   * eat. Either way the app answers instead, and says so — a menu that
+   * ignores what somebody just typed and does not admit it is worse than an
+   * error; they would think it had read them and disagreed.
    */
-  function menuFellBack() {
+  function menuFellBack(answered) {
     var menu = buildMenu({ keep: {} });
     if (!menu.length) return menuPanels('menu-empty');
     startRun(menu);
     // Said on the course in hand rather than at the end, because at the end it
     // is too late to matter and they have already agreed to two courses on the
     // strength of something they think the model wrote.
-    $('menu-now-why').textContent = 'Chosen from what you like rather than from what you ' +
-      'said \u2014 the model did not answer, and this has not used up your go.';
+    //
+    // The two reasons to be here are not the same admission, and only one of
+    // them is a failure. Saying "the model did not answer" about a menu thrown
+    // out for having pork in it would be a lie told to cover a rule being
+    // kept, which is the last thing this part of the app should be doing.
+    $('menu-now-why').textContent = answered
+      ? 'Chosen from what you like rather than from what you said \u2014 what came ' +
+        'back was ruled out by what you do not eat, and this has not used up your go.'
+      : 'Chosen from what you like rather than from what you said \u2014 the model did ' +
+        'not answer, and this has not used up your go.';
   }
 
   $('menu-way-questions').addEventListener('click', function () { Sound.tick(); menuStartQuestions(); });
@@ -7016,24 +7070,26 @@
   }
 
   /* ----------------------------------------------------------- the tier */
-  // The same five groups, in the same order, as the /premium page. A flat list
-  // of twenty-four lines reads as noise; grouped, it reads as five things you
-  // are buying. Each group is headed, and every head says Premium, because the
-  // one question this list has to answer is what is on the other side of the
-  // paywall.
+  // The same five groups, in the same order, as PREMIUM_SECTIONS on the
+  // /premium page. A flat list of twenty-odd lines reads as noise; grouped, it
+  // reads as five things you are buying. Each group is headed, and every head
+  // says Premium, because the one question this list has to answer is what is
+  // on the other side of the paywall.
+  //
+  // They are two lists because this is a separate static app and cannot import
+  // from lib/site.ts. That means they can drift, and they had: the first and
+  // last groups were swapped, under a comment asserting they were not. If you
+  // change one, open the other.
   var PERK_SECTIONS = [
     {
-      name: 'Ways to play',
+      name: 'It gets to know you',
       items: [
-        'Knockout: an 8-dish bracket, watch it fill in round by round',
-        'Blitz: thirty seconds, a streak to build, and rounds that change the rules',
-        'This or that: a running champion against whatever challenges it',
-        'Shortlist: eight dishes, tap out the ones you are not in the mood for',
-        'Together: up to six of you round one phone, one dish you can all live with',
-        'Swipe: like three out of the deck, then choose between the three',
-        'Endless with no daily count on it \u2014 free stops at ' + ENDLESS_DAY + ' picks a day',
-        'A second wind: one run-ending clock, survived, every run',
-        'Themed runs \u2014 an evening of nothing but quick, or comfort, or veg'
+        'Picks tuned to what you have actually liked',
+        'Something new: two questions, then dishes chosen from what you liked',
+        'Rate a dish and it changes what comes up next',
+        'Save as many dishes as you like \u2014 the free tier saves none',
+        'Streak freezes, so one missed day costs nothing',
+        'Six palettes to pick from'
       ]
     },
     {
@@ -7048,9 +7104,9 @@
     {
       name: 'Control what comes up',
       items: [
-        'Ban any tag you like \u2014 the six standing rules are free for everyone',
+        'Ban a whole style of food \u2014 what you do not eat is free for everyone',
         'Meal slot, heat dial, and mix-it-up on every decision',
-        'Guest at the table \u2014 extra avoids for this sitting only',
+        'Guest at the table \u2014 extra avoids for this sitting only, yours left alone',
         '\u201cNot today\u201d to shelve a dish, and don\u2019t repeat this week'
       ]
     },
@@ -7061,19 +7117,22 @@
         'Cook from what is already in your kitchen',
         'Scale any recipe and take a shopping list to the shop',
         'A side with that, and a planned week of seven dishes',
-        'Write me a menu: three courses that go together, with the recipes',
+        'Write me a menu whenever you like \u2014 Standard gets one every couple of days',
         'Mood shortcuts and instant picks \u2014 no questions at all'
       ]
     },
     {
-      name: 'It gets to know you',
+      name: 'Ways to play',
       items: [
-        'Picks tuned to what you have actually liked',
-        'Something new: two questions, then dishes chosen from what you liked',
-        'Rate a dish and it changes what comes up next',
-        'Save as many dishes as you like \u2014 the free tier saves none',
-        'Streak freezes, so one missed day costs nothing',
-        'Six palettes to pick from'
+        'Knockout: an 8-dish bracket, watch it fill in round by round',
+        'Blitz: thirty seconds, a streak to build, and rounds that change the rules',
+        'This or that: a running champion against whatever challenges it',
+        'Shortlist: eight dishes, tap out the ones you are not in the mood for',
+        'Together: up to six of you round one phone, one dish you can all live with',
+        'Swipe: like three out of the deck, then choose between the three',
+        'Endless with no daily count on it \u2014 free stops at ' + ENDLESS_DAY + ' picks a day',
+        'A second wind: one run-ending clock, survived, every run',
+        'Themed runs \u2014 an evening of nothing but quick, or comfort, or veg'
       ]
     }
   ];
@@ -10540,8 +10599,8 @@
       sub: 'Every question is two answers and neither is wrong. Have a go — right now, honestly:',
       next: 'Next' },
     { id: 'more',
-      title: 'And when it has landed on something…',
-      sub: 'The dish is the beginning of it, not the end.',
+      title: 'There is more in here than the game.',
+      sub: 'All of this is free too, and none of it needs an account either.',
       next: 'One last thing' },
     { id: 'diet',
       title: 'Anything you don’t eat?',
@@ -10721,8 +10780,8 @@
   var shell = document.querySelector('.content');
   var landed = false;
 
-  // The reel is decoration, and it is here on purpose: "112 dishes" as a number
-  // does not land the way 112 dishes going past does.
+  // The reel is decoration, and it is here on purpose: the catalogue as a
+  // number does not land the way the dishes themselves going past does.
   var reelTimer = null;
 
   function startReel() {

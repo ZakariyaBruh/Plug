@@ -29,7 +29,7 @@ export type Dish = {
  *
  * The last two groups are optional because a handful of items carry no tags,
  * and \s* spans newlines because the calls wrap. Tags are what let one dish
- * link to another: without them the 112 pages are islands that only the
+ * link to another: without them those pages are islands that only the
  * sitemap knows about, which is most of the reason none of them were indexed.
  */
 const ITEM =

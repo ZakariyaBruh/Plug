@@ -8,7 +8,11 @@ it is **daily retention**. A community owner's problem is members going quiet; M
 a twenty-second habit with a streak attached, which is exactly the shape of thing that gets
 someone to open a whop on a day they had no other reason to.
 
-Everything claimed below is real and in the app today — checked against `lib/site.ts`.
+Everything claimed below is real and in the app today. The dish count is checked by the
+build (see `recipeBook` in `vite.config.ts`); the free/paid split is `STANDARD` and
+`PREMIUM_SECTIONS` in `lib/site.ts`. Re-read both before editing this — the previous version
+of this file said 112 dishes and sold the dietary rules as Premium, months after they were
+neither.
 
 ---
 
@@ -44,21 +48,25 @@ do. 118 characters.
 >
 > **Together mode** makes it a group thing. Up to six people round one phone answer five
 > questions each, and it lands on the one dish the whole table can live with, then shows what
-> everyone turned out to agree on. Every invite is a link that travels outside your community
-> and points back into it.
+> everyone turned out to agree on. It is a Premium mode, but the two-phone version of it —
+> send a link, they answer their half — is free, and every invite is a link that travels
+> outside your community and points back into it.
 >
 > ### What members get
 >
-> - **112 dishes**, each with a recipe, a step-by-step cook mode and a shopping list
+> - **133 dishes**, each with a recipe, a step-by-step cook mode and a shopping list
 > - **Nearby** — everywhere near them that serves it, sorted by what kind of place it is
-> - **Six more ways to play** — Knockout brackets, thirty-second Blitz, Swipe, Shortlist,
->   This-or-that, and Endless
-> - **Rules that stick** — ban meat, seafood, spice or anything else once, and never be asked
->   again
+> - **Rules that stick, free** — vegetarian, vegan or pescatarian; halal, kosher, Hindu, Jain,
+>   Sattvic, Buddhist, Sikh, Adventist, Word of Wisdom or Ital; or one ingredient at a time.
+>   Answered once on the way in, then never asked again, on every screen in the app
+> - **Endless** — two dishes and a clock, free, 200 picks a day
 > - Works with no signal, installs to the home screen, and plays entirely from the keyboard
 >
-> Free to play. Everything above is included — Premium adds extra modes and a shared browser
-> for ordering or cooking together, but nobody has to pay to get the daily habit.
+> Free to play, and the dietary rules are part of the free half on purpose: an app that keeps
+> offering a member food they do not eat does not get paid, it gets deleted. Premium adds six
+> more ways to play — Knockout, Blitz, This-or-that, Shortlist, Together and Swipe — cook mode,
+> and a shared browser two people drive at once to order or cook together. Nobody has to pay to
+> get the daily habit.
 
 ---
 

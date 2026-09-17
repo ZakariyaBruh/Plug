@@ -254,14 +254,56 @@ function recipeBook(): Plugin {
       if (dishCount !== claimed) {
         throw new Error(
           `recipe-book: the site says ${claimed} dishes, data.js has ${dishCount}. ` +
-            'Update DISH_COUNT in src/lib/site.ts (and the two counts in public/decide/index.html).',
+            'Update DISH_COUNT in src/lib/site.ts. The other places that print it are checked below.',
         )
       }
       if (count !== dishCount) {
-        throw new Error(`recipe-book: ${dishCount} dishes but ${count} recipes — they must be 1:1`)
+        throw new Error(`recipe-book: ${dishCount} dishes but ${count} of them have recipes — must be 1:1`)
       }
 
-      this.info(`recipe-book: ${count} dishes, ${count} recipes`)
+      /*
+       * And every OTHER place the app writes one of these numbers down.
+       *
+       * The error above used to tell whoever hit it to "update DISH_COUNT (and
+       * the two counts in public/decide/index.html)" — an instruction nothing
+       * enforced, on a file this plugin never opened. So the shell's counts
+       * happened to be right and the web manifest, which nobody thinks of as
+       * copy, sat on "All 112 dishes" through three batches of new ones. It is
+       * the shortcut menu you get from long-pressing the installed icon: as
+       * user-visible as the front page and a great deal easier to forget.
+       *
+       * Checked by anchor rather than by sweeping for "N dishes", because the
+       * page legitimately says "8 dishes enter a bracket" and "0 dishes tried"
+       * and neither is a claim about the catalogue.
+       */
+      const recipeTotal = Object.values(book as Record<string, unknown[]>)
+        .reduce((n, list) => n + list.length, 0)
+
+      const shell = readFileSync(join(process.cwd(), 'public', 'decide', 'index.html'), 'utf8')
+      const manifest = readFileSync(join(process.cwd(), 'public', 'decide', 'manifest.webmanifest'), 'utf8')
+
+      const claims: [string, RegExpMatchArray | null, number][] = [
+        ['index.html landing stat', /<b id="landing-dishes">(\d+)<\/b>/.exec(shell), dishCount],
+        ['index.html landing stat', /<b id="landing-recipes">(\d+)<\/b>/.exec(shell), recipeTotal],
+      ]
+      for (const label of ['og:description', 'twitter:description']) {
+        const meta = new RegExp(`(?:property|name)="${label}" content="([^"]*)"`).exec(shell)
+        claims.push([`index.html ${label}`, /(\d+) dishes/.exec(meta?.[1] ?? ''), dishCount])
+      }
+      for (const m of manifest.matchAll(/(\d+) dishes/g)) {
+        claims.push(['manifest.webmanifest', m, dishCount])
+      }
+
+      for (const [where, match, want] of claims) {
+        if (!match) throw new Error(`recipe-book: could not find the count in ${where}`)
+        if (Number(match[1]) !== want) {
+          throw new Error(
+            `recipe-book: ${where} says ${match[1]}, but there are ${want}. Update it.`,
+          )
+        }
+      }
+
+      this.info(`recipe-book: ${dishCount} dishes, ${recipeTotal} recipes`)
       return `export default ${JSON.stringify(book)}`
     },
   }

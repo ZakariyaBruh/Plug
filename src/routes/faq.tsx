@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
 import { JsonLd } from '#/components/JsonLd'
-import { DISH_COUNT, OFFER, pageHead } from '#/lib/site'
+import { DIET_FREE, DIET_FREE_WHY, DISH_COUNT, OFFER, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 export const Route = createFileRoute('/faq')({
@@ -11,7 +11,7 @@ export const Route = createFileRoute('/faq')({
     pageHead({
       path: '/faq',
       title: 'FAQ — morsels45',
-      description: 'What is free, what Premium adds, how Always avoid works, and how to cancel.',
+      description: 'What is free, what Premium adds, how the dietary rules work, and how to cancel.',
     }),
   component: FaqPage,
 })
@@ -23,11 +23,11 @@ const FAQS: [string, string][] = [
   ],
   [
     'What does Premium add?',
-    `Always avoid, Knockout, Blitz, This or that, Shortlist, Together, Swipe, order it together, cook along, shop the list together, meal slot, heat dial, mix-it-up, a side with that, don’t repeat this week, guest at the table, cook mode, unlimited saved dishes, cook-from-your-kitchen, a planned week, extra palettes, and picks that follow what you have actually liked. ${OFFER}, cancel any time.`,
+    `Knockout, Blitz, This or that, Shortlist, Together, Swipe, order it together, cook along, shop the list together, meal slot, heat dial, mix-it-up, a side with that, don’t repeat this week, guest at the table, cook mode, unlimited saved dishes, cook-from-your-kitchen, a planned week, extra palettes, and picks that follow what you have actually liked. ${OFFER}, cancel any time.`,
   ],
   [
-    'Can I tell it what I do not eat, without paying?',
-    'Yes. The six standing rules — no meat, no seafood, no cheese, nothing spicy, nothing fried, no caffeine — are free, and they apply to every decision, Tonight’s pick included. An app that keeps offering a vegetarian steak until they pay is not a trial, it is broken. Premium adds banning any tag you like on top of those six, striking a named dish off for good, a guest’s rules for one sitting, and the heat dial.',
+    'Can I tell it what I do not eat — including halal or kosher — without paying?',
+    `${DIET_FREE} It holds for every decision, every mode and every list — Tonight’s pick, the shortlist, the week plan and the daily shelf included. ${DIET_FREE_WHY}`,
   ],
   [
     'Do I need an account?',

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { DISH_COUNT, pageHead } from '#/lib/site'
+import { DIET_FREE, DISH_COUNT, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 export const Route = createFileRoute('/how-it-works')({
@@ -74,23 +74,32 @@ export function HowItWorks() {
           </ol>
         </section>
 
+        <section className="mx-auto max-w-3xl px-6 pt-16">
+          <h2 className="text-2xl font-bold">What it already knows not to offer you</h2>
+          <p className="mt-3 text-[var(--text-dim)]">{DIET_FREE}</p>
+          <p className="mt-3 text-sm text-[var(--text-dim)]">
+            It holds for every decision, every mode and every list &mdash; the questionnaire,
+            Tonight&rsquo;s pick, the shortlist, the week plan and the daily shelf. Set it on the
+            way in, or under <em>You</em> at any point after.
+          </p>
+        </section>
+
         <section className="mx-auto max-w-3xl px-6 py-16">
           <h2 className="text-2xl font-bold">What Premium changes</h2>
           <dl className="mt-8 space-y-6">
             <div>
-              <dt className="font-semibold">Always avoid</dt>
+              <dt className="font-semibold">Knockout, Blitz, This or that, Shortlist, Together, Swipe</dt>
               <dd className="mt-1 text-sm text-[var(--text-dim)]">
-                Ban meat, seafood, cheese, spice, fried food, or caffeine once. Every future game
-                skips those dishes and never asks the matching question. This does not run on
-                Standard — toggling it without Premium opens checkout instead of quietly filtering
-                the catalogue.
+                Six other ways to land on dinner when you are bored of questions. Locked on
+                Standard, live the moment Premium is on the same Whop account.
               </dd>
             </div>
             <div>
-              <dt className="font-semibold">Knockout, Blitz, This or that, Together</dt>
+              <dt className="font-semibold">The shared browser</dt>
               <dd className="mt-1 text-sm text-[var(--text-dim)]">
-                Three other ways to land on dinner when you are bored of questions. Locked on
-                Standard, live the moment Premium is on the same Whop account.
+                A real browser running somewhere else that two people drive at once, with a cursor
+                each &mdash; to order the dish, cook along to one video from two kitchens, or fill a
+                single shopping basket together.
               </dd>
             </div>
             <div>

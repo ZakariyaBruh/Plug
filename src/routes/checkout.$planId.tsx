@@ -47,7 +47,7 @@ export const Route = createFileRoute('/checkout/$planId')({
   head: ({ loaderData }) =>
     pageHead({
       title: loaderData?.plan ? `Checkout — ${loaderData.plan.title}` : 'Checkout — morsels45 Premium',
-      description: `Start morsels45 Premium — ${OFFER}. Always avoid, extra modes, cook mode.`,
+      description: `Start morsels45 Premium — ${OFFER}. The shared browser, extra modes, cook mode.`,
       ogTitle: 'Checkout — morsels45 Premium',
       noindex: true,
     }),
@@ -70,8 +70,8 @@ function CheckoutPage() {
           <div>
             <h1 className="text-2xl font-bold">This checkout is Premium only</h1>
             <p className="mt-2 text-[var(--text-dim)]">
-              Standard is free and does not go through checkout. Always avoid and the extra modes
-              are on Premium.
+              Standard is free and does not go through checkout — everything you do not eat is
+              free with it. The shared browser and the extra modes are on Premium.
             </p>
             <Link
               to="/premium"

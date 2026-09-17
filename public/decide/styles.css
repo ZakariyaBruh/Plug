@@ -2931,8 +2931,8 @@ body.is-beaming { overflow: hidden; }
 
 
 /* ---- the reel -----------------------------------------------------------
-   Decoration, and it knows it. "112 dishes" as a number does not land the way
-   112 dishes going past does. */
+   Decoration, and it knows it. The catalogue as a number does not land the way
+   the dishes themselves going past do. */
 
 .reel {
   position: relative;

@@ -3,13 +3,13 @@ import { createServerFn } from '@tanstack/react-start'
 
 import { PageShell } from '#/components/PageShell'
 import { ALL_DISHES } from '#/lib/dishes'
-import { pageHead } from '#/lib/site'
+import { DISH_COUNT, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
  * /eat — every dish, on one page a crawler can actually walk.
  *
- * WHY THIS PAGE HAD TO EXIST. The 112 dish pages were orphans: nothing on this
+ * WHY THIS PAGE HAD TO EXIST. The dish pages were orphans: nothing on this
  * site linked to any of them. The game has a Dishes screen, but the game is a
  * static script that builds its list in the browser, so a crawler sees an empty
  * div. That left sitemap.xml as the only thing that knew those URLs existed —
@@ -42,7 +42,9 @@ export const Route = createFileRoute('/eat/')({
     return { viewer, dishes }
   },
   head: ({ loaderData }) => {
-    const count = loaderData?.dishes.length ?? 112
+    // DISH_COUNT rather than a literal: the build fails if it and data.js
+    // disagree, which is the only thing that has ever kept this number honest.
+    const count = loaderData?.dishes.length ?? DISH_COUNT
     return pageHead({
       path: '/eat',
       title: `What to eat — all ${count} dishes, with recipes`,

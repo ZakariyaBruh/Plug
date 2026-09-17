@@ -564,7 +564,7 @@
   // either. Saving a dish is now something Premium does, whole, and the button
   // says so before it is pressed rather than after the third one.
   //
-  // Everything else free keeps: the game, all 112 dishes, the browser, the
+  // Everything else free keeps: the game, the whole catalogue, the browser, the
   // search, XP, levels, streaks and badges.
   var FREE_SAVES = 0;
 

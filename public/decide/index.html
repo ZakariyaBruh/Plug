@@ -190,22 +190,34 @@
       the last answer at any point.</p>
     </section>
 
-    <!-- The parts nobody finds, because they are behind a game they have not
-         played yet. -->
+    <!-- ===================================================================
+         The parts nobody finds, because they are behind a game they have not
+         played yet.
+
+         EVERY LINE HERE IS FREE, and that is the constraint this card is
+         written under rather than a happy accident. The first draft listed
+         recipes, cook mode, the shopping list, Nearby-that-serves-this-dish
+         and six-round-one-phone Together — four of which are Premium. A
+         welcome that opens a locked door four times is not a welcome, it is a
+         trailer, and somebody who taps one of them thirty seconds after
+         arriving learns that this app's first word to them was a sales pitch.
+         The paid half is discoverable on its own; it does not need the front
+         door. If you add a line here, check the gate first.
+         =================================================================== -->
     <section class="welcome-pane" id="welcome-pane-more" hidden>
       <ul class="welcome-points">
-        <li><span class="welcome-point-icon" aria-hidden="true">&#128220;</span>
-          <span class="welcome-point-body"><b>A recipe for every dish.</b>
-          A step-by-step cook mode and a shopping list with it.</span></li>
         <li><span class="welcome-point-icon" aria-hidden="true">&#128205;</span>
           <span class="welcome-point-body"><b>Nearby.</b>
-          Everywhere around you that serves it, sorted by the kind of place it is.</span></li>
-        <li><span class="welcome-point-icon" aria-hidden="true">&#128101;</span>
-          <span class="welcome-point-body"><b>Together.</b>
-          Up to six of you on one phone, landing on the one dish the table can live with.</span></li>
+          Everywhere around you that you could eat, sorted by the kind of place it is.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#128172;</span>
+          <span class="welcome-point-body"><b>Ask what to eat.</b>
+          Describe the situation in your own words &mdash; three questions free.</span></li>
         <li><span class="welcome-point-icon" aria-hidden="true">&#127859;</span>
           <span class="welcome-point-body"><b>Five to try today.</b>
-          Written fresh each morning, whether or not you are deciding anything.</span></li>
+          Five dishes the app does not already know, written fresh each morning.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#128101;</span>
+          <span class="welcome-point-body"><b>Decide with a friend.</b>
+          Send a link, they answer their half, and it lands on one dish you can both live with.</span></li>
       </ul>
     </section>
 
@@ -319,7 +331,7 @@
     <ul class="landing-stats">
       <li><b id="landing-dishes">133</b><span>dishes</span></li>
       <li><b id="landing-questions">8</b><span>questions, usually</span></li>
-      <li><b id="landing-recipes">133</b><span>recipes inside</span></li>
+      <li><b id="landing-recipes">146</b><span>recipes inside</span></li>
     </ul>
 
     <!-- ===================================================================
@@ -423,7 +435,7 @@
          =================================================================== -->
     <section class="strip" id="daily-wrap" hidden>
       <h2 class="strip-title" id="daily-title">Five to try today</h2>
-      <p class="fine" id="daily-note">Five dishes the app does not already know,
+      <p class="fine" id="daily-note">Dishes the app does not already know,
       written this morning. Tap one to read about it.</p>
       <ul class="daily-list" id="daily-list"></ul>
       <p class="fine daily-made">Suggested by AI, so check anything you are not sure about
@@ -438,7 +450,12 @@
     </section>
 
     <section class="strip" id="menu-wrap">
-      <h2 class="strip-title">Feeding people <span class="tag-premium">Premium</span></h2>
+      <!-- NOT badged Premium, because it is not. A free profile gets one menu
+           every couple of days — the panel that says so calls it "the next free
+           menu" in as many words — and the badge above it said the opposite.
+           The line underneath states the limit instead; renderMenuView writes
+           the tier-specific half of it. -->
+      <h2 class="strip-title">Feeding people</h2>
       <p class="fine" id="menu-blurb">A starter, a main and a pudding that actually go together &mdash; not three heavy
       things, and not three cold ones.</p>
       <button class="plain" id="menu-btn">Write me a menu</button>
@@ -1920,7 +1937,7 @@
 
       <section class="strip" id="guest-wrap">
         <h2 class="strip-title">Guest at the table <span class="tag-premium">Premium</span></h2>
-        <p class="fine">Someone visiting. Extra avoids for this session only &mdash; Always avoid stays as it is.</p>
+        <p class="fine">Someone visiting. Extra avoids for this session only &mdash; what you don&rsquo;t eat stays exactly as it is.</p>
         <div class="knobs" id="guest-knobs" role="group" aria-label="Guest at the table"></div>
       </section>
 

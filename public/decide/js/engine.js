@@ -124,11 +124,13 @@
   // middle, so both ends excluded it and only the third reply found it. That is
   // a fair description of a club sandwich, and a disastrous one of the
   // catalogue, because 0.5 is also where every dish lands that nobody has
-  // tagged at either end. Forty of 112 dishes sit in the middle of the
-  // crunchy/soft axis — pizza, tacos, buffalo wings, spring rolls — not because
-  // they are texturally ambiguous but because `soft` was only ever put on 48
-  // dishes. Answering "Crunchy" faulted 88 of 112, "Soft and tender" faulted
-  // 64, and a player who wanted a taco could not reach one by either route.
+  // tagged at either end. Every number below was measured back when the
+  // catalogue was 112 dishes, and is left as it was taken: forty of them sat in
+  // the middle of the crunchy/soft axis — pizza, tacos, buffalo wings, spring
+  // rolls — not because they are texturally ambiguous but because `soft` was
+  // only ever put on 48 dishes. Answering "Crunchy" faulted 88 of the 112,
+  // "Soft and tender" faulted 64, and a player who wanted a taco could not
+  // reach one by either route.
   // Measured against somebody answering from appetite rather than from the tag
   // table, the app found the right dish 55.6% of the time and 48 dishes were
   // unreachable outright.

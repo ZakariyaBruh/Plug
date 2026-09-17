@@ -9,7 +9,7 @@ import { SITE_URL } from '#/lib/site'
  * Until now this path returned the app shell as a 200 — an HTML page where a
  * crawler asked for XML, which is worse than a 404 because it looks like an
  * answer. The pages worth finding are the four that explain the product, the
- * game itself, and one per dish: 112 pages that each answer a question
+ * game itself, and one per dish: a page each that answers a question
  * somebody actually types.
  *
  * The private pages (account, checkout, order-complete) are deliberately not
@@ -18,7 +18,7 @@ import { SITE_URL } from '#/lib/site'
 const PAGES: Array<[path: string, priority: string]> = [
   ['/', '1.0'],
   ['/decide/', '0.9'],
-  // The hub that makes the 112 dish pages reachable. It was missing here for
+  // The hub that makes the dish pages reachable. It was missing here for
   // the same reason it was missing everywhere: it did not exist, and the dish
   // pages were URLs only this file knew about.
   ['/eat', '0.85'],

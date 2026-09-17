@@ -92,7 +92,7 @@ const APP_SCHEMA = {
       name: 'Premium',
       price: String(PRICE_VALUE),
       priceCurrency: 'USD',
-      description: `Always avoid, the extra modes, cook mode, the shared browser, unlimited saves. ${OFFER}.`,
+      description: `The extra modes, cook mode, the shared browser, unlimited saves. ${OFFER}. What you do not eat is free.`,
       url: `${SITE_URL}/premium`,
     },
   ],
@@ -208,9 +208,8 @@ function HomePage() {
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Play it as a game</p>
             <h2 className="mt-2 text-3xl font-bold">Six modes. Premium only.</h2>
             <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              Standard is the questions. Premium is Knockout, Blitz, This or that, Shortlist,
-              Together and Swipe &mdash; plus Always avoid, so the free game stops asking you about
-              food you never eat.
+              Standard is the questions, and everything you do not eat. Premium is Knockout,
+              Blitz, This or that, Shortlist, Together and Swipe.
             </p>
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
@@ -236,10 +235,11 @@ function HomePage() {
         <section className="border-t border-[var(--border)] py-16">
           <div className="mx-auto max-w-5xl px-6">
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Standard vs Premium</p>
-            <h2 className="mt-2 text-3xl font-bold">Always avoid is not on Standard.</h2>
+            <h2 className="mt-2 text-3xl font-bold">The free game is the whole game.</h2>
             <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              The free game is the whole decide loop. Dietary bans, cook mode, saved dishes and the
-              extra game modes stay behind Premium — they do not quietly run on a free profile.
+              The decide loop, the catalogue, and everything you do not eat — all free, and all
+              applied to every decision. Cook mode, saved dishes, the shared browser and the extra
+              game modes are what Premium adds on top.
             </p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
               <div className="rounded-2xl border border-[var(--border)] p-8">

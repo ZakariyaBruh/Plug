@@ -5,6 +5,8 @@ import { PageShell } from '#/components/PageShell'
 import { PREMIUM_PLAN_ID } from '#/lib/products'
 import { loadViewer } from '#/lib/viewer'
 import {
+  DIET_FREE,
+  DIET_FREE_WHY,
   OFFER,
   OFFER_SHORT,
   PRICE_MONTHLY,
@@ -25,10 +27,10 @@ export const Route = createFileRoute('/premium')({
       path: '/premium',
       title: `Premium — morsels45 · ${OFFER_SHORT}, then ${PRICE_MONTHLY}`,
       description:
-        `Always avoid, Knockout, Blitz, Shortlist, Together, Swipe, order it together, meal slot, heat dial, cook mode, and saved dishes. ${OFFER}. Always avoid does not run on Standard.`,
+        `Knockout, Blitz, Shortlist, Together, Swipe, order it together, meal slot, heat dial, cook mode, and saved dishes. ${OFFER}. What you do not eat is free on every profile.`,
       ogTitle: `morsels45 Premium — ${OFFER_SHORT}`,
       ogDescription:
-        `Ban foods you never eat. Play Knockout, Blitz, This or that, Shortlist, Together and Swipe, then order it together in one shared browser. Cook mode and unlimited saves. ${OFFER}.`,
+        `A browser two people drive at once. Play Knockout, Blitz, This or that, Shortlist, Together and Swipe, then order it together in that shared browser. Cook mode and unlimited saves. ${OFFER}.`,
     }),
   component: PremiumPage,
 })
@@ -99,12 +101,16 @@ function PremiumPage() {
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
               The reason most people pay
             </p>
-            <h2 className="mt-2 text-3xl font-bold">Always avoid is Premium. It does not run on Standard.</h2>
+            <h2 className="mt-2 text-3xl font-bold">A browser two people drive at once.</h2>
             <p className="mt-4 text-[var(--text-dim)]">
-              Ban meat, seafood, cheese, spice, fried food, caffeine — once. Every future decision
-              skips those dishes and never asks the matching question. On a free profile the buttons
-              are visible so you can see the feature. They do not filter the catalogue. They do not
-              change the questions. Checkout is what turns them on.
+              A real browser, running somewhere else, with a cursor each. Order the dish you landed
+              on from one basket. Cook along to the same video from two kitchens, where “wait, go
+              back” means the same frame for both of you. Fill one shopping list together. It is the
+              part of this that costs real money to run, and it is the part a subscription actually
+              pays for.
+            </p>
+            <p className="mt-4 text-[var(--text-dim)]">
+              <strong className="text-[var(--text)]">{DIET_FREE}</strong> {DIET_FREE_WHY}
             </p>
           </div>
         </section>
@@ -152,7 +158,6 @@ function PremiumPage() {
                   {STANDARD.map((line) => (
                     <li key={line}>— {line}</li>
                   ))}
-                  <li>— Always avoid does not apply</li>
                 </ul>
                 <a
                   href="/decide/"

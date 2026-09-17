@@ -106,7 +106,7 @@ export function pageHead(page: PageHead) {
  *
  * The trial is not a claim this file gets to make on its own — it is
  * trial_period_days on the Whop plan, and Whop is what actually gives the
- * three days away. These constants exist so the page and the checkout cannot
+ * days away. These constants exist so the page and the checkout cannot
  * drift apart: a site still promising a trial that the plan no longer grants
  * is worse than never having offered one. Change it on the plan, then here.
  *
@@ -126,7 +126,7 @@ export const PRICE_VALUE = 4.99
 export const PRICE = '$4.99'
 export const PRICE_MONTHLY = `${PRICE}/month`
 
-/** "3 days free, then $4.99/month" — the whole offer, for body copy. */
+/** "7 days free, then $4.99/month" — the whole offer, for body copy. */
 export const OFFER = `${TRIAL_DAYS} days free, then ${PRICE_MONTHLY}`
 /** For a title or a button, where the price alone is the wrong emphasis. */
 export const OFFER_SHORT = `${TRIAL_DAYS} days free`
@@ -160,10 +160,51 @@ export function track(event: string, data?: Record<string, unknown>) {
   window.whop?.track(event, data)
 }
 
+/*
+ * WHAT A FREE PROFILE CAN RULE OUT, written once.
+ *
+ * This is here for the same reason AFFILIATES_URL is: it appeared on five
+ * pages, and a claim copy-pasted around a codebase is a claim that goes stale
+ * on four of them. It did. Every one of those pages sold this as Premium and
+ * said, in as many words, that it "does not run on Standard" — while the game
+ * had been applying it free to everybody since the day the rules were made
+ * free. A site telling somebody to pay for what they already have is worse
+ * than a site with a typo on it, and it stayed up for weeks because the fix
+ * touched one file and the claim lived in five.
+ *
+ * So the claim lives here now, and the pages read it.
+ *
+ * NO NUMBERS IN IT, deliberately. It said "the six standing rules" for as long
+ * as there were six; there are fourteen now, and thirteen named diets over the
+ * top of them, and the next time that changes this sentence should not need to.
+ */
+export const DIET_FREE =
+  'Everything you do not eat is free, and always will be. Vegetarian, vegan and pescatarian; ' +
+  'halal, kosher, Hindu, Jain, Sattvic, Buddhist, Sikh, Adventist, Word of Wisdom and Ital; ' +
+  'or any single thing you would rather not be handed — pork, dairy, onion, shellfish, heat. ' +
+  'Pick it once and nothing here offers it to you again.'
+
+/** The short form, for a line in a list. */
+export const DIET_FREE_SHORT =
+  'Everything you do not eat — diets, faiths, or one ingredient at a time. Free, and applied ' +
+  'to every decision, every mode and every list.'
+
+/*
+ * Why it is not a paid feature, in the app's own words. Said on the page that
+ * is asking for money, because that is the only page where it is worth
+ * anything.
+ */
+export const DIET_FREE_WHY =
+  'An app that keeps offering a vegetarian a steak until they pay is not a trial, it is broken — ' +
+  'and one that offers a Muslim pork until the card clears has not built a funnel, it has built ' +
+  'an insult. Premium is what you can layer on top: banning a whole style of food, striking a ' +
+  'named dish off for good, a guest’s rules for one sitting, and the heat dial.'
+
 export const STANDARD = [
   'The 20-question Decide game',
   'Endless — two dishes and a clock. Every pick buys time back, and buys back less each time. 200 picks a day',
   `All ${DISH_COUNT} dishes in the catalogue`,
+  DIET_FREE_SHORT,
   'Ask anything — three free questions, then it is Premium',
   'Food news — the latest six headlines a day',
   'Write me a menu — one every couple of days',
@@ -213,11 +254,11 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
     name: 'Control what comes up',
     blurb: 'The difference between a game that guesses and one that knows the rules.',
     items: [
-      ['Ban anything, not just the six', 'No meat, no seafood, no cheese, nothing spicy, nothing fried, no caffeine — those six are free, because an app that keeps offering a vegetarian steak is not a trial, it is broken. Premium bans any tag you like on top of them, and never-agains a named dish for good.'],
+      ['Ban a whole style of food', `Not what is in it — what it is. Anything the questions ask about: hot, sweet, soupy, handheld, whatever you like, struck off before it is asked. ${DIET_FREE} Premium is the layer over the top, and never-agains a named dish for good.`],
       ['Meal slot', 'Lock breakfast, lunch, dinner or late. Every mode respects it.'],
       ['Heat dial', 'Keep spice off, or ask for a kick — applied to every decision.'],
       ['Mix it up', 'Stick to what you like, keep the usual mix, or reach for the long tail.'],
-      ['Guest at the table', 'Extra avoids for this sitting only. Always avoid stays as it is.'],
+      ['Guest at the table', 'Extra avoids for this sitting only. What you do not eat stays exactly as it is.'],
       ['Themed Endless runs', 'Pick what a run is made of before it starts — quick things, comfort food, vegetarian, spicy, sweet. Pairs that would almost never meet in the full catalogue, and a fiftieth run that does not play like the fifth.'],
       ['Don’t repeat this week', 'Accept a dish and it is off the table for seven days.'],
     ],
