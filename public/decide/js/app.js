@@ -6773,13 +6773,47 @@
      * answer to "how do I make this". The heading is what gives it a home. It
      * was never the misleading part — "Premium" over an empty panel was.
      */
+    /*
+     * An empty list means the model made this dish up, not that the book has a
+     * hole in it: all 133 catalogue dishes have at least one recipe, so the
+     * only dishes that land here are today's five and the suggestions the chat
+     * invents. "No recipe written for this one" read as a failure, and it was
+     * the most common thing a free reader saw on the new shelf.
+     *
+     * It is not a failure — a dish nobody here has written up is the entire
+     * point of a daily shelf. So the panel says where the dish came from and
+     * then does the obvious next thing for you: hands over a search for it,
+     * and points at Eat out for the nights you would rather someone else
+     * cooked it.
+     */
     var hasRecipe = list.length > 0;
     $('sheet-recipe-tag').hidden = !hasRecipe;
     if (!hasRecipe) {
-      var none = document.createElement('p');
-      none.className = 'fine';
-      none.textContent = 'No recipe written for this one \u2014 it is a suggestion to go and ' +
-        'look up, not something the app can walk you through.';
+      var none = document.createElement('div');
+      none.className = 'recipe-none';
+
+      var why = document.createElement('p');
+      why.className = 'fine';
+      why.textContent = 'Fresh in today, so nobody here has written it up yet.';
+      none.appendChild(why);
+
+      var look = document.createElement('a');
+      look.className = 'go go-sm';
+      look.href = 'https://www.google.com/search?q=' +
+        encodeURIComponent(dish.name + ' recipe');
+      look.target = '_blank';
+      look.rel = 'noopener noreferrer';
+      var lookLabel = document.createElement('span');
+      lookLabel.className = 'go-label';
+      lookLabel.textContent = 'Find a recipe for it';
+      look.appendChild(lookLabel);
+      none.appendChild(look);
+
+      var out = document.createElement('p');
+      out.className = 'fine';
+      out.textContent = 'Or open Eat out to see who makes it near you.';
+      none.appendChild(out);
+
       wrap.appendChild(none);
     }
     // Locked only when locking it withholds something.

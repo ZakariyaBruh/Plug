@@ -1252,6 +1252,15 @@ kbd {
 
 /* --- recipes: an index, opened in place --- */
 .recipes { border-top: 1px solid var(--hair); }
+
+/* Shown instead of recipe cards when the model made the dish up. Grid so
+   the button sits at its own width rather than stretching the panel. */
+.recipe-none {
+  display: grid;
+  justify-items: start;
+  gap: var(--s3);
+  padding: var(--s4) 0 var(--s2);
+}
 .recipe { border-bottom: 1px solid var(--hair); animation: lift var(--mid) var(--ease) both; }
 
 .recipe-head {
