@@ -4276,3 +4276,124 @@ body.is-beaming { overflow: hidden; }
    hidden. */
 #sheet-vault { margin-top: var(--s2); }
 #sheet-recipes .fine { margin: 0; }
+
+/* ==========================================================================
+   The welcome
+
+   Four cards, once, in front of the landing. It borrows the landing's
+   footprint rather than floating a panel over it, so stepping off the last
+   card reveals the app already painted underneath instead of dissolving to a
+   blank page — and it borrows the question furniture on the second card
+   (.picks / .pick, untouched) so the first real question looks like something
+   the reader has already seen.
+
+   Nothing new is invented here: the type, the hairlines and the one accent
+   are the same ones the rest of the app holds to.
+   ========================================================================== */
+
+.welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: var(--void);
+  display: grid;
+  place-items: start center;
+  padding: var(--s7) var(--s5) var(--s8);
+}
+
+body.is-welcoming { overflow: hidden; }
+
+.welcome-card { width: 100%; max-width: 40rem; }
+
+/* The heading is the dialog's label and takes focus on every step, so it has
+   to show where it is — a focus ring that only appears for keyboard users,
+   like every other one in here. */
+/* The focus indicator is a rule in the gutter rather than a box round the
+   words. Focus does move here on every step — a dialog whose content changes
+   under a screen reader without moving focus announces nothing at all — and
+   the very first step lands on it before any mouse has been touched, so an
+   outline round the largest type in the app would be the first thing anybody
+   saw. The bar is as visible and considerably less like a mistake. The
+   padding is there whether or not the bar is, so switching it on never moves
+   the line; the negative margin puts the text back where it would have been. */
+.welcome-heading {
+  margin: var(--s2) 0 var(--s3) -3px;
+  padding-left: var(--s4);
+  border-left: 3px solid transparent;
+  font-family: var(--display);
+  font-size: var(--t-xl);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -.02em;
+  color: var(--ink);
+}
+
+.welcome-heading:focus { outline: none; }
+.welcome-heading:focus-visible { outline: none; border-left-color: var(--amber); }
+
+.welcome-sub {
+  margin: 0 0 var(--s5);
+  padding-left: calc(var(--s4) + 3px);
+  max-width: 34rem;
+  font-size: var(--t-md);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.welcome-points { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
+
+.welcome-points li {
+  display: grid;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: var(--s3);
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--hair);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.welcome-point-icon { font-size: var(--t-md); line-height: 1.2; }
+.welcome-point-body { min-width: 0; }
+.welcome-points b { display: block; font-family: var(--display); font-size: var(--t-base); color: var(--ink); }
+
+/* The demonstration answer stays marked once taken, so stepping back to it
+   reads as a thing already said rather than a question being asked twice. */
+.welcome-picks { margin-bottom: var(--s4); }
+.pick.is-taken { background: var(--paper); color: var(--paper-ink); }
+.pick.is-taken .pick-no { color: var(--amber-dim); }
+
+.welcome-sub-title { margin-top: var(--s6); }
+
+/* The honest limits on the diets that have one. Set apart from the rules
+   above it and from the reassurance below it, because it is neither. */
+.diet-caveats {
+  margin-top: var(--s4);
+  padding-left: var(--s3);
+  border-left: 2px solid var(--hair-lit);
+  line-height: 1.55;
+}
+
+/* One row per thing, and on the diet card each row carries what it actually
+   does under its own name — a diet turns on more than one tag at a time, and
+   the row is the only place that can say which. */
+.rule-name { display: grid; gap: .1rem; min-width: 0; }
+.rule-name b { font-family: var(--display); font-size: var(--t-base); font-weight: 600; color: inherit; }
+.rule-name i { font-style: normal; font-size: var(--t-xs); color: var(--ink-3); }
+
+.welcome-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  flex-wrap: wrap;
+  margin-top: var(--s6);
+}
+
+.welcome-spacer { flex: 1 1 auto; }
+
+.welcome-dots { display: flex; gap: var(--s2); list-style: none; margin: var(--s5) 0 0; padding: 0; }
+.welcome-dot { width: 1.75rem; height: 2px; background: var(--hair-lit); }
+.welcome-dot.is-done { background: var(--amber-dim); }
+.welcome-dot.is-on { background: var(--amber); }

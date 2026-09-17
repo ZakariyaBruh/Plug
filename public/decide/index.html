@@ -119,6 +119,124 @@
      one place a bit of noise earns its keep is the moment somebody is deciding
      whether to bother.
      =========================================================================== -->
+<!-- ===========================================================================
+     THE WELCOME, and why an app with no sign-up has one at all.
+
+     The landing screen below is a good pitch and a bad explanation. It sells
+     the idea in two lines and then drops somebody straight into a question,
+     which is fine for the half of the catalogue of people who were going to
+     tap "Decide for me" anyway and no use at all to the rest — who arrive not
+     knowing that the questions are two-answer, that there are recipes behind
+     every dish, or that the thing is theirs without an account.
+
+     Four steps, once, and then never again. It is skippable from the first
+     frame, every step is reachable from the keyboard, and it asks for exactly
+     one thing: what you do not eat. That question is last on purpose. Asked
+     first it is a form standing between somebody and the thing they came for;
+     asked after the app has shown what it does, it reads as the app offering
+     to get something right rather than demanding credentials.
+
+     It is NOT a dialog element. <dialog> would put this above the top bar and
+     under its own backdrop, and the welcome wants to be the whole screen —
+     the same footprint the landing has, so stepping off the last card lands
+     on the landing rather than dissolving to reveal it.
+     =========================================================================== -->
+<div class="welcome" id="welcome" hidden>
+  <div class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcome-heading">
+    <p class="mechanic" id="welcome-step">Step 1 of 4</p>
+    <h2 class="welcome-heading" id="welcome-heading" tabindex="-1"></h2>
+    <p class="welcome-sub" id="welcome-sub"></p>
+
+    <!-- What it is. Numbers read out of the catalogue at load, the same ones
+         the landing uses, so this cannot become a claim nobody checks. -->
+    <section class="welcome-pane" id="welcome-pane-what" hidden>
+      <ul class="welcome-points">
+        <li><span class="welcome-point-icon" aria-hidden="true">&#127860;</span>
+          <span class="welcome-point-body"><b>One answer, not a list.</b>
+          Forty things to scroll through is the problem, not the solution.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#9201;&#65039;</span>
+          <span class="welcome-point-body"><b>About eight questions.</b>
+          Usually under a minute, start to dinner.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#128274;</span>
+          <span class="welcome-point-body"><b>No account, no email.</b>
+          Everything you do stays on this device unless you sign in for Premium.</span></li>
+      </ul>
+    </section>
+
+    <!-- The mechanic, demonstrated rather than described, using the real
+         question furniture so the first real question looks familiar. The
+         answer is kept: it is a genuine opinion about food, it is the same
+         weight any other answer carries, and throwing it away to make the
+         step decorative would be the app asking a question it did not mean. -->
+    <section class="welcome-pane" id="welcome-pane-taste" hidden>
+      <div class="picks welcome-picks">
+        <button class="pick" id="welcome-hot" type="button">
+          <span class="pick-no">01</span>
+          <span class="pick-body">
+            <span class="pick-icon" aria-hidden="true">&#127798;&#65039;</span>
+            <span class="pick-label">Something hot</span>
+          </span>
+        </button>
+        <button class="pick" id="welcome-cold" type="button">
+          <span class="pick-no">02</span>
+          <span class="pick-body">
+            <span class="pick-icon" aria-hidden="true">&#129482;</span>
+            <span class="pick-label">Something cold</span>
+          </span>
+        </button>
+      </div>
+      <p class="fine" id="welcome-taste-note">There is no wrong one, and nothing is final
+      &mdash; every question has an <em>Either, honestly</em> under it, and you can undo
+      the last answer at any point.</p>
+    </section>
+
+    <!-- The parts nobody finds, because they are behind a game they have not
+         played yet. -->
+    <section class="welcome-pane" id="welcome-pane-more" hidden>
+      <ul class="welcome-points">
+        <li><span class="welcome-point-icon" aria-hidden="true">&#128220;</span>
+          <span class="welcome-point-body"><b>A recipe for every dish.</b>
+          A step-by-step cook mode and a shopping list with it.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#128205;</span>
+          <span class="welcome-point-body"><b>Nearby.</b>
+          Everywhere around you that serves it, sorted by the kind of place it is.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#128101;</span>
+          <span class="welcome-point-body"><b>Together.</b>
+          Up to six of you on one phone, landing on the one dish the table can live with.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#127859;</span>
+          <span class="welcome-point-body"><b>Five to try today.</b>
+          Written fresh each morning, whether or not you are deciding anything.</span></li>
+      </ul>
+    </section>
+
+    <!-- The one question this asks for. See renderWelcomeDiets in app.js. -->
+    <section class="welcome-pane" id="welcome-pane-diet" hidden>
+      <div class="rules" id="welcome-diets"></div>
+
+      <p class="strip-title welcome-sub-title">Anything else to keep off the menu</p>
+      <div class="rules" id="welcome-rules"></div>
+
+      <p class="fine diet-caveats" id="welcome-caveats" hidden></p>
+      <p class="fine">All of this is free, and you can change any of it later under
+      <em>You</em>. Nothing here is asked twice.</p>
+    </section>
+
+    <div class="welcome-actions">
+      <button class="plain" id="welcome-skip">Skip this</button>
+      <span class="welcome-spacer"></span>
+      <button class="plain" id="welcome-back" hidden>Back</button>
+      <button class="go go-sm" id="welcome-next">
+        <span class="go-label">Next</span>
+        <span class="go-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+        </span>
+      </button>
+    </div>
+
+    <ol class="welcome-dots" id="welcome-dots" aria-hidden="true"></ol>
+  </div>
+</div>
+
 <div class="landing" id="landing" hidden>
   <div class="landing-glow" aria-hidden="true"></div>
 
@@ -1702,6 +1820,21 @@
         <h2 class="strip-title">Saved <span class="tag-premium">Premium</span></h2>
         <ul class="chips" id="fav-list"></ul>
         <p class="fine" id="fav-empty">Nothing saved yet. Hit <em>Save it</em> on a result.</p>
+      </section>
+
+      <!-- Free, and above the paid strips rather than among them. What
+           somebody does not eat is not a feature of this app, it is a
+           condition of it working at all — see the comment on the rule
+           buttons in app.js. -->
+      <section class="strip">
+        <h2 class="strip-title">What you don&rsquo;t eat</h2>
+        <p class="fine">Answered once, applied to every decision, every mode and every
+        list. Pick as many as fit &mdash; they stack.</p>
+        <div class="rules" id="diet-list"></div>
+        <p class="fine diet-caveats" id="diet-caveats" hidden></p>
+        <div class="locate-actions">
+          <button class="quiet" id="replay-welcome">Run the welcome again</button>
+        </div>
       </section>
 
       <section class="strip">

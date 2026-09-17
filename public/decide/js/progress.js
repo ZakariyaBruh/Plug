@@ -78,6 +78,53 @@
     { tag: 'caffeine', label: 'No caffeine',    note: 'Decaf life' }
   ];
 
+  /*
+   * THE THINGS SOMEBODY DOES NOT EAT, named the way they would name them.
+   *
+   * RULES above are single tags, and they work because "no cheese" is one
+   * idea. Almost nothing anybody actually says about their diet is one idea:
+   * "I keep halal" is two, "I am vegan" is four, and asking somebody to
+   * assemble their own religion out of a tag list is asking them to do the
+   * app's homework. So a diet is a name with a set of tags behind it, picked
+   * once, and the tags are an implementation detail nobody has to see.
+   *
+   * FREE, all of them, and that is not a pricing oversight — see the comment
+   * on the standing rules in app.js. An app that keeps serving a Muslim pork
+   * until they pay is not running a clever funnel. It is being deleted.
+   *
+   * WHAT THE `caveat` IS FOR. Three of these cannot be honoured by a tag, and
+   * pretending otherwise would be the worst thing in here. No catalogue knows
+   * whether an animal was slaughtered to a rite, whether a kitchen keeps meat
+   * and dairy pans apart, or whether the oil the chips went in had fish in it
+   * this morning. What this can do is keep the obvious things off the menu.
+   * The caveat says which part is which, and it is shown wherever the diet is
+   * offered rather than buried in a policy page — an honest limit stated up
+   * front is worth more to somebody who keeps a rule than a confident claim
+   * they will catch us out on by Thursday.
+   */
+  var DIETS = [
+    { id: 'vegetarian', label: 'Vegetarian', note: 'No meat, no fish',
+      tags: ['meat', 'seafood'] },
+    { id: 'vegan', label: 'Vegan', note: 'No meat, fish, dairy or egg',
+      tags: ['meat', 'seafood', 'dairy', 'egg'],
+      caveat: 'Tagged by how a dish is normally made. Honey, gelatine and what ' +
+        'the bread was brushed with are past what the catalogue knows.' },
+    { id: 'pescatarian', label: 'Pescatarian', note: 'Fish yes, meat no',
+      tags: ['meat'] },
+    { id: 'halal', label: 'Halal', note: 'No pork, no alcohol',
+      tags: ['pork', 'alcohol'],
+      caveat: 'Keeps pork and alcohol off your menu. It cannot tell you whether ' +
+        'meat is zabiha or a kitchen is certified \u2014 only the kitchen can.' },
+    { id: 'kosher', label: 'Kosher', note: 'No pork or shellfish, no meat with dairy',
+      tags: ['pork', 'shellfish', 'meatdairy'],
+      caveat: 'Keeps pork, shellfish and meat-with-dairy off your menu. Kashrut ' +
+        'is a kitchen and a hechsher, and no app can stand in for either.' },
+    { id: 'nobeef', label: 'No beef', note: 'Nothing with beef in it',
+      tags: ['beef'] },
+    { id: 'nopork', label: 'No pork', note: 'Nothing with pork in it',
+      tags: ['pork'] }
+  ];
+
   // The axes shown on the profile screen, drawn from how you tend to answer.
   var AXES = [
     { tag: 'sweet',   yes: 'Sweet',   no: 'Savoury' },
@@ -110,6 +157,8 @@
       recent: [],             // [{ name, icon }], newest first
       favourites: [],         // [{ name, icon }] the player saved, newest first
       rules: [],              // tags never to be served, e.g. ['meat']
+      diets: [],              // DIETS ids picked on the way in, e.g. ['halal']
+      onboarded: false,       // has the first-run walkthrough been seen through
 
       // --- morsels45 Premium ---
       plus: false,            // is the paid tier switched on
@@ -765,6 +814,50 @@
     return 'saved';
   };
 
+  Progress.prototype.hasDiet = function (id) {
+    return (this.state.diets || []).indexOf(id) !== -1;
+  };
+
+  // Set rather than flip, because the place that writes these is a list of
+  // choices being read back off a screen, not a switch being pressed.
+  Progress.prototype.setDiet = function (id, on) {
+    if (!DIETS.some(function (d) { return d.id === id; })) return false;
+    var list = this.state.diets || (this.state.diets = []);
+    var has = list.indexOf(id) !== -1;
+    if (on === has) return has;
+    this.state.diets = on
+      ? list.concat([id])
+      : list.filter(function (d) { return d !== id; });
+    this.save();
+    return !!on;
+  };
+
+  Progress.prototype.toggleDiet = function (id) {
+    return this.setDiet(id, !this.hasDiet(id));
+  };
+
+  // Every tag the chosen diets rule out, flattened and deduplicated. More than
+  // one can be on at once and they overlap freely — halal and vegetarian
+  // together is a perfectly ordinary thing to be, and the union is the answer.
+  Progress.prototype.dietTags = function () {
+    var out = [];
+    (this.state.diets || []).forEach(function (id) {
+      DIETS.forEach(function (diet) {
+        if (diet.id !== id) return;
+        diet.tags.forEach(function (tag) {
+          if (out.indexOf(tag) === -1) out.push(tag);
+        });
+      });
+    });
+    return out;
+  };
+
+  // The diets in force, as objects, for anything that has to name them.
+  Progress.prototype.dietsChosen = function () {
+    var self = this;
+    return DIETS.filter(function (d) { return self.hasDiet(d.id); });
+  };
+
   Progress.prototype.hasRule = function (tag) { return (this.state.rules || []).indexOf(tag) !== -1; };
 
   Progress.prototype.toggleRule = function (tag) {
@@ -836,6 +929,7 @@
     BADGES: BADGES,
     AXES: AXES,
     RULES: RULES,
+    DIETS: DIETS,
     FREE_SAVES: FREE_SAVES,
     LOVE_WEIGHT: LOVE_WEIGHT,
     XP: XP,

@@ -112,19 +112,30 @@
   /*
    * WHAT THIS PROFILE IS ACTUALLY AVOIDING, in one place.
    *
-   * The six standing dietary rules are free; everything layered over them —
-   * custom tag bans, a guest's avoids, the heat dial — is Premium.
+   * The chosen diets and the six standing dietary rules are free; everything
+   * layered over them — custom tag bans, a guest's avoids, the heat dial — is
+   * Premium.
    *
-   * It lives here because THREE places need the answer: the game's own bans,
-   * the ranked pool every shortcut draws from, and tonight's pick. Only two of
+   * It lives here because everything that puts a dish in front of somebody
+   * needs the answer: the game's own bans, the ranked pool every shortcut
+   * draws from, tonight's pick, the week plan, the mood shortcuts, the knobs
+   * on the front door and deciding straight off the saved list. Only two of
    * them ever knew. tonightDish filtered on named never-agains and the time of
    * day and nothing else, so it served a vegetarian with "No meat" on a
    * chicken satay — and had been doing it to paying subscribers all along,
    * where it was rarer and so never reported. A rule that holds on most
-   * screens is not a rule, it is a coin toss with extra steps.
+   * screens is not a rule, it is a coin toss with extra steps. Nothing outside
+   * this function should read state.rules or allRules() to decide what to
+   * serve; that is how the last four of those came to be missing one.
    */
   function effectiveRules() {
     var tags = (progress.state.rules || []).slice();
+    // A diet is answered once, on the way in, and then never again — which is
+    // the entire promise, so it is folded in here before the tier is even
+    // looked at rather than anywhere a lapsed subscription could reach it.
+    progress.dietTags().forEach(function (tag) {
+      if (tags.indexOf(tag) === -1) tags.push(tag);
+    });
     if (!isPlus()) return tags;
     progress.allRules().forEach(function (tag) {
       if (tags.indexOf(tag) === -1) tags.push(tag);
@@ -747,8 +758,9 @@
 
     // A rule already answers its own question, so a mood must not contradict
     // one — "give it a kick" against "nothing spicy" would be the app arguing
-    // with itself.
-    var banned = progress.allRules();
+    // with itself. effectiveRules() rather than allRules(), because a diet is
+    // a rule too and two of them ban `meat`, which several moods ask for.
+    var banned = effectiveRules();
     mood.answers.forEach(function (pair) {
       if (banned.indexOf(pair[0]) !== -1) return;
       sessionXp += progress.recordAnswer(pair[0], pair[1]);
@@ -918,7 +930,7 @@
   // plainly does not. Anything blurrier is noise, and at most three a round so
   // a single tap cannot flood the profile.
   function votesFrom(winner, loser) {
-    return shuffled(Taste.decisiveTags(winner, loser, Data.TAGS))
+    return shuffled(Taste.decisiveTags(winner, loser, Data.LEARNABLE))
       .slice(0, 3)
       .map(function (q) {
         return { tag: q.tag, value: (winner.tags[q.tag] || 0) === 1 ? 'yes' : 'no' };
@@ -2355,7 +2367,7 @@
   function buildWeek() {
     var dishes = Taste.week(progress.state, Data.ITEMS, {
       now: Date.now(),
-      exclude: progress.allRules()
+      exclude: effectiveRules()
     });
     progress.state.plan = {
       at: Date.now(),
@@ -3789,7 +3801,7 @@
 
   // Straight from the saved list to a result, no questions at all.
   $('fav-decide-btn').addEventListener('click', function () {
-    var rules = progress.state.rules || [];
+    var rules = effectiveRules();
     var favourites = (progress.state.favourites || [])
       .map(function (f) { return dishByName(f.name); })
       .filter(Boolean)
@@ -3800,7 +3812,7 @@
     if (!favourites.length) {
       Sound.reject();
       return toast('\u{1F914}', 'Nothing to pick from',
-        'Everything you have saved is ruled out by your Always avoid list.');
+        'Everything you have saved is ruled out by what you do not eat.');
     }
 
     // With a profile, even this short a list gets ordered rather than shuffled.
@@ -6925,6 +6937,7 @@
 
     renderPlus();
     renderFavourites();
+    renderDiets();
     renderRules();
     renderCustomRules();
     renderBanned();
@@ -7461,6 +7474,63 @@
 
   // Standing rules feed straight into the engine, so a banned dish never comes
   // up and its question never gets asked again.
+  /*
+   * The diets, on the profile screen.
+   *
+   * Same control as the standing rules below it and deliberately so: one row
+   * per thing, a word at the end saying whether it is on. What is different is
+   * that turning one on can turn several tags on at once, so the row carries
+   * what it actually does rather than only what it is called — somebody who
+   * picks Kosher and then finds a lasagne missing deserves to have been told
+   * which of the three parts did it.
+   */
+  function renderDiets() {
+    var wrap = $('diet-list');
+    wrap.innerHTML = '';
+
+    ProgressLib.DIETS.forEach(function (diet) {
+      var on = progress.hasDiet(diet.id);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'rule' + (on ? ' is-on' : '');
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+      btn.innerHTML = '<span class="rule-name"><b></b><i></i></span>' +
+        '<span class="rule-state"></span>';
+      btn.querySelector('b').textContent = diet.label;
+      btn.querySelector('i').textContent = diet.note;
+      btn.children[1].textContent = on ? 'On' : 'Off';
+      btn.addEventListener('click', function () {
+        // Free, for exactly the reason the standing rules below are free.
+        var nowOn = progress.toggleDiet(diet.id);
+        btn.classList.toggle('is-on', nowOn);
+        btn.setAttribute('aria-pressed', nowOn ? 'true' : 'false');
+        btn.children[1].textContent = nowOn ? 'On' : 'Off';
+        Sound.tick();
+        applyRules();
+        paintDietCaveats();
+        // Not renderDishes: the catalogue screen deliberately lists everything
+        // a rule has ruled out, because finding a dish is how you un-rule it.
+        renderIntro();
+      });
+      wrap.appendChild(btn);
+    });
+
+    paintDietCaveats();
+  }
+
+  // Only the diets actually switched on get to say what they cannot promise.
+  // Printing all of them all the time would turn an honest limit into a wall
+  // of small print, which is the reliable way to make sure nobody reads the
+  // one line that applies to them.
+  function paintDietCaveats() {
+    var lines = progress.dietsChosen()
+      .filter(function (d) { return d.caveat; })
+      .map(function (d) { return d.label + ': ' + d.caveat; });
+    var note = $('diet-caveats');
+    note.hidden = lines.length === 0;
+    note.textContent = lines.join(' ');
+  }
+
   function renderRules() {
     var wrap = $('diet-rules');
     wrap.innerHTML = '';
@@ -7735,6 +7805,7 @@
   });
 
   document.addEventListener('keydown', function (event) {
+    if (welcomeOpen) return;
     if (keysSheet.open) return;
     if (sheet.open) return;
     if (view !== 'decide' || busy) return;
@@ -7850,7 +7921,7 @@
       if (progress.state.heat === 'hot') answers.push(['spicy', 'yes']);
     }
 
-    var banned = progress.allRules().concat(guestTags);
+    var banned = effectiveRules();
     answers.forEach(function (pair) {
       if (banned.indexOf(pair[0]) !== -1) return;
       game.answer(pair[0], pair[1]);
@@ -9966,7 +10037,7 @@
      * deserves to — a number, and "nothing it would swear to".
      */
     if (!reflex && !mashed) {
-      shuffled(Taste.decisiveTags(winner, loser, Data.TAGS))
+      shuffled(Taste.decisiveTags(winner, loser, Data.LEARNABLE))
         .sort(function (x, y) { return rankOf(y.tag) - rankOf(x.tag); })
         .slice(0, ENDLESS_VOTES)
         .forEach(function (q) {
@@ -10270,6 +10341,256 @@
     if (endless.champ) landEndless(endless.champ);
   });
 
+  /* --------------------------------------------------------------- welcome */
+  /*
+   * The first-run walkthrough. Four cards, once, then never again.
+   *
+   * WHERE IT SITS. In front of the landing rather than instead of it: the last
+   * card steps off onto the landing with the front door already painted
+   * behind it, so the app appears rather than loads. showLanding() runs first
+   * at boot for exactly that reason.
+   *
+   * WHEN IT SHOWS. Only on a profile that has neither seen it nor played
+   * anything. The second condition matters more than the first: this shipped
+   * after people were already using the app, and a walkthrough that opens in
+   * front of somebody on a hundred-decision streak to explain that questions
+   * have two answers is not a welcome, it is an insult with a progress bar.
+   *
+   * WHAT IT COSTS TO SKIP. Nothing. Skip is on every card including the first,
+   * Escape does the same, and skipping still marks it seen — somebody who
+   * closed it does not want it again tomorrow. The diet question it ends on is
+   * the one thing worth coming back for, so it is also a permanent strip on
+   * the profile screen, and the button under it reopens this.
+   */
+  var welcomeEl = $('welcome');
+
+  // Heading and subtitle live outside the panes, so the heading can be the
+  // dialog's label for all four rather than four labels that go stale.
+  var WELCOME = [
+    { id: 'what',
+      title: 'You’re hungry. You don’t know what you want.',
+      sub: 'That is the whole problem this solves, and it takes about twenty seconds.',
+      next: 'Show me how' },
+    { id: 'taste',
+      title: 'It asks. You answer. That is it.',
+      sub: 'Every question is two answers and neither is wrong. Have a go — right now, honestly:',
+      next: 'Next' },
+    { id: 'more',
+      title: 'And when it has landed on something…',
+      sub: 'The dish is the beginning of it, not the end.',
+      next: 'One last thing' },
+    { id: 'diet',
+      title: 'Anything you don’t eat?',
+      sub: 'Last question, and the only one that matters before we start: pick whatever ' +
+        'fits and nothing here will ever be offered to you again. Skip it if none of it applies.',
+      next: 'Start deciding' }
+  ];
+
+  var welcomeAt = 0;
+  var welcomeOpen = false;
+
+  function paintWelcome() {
+    var step = WELCOME[welcomeAt];
+
+    $('welcome-step').textContent = 'Step ' + (welcomeAt + 1) + ' of ' + WELCOME.length;
+    $('welcome-heading').textContent = step.title;
+    $('welcome-sub').textContent = step.sub;
+    label('welcome-next', step.next);
+    $('welcome-back').hidden = welcomeAt === 0;
+
+    WELCOME.forEach(function (other) {
+      $('welcome-pane-' + other.id).hidden = other.id !== step.id;
+    });
+
+    var dots = $('welcome-dots');
+    dots.innerHTML = '';
+    WELCOME.forEach(function (other, i) {
+      var li = document.createElement('li');
+      li.className = 'welcome-dot' + (i === welcomeAt ? ' is-on' : '') +
+        (i < welcomeAt ? ' is-done' : '');
+      dots.appendChild(li);
+    });
+
+    if (step.id === 'diet') renderWelcomeDiets();
+
+    // The heading rather than the button: a screen reader should hear what
+    // this card is before it hears what to press, and the button is one Tab
+    // away either direction.
+    focusQuietly($('welcome-heading'));
+  }
+
+  function openWelcome() {
+    welcomeAt = 0;
+    welcomeOpen = true;
+    welcomeEl.hidden = false;
+    document.body.classList.add('is-welcoming');
+    paintWelcome();
+  }
+
+  /*
+   * Closing it is the same call whether it was finished or skipped, because
+   * the profile is written as it goes rather than at the end: every tap on the
+   * diet card has already saved. There is no half-answered state to discard,
+   * which is why there is no "are you sure" on the way out.
+   */
+  function closeWelcome() {
+    if (!welcomeOpen) return;
+    welcomeOpen = false;
+    welcomeEl.hidden = true;
+    document.body.classList.remove('is-welcoming');
+    progress.state.onboarded = true;
+    progress.save();
+    applyRules();
+    applyTaste();
+    renderIntro();
+    focusQuietly($('landing-start'));
+  }
+
+  function stepWelcome(by) {
+    var to = welcomeAt + by;
+    if (to < 0) return;
+    if (to >= WELCOME.length) return closeWelcome();
+    welcomeAt = to;
+    Sound.tick();
+    paintWelcome();
+  }
+
+  /*
+   * Escape skips, and the arrows step.
+   *
+   * Bound on the document rather than the card because the card holds two
+   * lists of forty-odd buttons on the last step, and requiring focus to be
+   * inside a particular one of them to get out is the kind of trap a keyboard
+   * user finds and a mouse user never does. Left and right are only taken when
+   * the focus is not already on something that wants them.
+   */
+  document.addEventListener('keydown', function (event) {
+    if (!welcomeOpen) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      return closeWelcome();
+    }
+    var el = document.activeElement;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+    if (event.key === 'ArrowRight') { event.preventDefault(); stepWelcome(1); }
+    else if (event.key === 'ArrowLeft' && welcomeAt > 0) { event.preventDefault(); stepWelcome(-1); }
+  });
+
+  $('welcome-next').addEventListener('click', function () { stepWelcome(1); });
+  $('welcome-back').addEventListener('click', function () { stepWelcome(-1); });
+  $('welcome-skip').addEventListener('click', function () {
+    Sound.tick();
+    closeWelcome();
+  });
+
+  /*
+   * The demonstration answer, and why it is kept.
+   *
+   * "Hot or cold" is a real question out of the real bank, and somebody
+   * answering it here has told the app something true about what they feel
+   * like. Recording it as a lean rather than as an answer is the honest
+   * weight: an answer belongs to a game and this is not one, but a lean is
+   * exactly what this is — a thumb on the scale worth about one game, which
+   * Taste caps well below anything a played answer can do.
+   */
+  function takeWelcomeTaste(side) {
+    progress.lean('hot', side, 1);
+    progress.save();
+    $('welcome-hot').classList.toggle('is-taken', side === 'yes');
+    $('welcome-cold').classList.toggle('is-taken', side === 'no');
+    $('welcome-taste-note').textContent = side === 'yes'
+      ? 'Noted — warm things, then. That is one answer in; a real game is about eight.'
+      : 'Noted — cold things, then. That is one answer in; a real game is about eight.';
+    Sound.tick();
+    applyTaste();
+  }
+
+  $('welcome-hot').addEventListener('click', function () { takeWelcomeTaste('yes'); });
+  $('welcome-cold').addEventListener('click', function () { takeWelcomeTaste('no'); });
+
+  /*
+   * The diet card.
+   *
+   * Two lists, and the split is the point. The named diets come first because
+   * they are what somebody would actually say about themselves; the six
+   * standing rules underneath are for everybody whose thing does not have a
+   * name — an allergy, a dislike they are done arguing about, a month off the
+   * spice. Both write straight through to the profile on tap, so there is
+   * nothing to submit and nothing to lose by leaving.
+   */
+  function welcomeRow(label, note, isOn, toggle) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'rule' + (isOn() ? ' is-on' : '');
+    btn.setAttribute('aria-pressed', isOn() ? 'true' : 'false');
+    btn.innerHTML = '<span class="rule-name"><b></b><i></i></span>' +
+      '<span class="rule-state"></span>';
+    btn.querySelector('b').textContent = label;
+    btn.querySelector('i').textContent = note;
+    btn.children[1].textContent = isOn() ? 'On' : 'Off';
+    btn.addEventListener('click', function () {
+      var nowOn = toggle();
+      btn.classList.toggle('is-on', nowOn);
+      btn.setAttribute('aria-pressed', nowOn ? 'true' : 'false');
+      btn.children[1].textContent = nowOn ? 'On' : 'Off';
+      Sound.tick();
+      applyRules();
+      paintWelcomeCaveats();
+    });
+    return btn;
+  }
+
+  function renderWelcomeDiets() {
+    var diets = $('welcome-diets');
+    diets.innerHTML = '';
+    ProgressLib.DIETS.forEach(function (diet) {
+      diets.appendChild(welcomeRow(diet.label, diet.note,
+        function () { return progress.hasDiet(diet.id); },
+        function () { return progress.toggleDiet(diet.id); }));
+    });
+
+    var rules = $('welcome-rules');
+    rules.innerHTML = '';
+    ProgressLib.RULES.forEach(function (rule) {
+      rules.appendChild(welcomeRow(rule.label, rule.note,
+        function () { return progress.hasRule(rule.tag); },
+        function () { return progress.toggleRule(rule.tag); }));
+    });
+
+    paintWelcomeCaveats();
+  }
+
+  function paintWelcomeCaveats() {
+    var lines = progress.dietsChosen()
+      .filter(function (d) { return d.caveat; })
+      .map(function (d) { return d.label + ': ' + d.caveat; });
+    var note = $('welcome-caveats');
+    note.hidden = lines.length === 0;
+    note.textContent = lines.join(' ');
+  }
+
+  // Reachable again from the profile, because the diet question is worth
+  // coming back to and because somebody who skipped it on a bus deserves a
+  // second look at what they skipped.
+  $('replay-welcome').addEventListener('click', function () {
+    Sound.tick();
+    openWelcome();
+  });
+
+  /*
+   * Every diet has to name a tag the catalogue can actually carry, or it would
+   * sit there switched on and quietly rule out nothing at all — the exact
+   * failure nobody would report, because a rule that does nothing looks
+   * identical to a rule being honoured. `meatdairy` is derived by item()
+   * rather than authored, so it is allowed through by name.
+   */
+  ProgressLib.DIETS.forEach(function (diet) {
+    diet.tags.forEach(function (tag) {
+      if (tag === 'meatdairy' || Data.TAGS.indexOf(tag) !== -1) return;
+      throw new Error('Diet "' + diet.label + '" names unknown tag "' + tag + '"');
+    });
+  });
+
   /* --------------------------------------------------------------- landing */
   // The first thing anybody sees, and the only screen in this app allowed to
   // raise its voice. What used to be here was a sign-up form — a name, a
@@ -10507,6 +10828,18 @@
   goHome();
   renderProfile();
   showLanding();
+
+  /*
+   * First run, and nothing else counts as one.
+   *
+   * Both halves are load-bearing. `onboarded` covers somebody who has seen it
+   * and skipped it; `decisions` covers everybody who was already using this
+   * app before the walkthrough existed, whose saved profile has no such flag
+   * in it and who would otherwise be told on their next visit how questions
+   * work. After the landing has painted, so the first thing behind the card is
+   * the app rather than an empty page.
+   */
+  if (!progress.state.onboarded && !(progress.state.decisions > 0)) openWelcome();
 
   // The home-screen shortcuts in the manifest promise to land somewhere
   // specific. Honour them, or they are three taps to the same screen as the

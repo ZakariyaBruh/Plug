@@ -252,13 +252,27 @@
       ] }
   ];
 
-  // Every tag a dish may carry. This is deliberately a longer list than the
-  // questions: "a thing food can be" and "a thing worth asking about" are not
-  // the same list, and tying them together once meant the only way to stop
-  // asking about caffeine was to forget which drinks have caffeine in them.
-  // Standing rules, the mood shortcuts, the taste profile and the dish filters
-  // all read tags nobody is asked about.
-  var TAGS = [
+  // Every tag a dish may carry is in one of the two lists below. Between them
+  // they are deliberately longer than the questions: "a thing food can be" and
+  // "a thing worth asking about" are not the same list, and tying them
+  // together once meant the only way to stop asking about caffeine was to
+  // forget which drinks have caffeine in them. Standing rules, the mood
+  // shortcuts, the taste profile and the dish filters all read tags nobody is
+  // ever asked about.
+
+  /*
+   * The tags worth forming an opinion about — everything the app is allowed to
+   * learn a preference from.
+   *
+   * The diet tags below are deliberately not in here. Every mode that compares
+   * two dishes files away what separated them (see decisiveTags), and left to
+   * itself that machinery would happily conclude that somebody who keeps halal
+   * "prefers" not-pork, and start weighting their dinners by it. It is not a
+   * preference. It is a rule, it is already held as one, and reading it back
+   * to somebody as a taste — "Strongest preference: not pork" — would be the
+   * app being clever at them on the one subject where it should be quiet.
+   */
+  var LEARNABLE = [
     'drink', 'sweet', 'hot', 'quick', 'healthy', 'light', 'filling', 'meat',
     'spicy', 'cheesy', 'handheld', 'soupy', 'fried', 'crunchy', 'soft',
     'seafood', 'shareable', 'homemade', 'bready', 'chicken', 'chocolate', 'fruity',
@@ -266,6 +280,40 @@
     // Never asked about, still true of the food.
     'comfort'
   ];
+
+  /*
+   * WHAT IS IN THE FOOD, as opposed to what it is like.
+   *
+   * Every tag above is a matter of taste: somebody who says "nothing spicy" is
+   * telling you a preference, and the worst a wrong guess costs them is a
+   * dinner they did not fancy. These six are not that. They are the things
+   * people do not eat for reasons that have nothing to do with the food being
+   * nice, and a wrong guess costs somebody a rule they keep. So they are held
+   * to standards the rest are not:
+   *
+   *  1. NEVER 0.5. Every other tag may be a half — "depends how it's made" —
+   *     and everything downstream reads a half as a pass. "It might have pork
+   *     in it" is the one answer a rule like this must never give, so item()
+   *     refuses a diet tag that is not plainly 1 or plainly absent. Where a
+   *     dish is commonly made both ways it is tagged: leaving somebody one
+   *     dish short is the cheaper mistake by a very long way.
+   *  2. CONSISTENT WITH THEIR PARENT. Pork and beef are meat; shellfish is
+   *     seafood. A dish carrying the child and not the parent would be hidden
+   *     from one rule and served by the other, so item() refuses that too.
+   *  3. NEVER LEARNED FROM — see LEARNABLE above.
+   *
+   * What they cannot do is certify anything, and the app says so plainly where
+   * it asks: nothing here knows whether an animal was slaughtered to a rite or
+   * whether a kitchen keeps its pans apart. This filters a menu. It does not
+   * vouch for a kitchen.
+   */
+  var DIET_TAGS = ['pork', 'beef', 'shellfish', 'alcohol', 'dairy', 'egg'];
+
+  // Pork and beef are meat; shellfish is seafood. Written down because item()
+  // enforces it, not because a reader would doubt it.
+  var DIET_PARENT = { pork: 'meat', beef: 'meat', shellfish: 'seafood' };
+
+  var TAGS = LEARNABLE.concat(DIET_TAGS);
 
   // What somebody is asked to pick from when they set up their taste.
   //
@@ -349,9 +397,30 @@
       if (TAGS.indexOf(t) === -1) throw new Error('Unknown tag "' + t + '" on ' + name);
     });
 
+    // The two promises the diet tags make, checked on every dish rather than
+    // trusted. See DIET_TAGS for why these two in particular.
+    DIET_TAGS.forEach(function (t) {
+      if (!(t in tags)) return;
+      if (tags[t] !== 1) {
+        throw new Error('"' + t + '" on ' + name + ' is ' + tags[t] +
+          ' — a diet tag is 1 or it is left off. There is no "probably".');
+      }
+      var parent = DIET_PARENT[t];
+      if (parent && (tags[parent] || 0) !== 1) {
+        throw new Error(name + ' is tagged "' + t + '" but not "' + parent +
+          '" — one rule would hide it and the other would serve it.');
+      }
+    });
+
     // Vegetarian is never authored by hand — it falls out of meat and seafood,
     // so the two can never contradict each other.
     if (!('veg' in tags)) tags.veg = 1 - Math.max(tags.meat || 0, tags.seafood || 0);
+
+    // Nor is meat-and-dairy-in-one-dish, which is what keeps a cheeseburger off
+    // a kosher menu even though neither half of it is forbidden on its own.
+    // Derived for the same reason veg is: it is a fact about two other tags,
+    // and authoring it by hand is authoring a way for it to disagree with them.
+    if ((tags.meat || 0) === 1 && (tags.dairy || 0) === 1) tags.meatdairy = 1;
 
     return { name: name, icon: icon, blurb: blurb, tags: tags };
   }
@@ -359,61 +428,61 @@
   var ITEMS = [
     // ---- hot savoury mains -------------------------------------------------
     item('Pizza', '\u{1F355}', 'A slice big enough to fold. Nobody has ever regretted this.',
-      'hot cheesy carby comfort shareable indulgent handheld messy filling bready', 'quick cheap'),
+      'hot cheesy carby comfort shareable indulgent handheld messy filling bready dairy', 'quick cheap'),
     item('Cheeseburger', '\u{1F354}', 'Beef, melted cheese, and a bun that gives up halfway through.',
-      'hot meat carby comfort indulgent handheld messy fried filling bready', 'quick cheap'),
+      'hot meat carby comfort indulgent handheld messy fried filling bready beef dairy', 'quick cheap'),
     item('Fried chicken', '\u{1F357}', 'Shatteringly crisp outside, ridiculous inside.',
       'hot meat fried crunchy comfort indulgent shareable handheld messy filling chicken', 'cheap'),
     item('Ramen', '\u{1F35C}', 'A bowl of broth you will absolutely drink to the bottom.',
-      'hot soupy comfort carby meat filling soft', 'spicy cheap chicken'),
+      'hot soupy comfort carby meat filling soft pork egg', 'spicy cheap chicken'),
     item('Pho', '\u{1F372}', 'Clean beef broth, herbs, noodles. Restorative stuff.',
-      'hot soupy meat carby healthy light fresh soft'),
+      'hot soupy meat carby healthy light fresh soft beef'),
     item('Chicken soup', '\u{1F963}', 'The one you make when the world is being difficult.',
       'hot soupy comfort light healthy meat homemade cheap soft chicken'),
     item('Thai green curry', '\u{1F35B}', 'Coconut, chilli, basil. Loud in the best way.',
       'hot spicy comfort carby filling soft', 'meat healthy chicken'),
     item('Chicken biryani', '\u{1F35A}', 'Layered rice that took someone all afternoon.',
-      'hot meat carby spicy comfort shareable indulgent filling soft chicken'),
+      'hot meat carby spicy comfort shareable indulgent filling soft chicken dairy'),
     item('Spaghetti bolognese', '\u{1F35D}', 'The default answer for a reason.',
-      'hot meat carby comfort homemade cheap filling soft'),
+      'hot meat carby comfort homemade cheap filling soft beef dairy alcohol'),
     item('Mac and cheese', '\u{1F9C0}', 'Carbs wearing a cheese blanket.',
-      'hot cheesy carby comfort indulgent quick homemade cheap filling soft'),
+      'hot cheesy carby comfort indulgent quick homemade cheap filling soft dairy'),
     item('Tacos', '\u{1F32E}', 'Three small ones, obviously. Nobody stops at three.',
-      'hot meat handheld shareable messy spicy fresh filling bready', 'cheap chicken'),
+      'hot meat handheld shareable messy spicy fresh filling bready beef', 'cheap chicken'),
     item('Burrito', '\u{1F32F}', 'An entire meal wrapped in foil like a gift.',
-      'hot meat carby handheld comfort indulgent messy filling soft bready', 'spicy quick chicken'),
+      'hot meat carby handheld comfort indulgent messy filling soft bready dairy', 'spicy quick chicken'),
     item('Quesadilla', '\u{1FAD3}', 'Two tortillas, a lot of cheese, four minutes.',
-      'hot cheesy carby quick homemade cheap handheld crunchy filling bready'),
+      'hot cheesy carby quick homemade cheap handheld crunchy filling bready dairy'),
     item('Grilled cheese', '\u{1F96A}', 'Butter the outside of the bread. That is the whole trick.',
-      'hot cheesy carby comfort quick homemade cheap handheld crunchy filling bready'),
+      'hot cheesy carby comfort quick homemade cheap handheld crunchy filling bready dairy'),
     item('Steak', '\u{1F969}', 'Rest it before you cut it. Please.',
-      'hot meat indulgent filling soft'),
+      'hot meat indulgent filling soft beef'),
     item('Roast chicken', '\u{1F357}', 'Sunday energy, whatever day it actually is.',
       'hot meat comfort shareable filling soft chicken', 'healthy homemade'),
     item('Shawarma wrap', '\u{1F32F}', 'Spinning meat, garlic sauce, questionable decisions.',
       'hot meat carby handheld messy spicy filling bready', 'cheap quick chicken'),
     item('Fish and chips', '\u{1F35F}', 'Vinegar, too much salt, eaten out of the paper.',
-      'hot seafood fried carby comfort indulgent crunchy messy filling', 'bready'),
+      'hot seafood fried carby comfort indulgent crunchy messy filling alcohol', 'bready'),
     item('Dumplings', '\u{1F95F}', 'A steamer basket and no intention of sharing, really.',
       'hot shareable comfort handheld filling soft bready', 'meat quick'),
     item('Egg fried rice', '\u{1F35A}', 'Whatever is in the fridge, plus rice, plus a wok.',
-      'hot carby quick homemade cheap comfort filling soft'),
+      'hot carby quick homemade cheap comfort filling soft egg'),
     item('Pad thai', '\u{1F35C}', 'Sweet, sour, peanuts, lime squeezed over the top.',
-      'hot carby comfort filling soft', 'seafood spicy'),
+      'hot carby comfort filling soft egg', 'seafood spicy'),
     item('Katsu curry', '\u{1F35B}', 'Crumbed cutlet under a sauce that tastes like a hug.',
-      'hot meat carby fried comfort crunchy indulgent filling chicken'),
+      'hot meat carby fried comfort crunchy indulgent filling chicken egg'),
     item('Lasagna', '\u{1F35D}', 'Layers. Patience. Cheese pulled over the edge of the dish.',
-      'hot cheesy carby meat comfort indulgent shareable homemade filling soft'),
+      'hot cheesy carby meat comfort indulgent shareable homemade filling soft beef dairy'),
     item('Chilli con carne', '\u{1F336}\u{FE0F}', 'Better on the second day, as everyone keeps telling you.',
-      'hot meat spicy comfort homemade cheap filling soft', 'soupy'),
+      'hot meat spicy comfort homemade cheap filling soft beef', 'soupy'),
     item('Buffalo wings', '\u{1F357}', 'Sticky fingers and a small pile of napkins.',
-      'hot meat spicy fried shareable messy indulgent handheld filling chicken'),
+      'hot meat spicy fried shareable messy indulgent handheld filling chicken dairy'),
     item('Nachos', '\u{1F9C0}', 'A shared plate where everyone quietly hunts the loaded ones.',
-      'hot cheesy crunchy shareable indulgent messy spicy handheld cheap filling'),
+      'hot cheesy crunchy shareable indulgent messy spicy handheld cheap filling dairy'),
     item('Falafel wrap', '\u{1F9C6}', 'Crisp chickpea balls, pickles, far too much sauce.',
       'carby handheld healthy cheap fried messy filling bready', 'hot'),
     item('Baked potato', '\u{1F954}', 'Crisp skin, steam everywhere, butter melting in.',
-      'hot carby comfort cheap homemade filling soft', 'cheesy'),
+      'hot carby comfort cheap homemade filling soft dairy', 'cheesy'),
     item('Miso soup', '\u{1F963}', 'Small, warm, and somehow exactly enough.',
       'hot soupy light healthy quick cheap soft'),
 
@@ -424,13 +493,13 @@
     // Korea, Africa, South America or the Caribbean. An app that tells you what
     // to eat should not assume where you live.
     item('Bibimbap', '\u{1F35A}', 'A bowl you wreck on purpose. Mix it properly, all the way down.',
-      'hot carby healthy comfort filling', 'meat spicy homemade chicken'),
+      'hot carby healthy comfort filling egg', 'meat spicy homemade chicken'),
     item('Korean fried chicken', '\u{1F357}', 'Twice fried, so it stays crisp under the sauce.',
       'hot meat fried crunchy indulgent shareable handheld messy spicy filling chicken'),
     item('Tteokbokki', '\u{1F362}', 'Chewy rice cakes in a sauce that is sweeter than it looks, then hotter.',
       'hot spicy carby comfort shareable cheap filling soft', 'quick'),
     item('Butter chicken', '\u{1F35B}', 'The gentle one. Tomato, cream, and a lot of butter doing quiet work.',
-      'hot meat comfort indulgent carby filling soft chicken', 'spicy'),
+      'hot meat comfort indulgent carby filling soft chicken dairy', 'spicy'),
     item('Chana masala', '\u{1F958}', 'Chickpeas that have been somewhere. Cheap, filling, quietly brilliant.',
       'hot spicy healthy cheap comfort carby homemade veg filling soft'),
     item('Masala dosa', '\u{1F95E}', 'A crisp metre-long crepe with spiced potato hiding inside.',
@@ -448,15 +517,15 @@
     item('Koshari', '\u{1F35D}', 'Rice, lentils, pasta and fried onion. Carbohydrate on carbohydrate, and it works.',
       'hot carby cheap comfort veg shareable filling', 'spicy'),
     item('Doro wat', '\u{1F35B}', 'Deep, dark and slow. Eaten with your hands off shared injera.',
-      'hot meat spicy comfort shareable handheld messy filling soft chicken'),
+      'hot meat spicy comfort shareable handheld messy filling soft chicken egg dairy'),
     item('Feijoada', '\u{1F372}', 'Black beans and everything else, cooked until it gives up.',
-      'hot meat comfort shareable indulgent filling soft', 'homemade carby soupy cheap'),
+      'hot meat comfort shareable indulgent filling soft pork', 'homemade carby soupy cheap'),
     item('Jerk chicken', '\u{1F357}', 'Allspice, scotch bonnet and smoke. It is meant to hurt a little.',
       'hot meat spicy shareable handheld messy filling chicken'),
     item('Pierogi', '\u{1F95F}', 'Little parcels, boiled then fried in butter. Somebody’s grandmother is involved.',
-      'hot carby comfort homemade cheap shareable filling soft bready', 'cheesy veg'),
+      'hot carby comfort homemade cheap shareable filling soft bready dairy', 'cheesy veg'),
     item('Nasi goreng', '\u{1F35A}', 'Last night’s rice, improved. The fried egg on top is the whole point.',
-      'hot carby quick cheap comfort filling soft spicy', 'breakfast meat homemade chicken'),
+      'hot carby quick cheap comfort filling soft spicy egg', 'breakfast meat homemade chicken'),
     item('Laksa', '\u{1F35C}', 'Coconut, chilli and noodles. Somewhere between a soup and an event.',
       'hot soupy spicy carby comfort filling soft', 'seafood indulgent chicken'),
     item('Chicken satay', '\u{1F362}', 'Charred on sticks, drowned in peanut sauce.',
@@ -470,23 +539,23 @@
     item('Bao buns', '\u{1F95F}', 'Steamed, pillowy, slightly sweet, and gone in three bites.',
       'hot carby shareable handheld comfort filling soft bready', 'meat'),
     item('Banh mi', '\u{1F956}', 'A French loaf that emigrated and came back better.',
-      'hot meat carby handheld crunchy quick cheap fresh filling bready'),
+      'hot meat carby handheld crunchy quick cheap fresh filling bready pork'),
 
     // ---- eggs and breakfast ------------------------------------------------
     item('Omelette', '\u{1F373}', 'Three eggs and whatever needs using up.',
-      'hot quick homemade healthy cheap breakfast filling soft'),
+      'hot quick homemade healthy cheap breakfast filling soft egg'),
     item('Shakshuka', '\u{1F373}', 'Eggs poached in tomatoes, bread for mopping.',
-      'hot spicy homemade healthy breakfast comfort shareable filling soft', 'soupy'),
+      'hot spicy homemade healthy breakfast comfort shareable filling soft egg', 'soupy'),
     item('Full English breakfast', '\u{1F373}', 'A plate that ends the day before it starts.',
-      'hot meat breakfast comfort indulgent shareable fried filling', 'bready'),
+      'hot meat breakfast comfort indulgent shareable fried filling pork egg', 'bready'),
     item('Avocado toast', '\u{1F951}', 'Yes, still. It is still good.',
       'healthy quick homemade breakfast carby fresh light bready', 'hot'),
     item('Bagel with cream cheese', '\u{1F96F}', 'Toasted, thick schmear, no negotiation.',
-      'cheesy carby quick handheld breakfast cheap light bready', 'hot'),
+      'cheesy carby quick handheld breakfast cheap light bready dairy', 'hot'),
     item('Peanut butter toast', '\u{1F35E}', 'Two minutes from thought to eaten.',
       'sweet quick homemade cheap comfort carby breakfast light bready', 'hot'),
     item('Cereal', '\u{1F963}', 'Acceptable at any hour and you know it.',
-      'sweet quick homemade cheap breakfast light crunchy', 'fruity'),
+      'sweet quick homemade cheap breakfast light crunchy dairy', 'fruity'),
 
     // ---- cold savoury ------------------------------------------------------
     item('Sushi', '\u{1F363}', 'Little parcels, soy sauce, a dab of wasabi.',
@@ -494,17 +563,17 @@
     item('Poke bowl', '\u{1F372}', 'Raw fish over rice with everything green on top.',
       'seafood fresh healthy light carby quick'),
     item('Caesar salad', '\u{1F957}', 'Croutons, anchovy dressing, more parmesan than advertised.',
-      'fresh healthy light crunchy cheesy', 'meat'),
+      'fresh healthy light crunchy cheesy dairy egg', 'meat'),
     item('Greek salad', '\u{1F957}', 'Tomatoes, feta, olive oil, a lot of black pepper.',
-      'fresh healthy light cheesy homemade'),
+      'fresh healthy light cheesy homemade dairy'),
     item('Club sandwich', '\u{1F96A}', 'Cut into triangles or it does not count.',
-      'meat carby handheld quick cheap filling bready', 'hot chicken'),
+      'meat carby handheld quick cheap filling bready pork', 'hot chicken'),
     item('Hummus and pita', '\u{1FAD3}', 'Dip, tear, repeat until the bowl is scraped.',
       'fresh healthy light shareable cheap quick homemade bready', 'hot'),
     item('Cheese and crackers', '\u{1F9C0}', 'Barely cooking, entirely a meal.',
-      'cheesy crunchy quick shareable cheap light bready', 'hot'),
+      'cheesy crunchy quick shareable cheap light bready dairy', 'hot'),
     item('Charcuterie board', '\u{1F9C0}', 'Snacks arranged on wood so they count as dinner.',
-      'meat cheesy shareable indulgent filling', 'fresh hot'),
+      'meat cheesy shareable indulgent filling pork dairy', 'fresh hot'),
     item('Gazpacho', '\u{1F963}', 'Cold tomato soup, and it works. Trust it.',
       'soupy fresh healthy light homemade soft'),
     item('Spring rolls', '\u{1F962}', 'Rice paper, herbs, that peanut dipping sauce.',
@@ -531,55 +600,55 @@
 
     // ---- hot sweet ---------------------------------------------------------
     item('Pancakes', '\u{1F95E}', 'A stack, butter sliding off, syrup pooling.',
-      'sweet hot breakfast comfort indulgent homemade shareable carby filling soft', 'chocolate fruity'),
+      'sweet hot breakfast comfort indulgent homemade shareable carby filling soft egg dairy', 'chocolate fruity'),
     item('Waffles', '\u{1F9C7}', 'Crisp squares built to hold syrup.',
-      'sweet hot breakfast indulgent crunchy comfort carby filling', 'chocolate'),
+      'sweet hot breakfast indulgent crunchy comfort carby filling egg dairy', 'chocolate'),
     item('French toast', '\u{1F35E}', 'Yesterday’s bread, rescued.',
-      'sweet hot breakfast comfort indulgent homemade quick carby filling soft bready'),
+      'sweet hot breakfast comfort indulgent homemade quick carby filling soft bready egg dairy'),
     item('Crepes', '\u{1F95E}', 'Thin, lacy, folded around chocolate.',
-      'sweet hot indulgent homemade soft light', 'handheld chocolate fruity'),
+      'sweet hot indulgent homemade soft light egg dairy', 'handheld chocolate fruity'),
     item('Churros', '\u{1F968}', 'Cinnamon sugar and a cup of chocolate to dunk in.',
       'sweet hot fried crunchy indulgent shareable handheld messy cheap light bready'),
     item('Cinnamon roll', '\u{1F369}', 'Best warm, from the middle outwards.',
-      'sweet indulgent comfort handheld breakfast messy soft light bready', 'hot'),
+      'sweet indulgent comfort handheld breakfast messy soft light bready egg dairy', 'hot'),
     item('Molten chocolate cake', '\u{1F36B}', 'The bit where the middle runs out.',
-      'sweet hot indulgent comfort soft light chocolate'),
+      'sweet hot indulgent comfort soft light chocolate egg dairy'),
     item('Apple pie', '\u{1F967}', 'With cream, and no discussion about it.',
-      'sweet comfort indulgent shareable light bready fruity', 'hot'),
+      'sweet comfort indulgent shareable light bready fruity dairy', 'hot'),
     item('Rice pudding', '\u{1F35A}', 'Slow, creamy, a spoonful of jam on top.',
-      'sweet hot comfort homemade cheap soft', 'light'),
+      'sweet hot comfort homemade cheap soft dairy', 'light'),
 
     item('Baklava', '\u{1F36F}', 'Layers you cannot count, held together by syrup and nerve.',
-      'sweet crunchy indulgent shareable cheap veg light bready', 'hot'),
+      'sweet crunchy indulgent shareable cheap veg light bready dairy', 'hot'),
     item('Pastel de nata', '\u{1F95A}', 'Burnt on top on purpose. Eat it warm, standing up.',
-      'sweet hot crunchy indulgent cheap quick veg light bready'),
+      'sweet hot crunchy indulgent cheap quick veg light bready egg dairy'),
 
     // ---- cold sweet --------------------------------------------------------
     item('Ice cream', '\u{1F366}', 'Straight from the tub is a valid serving suggestion.',
-      'sweet indulgent quick handheld messy cheap soft light', 'shareable chocolate'),
+      'sweet indulgent quick handheld messy cheap soft light dairy', 'shareable chocolate'),
     item('Frozen yoghurt', '\u{1F368}', 'Dessert with a slightly clearer conscience.',
-      'sweet light healthy quick soft', 'indulgent fruity shareable'),
+      'sweet light healthy quick soft dairy', 'indulgent fruity shareable'),
     item('Cheesecake', '\u{1F370}', 'A dense slice that defeats most people.',
-      'sweet indulgent cheesy comfort soft light', 'chocolate'),
+      'sweet indulgent cheesy comfort soft light dairy egg', 'chocolate'),
     item('Tiramisu', '\u{1F36E}', 'Coffee, cocoa, and a spoon that keeps going back.',
-      'sweet indulgent caffeine comfort soft light chocolate'),
+      'sweet indulgent caffeine comfort soft light chocolate dairy egg alcohol'),
     item('Fruit salad', '\u{1F353}', 'Cold, sharp, and genuinely refreshing.',
       'sweet fresh healthy light quick cheap fruity homemade'),
     item('Yoghurt parfait', '\u{1F963}', 'Layers of yoghurt, granola, berries.',
-      'sweet fresh healthy light quick breakfast soft fruity', 'crunchy'),
+      'sweet fresh healthy light quick breakfast soft fruity dairy', 'crunchy'),
     item('Popsicle', '\u{1F36D}', 'For when it is far too hot to chew.',
       'sweet light quick handheld cheap fruity'),
     item('Doughnut', '\u{1F369}', 'Sugar on your fingers, no plate involved.',
-      'sweet indulgent quick handheld messy cheap fried soft light bready', 'hot chocolate'),
+      'sweet indulgent quick handheld messy cheap fried soft light bready egg dairy', 'hot chocolate'),
     item('Chocolate bar', '\u{1F36B}', 'Snap a row off. Then another row.',
-      'sweet indulgent quick handheld cheap light chocolate', 'hot'),
+      'sweet indulgent quick handheld cheap light chocolate dairy', 'hot'),
     item('Cookies', '\u{1F36A}', 'Still warm, edges crisp, middle not quite set.',
-      'sweet indulgent quick handheld cheap shareable crunchy comfort light chocolate', 'hot'),
+      'sweet indulgent quick handheld cheap shareable crunchy comfort light chocolate egg dairy', 'hot'),
     item('Brownie', '\u{1F36B}', 'Fudgy corner piece. The good one.',
-      'sweet indulgent comfort handheld cheap soft light chocolate', 'hot'),
+      'sweet indulgent comfort handheld cheap soft light chocolate egg dairy', 'hot'),
 
     item('Mango lassi', '\u{1F964}', 'Thick, cold and sweet enough to put a fire out.',
-      'drink sweet healthy quick veg light fruity', 'indulgent'),
+      'drink sweet healthy quick veg light fruity dairy', 'indulgent'),
     item('Mint tea', '\u{1F375}', 'Poured from a height, and sweeter than you expect.',
       'drink hot sweet cheap quick veg light'),
 
@@ -591,13 +660,13 @@
     item('Tea', '\u{1F375}', 'Put the kettle on. Everything looks better after.',
       'drink hot caffeine quick cheap light comfort healthy homemade'),
     item('Hot chocolate', '\u{2615}', 'Thick enough that the spoon hesitates.',
-      'drink hot sweet comfort indulgent quick homemade cheap light chocolate'),
+      'drink hot sweet comfort indulgent quick homemade cheap light chocolate dairy'),
     item('Smoothie', '\u{1F964}', 'Fruit, ice, and a blender doing the work.',
       'drink sweet fresh healthy light quick homemade fruity'),
     item('Milkshake', '\u{1F964}', 'So thick the straw is basically decorative.',
-      'drink sweet indulgent quick comfort light', 'chocolate'),
+      'drink sweet indulgent quick comfort light dairy', 'chocolate'),
     item('Bubble tea', '\u{1F9CB}', 'Chewy pearls, oversized straw, small joy.',
-      'drink sweet indulgent quick caffeine light', 'chocolate fruity'),
+      'drink sweet indulgent quick caffeine light dairy', 'chocolate fruity'),
     item('Orange juice', '\u{1F34A}', 'Freshly squeezed, pulp included.',
       'drink sweet fresh healthy light quick cheap breakfast fruity'),
     item('Lemonade', '\u{1F34B}', 'Sharp, cold, condensation on the glass.',
@@ -605,7 +674,7 @@
     // Filling rather than light, which is the entire point of drinking one —
     // and which stops it being offered to somebody who asked for a light bite.
     item('Protein shake', '\u{1F95B}', 'Not glamorous. Does the job.',
-      'drink healthy quick filling homemade', 'sweet chocolate'),
+      'drink healthy quick filling homemade dairy', 'sweet chocolate'),
 
     // ---- the second intake ----------------------------------------------
     // Chosen for what the first hundred and twelve did not have rather than
@@ -613,49 +682,49 @@
     // noodle, a Mexican breakfast. `veg` is never written here — item()
     // works it out from meat and seafood so the two can never contradict.
     item('Birria tacos', '\u{1F32E}', 'Dipped in the broth it was cooked in. Bring napkins.',
-      'hot meat messy indulgent handheld comfort filling soft', 'spicy shareable'),
+      'hot meat messy indulgent handheld comfort filling soft beef', 'spicy shareable'),
     item('Khao soi', '\u{1F35C}', 'Curry broth, soft noodles, and a tangle of crisp ones on top.',
-      'hot soupy spicy carby comfort chicken filling', 'crunchy'),
+      'hot soupy spicy carby comfort chicken filling egg', 'crunchy'),
     item('Okonomiyaki', '\u{1F373}', 'A cabbage pancake under sauce, mayo and dancing flakes.',
-      'hot shareable homemade filling soft messy', 'veg cheap'),
+      'hot shareable homemade filling soft messy egg', 'veg cheap'),
     item('Rendang', '\u{1F35B}', 'Beef cooked down until the sauce is a coating. Deeply serious.',
-      'hot meat spicy filling comfort soft', 'homemade'),
+      'hot meat spicy filling comfort soft beef', 'homemade'),
     item('Hainanese chicken rice', '\u{1F35A}', 'Poached chicken, rice cooked in the stock. Quietly perfect.',
       'hot chicken meat carby light comfort soft', 'healthy'),
     item('Paella', '\u{1F958}', 'One pan, socarrat on the bottom, everyone round it.',
-      'hot shareable seafood carby filling homemade', 'chicken'),
+      'hot shareable seafood carby filling homemade shellfish', 'chicken'),
     item('Risotto', '\u{1F35A}', 'Stirred until it goes creamy without any cream in it.',
-      'hot carby comfort soft homemade filling cheesy', 'veg'),
+      'hot carby comfort soft homemade filling cheesy dairy alcohol', 'veg'),
     item('Carbonara', '\u{1F35D}', 'Egg, cheese, pepper, pork. No cream, ever.',
-      'hot carby cheesy meat comfort filling quick', 'indulgent'),
+      'hot carby cheesy meat comfort filling quick pork egg dairy', 'indulgent'),
     item('Moussaka', '\u{1F346}', 'Aubergine, lamb and a lid of béchamel gone golden.',
-      'hot meat cheesy filling comfort indulgent soft', 'homemade'),
+      'hot meat cheesy filling comfort indulgent soft dairy alcohol', 'homemade'),
     item('Schnitzel', '\u{1F356}', 'Hammered thin, fried gold, lemon over the top.',
-      'hot meat fried crunchy filling', 'quick'),
+      'hot meat fried crunchy filling pork egg', 'quick'),
     item('Croque monsieur', '\u{1F956}', 'A cheese toastie that went to finishing school.',
-      'hot cheesy bready meat indulgent filling quick', 'comfort'),
+      'hot cheesy bready meat indulgent filling quick pork dairy', 'comfort'),
     item('Chilaquiles', '\u{1F336}', 'Last night\'s tortilla chips, this morning\'s breakfast.',
-      'hot breakfast spicy messy cheesy comfort crunchy', 'veg cheap'),
+      'hot breakfast spicy messy cheesy comfort crunchy dairy', 'veg cheap'),
     item('Elote', '\u{1F33D}', 'Corn, mayo, chilli, lime, cheese. Eaten off the cob, badly.',
-      'hot handheld messy cheesy spicy cheap shareable', 'veg quick'),
+      'hot handheld messy cheesy spicy cheap shareable dairy', 'veg quick'),
     item('Pupusas', '\u{1FAD3}', 'Stuffed griddled corn cakes with something sharp on the side.',
-      'hot cheesy filling soft handheld cheap comfort', 'veg'),
+      'hot cheesy filling soft handheld cheap comfort dairy', 'veg'),
     item('Congee', '\u{1F963}', 'Rice cooked to a whisper. What you want when nothing else appeals.',
       'hot soupy soft light comfort breakfast healthy cheap', 'chicken'),
     item('Japchae', '\u{1F35C}', 'Glass noodles, sesame, vegetables that still have a snap.',
       'carby light shareable soft healthy', 'veg meat quick'),
     item('Souvlaki', '\u{1F959}', 'Skewered, griddled, wrapped with chips inside. Correctly.',
-      'hot meat handheld filling messy quick', 'cheap'),
+      'hot meat handheld filling messy quick pork dairy', 'cheap'),
     item('Basque cheesecake', '\u{1F370}', 'Burnt on purpose. The middle barely sets.',
-      'sweet indulgent soft homemade shareable', 'fruity'),
+      'sweet indulgent soft homemade shareable dairy egg', 'fruity'),
     item('Kunafa', '\u{1F36E}', 'Shredded pastry, melting cheese, syrup. Hot, somehow.',
-      'sweet hot cheesy indulgent shareable crunchy', 'homemade'),
+      'sweet hot cheesy indulgent shareable crunchy dairy', 'homemade'),
     item('Sticky toffee pudding', '\u{1F36E}', 'Dates, sponge, and more sauce than seems wise.',
-      'sweet hot soft indulgent comfort homemade filling', 'shareable'),
+      'sweet hot soft indulgent comfort homemade filling dairy egg', 'shareable'),
     item('Lobster', '\u{1F99E}', 'Butter, a cracked shell, and no dignity left at the table.',
-      'hot seafood indulgent shareable messy filling soft', 'homemade fresh')
+      'hot seafood indulgent shareable messy filling soft shellfish', 'homemade fresh')
   ];
 
-  return { QUESTIONS: QUESTIONS, TAGS: TAGS, TASTES: TASTES, ITEMS: ITEMS,
-    phrase: phrase, wordings: wordings };
+  return { QUESTIONS: QUESTIONS, TAGS: TAGS, LEARNABLE: LEARNABLE, DIET_TAGS: DIET_TAGS,
+    TASTES: TASTES, ITEMS: ITEMS, phrase: phrase, wordings: wordings };
 });
