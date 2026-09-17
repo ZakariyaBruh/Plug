@@ -207,7 +207,7 @@ function EatPage() {
           </div>
 
           <p className="mt-6 text-sm text-[var(--text-dim)]">
-            Free, no sign-up, and it works with no signal.
+            Free, no sign-up, and the game works with no signal.
           </p>
         </div>
 

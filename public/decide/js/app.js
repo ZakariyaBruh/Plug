@@ -5918,6 +5918,24 @@
    * anything that is not plain http(s). There is no innerHTML in here except
    * to empty a list.
    */
+  /*
+   * Is the device offline?
+   *
+   * navigator.onLine is only trustworthy in one direction — false really does
+   * mean there is no network — which is exactly the direction that matters
+   * here. True can still mean "connected to a router that goes nowhere", so it
+   * is never used to claim a connection IS working, only to admit when one is
+   * definitely not.
+   *
+   * The app advertises that it plays with no signal, and it does. But the
+   * sections that genuinely need the network said nothing about why they were
+   * empty, and the news panel went further and insisted "nothing is wrong with
+   * your connection" to somebody who had just turned their Wi-Fi off.
+   */
+  function isOffline() {
+    return typeof navigator !== 'undefined' && navigator.onLine === false;
+  }
+
   var news = { stories: null, filter: '', open: null, busy: false, failed: false, at: 0 };
 
   function renderNews() {
@@ -5975,6 +5993,17 @@
         $('news-loading').hidden = true;
         $('news-wrap').hidden = true;
         $('news-error').hidden = false;
+        var why = $('news-error-why');
+        if (why) {
+          why.textContent = isOffline()
+            ? 'You are offline. The game, the dishes and the recipes still work — the ' +
+              'news needs a connection, because the headlines come from other people’s sites.'
+            : 'Nothing is wrong with your connection — this happens when a publisher is ' +
+              'having a bad morning.';
+        }
+        $('news-error-text').textContent = isOffline()
+          ? 'No connection, so no headlines.'
+          : 'The feeds would not load.';
       });
   }
 

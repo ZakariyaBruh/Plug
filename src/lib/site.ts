@@ -172,7 +172,7 @@ export const STANDARD = [
   'Endless races your own best run — it tells you, mid-run, whether you are ahead of it',
   'Tonight’s pick — one dish, no questions',
   'How many plates, and share a verdict',
-  'Installs to your home screen, and plays with no signal',
+  `Installs to your home screen \u2014 the game, all ${DISH_COUNT} dishes and every recipe work with no signal`,
   'Playable entirely from the keyboard',
   'Nearby — everywhere you could eat, sorted by what kind of place it is',
   'An Android app, if you would rather have one than a tab',

@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="morsels45">
 <meta property="og:title" content="morsels45 — what should you eat?">
-<meta property="og:description" content="A handful of either-or questions and you have an answer. 133 dishes, no sign-up, and it still works with no signal.">
+<meta property="og:description" content="A handful of either-or questions and you have an answer. 133 dishes, no sign-up, and the game still works with no signal.">
 <meta property="og:url" content="https://morsels45-app.whop.site/decide/">
 <meta property="og:image" content="https://morsels45-app.whop.site/site-card.png">
 <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
 <meta property="og:image:alt" content="morsels45 — stop scrolling, start eating">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="morsels45 — what should you eat?">
-<meta name="twitter:description" content="A handful of either-or questions and you have an answer. 133 dishes, no sign-up, and it still works with no signal.">
+<meta name="twitter:description" content="A handful of either-or questions and you have an answer. 133 dishes, no sign-up, and the game still works with no signal.">
 <meta name="twitter:image" content="https://morsels45-app.whop.site/site-card.png">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#17171a">
@@ -166,7 +166,7 @@
 
     <p class="landing-install" id="install-wrap" hidden>
       <button class="link-btn" id="install-btn">Add it to your home screen</button>
-      <span class="fine">Works with no signal once it is there.</span>
+      <span class="fine">Once it is there, the game, the dishes and the recipes work with no signal. News, Nearby and Ask need a connection.</span>
     </p>
 
     <!-- Android or iOS only, revealed by app.js. A real app rather than a
@@ -1411,8 +1411,11 @@
 
       <div class="notice" id="news-error" hidden>
         <p id="news-error-text">The feeds would not load.</p>
-        <p class="fine">Nothing is wrong with your connection &mdash; this happens when a
-        publisher is having a bad morning.</p>
+        <!-- Swapped for the offline line when the browser says it has no
+             connection. Telling somebody with the Wi-Fi off that nothing is
+             wrong with their connection is the app arguing with the truth. -->
+        <p class="fine" id="news-error-why">Nothing is wrong with your connection &mdash; this
+        happens when a publisher is having a bad morning.</p>
         <div class="locate-actions">
           <button class="quiet" id="news-retry">Try again</button>
         </div>
