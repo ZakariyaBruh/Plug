@@ -25,6 +25,7 @@ const PAGES: Array<[path: string, priority: string]> = [
   ['/premium', '0.8'],
   ['/how-it-works', '0.7'],
   ['/faq', '0.6'],
+  ['/privacy', '0.3'],
 ]
 
 // Injected by vite at build time — see vite.config.ts.

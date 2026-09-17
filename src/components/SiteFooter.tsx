@@ -31,6 +31,9 @@ export function SiteFooter() {
           <Link to="/account" className="hover:text-[var(--text)]">
             Account
           </Link>
+          <Link to="/privacy" className="hover:text-[var(--text)]">
+            Privacy
+          </Link>
           {/* The affiliate programme existed in exactly one place before this:
               a button inside a prompt in the game that comes up occasionally.
               Nobody could go and find it on purpose. It belongs in the footer

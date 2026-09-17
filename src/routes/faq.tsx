@@ -26,8 +26,8 @@ const FAQS: [string, string][] = [
     `Always avoid, Knockout, Blitz, This or that, Shortlist, Together, Swipe, order it together, cook along, shop the list together, meal slot, heat dial, mix-it-up, a side with that, don’t repeat this week, guest at the table, cook mode, unlimited saved dishes, cook-from-your-kitchen, a planned week, extra palettes, and picks that follow what you have actually liked. ${OFFER}, cancel any time.`,
   ],
   [
-    'Does Always avoid work on Standard?',
-    'No. Always avoid is Premium. On a free profile the buttons are visible so you can see the feature, but they do not ban anything and they do not change the questions. Pay, and they apply to every decision from then on.',
+    'Can I tell it what I do not eat, without paying?',
+    'Yes. The six standing rules — no meat, no seafood, no cheese, nothing spicy, nothing fried, no caffeine — are free, and they apply to every decision, Tonight’s pick included. An app that keeps offering a vegetarian steak until they pay is not a trial, it is broken. Premium adds banning any tag you like on top of those six, striking a named dish off for good, a guest’s rules for one sitting, and the heat dial.',
   ],
   [
     'Do I need an account?',

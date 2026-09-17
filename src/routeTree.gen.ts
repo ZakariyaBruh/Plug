@@ -16,6 +16,7 @@ import { Route as FaqRouteImport } from './routes/faq'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as OrderCompleteRouteImport } from './routes/order-complete'
 import { Route as PremiumRouteImport } from './routes/premium'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
@@ -68,6 +69,11 @@ const OrderCompleteRoute = OrderCompleteRouteImport.update({
 const PremiumRoute = PremiumRouteImport.update({
   id: '/premium',
   path: '/premium',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
@@ -169,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/how-it-works': typeof HowItWorksRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
+  '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
@@ -196,6 +203,7 @@ export interface FileRoutesByTo {
   '/how-it-works': typeof HowItWorksRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
+  '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/how-it-works': typeof HowItWorksRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
+  '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
@@ -253,6 +262,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/order-complete'
     | '/premium'
+    | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
     | '/api/chat'
@@ -280,6 +290,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/order-complete'
     | '/premium'
+    | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
     | '/api/chat'
@@ -307,6 +318,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/order-complete'
     | '/premium'
+    | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
     | '/api/chat'
@@ -335,6 +347,7 @@ export interface RootRouteChildren {
   HowItWorksRoute: typeof HowItWorksRoute
   OrderCompleteRoute: typeof OrderCompleteRoute
   PremiumRoute: typeof PremiumRoute
+  PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
@@ -403,6 +416,13 @@ declare module '@tanstack/react-router' {
       path: '/premium'
       fullPath: '/premium'
       preLoaderRoute: typeof PremiumRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/robots.txt': {
@@ -553,6 +573,7 @@ const rootRouteChildren: RootRouteChildren = {
   HowItWorksRoute: HowItWorksRoute,
   OrderCompleteRoute: OrderCompleteRoute,
   PremiumRoute: PremiumRoute,
+  PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,

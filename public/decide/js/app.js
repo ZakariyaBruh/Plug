@@ -229,7 +229,7 @@
   // on its own (see the boot section).
   function goPremium(what) {
     toast('\u{2728}', 'Part of Premium',
-      what + ' comes with Premium — three days free, opening checkout\u2026');
+      what + ' comes with Premium — seven days free, opening checkout\u2026');
     premiumApi.openUpgrade();
   }
 
@@ -4162,7 +4162,7 @@
       'and rules it never asks you about twice. A whole month of it costs less ' +
       'than one takeaway.';
     $('enjoy-pitch-fine').textContent =
-      'Three days free first, and the game you are playing stays free forever either way.';
+      'Seven days free first, and the game you are playing stays free forever either way.';
 
     $('enjoy-ask').hidden = true;
     $('enjoy-pitch').hidden = false;
@@ -4462,8 +4462,8 @@
       body: 'Premium is the other six ways to play, cook mode, the menu builder, ' +
             'and rules it never asks you about twice. A whole month of it costs less ' +
             'than a single delivery order.',
-      fine: 'Three days free first. The game you are playing stays free either way.',
-      cta: 'Three days free'
+      fine: 'Seven days free first. The game you are playing stays free either way.',
+      cta: 'Seven days free'
     },
     {
       id: 'plus-modes',
@@ -4473,7 +4473,7 @@
       body: 'Knockout, Blitz, This or that, Shortlist, Swipe and Together are all ' +
             'sitting behind one switch. Same catalogue, six different ways to argue ' +
             'with it.',
-      fine: 'Three days free, then $4.99 a month.',
+      fine: 'Seven days free, then $4.99 a month.',
       cta: 'Have a look'
     },
     {
@@ -6946,8 +6946,8 @@
     $('plus-note').textContent = on
       ? 'Every Premium feature is live' + (premiumApi.status.username ? ', ' + premiumApi.status.username : '') + '.'
       : signedIn
-        ? 'Signed in, but not subscribed yet. The first three days are free.'
-        : 'Free profiles keep the game, the catalogue and the badges. Everything marked Premium is off \u2014 three days free switches all of it on.';
+        ? 'Signed in, but not subscribed yet. The first seven days are free.'
+        : 'Free profiles keep the game, the catalogue and the badges. Everything marked Premium is off \u2014 seven days free switches all of it on.';
 
     $('plus-toggle').textContent = on ? 'Manage subscription' : 'Try it free';
     $('plus-toggle').href = on ? 'https://whop.com/@me/settings/memberships/' : premiumApi.upgradeUrl();
@@ -6957,7 +6957,7 @@
     $('buy-note').textContent = on
       ? 'Cancel any time — you keep Premium until the period you already paid for ' +
         'runs out.'
-      : 'Free for three days, then $4.99/month — cancel before it ends and you ' +
+      : 'Free for seven days, then $4.99/month — cancel before it ends and you ' +
         'are not charged. Tax may be added depending on where you are, so the ' +
         'total can come to a little over that; checkout shows it before you pay. ' +
         'Sign in on any device and Premium is already on.';
