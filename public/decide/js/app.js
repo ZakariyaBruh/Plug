@@ -467,6 +467,9 @@
   var panel = 'home';
 
   function setView(name) {
+    // Leaving the menu tab is a decision about the menu, so it is taken here,
+    // before `view` moves on and the old one is unknowable. See leaveMenu.
+    if (view === 'menu' && name !== 'menu') leaveMenu();
     view = name;
     $$('.view').forEach(function (el) {
       el.classList.toggle('is-current', el.id === 'view-' + name);
@@ -2871,6 +2874,21 @@
   var menuWrapped = false;
 
   /*
+   * Which way in is half-finished: 'questions', 'prompt', or nothing.
+   *
+   * WHAT THIS IS FOR. Coming back to the menu tab should land wherever you
+   * actually were, and "where you were" is three different places with three
+   * different right answers. Mid-run and mid-questions are work in progress
+   * and have to survive being left — nobody wants to answer five questions
+   * twice because they went to look something up. A menu that is finished is
+   * not work in progress; it is a result, and it kept being served back as
+   * though it were the screen, days later, with no obvious way past it. So
+   * that one is cleared on the way out (leaveMenu) and this tab opens where it
+   * should: at the start.
+   */
+  var menuStage = null;
+
+  /*
    * A RUN HAS TO SURVIVE THE TAB CLOSING.
    *
    * The go is spent the moment the model answers, and the menu is then agreed
@@ -2937,6 +2955,7 @@
   }
 
   function startRun(menu) {
+    menuStage = null;
     menuRun = { menu: menu, step: 0, used: 0, refused: {} };
     menuWrapped = false;
     progress.state.menuDone = null;
@@ -3256,6 +3275,33 @@
     if (menuRun) { menuPanels('menu-run'); paintRun(false); return; }
     if (menuWrapped) { menuPanels('menu-wrap-view'); paintMenu(menuNow); return; }
 
+    /*
+     * HALF-ANSWERED OUTRANKS THE ALLOWANCE, for the same reason a run does.
+     *
+     * Somebody four questions in has not spent anything yet — the go goes when
+     * the model answers — so the allowance cannot have run out underneath
+     * them. Checking it first would only matter if it had, and the honest
+     * thing to do in that case is still to let them finish the sentence they
+     * were in the middle of.
+     */
+    if (menuStage === 'questions' && menuQ.list && menuQ.at < menuQ.list.length) {
+      menuPanels('menu-ask');
+      $('menu-ways').hidden = true;
+      $('menu-prompt').hidden = true;
+      $('menu-questions').hidden = false;
+      paintMenuQuestion();
+      return;
+    }
+    if (menuStage === 'prompt') {
+      // Whatever was typed is still in the input: the view is hidden by a
+      // class rather than rebuilt, so the box keeps its value.
+      menuPanels('menu-ask');
+      $('menu-ways').hidden = true;
+      $('menu-questions').hidden = true;
+      $('menu-prompt').hidden = false;
+      return;
+    }
+
     if (!menuAllowed()) {
       menuPanels('menu-spent');
       $('menu-spent-line').textContent =
@@ -3265,8 +3311,33 @@
     menuAsk();
   }
 
+  /*
+   * LEAVING THE MENU TAB.
+   *
+   * A menu being written stays exactly where it is — mid-run or mid-question,
+   * come back and carry on. A menu that is FINISHED does not: it is cleared,
+   * so the tab opens at the start next time rather than handing back a meal
+   * that was decided on Tuesday.
+   *
+   * This is the whole of the difference. The finished menu used to be saved
+   * against the profile and restored on every visit, which is right for a
+   * reload — "what am I cooking tonight" gets asked again at six o'clock on a
+   * reloaded tab — and wrong for a tab change, where somebody has just walked
+   * away from it on purpose. So the save survives a reload and not a
+   * deliberate exit, which is the distinction the code could not previously
+   * draw because nothing told it one had happened.
+   */
+  function leaveMenu() {
+    if (!menuWrapped) return;
+    menuWrapped = false;
+    menuNow = [];
+    progress.state.menuDone = null;
+    progress.save();
+  }
+
   /* Back to the two ways in. */
   function menuAsk() {
+    menuStage = null;
     menuRun = null;
     menuWrapped = false;
     progress.state.menuRun = null;
@@ -3313,13 +3384,62 @@
      * for anybody whose answer is more complicated than these.
      */
     { key: 'avoid', text: 'Anything off the table?',
-      options: ['Nothing, all good', 'No meat', 'No fish or seafood', 'Nothing too spicy'] }
+      options: ['Nothing, all good', 'No meat', 'No fish or seafood', 'Nothing too spicy'],
+      // Which reply is already a standing rule. See menuQuestions().
+      covers: { 'No meat': 'meat', 'No fish or seafood': 'seafood', 'Nothing too spicy': 'spicy' } }
   ];
 
-  var menuQ = { at: 0, answers: {} };
+  /*
+   * THE QUESTIONS AS THEY WILL ACTUALLY BE PUT, for this profile.
+   *
+   * The last one asked whether to keep meat, fish or spice off the table —
+   * three things somebody may well have answered once already, on the way in,
+   * under "what you don't eat". Asking again is not harmless. It is the app
+   * saying it was not listening the first time, on the screen directly after
+   * the one that promised nothing here is asked twice, and a reply of "no
+   * meat" typed into a menu is weaker than the rule they already set: it lasts
+   * one menu.
+   *
+   * So a reply already covered by a standing rule is dropped. If that leaves
+   * only "nothing, all good" there is nothing left to ask and the question
+   * goes with it — the rules still apply to the menu, they are applied in
+   * allowedDishes and in the fallback builder, and this was never what made
+   * them work.
+   *
+   * Built fresh each run rather than once at load, because a rule can be
+   * turned on between two menus.
+   */
+  function menuQuestions() {
+    var rules = effectiveRules();
+    var out = [];
+    MENU_QUESTIONS.forEach(function (q) {
+      if (!q.covers) return out.push(q);
+
+      var left = q.options.filter(function (opt) {
+        var tag = q.covers[opt];
+        return !tag || rules.indexOf(tag) === -1;
+      });
+      if (left.length < 2) return;            // only "nothing" survived
+
+      var asked = {};
+      Object.keys(q).forEach(function (k) { asked[k] = q[k]; });
+      asked.options = left;
+      // Different sentence when some of it is already handled, so the shorter
+      // list reads as the app having remembered rather than having forgotten.
+      if (left.length < q.options.length) {
+        asked.text = 'Anything else off the table, just for this one?';
+        asked.note = 'What you don\u2019t eat is already on \u2014 this is for tonight only.';
+      }
+      out.push(asked);
+    });
+    return out;
+  }
+
+  var menuQ = { at: 0, answers: {}, list: MENU_QUESTIONS };
 
   function menuStartQuestions() {
-    menuQ = { at: 0, answers: {} };
+    menuStage = 'questions';
+    menuQ = { at: 0, answers: {}, list: menuQuestions() };
     menuPanels('menu-ask');
     $('menu-ways').hidden = true;
     $('menu-prompt').hidden = true;
@@ -3328,9 +3448,11 @@
   }
 
   function paintMenuQuestion() {
-    var q = MENU_QUESTIONS[menuQ.at];
-    $('menu-q-step').textContent = 'Question ' + (menuQ.at + 1) + ' of ' + MENU_QUESTIONS.length;
+    var q = menuQ.list[menuQ.at];
+    $('menu-q-step').textContent = 'Question ' + (menuQ.at + 1) + ' of ' + menuQ.list.length;
     $('menu-q-title').textContent = q.text;
+    $('menu-q-note').textContent = q.note || '';
+    $('menu-q-note').hidden = !q.note;
     var wrap = $('menu-q-options');
     wrap.innerHTML = '';
     q.options.forEach(function (opt) {
@@ -3342,7 +3464,7 @@
         Sound.tick();
         menuQ.answers[q.key] = opt;
         menuQ.at += 1;
-        if (menuQ.at < MENU_QUESTIONS.length) return paintMenuQuestion();
+        if (menuQ.at < menuQ.list.length) return paintMenuQuestion();
         askMenu({ answers: menuQ.answers });
       });
       wrap.appendChild(btn);
@@ -3350,6 +3472,7 @@
   }
 
   function menuStartPrompt() {
+    menuStage = 'prompt';
     menuPanels('menu-ask');
     $('menu-ways').hidden = true;
     $('menu-questions').hidden = true;

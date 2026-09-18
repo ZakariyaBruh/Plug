@@ -1614,6 +1614,9 @@
         <div id="menu-questions" hidden>
           <p class="q-step" id="menu-q-step">Question 1 of 3</p>
           <h2 class="q-title" id="menu-q-title"></h2>
+          <!-- Only on the "anything else" question, and only when some of it is
+               already a standing rule. See menuQuestions() in app.js. -->
+          <p class="fine" id="menu-q-note" hidden></p>
           <div class="knobs" id="menu-q-options" role="group" aria-label="Answer"></div>
           <button class="plain" id="menu-q-back">Back</button>
         </div>

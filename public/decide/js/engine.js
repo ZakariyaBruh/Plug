@@ -124,16 +124,25 @@
   // middle, so both ends excluded it and only the third reply found it. That is
   // a fair description of a club sandwich, and a disastrous one of the
   // catalogue, because 0.5 is also where every dish lands that nobody has
-  // tagged at either end. Every number below was measured back when the
-  // catalogue was 112 dishes, and is left as it was taken: forty of them sat in
-  // the middle of the crunchy/soft axis — pizza, tacos, buffalo wings, spring
-  // rolls — not because they are texturally ambiguous but because `soft` was
-  // only ever put on 48 dishes. Answering "Crunchy" faulted 88 of the 112,
-  // "Soft and tender" faulted 64, and a player who wanted a taco could not
-  // reach one by either route.
-  // Measured against somebody answering from appetite rather than from the tag
-  // table, the app found the right dish 55.6% of the time and 48 dishes were
-  // unreachable outright.
+  // tagged at either end.
+  //
+  // The counts below are of the catalogue as it stands, not of the one this was
+  // found in — an argument resting on numbers from three intakes ago is an
+  // argument nobody can check. They have all grown, and the shape of the
+  // problem has not: 45 of the 133 dishes sit in the middle of the crunchy/soft
+  // axis — pizza, tacos, buffalo wings, spring rolls — not because they are
+  // texturally ambiguous but because `soft` is only ever put on 60 of them and
+  // `crunchy` on 29. Under the old reading, answering "Crunchy" would fault 107
+  // of the 133 and "Soft and tender" 74, and a player who wanted a taco could
+  // not reach one by either route. Under this one they fault 59 and 26: the
+  // ends still exclude each other, and the middle is left alone.
+  //
+  // What the change was actually made on was a simulation of somebody answering
+  // from appetite rather than from the tag table — 2,800 games over the
+  // 112-dish catalogue of the time, in which the app found the right dish 55.6%
+  // of the time and 48 dishes were unreachable outright. Those two are left at
+  // the figures that run produced, because they are what it measured and there
+  // is no honest way to restate them without running it again.
   //
   // An untagged middle is a fact about the catalogue, not about the food, and
   // it must never be read as the player being contradicted. So the end answers
