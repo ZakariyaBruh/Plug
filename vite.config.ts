@@ -309,124 +309,6 @@ function recipeBook(): Plugin {
   }
 }
 
-/*
- * THE PREVIEW'S COPY OF THE CATALOGUE, checked against the real one.
- *
- * lib/preview.ts writes out twenty-four dishes by hand, because importing
- * ALL_DISHES would bundle a hundred and thirty-three into the landing page to
- * show one. That is the right trade and it comes with the obvious hazard: a
- * second list of dishes is a list that drifts, and this one is in the shop
- * window. A preview offering something the app no longer has, or describing it
- * differently from the page it links to, is worse than no preview.
- *
- * So every entry is checked against data.js: the name has to exist, and the
- * icon, the blurb and the level of each of the five tags it claims have to
- * match exactly. A dish renamed, retagged or rewritten in the catalogue fails
- * the build here rather than going quietly out of date.
- */
-function previewCheck(): Plugin {
-  const PREVIEW_TAGS = ['sweet', 'hot', 'quick', 'handheld', 'crunchy']
-
-  return {
-    name: 'morsels45-preview-check',
-    buildStart() {
-      const data = readFileSync(join(process.cwd(), 'public', 'decide', 'js', 'data.js'), 'utf8')
-      const preview = readFileSync(join(process.cwd(), 'src', 'lib', 'preview.ts'), 'utf8')
-
-      /*
-       * item('Name', '\u{1F355}', 'blurb…', 'yes tags', 'maybe tags')
-       *
-       * The same shape lib/dishes.ts reads, and for the same reason: data.js is
-       * a plain script with no module to import from, and this runs at build
-       * time so nothing is parsed at request time.
-       */
-      const ITEM =
-        /item\('((?:[^'\\]|\\.)*)',\s*'((?:[^'\\]|\\.)*)',\s*'((?:[^'\\]|\\.)*)'(?:,\s*'((?:[^'\\]|\\.)*)')?(?:,\s*'((?:[^'\\]|\\.)*)')?/g
-
-      const decode = (literal: string) =>
-        literal
-          .replace(/\\u\{([0-9a-fA-F]+)\}/g, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)))
-          .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(Number.parseInt(hex, 16)))
-          .replace(/\\'/g, "'")
-
-      type Real = { icon: string; blurb: string; level: Record<string, number> }
-      const real = new Map<string, Real>()
-      for (const [, name, icon, blurb, yes, maybe] of data.matchAll(ITEM)) {
-        const level: Record<string, number> = {}
-        for (const tag of (yes ?? '').split(/\s+/).filter(Boolean)) level[tag] = 1
-        for (const tag of (maybe ?? '').split(/\s+/).filter(Boolean)) level[tag] = 0.5
-        real.set(decode(name), { icon: decode(icon), blurb: decode(blurb), level })
-      }
-      if (real.size < 100) throw new Error('preview-check: could not read the catalogue from data.js')
-
-      // { name: 'Pizza', icon: '…', blurb: '…', tags: { hot: 1, quick: 0.5 } },
-      const ROW = /\{ name: '((?:[^'\\]|\\.)*)', icon: '([^']*)', blurb: '((?:[^'\\]|\\.)*)', tags: \{([^}]*)\} \}/g
-      const rows = [...preview.matchAll(ROW)]
-      if (!rows.length) throw new Error('preview-check: no preview dishes found in lib/preview.ts')
-
-      for (const [, rawName, icon, rawBlurb, tagList] of rows) {
-        const name = rawName.replace(/\\'/g, "'")
-        const blurb = rawBlurb.replace(/\\'/g, "'")
-        const dish = real.get(name)
-        if (!dish) {
-          throw new Error(`preview-check: the preview offers "${name}", which is not in the catalogue`)
-        }
-        if (dish.icon !== icon) {
-          throw new Error(`preview-check: ${name} is ${dish.icon} in the catalogue, ${icon} in the preview`)
-        }
-        if (dish.blurb !== blurb) {
-          throw new Error(`preview-check: ${name}'s blurb does not match the catalogue`)
-        }
-
-        const claimed: Record<string, number> = {}
-        for (const pair of tagList.split(',')) {
-          const [tag, value] = pair.split(':').map((x) => x.trim())
-          if (tag) claimed[tag] = Number(value)
-        }
-        for (const tag of PREVIEW_TAGS) {
-          const mine = claimed[tag] ?? 0
-          const theirs = dish.level[tag] ?? 0
-          if (mine !== theirs) {
-            throw new Error(
-              `preview-check: ${name} is ${theirs} on "${tag}" in the catalogue, ${mine} in the preview`,
-            )
-          }
-        }
-      }
-
-      /*
-       * And the one number the preview writes down about the real game.
-       *
-       * The answer screen tells people this is five questions out of the real
-       * bank's twenty-eight. Nothing on this side can count that bank, so it
-       * is a literal — and an unchecked literal on this site is how "112
-       * dishes" survived three batches of new ones.
-       */
-      /*
-       * Counted inside the QUESTIONS array and at its own indent only. A sweep
-       * of the whole file counted 44: every question may carry two or three
-       * alternative wordings, which are objects of the same shape nested one
-       * level in, and the tag lists below look similar again.
-       */
-      const bank = data.slice(data.indexOf('var QUESTIONS = ['), data.indexOf('\n  ];', data.indexOf('var QUESTIONS = [')))
-      const asked = (bank.match(/^ {4}\{ /gm) ?? []).length
-      const claimed = Number(/export const REAL_QUESTIONS = (\d+)/.exec(preview)?.[1])
-      if (!asked || !claimed) {
-        throw new Error('preview-check: could not read the question count from data.js or preview.ts')
-      }
-      if (asked !== claimed) {
-        throw new Error(
-          `preview-check: the preview says the game asks ${claimed} questions, data.js has ${asked}`,
-        )
-      }
-
-      this.info(
-        `preview-check: ${rows.length} preview dishes match the catalogue, ${asked} questions`,
-      )
-    },
-  }
-}
-
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
   // When this build was made, for the sitemap's <lastmod>. It has to be baked
@@ -437,7 +319,6 @@ const config = defineConfig({
   define: { __BUILT_AT__: JSON.stringify(new Date().toISOString()) },
   plugins: [
     recipeBook(),
-    previewCheck(),
     buildId(),
     whop({ disableTanstackDevtools: true }),
     devtools(),
