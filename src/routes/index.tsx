@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { PageShell } from '#/components/PageShell'
 import { loadViewer } from '#/lib/viewer'
 import { PREMIUM_PLAN_ID } from '#/lib/products'
+import { GamePreview } from '#/components/GamePreview'
 import { InstallApp } from '#/components/InstallApp'
 import { JsonLd } from '#/components/JsonLd'
 import {
@@ -179,6 +180,12 @@ function HomePage() {
             </ul>
           </div>
         </section>
+
+        {/* Before the section that explains the mechanic, because fifteen
+            seconds of playing it explains it better than three paragraphs
+            about three beats — and anybody who has just had an answer out of
+            it reads those three paragraphs differently. */}
+        <GamePreview />
 
         <section className="border-t border-[var(--border)] py-16">
           <div className="mx-auto max-w-5xl px-6">
