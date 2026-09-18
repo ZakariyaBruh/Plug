@@ -353,8 +353,10 @@
           <span class="endless-card-name">Endless</span>
           <span class="endless-card-tag" id="endless-tag">Free</span>
         </span>
-        <span class="endless-card-hook">Two dishes, and a few seconds on the clock. Answer fast and it goes hot &mdash; worth more, and burning quicker. Tap one and it buys you a
-        little more time &mdash; then a little less each time. See how far you get.</span>
+        <span class="endless-card-hook">Two dishes, and five seconds on the clock. Answer fast and it goes hot &mdash; worth more,
+        and burning quicker. Every pick buys a little time back, and a little less each time. Part-way
+        through, things start happening to the rules: the clock doubles, refills dry up, or the cards
+        start meaning the opposite. See how far you get.</span>
         <span class="endless-card-line" id="endless-card-line">No questions. No rounds. Just don&rsquo;t stop.</span>
       </button>
       <!--
@@ -1058,6 +1060,19 @@
             </div>
           </div>
 
+          <!-- The event band. Its height is reserved whether or not anything
+               is in it, because it sits directly above the two cards: a line
+               appearing between one tap and the next would move them under a
+               thumb already on its way down, in the one mode built on tapping
+               the same place over and over. See paintEndlessEvent. -->
+          <div class="endless-event" id="endless-event" aria-live="polite">
+            <p class="endless-event-head">
+              <b id="endless-event-name"></b>
+              <span id="endless-event-left"></span>
+            </p>
+            <p class="endless-event-note" id="endless-event-note"></p>
+          </div>
+
           <div class="picks endless-picks is-titled" id="endless-picks">
             <button class="pick" id="endless-a" type="button">
               <span class="pick-no" aria-hidden="true">01</span>
@@ -1089,7 +1104,7 @@
             <p class="fine" id="endless-read-note"></p>
           </div>
 
-          <p class="pane-line endless-status" id="endless-status">Every pick buys time back. It buys back less the longer you last.</p>
+          <p class="pane-line endless-status" id="endless-status">Every pick buys time back &mdash; less each time. Events change the rules as you go.</p>
           <button class="plain" id="endless-stop">Stop &mdash; and see what it worked out</button>
         </div>
 

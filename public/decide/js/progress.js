@@ -281,6 +281,9 @@
       endlessDay: null,       // YYYY-MM-DD the tally below belongs to
       endlessUsed: 0,         // picks taken today, against the free allowance
       endlessBest: 0,         // best score ever, kept for good
+      // 0 means "set under a balance nobody recorded" — every profile written
+      // before this field existed. See endlessRulesAre.
+      endlessRules: 0,
       endlessRuns: 0,         // runs finished, ever
       /*
        * The best run's shape, not just its total — score banked at every tenth
@@ -680,6 +683,32 @@
 
   // Bank a finished run. Answers whether it was a personal best, which is the
   // only part of it worth saying out loud.
+  /*
+   * WHICH BALANCE THE STORED BEST WAS SET UNDER.
+   *
+   * A score is only a target if the next run is playing the same game. When
+   * the clock, the buy-back curve or the events change, every stored best
+   * becomes a number nobody can reach — and the pace marker, which races the
+   * saved curve the whole way down, would tell every run for the rest of time
+   * that it was losing. That is not a challenge, it is a locked door with a
+   * scoreboard on it.
+   *
+   * So the balance carries a number, and a best set under a different one is
+   * retired rather than kept. Returns true only when there was actually a
+   * score to lose, so nobody is told their record has gone when it was zero.
+   */
+  var ENDLESS_RULES = 2;
+
+  Progress.prototype.endlessRulesAre = function (rules) {
+    if (this.state.endlessRules === rules) return false;
+    var had = (this.state.endlessBest || 0) > 0;
+    this.state.endlessRules = rules;
+    this.state.endlessBest = 0;
+    this.state.endlessCurve = [];
+    this.save();
+    return had;
+  };
+
   Progress.prototype.recordEndless = function (score, curve) {
     this.state.endlessRuns = (this.state.endlessRuns || 0) + 1;
     if (score > (this.state.endlessBest || 0)) {
@@ -1046,6 +1075,7 @@
     AXES: AXES,
     RULES: RULES,
     DIETS: DIETS,
+    ENDLESS_RULES: ENDLESS_RULES,
     FREE_SAVES: FREE_SAVES,
     LOVE_WEIGHT: LOVE_WEIGHT,
     XP: XP,

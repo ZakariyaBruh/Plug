@@ -9459,11 +9459,30 @@
    * what makes a long run worth something and what makes the end of one always
    * feel like it was nearly avoidable.
    */
+  /*
+   * RETUNED, SHORTER AND STEEPER. What it was, and why it is not any more.
+   *
+   * It opened with seven seconds, a pick bought back 2.4 of them, and the
+   * buy-back fell 150ms per ten picks. Work that through against somebody
+   * tapping at a comfortable 900ms and the clock does not start losing ground
+   * until the hundredth pick; a run that goes well ran to two or three hundred
+   * taps. That is not a bus-stop game, it is a sitting. And the first sixty of
+   * those taps were the same tap, because nothing the mode has to offer — the
+   * heat bands, the milestones, the reads — had happened yet.
+   *
+   * So: five seconds to open, 1.8 bought back, falling 200ms every EIGHT
+   * picks. The same player is losing ground by the fortieth pick and out
+   * somewhere around seventy. Everything the mode does now happens inside a
+   * run somebody will actually finish, which is what makes a second run start.
+   *
+   * The floor stays where it is — see ENDLESS_ADD_MIN. It is the thing that
+   * guarantees a run ends at all, and it was never the thing making runs long.
+   */
   var ENDLESS_TICK = 50;          // ms between clock repaints
-  var ENDLESS_CLOCK = 7000;       // ms it opens with — a full bar
-  var ENDLESS_CLOCK_MAX = 7000;   // ...and the most it can ever hold
-  var ENDLESS_ADD = 2400;         // ms a pick buys back, at the start
-  var ENDLESS_ADD_DROP = 150;     // ...less, per phase survived
+  var ENDLESS_CLOCK = 5000;       // ms it opens with — a full bar
+  var ENDLESS_CLOCK_MAX = 6000;   // ...and the most it can ever hold
+  var ENDLESS_ADD = 1800;         // ms a pick buys back, at the start
+  var ENDLESS_ADD_DROP = 200;     // ...less, per phase survived
   /*
    * The floor, and why it is far below any human tapping speed.
    *
@@ -9479,12 +9498,15 @@
    * only question the mode ever asks is how long you lasted.
    */
   var ENDLESS_ADD_MIN = 260;
-  var ENDLESS_PHASE = 10;         // picks per phase
+  var ENDLESS_PHASE = 8;          // picks per phase
   var ENDLESS_PANIC = 1600;       // ms of clock at which everything goes red
   var ENDLESS_RUSH = 700;         // ...and below which a tap is a reflex, not a preference
 
-  // The picks that get a whole-screen moment rather than a step up.
-  var ENDLESS_MARKS = [10, 25, 50, 75, 100, 150, 200, 300];
+  // The picks that get a whole-screen moment rather than a step up. Pulled in
+  // with the rest of the curve: under the old tuning the second milestone
+  // arrived at twenty-five and the fourth at seventy-five, which on a run that
+  // now ends near seventy meant most players saw two of the eight.
+  var ENDLESS_MARKS = [10, 20, 35, 50, 70, 100, 150, 200];
 
   /*
    * The combo window, narrowed from 1500ms when heat arrived.
@@ -9583,7 +9605,7 @@
    * What a milestone hands back. Points inflate on their own; time is the only
    * currency this mode is actually short of, so a mark is worth a breath.
    */
-  var ENDLESS_MARK_CLOCK = 2000;
+  var ENDLESS_MARK_CLOCK = 1500;
 
   /*
    * SECOND WIND — Premium, and automatic on purpose.
@@ -9599,7 +9621,86 @@
    * player loses at zero, a paying one survives, and neither is ever asked a
    * question.
    */
-  var ENDLESS_WIND_CLOCK = 3500;
+  var ENDLESS_WIND_CLOCK = 3000;
+
+  /*
+   * EVENTS — the thing that makes the fortieth tap different from the fourth.
+   *
+   * Heat already turns a streak into a decision, but it is the SAME decision
+   * every few seconds, and a run is otherwise one rule from start to finish.
+   * An event changes the rule for a handful of picks: for six of them the
+   * clock runs at double speed, or for five a pick barely buys any time back,
+   * or for three what a tap MEANS is inverted. Then it lifts and the ordinary
+   * game resumes, which is what makes it an event rather than a difficulty
+   * setting.
+   *
+   * THE ONE RULE THEY ALL KEEP. None of them makes one card the right answer.
+   * This mode ends by telling you something true about what you like, worked
+   * out from the pairs you chose — so anything that rewarded tapping a
+   * particular side would turn taps into optimisation and quietly make the
+   * ending a lie. Every event here changes what a pair is WORTH, what it
+   * COSTS, or what tapping MEANS, and never which of the two to take. Off the
+   * menu inverts the meaning of both cards at once and inverts the learning
+   * with it, so the run still arrives at the truth.
+   *
+   * They also all make runs shorter, which is as much the point as the variety
+   * is: two of them burn clock, one refuses to give it back, and the fourth is
+   * three picks of holding a combo most runs will drop.
+   */
+  var ENDLESS_EVENTS = [
+    {
+      id: 'rush', name: 'Rush hour', picks: 6, pop: 'RUSH',
+      points: 2, drain: 2, refill: 1,
+      note: 'Double points. The clock runs twice as fast.'
+    },
+    {
+      id: 'orders', name: 'Last orders', picks: 5, pop: 'LAST ORDERS',
+      points: 2.5, drain: 1, refill: 0.34,
+      note: 'Points ×2.5, and picks barely refill.'
+    },
+    {
+      /*
+       * The only event that can be failed, and the only one paying nothing
+       * while it runs. Three picks inside the combo window pays the pot back
+       * at triple; one slow tap and it goes. It reads as a gamble because it
+       * is one — and the question it asks, whether to keep up the pace with
+       * the clock where it currently is, is heat's question with the stake
+       * made explicit.
+       */
+      id: 'wager', name: 'Double or nothing', picks: 3,
+      points: 1, drain: 1, refill: 1, wager: true,
+      note: 'Three quick in a row pays the lot, tripled.'
+    },
+    {
+      /*
+       * Tapping means the opposite for three picks. The vote it files is
+       * inverted with it (see takeEndless), so a run through this event still
+       * learns the truth — and the dish handed back at the end is still the
+       * one you kept saying yes to rather than the one you kept rejecting.
+       */
+      id: 'reverse', name: 'Off the menu', picks: 3, pop: 'OFF MENU',
+      points: 1.5, drain: 1, refill: 1, flip: true,
+      ask: 'Skip which one?',
+      note: 'Tap the one you would NOT eat.'
+    }
+  ];
+
+  /*
+   * WHEN THEY FIRE. The first one is not a dice roll.
+   *
+   * At a flat 30% from pick twelve, half of all ordinary runs ended without a
+   * single event in them — measured, over runs now averaging under thirty
+   * picks. A feature half the runs never see is not a feature, it is a rumour,
+   * and the player who most needs a reason to go again is exactly the one
+   * whose run was too short to be shown one.
+   *
+   * So the first event is guaranteed at pick eight, and everything after it is
+   * chance. Every run that gets going at all has one in it; a long run has
+   * three or four, and which ones is never the same twice.
+   */
+  var ENDLESS_EVENT_FIRST = 8;    // the first one lands here, certainly
+  var ENDLESS_EVENT_GAP = 7;      // fewest picks between the end of one and the next
+  var ENDLESS_EVENT_ODDS = 0.35;  // chance per eligible pick, after the first
 
   /*
    * THEMED RUNS — Premium. The pool, narrowed.
@@ -9643,8 +9744,21 @@
     wind: false,      // has the second wind been spent this run
     curve: [],        // score banked at every tenth pick, for the next run to race
     theme: '',        // which pool this run drew from
-    pace: null        // how far ahead or behind the best run, last time it was read
+    pace: null,       // how far ahead or behind the best run, last time it was read
+    // The event in force, if any: { spec, left, pot, kept }. `pot` and `kept`
+    // are the wager's books — what it has banked so far and whether every pick
+    // in it has been quick.
+    event: null,
+    eventAt: 0,       // the pick the last event ended on, for the gap
+    events: 0,        // how many fired this run, for the summary
+    lastEvent: ''     // ...and which, so the next one is a different one
   };
+
+  function eventNow() { return endless.event ? endless.event.spec : null; }
+  function eventPoints() { return endless.event ? endless.event.spec.points : 1; }
+  function eventDrain() { return endless.event ? endless.event.spec.drain : 1; }
+  function eventRefill() { return endless.event ? endless.event.spec.refill : 1; }
+  function eventFlipped() { return !!(endless.event && endless.event.spec.flip); }
 
   /*
    * The words a read is said in.
@@ -9747,7 +9861,7 @@
   function drainEndless() {
     // Heat is spent here, in the drain, which is the whole bargain: the run
     // scores faster because it is running out faster.
-    endless.left -= ENDLESS_TICK * heatNow().drain;
+    endless.left -= ENDLESS_TICK * heatNow().drain * eventDrain();
     if (endless.left <= 0) {
       // Premium's one save, taken automatically rather than offered. Spent
       // before the run is allowed to end, so nothing on screen ever shows a
@@ -9784,6 +9898,10 @@
   // something, and what makes the end of one always feel avoidable.
   function feedEndless() {
     var add = Math.max(ENDLESS_ADD_MIN, ENDLESS_ADD - endless.phase * ENDLESS_ADD_DROP);
+    // An event that throttles the refill does it AFTER the floor, or the floor
+    // would quietly undo it: Last orders is meant to stop the clock being
+    // topped up, and a floor of 260ms is most of what a late pick buys anyway.
+    add = Math.round(add * eventRefill());
     // Out of picks for today. The clock stops being fed rather than the screen
     // slamming shut between one tap and the next: the last few seconds play
     // out, the run ends the way every other run ends, and the summary is the
@@ -9982,6 +10100,16 @@
     endless.won = {};
     endless.champ = null;
     endless.lastRead = 0;
+    /*
+     * A best set under the old balance is not a target, so it is retired the
+     * first time somebody plays the new one — and they are told, because a
+     * record vanishing without a word is a bug as far as anybody can tell.
+     */
+    if (progress.endlessRulesAre(ProgressLib.ENDLESS_RULES)) {
+      toast('\u{23F1}\u{FE0F}', 'Endless has been rebalanced',
+        'Shorter runs, steeper clock, and events part-way through. Best scores start ' +
+        'again \u2014 the old one was set under different rules.');
+    }
     endless.best = progress.state.endlessBest || 0;
     endless.beaten = false;
     endless.phase = 0;
@@ -9991,6 +10119,10 @@
     endless.wind = false;
     endless.curve = [];
     endless.pace = null;
+    endless.event = null;
+    endless.eventAt = 0;
+    endless.events = 0;
+    endless.lastEvent = '';
     $('endless-run').classList.remove('is-warm', 'is-blazing');
 
     clearTimeout(endless.shoutTimer);
@@ -10001,6 +10133,7 @@
     $('endless-shout').hidden = true;
     setPanel('endless');
     paintEndlessHead();
+    paintEndlessEvent();
     endlessNext();
     // Last, so the first pair is on screen before a single millisecond is
     // charged for it.
@@ -10270,8 +10403,24 @@
       worth = Math.round(worth * ENDLESS_CLUTCH);
       endless.clutches++;
     }
+    worth = Math.round(worth * eventPoints());
     endless.score += worth;
     endless.picks++;
+
+    /*
+     * The wager's books, kept as it goes rather than reconstructed at the end.
+     *
+     * Every pick inside it scores normally AND goes in the pot; if all three
+     * were quick the pot is paid again at double on the way out, which makes
+     * the three of them worth triple in total. A slow or mashed one loses it
+     * there and then — `kept` never comes back — but the picks still score
+     * what they scored. Nothing is ever taken off somebody; the only thing at
+     * risk is the bonus.
+     */
+    if (endless.event && endless.event.spec.wager) {
+      endless.event.pot += worth;
+      if (!quick) endless.event.kept = false;
+    }
 
     // The curve this run is writing, for the next one to race. Sampled at the
     // same tenths endlessPaceAt() reads back.
@@ -10312,7 +10461,18 @@
       // kind of spam.
       shoutEndless(mashed ? 'Too quick to have read it' : 'Cooled off', false);
     }
-    endless.won[winner.name] = (endless.won[winner.name] || 0) + 1;
+    /*
+     * WHICH DISH THE RUN ACTUALLY CHOSE, which is not always the one tapped.
+     *
+     * Off the menu asks for the one you would skip, so during it the dish this
+     * run is voting FOR is the other one. The tally behind the ending — "the
+     * dish you kept choosing", handed back as tonight's answer — has to follow
+     * the meaning rather than the thumb, or three picks of that event would
+     * put the thing somebody twice refused on the plate.
+     */
+    var chose = eventFlipped() ? loser : winner;
+    var against = eventFlipped() ? winner : loser;
+    endless.won[chose.name] = (endless.won[chose.name] || 0) + 1;
 
     /*
      * A tap nobody read buys no time either, and this is the part that makes
@@ -10332,6 +10492,10 @@
      */
     if (!mashed) feedEndless();
 
+    // The TAPPED card goes back into the queue a few cards down — the tapped
+    // one and not `chose`, because this is about what has been dealt rather
+    // than about what was preferred, and the card that left the screen is the
+    // one that needs to come back to it.
     // The winner goes back into the queue a few cards down.
     //
     // Without this nothing can ever win twice. The lead comes off a shuffled
@@ -10383,11 +10547,11 @@
      * deserves to — a number, and "nothing it would swear to".
      */
     if (!reflex && !mashed) {
-      shuffled(Taste.decisiveTags(winner, loser, Data.LEARNABLE))
+      shuffled(Taste.decisiveTags(chose, against, Data.LEARNABLE))
         .sort(function (x, y) { return rankOf(y.tag) - rankOf(x.tag); })
         .slice(0, ENDLESS_VOTES)
         .forEach(function (q) {
-          var side = (winner.tags[q.tag] || 0) === 1 ? 'yes' : 'no';
+          var side = (chose.tags[q.tag] || 0) === 1 ? 'yes' : 'no';
           var bucket = endless.votes[q.tag] || (endless.votes[q.tag] = { yes: 0, no: 0 });
           bucket[side]++;
         });
@@ -10409,8 +10573,12 @@
 
     // Named in the order they multiply, longest-odds first, and only ever one
     // word: this is read in peripheral vision during the tap after it.
+    // An event outranks a heat band here because it is the rarer thing and
+    // the one somebody has not seen fifty times. Gold and clutch still come
+    // first: they are rarer still, and they are about this particular tap.
     popEndless(worth, endless.kind === 'gold' ? 'PERFECT'
       : clutch ? 'CLUTCH'
+      : (eventNow() && eventNow().pop) ? eventNow().pop
       : endless.heat >= 2 ? 'BLAZING'
       : '');
     beatEndless();
@@ -10419,8 +10587,100 @@
     // sixth one. Checking is a loop over a dozen keys; waiting is five taps
     // spent sitting on a finding that was ready.
     if (endless.picks - endless.lastRead >= ENDLESS_READ_EVERY) showEndlessRead();
+
+    // Spend this pick off whatever is running, THEN look for a new one, so a
+    // fresh event can never start on the same tap the last one paid out on.
+    tickEndlessEvent();
+    rollEndlessEvent();
+
     paintEndlessHead();
     endlessNext();
+  }
+
+  /*
+   * STARTING, COUNTING DOWN AND ENDING AN EVENT.
+   *
+   * Rolled after the tap has been paid for and before the next pair is dealt,
+   * so an event that starts is in force for the pair it announces itself over
+   * rather than for the one already on screen.
+   *
+   * NEVER WHILE THE CLOCK IS RED. Two of these make the clock worse and one of
+   * them can be failed; dropping any of that on somebody at four hundred
+   * milliseconds is not difficulty, it is a mugging. The red zone already has
+   * the clutch bonus to make it interesting.
+   */
+  function rollEndlessEvent() {
+    if (endless.event || !endless.live) return;
+    if (endless.picks < ENDLESS_EVENT_FIRST) return;
+    if (endless.picks - endless.eventAt < ENDLESS_EVENT_GAP) return;
+    if (endless.left <= ENDLESS_PANIC) return;
+    // The first is certain; the rest are chance. See ENDLESS_EVENT_FIRST.
+    if (endless.events > 0 && Math.random() >= ENDLESS_EVENT_ODDS) return;
+
+    /*
+     * Never the same one twice running. Four events and a free draw means one
+     * run in four gets the same rule change back to back, which reads as the
+     * mode having nothing else rather than as luck.
+     */
+    var pool = ENDLESS_EVENTS.filter(function (e) { return e.id !== endless.lastEvent; });
+    var spec = pool[Math.floor(Math.random() * pool.length)];
+    endless.lastEvent = spec.id;
+    endless.event = { spec: spec, left: spec.picks, pot: 0, kept: true };
+    endless.events++;
+    shoutEndless(spec.name, true);
+    Sound.reveal();
+    paintEndlessEvent();
+  }
+
+  /* One pick of the event spent. Called once per tap, after the roll. */
+  function tickEndlessEvent() {
+    if (!endless.event) return;
+    endless.event.left -= 1;
+    if (endless.event.left > 0) return paintEndlessEvent();
+
+    var ev = endless.event;
+    endless.event = null;
+    endless.eventAt = endless.picks;
+
+    if (ev.spec.wager) {
+      if (ev.kept && ev.pot > 0) {
+        // Paid at the end rather than as it went, so the thing at stake is
+        // visibly a pot and the payout is a moment.
+        var bonus = ev.pot * 2;
+        endless.score += bonus;
+        popEndless(bonus, 'TRIPLE');
+        shoutEndless('Paid out', true);
+        Sound.win();
+        Confetti.burst({ y: window.innerHeight * 0.35 });
+      } else {
+        shoutEndless('Dropped it', false);
+        Sound.shrug();
+      }
+    }
+    paintEndlessEvent();
+  }
+
+  /*
+   * The band under the title. Its height is reserved whether or not anything
+   * is in it — see .endless-event in styles.css — because this sits directly
+   * above the two cards and a line appearing between one tap and the next
+   * would move them under the thumb already on its way down.
+   */
+  function paintEndlessEvent() {
+    var band = $('endless-event');
+    var ev = eventNow();
+    band.classList.toggle('is-on', !!ev);
+    band.classList.toggle('is-flip', !!(ev && ev.flip));
+    $('endless-event-name').textContent = ev ? ev.name : '';
+    $('endless-event-note').textContent = ev ? ev.note : '';
+    $('endless-event-left').textContent = ev
+      ? endless.event.left + (endless.event.left === 1 ? ' pick left' : ' picks left')
+      : '';
+    // The one line on this screen that carries no information is the place the
+    // instruction goes when an event has one, because it is the only thing
+    // here that can change without moving anything.
+    $('endless-title').textContent = (ev && ev.ask) || 'Which one?';
+    $('endless-picks').classList.toggle('is-flip', !!(ev && ev.flip));
   }
 
   function showEndlessRead() {
@@ -10490,6 +10750,11 @@
   function endEndless(why) {
     if (!endless.live) return;
     endless.live = false;
+    // A wager caught by the clock is simply not paid: it was three picks and
+    // the run did not get through them. Nothing is deducted, so the pot going
+    // unclaimed costs the score nothing it had already earned.
+    endless.event = null;
+    paintEndlessEvent();
     stopEndlessClock();
     clearTimeout(endless.shoutTimer);
     clearTimeout(endless.readTimer);
@@ -10538,6 +10803,10 @@
       else if (endless.hottest === 1) bits.push('You got it hot');
       if (endless.clutches > 0) {
         bits.push(endless.clutches + (endless.clutches === 1 ? ' pick' : ' picks') + ' made on a red clock');
+      }
+      if (endless.events > 0) {
+        bits.push('you played through ' + endless.events +
+          (endless.events === 1 ? ' event' : ' events'));
       }
       // Said plainly, because a run that was saved is not the same run as one
       // that was not, and the score does not distinguish them.

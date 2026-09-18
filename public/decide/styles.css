@@ -3663,10 +3663,23 @@ body.is-beaming { overflow: hidden; }
 .endless-left { font-size: var(--t-xs); color: var(--ink-3); }
 .endless-left b { color: var(--ink-2); font-variant-numeric: tabular-nums; }
 
+/* The score row reserves two lines whether or not it needs them.
+
+   Everything in here appears and disappears as the run goes — the pace marker,
+   the heat badge, the combo — and on a phone the row wraps to a second line
+   the moment enough of them are on at once. That moved the two cards below by
+   eleven pixels, in the one mode built on tapping the same place over and over
+   and the one where a mis-tap costs a run. Reserved, it cannot. */
 .endless-score {
   display: flex;
   align-items: baseline;
-  gap: var(--s4);
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s4);
+  /* Three lines, because at phone width that is what the worst case needs:
+     the score, then best and the pace marker, then heat and the combo. Two
+     was measured and was not enough — the row still grew by fourteen pixels
+     the moment a run got hot with a best to race. */
+  min-height: 4.6rem;
   margin-top: var(--s2);
 }
 
@@ -3815,6 +3828,77 @@ body.is-beaming { overflow: hidden; }
 
 .endless-flag { font-size: .6875rem; letter-spacing: .09em; }
 
+/* ---- the event band ----------------------------------------------------
+
+   HEIGHT IS RESERVED WHETHER OR NOT ANYTHING IS IN IT. This sits directly
+   above the two cards in the one mode built on tapping the same place over and
+   over, so a band that appeared between one tap and the next would move the
+   cards out from under a thumb already travelling. Two lines' worth is always
+   there; off, it is empty and invisible.
+
+   `visibility` rather than `display`, for the same reason: hiding it must not
+   collapse the space it is holding. */
+.endless-event {
+  /* A FIXED height, not a minimum. A minimum was not enough: the note wraps at
+     phone width and the band grew eighteen pixels the moment an event started,
+     which is precisely the shift this is here to prevent. Height plus overflow
+     means the band is the same size whether it is empty, full, or full of
+     something longer than expected. In rem, so a reader at 175% text gets a
+     band that grew with everything else rather than one that clips. */
+  height: 2.5rem;
+  overflow: hidden;
+  margin-top: var(--s4);
+  padding-left: var(--s3);
+  border-left: 2px solid transparent;
+  visibility: hidden;
+}
+
+.endless-event.is-on { visibility: visible; border-left-color: var(--amber); }
+
+.endless-event-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin: 0;
+}
+
+.endless-event-head b {
+  font-family: var(--display);
+  font-size: var(--t-sm);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+
+.endless-event-head span {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* One line, whatever it says. The notes are written short enough to fit; this
+   is the guarantee rather than the plan. */
+.endless-event-note {
+  margin: .1rem 0 0;
+  font-size: var(--t-xs);
+  line-height: 1.35;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Off the menu inverts what a tap means, so it gets the one colour in here
+   that is not the accent — the same red everything destructive already uses,
+   because "tap the one you do NOT want" is the only moment in the app where
+   the cards mean the opposite of what they usually mean. */
+.endless-event.is-flip { border-left-color: var(--danger); }
+.endless-event.is-flip .endless-event-head b { color: var(--danger); }
+/* The cards' own border is set further down, under the heat rules — it has to
+   outrank them. See .endless-run .endless-picks.is-flip. */
+
 .endless-read {
   margin-top: var(--s4);
   padding: var(--s4) var(--s5);
@@ -3932,6 +4016,16 @@ body.is-beaming { overflow: hidden; }
   background: linear-gradient(90deg, var(--amber), var(--danger));
 }
 .endless-run.is-blazing .endless-picks { border-color: var(--amber); }
+
+/* AND THE FLIP OUTRANKS THE HEAT, which is why it is written down here rather
+   than with the other .endless-picks rules.
+
+   A run can be blazing and inverted at the same time, and `.endless-run.is-blazing
+   .endless-picks` beats a plain `.endless-picks.is-flip` on specificity — so
+   the cards went on looking like an ordinary hot streak while the question
+   above them had quietly become its opposite. Heat is decoration; the flip is
+   the difference between tapping what you want and tapping what you do not. */
+.endless-run .endless-picks.is-flip { border-color: var(--danger); }
 .endless-run.is-blazing .endless-points b { color: var(--amber); }
 
 /* The bargain, drawn: at the top band the run breathes faster than the panic
