@@ -266,9 +266,17 @@
   // switch on the profile screen first. Opens in a new tab, so a game in
   // progress here is never lost; coming back to this tab re-checks Premium
   // on its own (see the boot section).
+  /*
+   * `what` is a noun phrase and the sentence must not care whether it is
+   * singular. It read "<what> comes with Premium", which made "Recipes comes
+   * with Premium" and "Nearby places comes with Premium" out of two of the
+   * five things that call this. The title already says it is part of Premium,
+   * so the body does not need to say it again — and once it stops saying it,
+   * there is no verb left to disagree with anything.
+   */
   function goPremium(what) {
     toast('\u{2728}', 'Part of Premium',
-      what + ' comes with Premium — seven days free, opening checkout\u2026');
+      what + ' — seven days free, opening checkout\u2026');
     premiumApi.openUpgrade();
   }
 
@@ -6320,6 +6328,13 @@
         : held + ' more stories today, and the rest of every day, with Premium.';
     }
 
+    var foot = $('news-foot-go');
+    if (foot) {
+      foot.textContent = isPlus()
+        ? 'Tapping through opens their page.'
+        : 'Opening one of their pages is part of Premium.';
+    }
+
     paintNewsBar(shown.length);
   }
 
@@ -6444,18 +6459,64 @@
     summary.className = 'story-sum';
     summary.textContent = story.summary || '';
 
-    var go = document.createElement('a');
-    go.className = 'go go-sm';
-    go.href = story.link;
-    go.target = '_blank';
-    go.rel = 'noopener noreferrer';
-    var label = document.createElement('span');
-    label.className = 'go-label';
-    label.textContent = 'Read the full article';
-    go.appendChild(label);
-
     inner.appendChild(summary);
-    inner.appendChild(go);
+
+    /*
+     * THE WAY OUT TO THE PUBLISHER — PREMIUM ONLY.
+     *
+     * Standard reads the headline, the source, when it was filed and the
+     * standfirst, and that is the end of the section: the link to the piece
+     * itself is part of what Premium is for.
+     *
+     * A LINE RATHER THAN A DEAD BUTTON. The link is not rendered and then
+     * disabled, it is not there — a greyed-out anchor is still a thing to
+     * poke at, and an anchor with no href is a trap for a keyboard. What is
+     * there instead says plainly where the wall is, so nobody is left
+     * wondering whether the row failed to load.
+     *
+     * The count-of-stories pitch under the list (#news-more) is about how many
+     * headlines there are, which is a different limit; this one is about how
+     * far into one of them you get. Both are true at once for a Standard
+     * reader, and this one only appears in a fold somebody opened on purpose,
+     * so the screen still never carries two pitches unprompted.
+     *
+     * Bound here rather than through the [data-unlock] sweep at boot: that
+     * sweep runs once over the markup in index.html, and these rows are built
+     * fresh on every repaint, so an attribute would be styling with nothing
+     * listening to it.
+     */
+    if (isPlus()) {
+      var go = document.createElement('a');
+      go.className = 'go go-sm';
+      go.href = story.link;
+      go.target = '_blank';
+      go.rel = 'noopener noreferrer';
+      var label = document.createElement('span');
+      label.className = 'go-label';
+      label.textContent = 'Read the full article';
+      go.appendChild(label);
+      inner.appendChild(go);
+    } else {
+      var locked = document.createElement('p');
+      locked.className = 'story-locked';
+      locked.appendChild(document.createTextNode(
+        'The summary is as far as this goes. '));
+      var open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'quiet';
+      open.textContent = 'Open the piece with Premium';
+      open.addEventListener('click', function (event) {
+        // The row's own click handler is on the head, not here, but the
+        // toast and the checkout sheet are enough to be getting on with
+        // without the fold shutting underneath them.
+        event.stopPropagation();
+        Sound.reject();
+        goPremium('The full article');
+      });
+      locked.appendChild(open);
+      inner.appendChild(locked);
+    }
+
     slot.appendChild(inner);
     body.appendChild(slot);
 

@@ -206,7 +206,7 @@ export const STANDARD = [
   `All ${DISH_COUNT} dishes in the catalogue`,
   DIET_FREE_SHORT,
   'Ask anything — three free questions, then it is Premium',
-  'Food news — the latest six headlines a day',
+  'Food news — the latest six headlines a day, with the publishers’ own summaries. Opening the pieces themselves is Premium',
   'Write me a menu — one every couple of days',
   'Browse, search, and filter the menu',
   'XP, levels, streaks, and badges',

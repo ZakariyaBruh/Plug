@@ -3547,6 +3547,14 @@ body.is-beaming { overflow: hidden; }
 .story-sum { font-size: var(--t-sm); color: var(--ink-2); line-height: 1.6; max-width: 42rem; }
 .story-sum:empty { display: none; }
 
+/* Where a Standard reader's story stops. Set at the standfirst's size and a
+   shade lighter, so it reads as the end of the row rather than as a second
+   paragraph of the piece — and the button inside it inherits that size, since
+   .quiet is a size up and a line that changes font halfway looks like a
+   mistake. min-height is left alone: it is the tap target. */
+.story-locked { font-size: var(--t-sm); color: var(--ink-3); line-height: 1.6; max-width: 42rem; }
+.story-locked .quiet { font-size: inherit; vertical-align: baseline; }
+
 /* Where in the feed you are, and the way on. The count sits above the button
    on a narrow phone rather than beside it: "Stories 19-36 of 54" and a button
    on one line at 390px leaves the button under the tap target. */
