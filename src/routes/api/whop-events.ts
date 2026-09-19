@@ -26,6 +26,14 @@ import { HOUSEHOLD_PLAN_IDS, SEAT_PLAN_ID } from '#/lib/products'
  */
 
 type Event = {
+  /*
+   * Whop names the event in `type`. `action` is accepted alongside it
+   * because older payloads used that, and an endpoint that silently stopped
+   * matching after a rename would take weeks to notice — which, for the
+   * thing that takes a free Premium seat away when somebody stops paying, is
+   * weeks of giving it away.
+   */
+  type?: string
   action?: string
   data?: {
     id?: string
@@ -72,7 +80,7 @@ export const Route = createFileRoute('/api/whop-events')({
          * accepted here anyway, because they are the same events and an
          * endpoint that silently ignored a rename would take weeks to notice.
          */
-        const action = event.action ?? ''
+        const action = event.type ?? event.action ?? ''
         const ENDED = ['membership.deactivated', 'membership.went_invalid', 'membership_went_invalid']
         const BEGAN = ['membership.activated', 'membership.went_valid', 'membership_went_valid']
 
@@ -102,9 +110,17 @@ export const Route = createFileRoute('/api/whop-events')({
           }
         }
 
-        if (!ENDED.includes(action)) return new Response('ignored', { status: 200 })
+        /*
+         * The body names what it ignored. Only Whop ever reads it — nothing
+         * reaches here without a valid signature — and it is what
+         * `whop webhooks test` prints, which is the only way to check this
+         * endpoint against an event the account has never actually had.
+         */
+        if (!ENDED.includes(action)) {
+          return new Response(`ignored ${action || 'unnamed'} on ${planId || 'no plan'}`, { status: 200 })
+        }
         if (!HOUSEHOLD_PLAN_IDS.includes(planId)) {
-          return new Response('not a household', { status: 200 })
+          return new Response(`not a household plan=${planId || 'none'}`, { status: 200 })
         }
         if (!whose) return new Response('no owner', { status: 200 })
 
