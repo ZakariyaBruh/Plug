@@ -147,9 +147,16 @@
     return tags;
   }
 
-  /* Does this dish break any of them? */
+  /*
+   * Does this dish break any of them?
+   *
+   * A maybe counts. See countBans in engine.js for why — the short version is
+   * that a dish which might have pork in it is not an answer you can give
+   * somebody who does not eat pork, and every surface that applies a rule has
+   * to agree about that or the rule holds on one screen and not the next.
+   */
   function breaksRules(dish, tags) {
-    return tags.some(function (tag) { return (dish.tags[tag] || 0) === 1; });
+    return tags.some(function (tag) { return (dish.tags[tag] || 0) > 0; });
   }
 
   /*
@@ -417,7 +424,7 @@
     var now = Date.now();
     var pool = Data.ITEMS.filter(function (dish) {
       if (progress.isBanned(dish.name)) return false;
-      if (rules.some(function (tag) { return (dish.tags[tag] || 0) === 1; })) return false;
+      if (rules.some(function (tag) { return (dish.tags[tag] || 0) > 0; })) return false;
       if (!options.keepSnoozed && progress.isSnoozed(dish.name, now)) return false;
       return true;
     });
@@ -4022,7 +4029,7 @@
       .map(function (f) { return dishByName(f.name); })
       .filter(Boolean)
       .filter(function (dish) {
-        return !rules.some(function (tag) { return (dish.tags[tag] || 0) === 1; });
+        return !rules.some(function (tag) { return (dish.tags[tag] || 0) > 0; });
       });
 
     if (!favourites.length) {
@@ -8718,7 +8725,7 @@
     var rules = effectiveRules();
     var shown = daily.dishes.filter(function (raw) {
       var tags = raw.tags || {};
-      return !rules.some(function (tag) { return (tags[tag] || 0) === 1; });
+      return !rules.some(function (tag) { return (tags[tag] || 0) > 0; });
     });
 
     if (!shown.length) { wrap.hidden = true; return; }

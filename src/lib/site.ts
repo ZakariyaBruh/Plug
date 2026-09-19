@@ -281,7 +281,7 @@ export const PREMIUM_HEADLINES: { name: string; blurb: string }[] = [
   {
     name: 'It stops repeating itself',
     blurb:
-      'Strike a dish off and it never comes back. Accept one and it is off the table for a week. Everything it offers leans towards what you have actually liked — which is the part a free profile cannot do, because it does not remember you.',
+      'Strike a dish off and it never comes back. Accept one and it is off the table for a week. Everything it offers leans towards what you have actually liked — which is the part a free profile cannot do, because it does not remember you. That memory lives in the browser you play in; signing in elsewhere switches Premium on there, and starts its memory fresh.',
   },
   {
     name: 'It gets you fed, not just decided',

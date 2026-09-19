@@ -31,7 +31,7 @@ const FAQS: [string, string][] = [
   ],
   [
     'Do I need an account?',
-    'Not to play. Sign in with Whop when you want Premium to follow you to another device — it is bound to the Whop account you pay with, not to a licence key or this browser.',
+    'Not to play. Sign in with Whop when you want Premium to be on at another device — it is bound to the Whop account you pay with, not to a licence key or this browser. The features travel; what the game has learned about you does not, which is the next question down.',
   ],
   [
     'I paid. Why is it still locked?',

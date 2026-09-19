@@ -243,7 +243,7 @@
     var random = options.random || Math.random;
 
     var pool = items.filter(function (item) {
-      return !exclude.some(function (tag) { return (item.tags[tag] || 0) === 1; });
+      return !exclude.some(function (tag) { return (item.tags[tag] || 0) > 0; });
     });
     if (!pool.length) return [];
 

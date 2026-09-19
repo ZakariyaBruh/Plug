@@ -324,6 +324,93 @@ function recipeBook(): Plugin {
  * match exactly. A dish renamed, retagged or rewritten in the catalogue fails
  * the build here rather than going quietly out of date.
  */
+/*
+ * THE DIETARY PROMISE, CHECKED AT BUILD TIME.
+ *
+ * "Everything you don't eat, off the menu" is the one claim on this site that
+ * somebody could be harmed by trusting, and until now nothing checked it. The
+ * invariants live in item() in data.js and throw when a dish is built — but
+ * data.js is only ever EXECUTED in the browser. lib/dishes.ts reads it with a
+ * regex, so a catalogue that would throw on load still shipped, and the first
+ * thing to notice would have been a vegetarian being offered a chicken curry.
+ *
+ * That is not hypothetical. Khao soi was tagged chicken:1, and because
+ * "chicken" is not a diet tag and implied nothing, it derived veg:1 and was
+ * served to every vegetarian, Jain, Sattvic, Buddhist, Sikh and Ital profile
+ * in the app. It had been that way for as long as the tag existed.
+ *
+ * So the catalogue is executed here, which runs every check in item(), and
+ * then two things are asserted that item() cannot see on its own because they
+ * are facts about the whole catalogue rather than about one dish:
+ *
+ *   - nothing counts as vegetarian while carrying an animal tag, at any
+ *     strength; and
+ *   - every diet preset still has something to offer, because a rule that
+ *     empties the menu is a rule the engine quietly stops enforcing, and a
+ *     silently unenforced dietary rule is the worst outcome available.
+ */
+function dietCheck(): Plugin {
+  return {
+    name: 'morsels45-diet-check',
+    buildStart() {
+      const load = (file: string) => {
+        const source = readFileSync(join(process.cwd(), 'public', 'decide', 'js', file), 'utf8')
+        const shim = { exports: {} as Record<string, unknown> }
+        new Function('module', 'exports', source)(shim, shim.exports)
+        return shim.exports
+      }
+
+      // Executing it is most of the test: every per-dish invariant in item()
+      // throws from here, and a throw fails the build.
+      const data = load('data.js') as { ITEMS?: { name: string; tags: Record<string, number> }[] }
+      const progress = load('progress.js') as {
+        DIETS?: { id: string; label: string; tags: string[] }[]
+      }
+
+      const items = data.ITEMS
+      const diets = progress.DIETS
+      if (!Array.isArray(items) || !items.length) throw new Error('diet-check: no dishes')
+      if (!Array.isArray(diets) || !diets.length) throw new Error('diet-check: no diets')
+
+      const ANIMAL = ['meat', 'seafood', 'chicken', 'pork', 'beef', 'shellfish']
+      for (const item of items) {
+        const veg = item.tags.veg ?? 0
+        if (veg <= 0) continue
+        const worst = Math.max(0, ...ANIMAL.map((tag) => item.tags[tag] ?? 0))
+        if (veg > 1 - worst) {
+          throw new Error(
+            `diet-check: ${item.name} counts as vegetarian (veg ${veg}) while carrying ` +
+              ANIMAL.filter((tag) => (item.tags[tag] ?? 0) > 0)
+                .map((tag) => `${tag} ${item.tags[tag]}`)
+                .join(', '),
+          )
+        }
+      }
+
+      /*
+       * A rule bites on anything above zero — a dish that MIGHT have pork in
+       * it is not an answer you can give somebody who does not eat pork, so
+       * the menu left to a diet is counted the same strict way the engine
+       * counts it (see countBans in engine.js).
+       */
+      const starved = diets
+        .map((diet) => ({
+          diet,
+          left: items.filter((item) => !diet.tags.some((tag) => (item.tags[tag] ?? 0) > 0)).length,
+        }))
+        .filter((row) => row.left < 10)
+
+      if (starved.length) {
+        throw new Error(
+          'diet-check: too little left to offer — ' +
+            starved.map((row) => `${row.diet.label} has ${row.left}`).join('; ') +
+            '. Add dishes they can eat, or the rule stops being enforced.',
+        )
+      }
+    },
+  }
+}
+
 function previewCheck(): Plugin {
   const PREVIEW_TAGS = ['sweet', 'hot', 'quick', 'handheld', 'crunchy']
 
@@ -437,6 +524,7 @@ const config = defineConfig({
   define: { __BUILT_AT__: JSON.stringify(new Date().toISOString()) },
   plugins: [
     recipeBook(),
+    dietCheck(),
     previewCheck(),
     buildId(),
     whop({ disableTanstackDevtools: true }),

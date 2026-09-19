@@ -336,16 +336,33 @@
     this.recompute();
   };
 
-  // Standing dietary rules. A dish tagged 0.5 — "depends how it's made" —
-  // survives, the same latitude a stated requirement gives it. Counted at the
-  // same weight as a strike: a rule you set on purpose outranks an answer you
-  // gave in passing.
+/*
+ * A STANDING RULE EXCLUDES "MAYBE" AS WELL AS "YES".
+ *
+ * A tag of 0.5 means "depends how it's made", and everywhere else in this
+ * engine that earns a dish the benefit of the doubt: somebody who asked for
+ * something spicy is happy to be shown a dish that CAN be spicy.
+ *
+ * A standing rule is not a preference, it is a promise, and the benefit of
+ * the doubt runs the wrong way. "No meat" met a maybe-meat dish and served
+ * it — so a vegetarian was offered Caesar salad, a Jain was offered dumplings
+ * and somebody keeping Ital was offered bibimbap, each of them by a rule they
+ * had set precisely so they would not have to check. A dish that MIGHT have
+ * pork in it is not an answer you can give somebody who does not eat pork.
+ *
+ * The cost is a shorter menu for the strictest profiles, and activeBans()
+ * below is what stops that becoming an empty one: a rule with nothing left to
+ * offer is not enforced at all, which is a visible, explicable outcome rather
+ * than a silent wrong answer.
+ */
+  // Counted at the same weight as a strike: a rule you set on purpose
+  // outranks an answer you gave in passing.
   Game.prototype.countBans = function () {
     if (!this.bans || !this.bans.length) return;
     var self = this;
     this.items.forEach(function (item, i) {
       self.bans.forEach(function (tag) {
-        if ((item.tags[tag] || 0) === 1) self.faults[i] += 4;
+        if ((item.tags[tag] || 0) > 0) self.faults[i] += 4;
       });
     });
   };
@@ -355,7 +372,7 @@
     if (!this.bans || !this.bans.length) return [];
     var self = this;
     return this.bans.filter(function (tag) {
-      return self.items.some(function (item) { return (item.tags[tag] || 0) !== 1; });
+      return self.items.some(function (item) { return (item.tags[tag] || 0) === 0; });
     });
   };
 

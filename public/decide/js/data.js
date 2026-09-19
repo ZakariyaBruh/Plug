@@ -439,9 +439,55 @@
       throw new Error(name + ' is cheese-led but not tagged "dairy".');
     }
 
+    /*
+     * A NARROW ANIMAL TAG IMPLIES THE WIDE ONE.
+     *
+     * DIET_PARENT already refuses a dish tagged "pork" that forgot "meat",
+     * because both of those are diet tags and diet tags are checked. "chicken"
+     * is not a diet tag — it is allowed to be a half, since a green curry
+     * genuinely can be made either way — and so nothing was checking it.
+     *
+     * Khao soi is a chicken curry. It was tagged chicken:1, meat:0, and
+     * therefore veg:1, and it was served to vegetarians, Jains, Sattvic and
+     * Buddhist and Sikh profiles, and anybody keeping Ital. Congee, tagged
+     * maybe-chicken, was counted fully vegetarian the same way. Nothing failed,
+     * because nothing was looking.
+     *
+     * So the roll-up happens here instead of being trusted to whoever writes
+     * the next dish: meat is at least as true as the most specific meat on the
+     * dish, and seafood at least as true as the most specific fish. Then veg
+     * falls out of those, as it always did, and cannot disagree with them.
+     */
+    var MEATS = ['chicken', 'pork', 'beef'];
+    var FISH = ['shellfish'];
+    MEATS.forEach(function (t) {
+      if ((tags[t] || 0) > (tags.meat || 0)) tags.meat = tags[t];
+    });
+    FISH.forEach(function (t) {
+      if ((tags[t] || 0) > (tags.seafood || 0)) tags.seafood = tags[t];
+    });
+
     // Vegetarian is never authored by hand — it falls out of meat and seafood,
     // so the two can never contradict each other.
     if (!('veg' in tags)) tags.veg = 1 - Math.max(tags.meat || 0, tags.seafood || 0);
+
+    /*
+     * And the same fact stated the other way round, as a check rather than a
+     * derivation, because the derivation above only runs when veg was left
+     * off. A dish CAN name its own veg — several do — and a hand-written
+     * veg:1 on something carrying an animal tag is the exact defect this is
+     * here to catch.
+     */
+    if ((tags.veg || 0) > 0) {
+      var animal = MEATS.concat(FISH, ['meat', 'seafood']).filter(function (t) {
+        return (tags[t] || 0) > 0;
+      });
+      var worst = Math.max.apply(null, animal.map(function (t) { return tags[t]; }).concat([0]));
+      if (tags.veg > 1 - worst) {
+        throw new Error(name + ' is tagged veg ' + tags.veg + ' but carries ' +
+          animal.join(', ') + ' — a vegetarian would be served it.');
+      }
+    }
 
     // Nor is meat-and-dairy-in-one-dish, which is what keeps a cheeseburger off
     // a kosher menu even though neither half of it is forbidden on its own.
@@ -511,7 +557,7 @@
     item('Baked potato', '\u{1F954}', 'Crisp skin, steam everywhere, butter melting in.',
       'hot carby comfort cheap homemade filling soft dairy root', 'cheesy'),
     item('Miso soup', '\u{1F963}', 'Small, warm, and somehow exactly enough.',
-      'hot soupy light healthy quick cheap soft allium'),
+      'hot soupy light healthy quick cheap soft allium', 'seafood'),
 
     // ---- hot savoury mains, the rest of the world ---------------------------
     //
@@ -524,7 +570,7 @@
     item('Korean fried chicken', '\u{1F357}', 'Twice fried, so it stays crisp under the sauce.',
       'hot meat fried crunchy indulgent shareable handheld messy spicy filling chicken allium'),
     item('Tteokbokki', '\u{1F362}', 'Chewy rice cakes in a sauce that is sweeter than it looks, then hotter.',
-      'hot spicy carby comfort shareable cheap filling soft allium', 'quick'),
+      'hot spicy carby comfort shareable cheap filling soft allium', 'quick seafood'),
     item('Butter chicken', '\u{1F35B}', 'The gentle one. Tomato, cream, and a lot of butter doing quiet work.',
       'hot meat comfort indulgent carby filling soft chicken dairy allium root', 'spicy'),
     item('Chana masala', '\u{1F958}', 'Chickpeas that have been somewhere. Cheap, filling, quietly brilliant.',
@@ -562,7 +608,7 @@
     item('Plov', '\u{1F35A}', 'Rice cooked in the fat of the lamb above it. Made for a crowd, always.',
       'hot meat carby comfort shareable indulgent filling soft allium root', 'homemade'),
     item('Mapo tofu', '\u{1F963}', 'Numbing rather than merely hot. Silky tofu, and rice underneath.',
-      'hot spicy comfort carby quick veg filling soft soupy allium root', 'homemade'),
+      'hot spicy comfort carby quick filling soft soupy allium root', 'homemade meat'),
     item('Bao buns', '\u{1F95F}', 'Steamed, pillowy, slightly sweet, and gone in three bites.',
       'hot carby shareable handheld comfort filling soft bready allium', 'meat'),
     item('Banh mi', '\u{1F956}', 'A French loaf that emigrated and came back better.',
@@ -590,7 +636,7 @@
     item('Poke bowl', '\u{1F372}', 'Raw fish over rice with everything green on top.',
       'seafood fresh healthy light carby quick allium root'),
     item('Caesar salad', '\u{1F957}', 'Croutons, anchovy dressing, more parmesan than advertised.',
-      'fresh healthy light crunchy cheesy dairy egg allium', 'meat'),
+      'fresh healthy light crunchy cheesy dairy egg allium seafood', 'meat'),
     item('Greek salad', '\u{1F957}', 'Tomatoes, feta, olive oil, a lot of black pepper.',
       'fresh healthy light cheesy homemade dairy allium'),
     item('Club sandwich', '\u{1F96A}', 'Cut into triangles or it does not count.',
@@ -713,7 +759,7 @@
     item('Khao soi', '\u{1F35C}', 'Curry broth, soft noodles, and a tangle of crisp ones on top.',
       'hot soupy spicy carby comfort chicken filling egg allium root', 'crunchy'),
     item('Okonomiyaki', '\u{1F373}', 'A cabbage pancake under sauce, mayo and dancing flakes.',
-      'hot shareable homemade filling soft messy egg allium', 'veg cheap'),
+      'hot shareable homemade filling soft messy egg allium', 'veg cheap seafood meat'),
     item('Rendang', '\u{1F35B}', 'Beef cooked down until the sauce is a coating. Deeply serious.',
       'hot meat spicy filling comfort soft beef allium root', 'homemade'),
     item('Hainanese chicken rice', '\u{1F35A}', 'Poached chicken, rice cooked in the stock. Quietly perfect.',

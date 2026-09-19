@@ -65,8 +65,19 @@ function PremiumPage() {
               The decide game is free, and so is telling it what you do not eat. Premium is the
               part that remembers: it learns what you actually like, stops offering the same thing
               twice in a week, and opens a real browser two people can order in at once, with a
-              cursor each. Nothing is charged for {TRIAL_DAYS} days. Sign in with the same Whop
-              account and it is already on.
+              cursor each. Nothing is charged for {TRIAL_DAYS} days.
+            </p>
+            {/* Said next to the promise rather than three pages away in the
+                FAQ, which is where it was. "It remembers you" and "sign in
+                anywhere and it is on" are both true and sat side by side, and
+                together they read as a third thing that is not: that what it
+                has learned follows you about. Premium is on your Whop
+                account; the profile is in this browser. */}
+            <p className="mx-auto mt-4 max-w-xl text-sm text-[var(--text-dim)]">
+              Sign in with the same Whop account and Premium is on wherever you sign in. What it
+              has learned about you stays in the browser you played in — a new device starts
+              that part fresh. Carrying it across is not built yet, and this page will say so
+              when it is.
             </p>
             {viewer.hasPremium ? (
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">

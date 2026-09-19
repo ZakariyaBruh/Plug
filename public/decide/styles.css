@@ -3552,6 +3552,16 @@ body.is-beaming { overflow: hidden; }
    paragraph of the piece — and the button inside it inherits that size, since
    .quiet is a size up and a line that changes font halfway looks like a
    mistake. min-height is left alone: it is the tap target. */
+/* The allergy line. Set apart from the caveats above it with a rule rather
+   than with colour, because it has to stay legible when no diet has been
+   chosen and there are no caveats above it to be set apart from. */
+.diet-allergy {
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--hair);
+}
+.diet-allergy b { color: var(--ink-2); font-weight: 600; }
+
 .story-locked { font-size: var(--t-sm); color: var(--ink-3); line-height: 1.6; max-width: 42rem; }
 .story-locked .quiet { font-size: inherit; vertical-align: baseline; }
 
