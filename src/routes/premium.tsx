@@ -11,6 +11,7 @@ import {
   OFFER_SHORT,
   PRICE_MONTHLY,
   PRICE_VALUE,
+  PREMIUM_HEADLINES,
   PREMIUM_SECTIONS,
   STANDARD,
   TRIAL_DAYS,
@@ -26,10 +27,10 @@ export const Route = createFileRoute('/premium')({
       path: '/premium',
       title: `Premium — morsels45 · ${OFFER_SHORT}, then ${PRICE_MONTHLY}`,
       description:
-        `Knockout, Blitz, Shortlist, Together, Swipe, order it together, meal slot, heat dial, cook mode, and saved dishes. ${OFFER}. What you do not eat is free on every profile.`,
+        `Premium stops it repeating itself, gets you as far as the table with cook mode and a shopping list, and covers the person you eat with on one subscription. ${OFFER}. What you do not eat is free on every profile.`,
       ogTitle: `morsels45 Premium — ${OFFER_SHORT}`,
       ogDescription:
-        `A browser two people drive at once. Play Knockout, Blitz, This or that, Shortlist, Together and Swipe, then order it together in that shared browser. Cook mode and unlimited saves. ${OFFER}.`,
+        `It learns what you like and stops offering the same thing twice. Cook mode, a shopping list, and somewhere near you that serves it. Household covers two of you on one subscription, with a browser you both drive. ${OFFER}.`,
     }),
   component: PremiumPage,
 })
@@ -91,6 +92,23 @@ function PremiumPage() {
               ends.
             </p>
             <p className="mt-2 text-sm text-[var(--text-dim)]">{TAX_NOTE}</p>
+          </div>
+        </section>
+
+        {/* Three outcomes before thirty features. Somebody who is still
+            deciding reads this and stops; somebody who has decided scrolls
+            past it to "What you get", which is where the detail belongs. */}
+        <section className="border-t border-[var(--border)] py-14">
+          <div className="mx-auto max-w-3xl px-6">
+            <h2 className="text-2xl font-bold">What changes when you pay</h2>
+            <div className="mt-8 grid gap-6 sm:grid-cols-3">
+              {PREMIUM_HEADLINES.map((headline) => (
+                <div key={headline.name}>
+                  <h3 className="font-semibold">{headline.name}</h3>
+                  <p className="mt-2 text-sm text-[var(--text-dim)]">{headline.blurb}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 

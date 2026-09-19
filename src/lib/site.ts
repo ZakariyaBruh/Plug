@@ -245,7 +245,7 @@ export const DIET_FREE_WHY =
   'named dish off for good, a guest’s rules for one sitting, and the heat dial.'
 
 export const STANDARD = [
-  'The 20-question Decide game',
+  'The decide game — about eight questions, and never more than twenty',
   'Endless — two dishes and a clock. Every pick buys time back, and buys back less each time. 200 picks a day',
   `All ${DISH_COUNT} dishes in the catalogue`,
   DIET_FREE_SHORT,
@@ -261,6 +261,38 @@ export const STANDARD = [
   'Playable entirely from the keyboard',
   'Nearby — everywhere you could eat, sorted by what kind of place it is',
   'An Android app, if you would rather have one than a tab',
+]
+
+/*
+ * WHAT PREMIUM IS, IN THREE SENTENCES.
+ *
+ * PREMIUM_SECTIONS below is thirty-odd features in five groups, and it is the
+ * right thing for somebody who has decided to pay and wants to know what they
+ * are getting. It is the wrong thing for somebody deciding — thirty bullets
+ * is a list nobody finishes, and offering thirty choices to somebody whose
+ * whole complaint is that choosing is exhausting argues against the product.
+ *
+ * So the front of the pitch is three, and they are three OUTCOMES rather than
+ * three features: what stops happening, what you end up eating, and who else
+ * it covers. Each one is true of several of the features below, which is the
+ * test for whether it belongs here at all.
+ */
+export const PREMIUM_HEADLINES: { name: string; blurb: string }[] = [
+  {
+    name: 'It stops repeating itself',
+    blurb:
+      'Strike a dish off and it never comes back. Accept one and it is off the table for a week. Everything it offers leans towards what you have actually liked — which is the part a free profile cannot do, because it does not remember you.',
+  },
+  {
+    name: 'It gets you fed, not just decided',
+    blurb:
+      'Cook mode takes it one step at a time with the timer built in. The shopping list goes to the shop with you. And if you would rather not cook, it finds somewhere near you that actually serves the thing.',
+  },
+  {
+    name: 'Two of you, one answer',
+    blurb:
+      `Household covers both of you on one subscription, each with your own tastes and your own rules. Together settles it on one phone in about twenty seconds. The shared browser orders it from two, with a cursor each.`,
+  },
 ]
 
 /*

@@ -13,7 +13,7 @@ import {
   OFFER_SHORT,
   PRICE,
   PRICE_VALUE,
-  PREMIUM_SECTIONS,
+  PREMIUM_HEADLINES,
   SITE_CARD,
   SITE_DESCRIPTION,
   SITE_NAME,
@@ -241,11 +241,18 @@ function HomePage() {
         <section className="border-t border-[var(--border)] py-16">
           <div className="mx-auto max-w-5xl px-6">
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Standard vs Premium</p>
-            <h2 className="mt-2 text-3xl font-bold">The free game is the whole game.</h2>
+            {/* This read "The free game is the whole game." It was honest and
+                it was an argument against paying: somebody who believes it has
+                no reason to read the column on the right. What is true and
+                worth saying instead is that the free game proves the thing
+                works, and that what you pay for is it remembering you — which
+                is the one thing a profile that saves nothing can never do. */}
+            <h2 className="mt-2 text-3xl font-bold">Free answers the question. Premium remembers the answer.</h2>
             <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              The decide loop, the catalogue, and everything you do not eat — all free, and all
-              applied to every decision. Cook mode, saved dishes, the shared browser and the extra
-              game modes are what Premium adds on top.
+              The decide game, the whole catalogue, and everything you do not eat are free and
+              always will be — applied to every decision, no account needed. Premium is the part
+              that keeps up with you: it learns what you like, stops offering it twice, gets you
+              as far as the table, and covers the person you eat with.
             </p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
               <div className="rounded-2xl border border-[var(--border)] p-8">
@@ -269,16 +276,23 @@ function HomePage() {
                     is the only part that knows whether yearly or monthly is
                     selected. Printing one here as well would mean printing the
                     wrong one half the time. */}
-                <ul className="mt-6 space-y-3 text-sm">
-                  {PREMIUM_SECTIONS.map((section) => (
-                    <li key={section.name}>
-                      <span className="font-semibold">{section.name}.</span>{' '}
-                      <span className="text-[var(--text-dim)]">
-                        {section.items.map(([title]) => title).join(', ')}.
-                      </span>
+                {/* Three, not thirty. The full list is on /premium, which is
+                    where somebody who has already decided goes looking; this
+                    card is read by somebody who has not. */}
+                <ul className="mt-6 space-y-4 text-sm">
+                  {PREMIUM_HEADLINES.map((headline) => (
+                    <li key={headline.name}>
+                      <span className="font-semibold">{headline.name}.</span>{' '}
+                      <span className="text-[var(--text-dim)]">{headline.blurb}</span>
                     </li>
                   ))}
                 </ul>
+                <Link
+                  to="/premium"
+                  className="mt-4 inline-block text-sm text-[var(--amber)] underline underline-offset-4"
+                >
+                  Everything in it
+                </Link>
                 {viewer.hasPremium ? (
                   <a
                     href="/decide/"

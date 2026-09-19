@@ -3802,7 +3802,12 @@
       // so this is a slot. After the reveal has been read, and only if the
       // reader is still on it.
       if (gameBudget >= 3) {
-        setTimeout(function () { if (panel === 'result') fillSlot(false); }, 2200);
+        // Worked out here rather than inside fillSlot: this is the one place
+        // that knows which dish was just landed on, and the history has not
+        // been written yet, so the answer is about the servings BEFORE this
+        // one.
+        var moment = momentFor(top && top.name);
+        setTimeout(function () { if (panel === 'result') fillSlot(false, moment); }, 2200);
       }
     }
 
@@ -4609,7 +4614,7 @@
    * anything was shown, so a caller can tell a spent budget from an empty
    * roster.
    */
-  function fillSlot(chain) {
+  function fillSlot(chain, moment) {
     // Capped live rather than trusting the number drawn at the start of the
     // game: Premium is settled by a request to the server, so the very first
     // game of a session can begin before the answer is back. Reading isPlus()
@@ -4631,7 +4636,7 @@
     if (!plus && enjoyDue()) { openEnjoy(); shown = 'enjoy-sheet'; }
     else if (earnDue()) { openEarn(); shown = 'earn-sheet'; }
     else if (!plus && shareDue()) { openShare(); shown = 'share-sheet'; }
-    else if (openAd(nextAd())) { shown = 'ad-sheet'; }
+    else if (openAd(nextAd(moment))) { shown = 'ad-sheet'; }
 
     if (!shown) return false;
     gameSpent += 1;
@@ -4693,6 +4698,27 @@
             'than a single delivery order.',
       fine: 'Seven days free first. The game you are playing stays free either way.',
       cta: 'Seven days free'
+    },
+    /*
+     * The only card in here tied to a moment. It is shown when the dish on
+     * screen has already been served in the last fortnight, and at no other
+     * time — see nextAd(). Everything it says is a thing the reader can see
+     * for themselves on the screen behind it, which is the entire point:
+     * the pitch is the complaint they already have.
+     */
+    {
+      id: 'plus-repeat',
+      kind: 'plus',
+      moment: 'repeat',
+      icon: '\u{1F501}',
+      title: 'You have had this one recently',
+      body: 'A free profile does not remember what it served you, so it can offer ' +
+            'the same dish again next week and the week after. Premium takes a dish ' +
+            'off the table for a week once you accept it, strikes off anything you ' +
+            'never want to see again for good, and leans the rest towards what you ' +
+            'have actually liked.',
+      fine: 'Seven days free. The game you are playing stays free either way.',
+      cta: 'Stop the repeats'
     },
     {
       id: 'plus-modes',
@@ -4777,6 +4803,29 @@
    * only the question of whether an offer makes sense for this person and
    * whether they have told us to stop.
    */
+  /*
+   * Has this dish already been through here lately?
+   *
+   * Read off the profile's own history, which is written when a dish is
+   * ACCEPTED — so at the moment the verdict lands this does not yet include
+   * the dish on screen, and a first serving never reads as a repeat.
+   *
+   * Fourteen days rather than seven: "don't repeat this week" is the Premium
+   * feature being pitched, so the window that triggers the pitch has to be at
+   * least as wide as the promise, or the card turns up for somebody the
+   * feature would not have helped.
+   */
+  var REPEAT_DAYS = 14;
+
+  function momentFor(name) {
+    if (!name || isPlus()) return null;
+    var since = Date.now() - REPEAT_DAYS * 864e5;
+    var seen = (progress.state.history || []).some(function (entry) {
+      return entry.name === name && (entry.at || 0) >= since;
+    });
+    return seen ? 'repeat' : null;
+  }
+
   function adAllowed(ad) {
     var st = progress.state;
     if (ad.kind === 'plus') return !isPlus() && st.plusAd !== 'no';
@@ -4791,11 +4840,42 @@
    * games and across days. Without that, every game would open with the same
    * ad, which is how a roster of five ends up being one ad with four spares.
    */
-  function nextAd() {
+  function nextAd(moment) {
     var st = progress.state;
+
+    /*
+     * A CARD FOR THE THING THAT JUST HAPPENED, IF THERE IS ONE.
+     *
+     * The rotation below is fair and context-free: it shows whatever is next
+     * in the list, which means the pitch somebody reads has nothing to do
+     * with what they were doing a second earlier. "Premium never repeats" is
+     * worth almost nothing in the abstract and worth a great deal to
+     * somebody looking at the same dish for the third time this week — so
+     * when the caller can name the moment, a card written for that moment
+     * jumps the queue.
+     *
+     * A card with a `moment` is ONLY ever shown at that moment: it is left
+     * out of the ordinary rotation below, because a pitch about repeating
+     * yourself, shown to somebody who has not, is a pitch that does not make
+     * sense and reads as an app that is not paying attention. Everything
+     * else about it is unchanged — same budget, same once-per-game rule,
+     * same refusals.
+     */
+    if (moment) {
+      for (var m = 0; m < ADS.length; m++) {
+        var timely = ADS[m];
+        if (timely.moment !== moment) continue;
+        if (!adAllowed(timely)) continue;
+        if (gameAds.indexOf(timely.id) !== -1) continue;
+        gameAds.push(timely.id);
+        return timely;
+      }
+    }
+
     var start = st.adAt || 0;
     for (var i = 0; i < ADS.length; i++) {
       var ad = ADS[(start + i) % ADS.length];
+      if (ad.moment) continue;
       if (!adAllowed(ad)) continue;
       // Never the same card twice in one game. With most of the roster
       // refused the cursor wraps inside a single game, and it did: a profile
