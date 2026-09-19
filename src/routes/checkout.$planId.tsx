@@ -5,8 +5,8 @@ import { WhopClient } from '@whop/sdk'
 import { useEffect } from 'react'
 
 import { PageShell } from '#/components/PageShell'
-import { PREMIUM_PLAN_ID } from '#/lib/products'
-import { OFFER, PRICE_VALUE, TAX_NOTE, pageHead, track } from '#/lib/site'
+import { PREMIUM_ANNUAL_PLAN_ID, SELLABLE_PLAN_IDS } from '#/lib/products'
+import { OFFER, PRICE_ANNUAL_VALUE, PRICE_VALUE, TAX_NOTE, pageHead, track } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 function whopClient() {
@@ -21,7 +21,7 @@ function whopClient() {
 const loadPlan = createServerFn({ method: 'GET' })
   .inputValidator((input: { planId: string }) => input)
   .handler(async ({ data }) => {
-    if (data.planId !== PREMIUM_PLAN_ID) return null
+    if (!SELLABLE_PLAN_IDS.includes(data.planId)) return null
     const plan = await whopClient()
       .plans.retrieve({ id: data.planId })
       .catch(() => null)
@@ -59,9 +59,14 @@ function CheckoutPage() {
   const { viewer, plan } = Route.useLoaderData()
   const navigate = useNavigate()
 
+  // The value on the event is what this checkout would actually charge. It
+  // was PRICE_VALUE for every plan, which would have reported a year's
+  // subscription as $4.99 the moment there was more than one thing to buy.
+  const value = planId === PREMIUM_ANNUAL_PLAN_ID ? PRICE_ANNUAL_VALUE : PRICE_VALUE
+
   useEffect(() => {
-    if (plan) track('view_content', { page: 'checkout', value: PRICE_VALUE, currency: 'USD' })
-  }, [plan])
+    if (plan) track('view_content', { page: 'checkout', value, currency: 'USD' })
+  }, [plan, value])
 
   if (!plan) {
     return (

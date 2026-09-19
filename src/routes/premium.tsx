@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 import { PageShell } from '#/components/PageShell'
-import { PREMIUM_PLAN_ID } from '#/lib/products'
+import { PlanPicker } from '#/components/PlanPicker'
 import { loadViewer } from '#/lib/viewer'
 import {
   DIET_FREE,
@@ -11,11 +11,11 @@ import {
   OFFER_SHORT,
   PRICE_MONTHLY,
   PRICE_VALUE,
+  PRICE_YEARLY,
   PREMIUM_SECTIONS,
   STANDARD,
   TRIAL_DAYS,
   TAX_NOTE,
-  TRIAL_TERMS,
   pageHead,
   track,
 } from '#/lib/site'
@@ -58,7 +58,9 @@ function PremiumPage() {
               morsels45 Premium
             </p>
             <h1 className="mt-3 text-4xl font-bold sm:text-5xl">{OFFER_SHORT}</h1>
-            <p className="mt-2 text-lg text-[var(--text-dim)]">then {PRICE_MONTHLY}</p>
+            <p className="mt-2 text-lg text-[var(--text-dim)]">
+              then {PRICE_YEARLY}, or {PRICE_MONTHLY}
+            </p>
             <p className="mt-4 text-[var(--text-dim)]">
               The decide game is free, and so is telling it what you do not eat. Premium is the
               part that remembers: it learns what you actually like, stops offering the same thing
@@ -79,17 +81,14 @@ function PremiumPage() {
                 </Link>
               </div>
             ) : (
-              <Link
-                to="/checkout/$planId"
-                params={{ planId: PREMIUM_PLAN_ID }}
-                onClick={() => track('add_to_cart', { value: PRICE_VALUE, currency: 'USD' })}
-                className="mt-8 inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
-              >
-                Start {TRIAL_DAYS} days free
-              </Link>
+              <div className="mt-8 flex justify-center">
+                {/* The h1 above is already "7 days free". */}
+                <PlanPicker heading={false} />
+              </div>
             )}
             <p className="mt-4 text-sm text-[var(--text-dim)]">
-              {TRIAL_TERMS} After that, cancel any time and keep it until the period you paid for
+              Nothing is charged for {TRIAL_DAYS} days on either plan. Cancel before it ends and
+              you pay nothing; cancel afterwards and you keep it until the period you paid for
               ends.
             </p>
             <p className="mt-2 text-sm text-[var(--text-dim)]">{TAX_NOTE}</p>
@@ -170,8 +169,8 @@ function PremiumPage() {
                 <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
                   Premium
                 </p>
-                <p className="mt-1 text-3xl font-bold">{OFFER_SHORT}</p>
-                <p className="text-sm text-[var(--text-dim)]">then {PRICE_MONTHLY}</p>
+                {/* The price lives in the picker below, which is the only
+                    thing on this card that knows which plan is selected. */}
                 <ul className="mt-6 space-y-3 text-sm">
                   {PREMIUM_SECTIONS.map((section) => (
                     <li key={section.name}>
@@ -190,14 +189,9 @@ function PremiumPage() {
                     Play now
                   </a>
                 ) : (
-                  <Link
-                    to="/checkout/$planId"
-                    params={{ planId: PREMIUM_PLAN_ID }}
-                    onClick={() => track('add_to_cart', { value: PRICE_VALUE, currency: 'USD' })}
-                    className="mt-8 inline-block rounded-full bg-[var(--amber)] px-6 py-3 text-sm font-semibold text-black hover:opacity-90"
-                  >
-                    Start {TRIAL_DAYS} days free
-                  </Link>
+                  <div className="mt-8">
+                    <PlanPicker size="sm" />
+                  </div>
                 )}
               </div>
             </div>

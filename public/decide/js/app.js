@@ -4702,7 +4702,7 @@
       body: 'Knockout, Blitz, This or that, Shortlist, Swipe and Together are all ' +
             'sitting behind one switch. Same catalogue, six different ways to argue ' +
             'with it.',
-      fine: 'Seven days free, then $4.99 a month.',
+      fine: 'Seven days free, then $29.99 a year or $4.99 a month.',
       cta: 'Have a look'
     },
     {
@@ -7340,9 +7340,13 @@
     $('buy-note').textContent = on
       ? 'Cancel any time — you keep Premium until the period you already paid for ' +
         'runs out.'
-      : 'Free for seven days, then $4.99/month — cancel before it ends and you ' +
-        'are not charged. Tax may be added depending on where you are, so the ' +
-        'total can come to a little over that; checkout shows it before you pay. ' +
+      // Two plans, one trial. The yearly one is named first because it is the
+      // one the site recommends, and a note that only ever mentioned the
+      // monthly price would have been the app quietly disagreeing with the
+      // page it sends people to.
+      : 'Free for seven days, then $29.99/year or $4.99/month — cancel before it ' +
+        'ends and you are not charged. Tax may be added depending on where you are, ' +
+        'so the total can come to a little over that; checkout shows it before you pay. ' +
         'Sign in on any device and Premium is already on.';
 
     var list = $('perks');

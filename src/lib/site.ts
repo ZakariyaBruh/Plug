@@ -126,8 +126,28 @@ export const PRICE_VALUE = 4.99
 export const PRICE = '$4.99'
 export const PRICE_MONTHLY = `${PRICE}/month`
 
+/*
+ * THE YEARLY PRICE.
+ *
+ * $29.99 against $59.88 of monthly payments is 49.9% off, which is why the
+ * copy is allowed to say "half price" — and PRICE_ANNUAL_PER_MONTH is that
+ * number divided by twelve and rounded, for the line that makes it comparable
+ * to the monthly one at a glance.
+ *
+ * ANNUAL_SAVING is computed rather than written down, because a discount
+ * claim that drifts from the two prices next to it is the one number on a
+ * pricing page nobody forgives.
+ */
+export const PRICE_ANNUAL_VALUE = 29.99
+export const PRICE_ANNUAL = '$29.99'
+export const PRICE_YEARLY = `${PRICE_ANNUAL}/year`
+export const PRICE_ANNUAL_PER_MONTH = `$${(PRICE_ANNUAL_VALUE / 12).toFixed(2)}`
+export const ANNUAL_SAVING = Math.round((1 - PRICE_ANNUAL_VALUE / (PRICE_VALUE * 12)) * 100)
+
 /** "7 days free, then $4.99/month" — the whole offer, for body copy. */
 export const OFFER = `${TRIAL_DAYS} days free, then ${PRICE_MONTHLY}`
+/** The same offer, yearly. */
+export const OFFER_ANNUAL = `${TRIAL_DAYS} days free, then ${PRICE_YEARLY}`
 /** For a title or a button, where the price alone is the wrong emphasis. */
 export const OFFER_SHORT = `${TRIAL_DAYS} days free`
 /*
@@ -140,10 +160,13 @@ export const OFFER_SHORT = `${TRIAL_DAYS} days free`
  * only what is certainly true — the number on the checkout page is the number
  * that gets charged.
  */
-export const TAX_NOTE = `Tax may be added depending on where you are, so the total can come to a little over ${PRICE}. Checkout shows exactly what you will pay before you pay it.`
+export const TAX_NOTE =
+  'Tax may be added depending on where you are, so the total can come to a little over the price shown. Checkout shows exactly what you will pay before you pay it.'
 
 /** Said wherever somebody is about to hand over a card. */
 export const TRIAL_TERMS = `Free for ${TRIAL_DAYS} days, then ${PRICE_MONTHLY}. Cancel any time before it ends and you are not charged.`
+/** The same terms for the yearly plan, which has the same trial. */
+export const TRIAL_TERMS_ANNUAL = `Free for ${TRIAL_DAYS} days, then ${PRICE_YEARLY}. Cancel any time before it ends and you are not charged.`
 
 export const SITE_TITLE = 'morsels45 — stop scrolling, start eating'
 export const SITE_DESCRIPTION =

@@ -20,3 +20,27 @@ export const PREMIUM_PRODUCT_ID = 'prod_cq5YnoQQr6BGa'
  * anybody.
  */
 export const PREMIUM_PLAN_ID = 'plan_Ejw0IKpnJoeF1'
+
+/*
+ * THE YEARLY PLAN, and why it is a second plan rather than a setting.
+ *
+ * A Whop plan carries one billing period, so monthly and yearly are two plans
+ * on the same product. Access is checked against PREMIUM_PRODUCT_ID above, so
+ * both of them unlock exactly the same thing and nothing in the app has to
+ * know which one somebody is on.
+ *
+ * $29.99 a year against $4.99 a month is 49.9% off — "half price" is a fair
+ * thing to call it, and it is the only discount either plan claims.
+ *
+ * Same seven-day trial as the monthly plan, deliberately: a yearly plan with
+ * no trial reads as the riskier of the two, which is backwards when it is the
+ * one being recommended.
+ */
+export const PREMIUM_ANNUAL_PLAN_ID = 'plan_u7VsoLgZwbeaV'
+
+/*
+ * What /checkout/$planId will mount an embed for. Anything else gets the
+ * "this checkout is Premium only" page — the plan id comes out of a URL, and
+ * a URL is not a thing to trust with what somebody is about to be charged.
+ */
+export const SELLABLE_PLAN_IDS: readonly string[] = [PREMIUM_PLAN_ID, PREMIUM_ANNUAL_PLAN_ID]

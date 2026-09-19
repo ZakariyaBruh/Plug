@@ -3,8 +3,8 @@ import { useEffect } from 'react'
 
 import { PageShell } from '#/components/PageShell'
 import { loadViewer } from '#/lib/viewer'
-import { PREMIUM_PLAN_ID } from '#/lib/products'
 import { GamePreview } from '#/components/GamePreview'
+import { PlanPicker } from '#/components/PlanPicker'
 import { InstallApp } from '#/components/InstallApp'
 import { JsonLd } from '#/components/JsonLd'
 import {
@@ -12,7 +12,6 @@ import {
   OFFER,
   OFFER_SHORT,
   PRICE,
-  PRICE_MONTHLY,
   PRICE_VALUE,
   PREMIUM_SECTIONS,
   SITE_CARD,
@@ -266,8 +265,10 @@ function HomePage() {
               </div>
               <div className="rounded-2xl border border-[var(--amber)] bg-[var(--amber-soft)] p-8">
                 <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Premium</p>
-                <p className="mt-1 text-3xl font-bold">{OFFER_SHORT}</p>
-                <p className="text-sm text-[var(--text-dim)]">then {PRICE_MONTHLY}</p>
+                {/* The price is in the picker at the foot of this card, which
+                    is the only part that knows whether yearly or monthly is
+                    selected. Printing one here as well would mean printing the
+                    wrong one half the time. */}
                 <ul className="mt-6 space-y-3 text-sm">
                   {PREMIUM_SECTIONS.map((section) => (
                     <li key={section.name}>
@@ -286,14 +287,9 @@ function HomePage() {
                     Play now
                   </a>
                 ) : (
-                  <Link
-                    to="/checkout/$planId"
-                    params={{ planId: PREMIUM_PLAN_ID }}
-                    onClick={() => track('add_to_cart', { value: PRICE_VALUE, currency: 'USD' })}
-                    className="mt-8 inline-block rounded-full bg-[var(--amber)] px-6 py-3 text-sm font-semibold text-black hover:opacity-90"
-                  >
-                    Start {TRIAL_DAYS} days free
-                  </Link>
+                  <div className="mt-8">
+                    <PlanPicker size="sm" />
+                  </div>
                 )}
               </div>
             </div>
