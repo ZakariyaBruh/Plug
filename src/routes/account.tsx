@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
+import { HouseholdSeats } from '#/components/HouseholdSeats'
 import { PageShell } from '#/components/PageShell'
 import { loadViewer } from '#/lib/viewer'
 import { PREMIUM_PLAN_ID } from '#/lib/products'
@@ -82,6 +83,10 @@ function AccountPage() {
                   </>
                 )}
               </div>
+
+              {/* Renders nothing unless this account is paying for a
+                  Household, which the server decides. */}
+              <HouseholdSeats />
 
               <a
                 href="/api/oauth/logout"

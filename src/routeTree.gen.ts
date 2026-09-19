@@ -21,16 +21,19 @@ import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiDailyRouteImport } from './routes/api/daily'
+import { Route as ApiHouseholdRouteImport } from './routes/api/household'
 import { Route as ApiMenuRouteImport } from './routes/api/menu'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
 import { Route as ApiOrderTogetherRouteImport } from './routes/api/order-together'
 import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-status'
 import { Route as ApiSuggestRouteImport } from './routes/api/suggest'
+import { Route as ApiWhopEventsRouteImport } from './routes/api/whop-events'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as DecideSplatRouteImport } from './routes/decide/$'
 import { Route as EatIndexRouteImport } from './routes/eat.index'
 import { Route as EatDishRouteImport } from './routes/eat.$dish'
 import { Route as ExperiencesExperienceIdRouteImport } from './routes/experiences.$experienceId'
+import { Route as SeatIdRouteImport } from './routes/seat.$id'
 import { Route as TogetherCodeRouteImport } from './routes/together.$code'
 import { Route as ApiOauthCallbackRouteImport } from './routes/api/oauth/callback'
 import { Route as ApiOauthLoginRouteImport } from './routes/api/oauth/login'
@@ -96,6 +99,11 @@ const ApiDailyRoute = ApiDailyRouteImport.update({
   path: '/api/daily',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHouseholdRoute = ApiHouseholdRouteImport.update({
+  id: '/api/household',
+  path: '/api/household',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMenuRoute = ApiMenuRouteImport.update({
   id: '/api/menu',
   path: '/api/menu',
@@ -121,6 +129,11 @@ const ApiSuggestRoute = ApiSuggestRouteImport.update({
   path: '/api/suggest',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWhopEventsRoute = ApiWhopEventsRouteImport.update({
+  id: '/api/whop-events',
+  path: '/api/whop-events',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CheckoutPlanIdRoute = CheckoutPlanIdRouteImport.update({
   id: '/checkout/$planId',
   path: '/checkout/$planId',
@@ -144,6 +157,11 @@ const EatDishRoute = EatDishRouteImport.update({
 const ExperiencesExperienceIdRoute = ExperiencesExperienceIdRouteImport.update({
   id: '/experiences/$experienceId',
   path: '/experiences/$experienceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SeatIdRoute = SeatIdRouteImport.update({
+  id: '/seat/$id',
+  path: '/seat/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TogetherCodeRoute = TogetherCodeRouteImport.update({
@@ -180,15 +198,18 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/household': typeof ApiHouseholdRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/suggest': typeof ApiSuggestRoute
+  '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
+  '/seat/$id': typeof SeatIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/eat/': typeof EatIndexRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
@@ -208,15 +229,18 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/household': typeof ApiHouseholdRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/suggest': typeof ApiSuggestRoute
+  '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
+  '/seat/$id': typeof SeatIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/eat': typeof EatIndexRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
@@ -237,15 +261,18 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/household': typeof ApiHouseholdRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/suggest': typeof ApiSuggestRoute
+  '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
+  '/seat/$id': typeof SeatIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/eat/': typeof EatIndexRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
@@ -267,15 +294,18 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/daily'
+    | '/api/household'
     | '/api/menu'
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
     | '/api/suggest'
+    | '/api/whop-events'
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
     | '/experiences/$experienceId'
+    | '/seat/$id'
     | '/together/$code'
     | '/eat/'
     | '/api/oauth/callback'
@@ -295,15 +325,18 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/daily'
+    | '/api/household'
     | '/api/menu'
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
     | '/api/suggest'
+    | '/api/whop-events'
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
     | '/experiences/$experienceId'
+    | '/seat/$id'
     | '/together/$code'
     | '/eat'
     | '/api/oauth/callback'
@@ -323,15 +356,18 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/daily'
+    | '/api/household'
     | '/api/menu'
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
     | '/api/suggest'
+    | '/api/whop-events'
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
     | '/experiences/$experienceId'
+    | '/seat/$id'
     | '/together/$code'
     | '/eat/'
     | '/api/oauth/callback'
@@ -352,14 +388,17 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiDailyRoute: typeof ApiDailyRoute
+  ApiHouseholdRoute: typeof ApiHouseholdRoute
   ApiMenuRoute: typeof ApiMenuRoute
   ApiNewsRoute: typeof ApiNewsRoute
   ApiOrderTogetherRoute: typeof ApiOrderTogetherRoute
   ApiPremiumStatusRoute: typeof ApiPremiumStatusRoute
   ApiSuggestRoute: typeof ApiSuggestRoute
+  ApiWhopEventsRoute: typeof ApiWhopEventsRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
   EatDishRoute: typeof EatDishRoute
   ExperiencesExperienceIdRoute: typeof ExperiencesExperienceIdRoute
+  SeatIdRoute: typeof SeatIdRoute
   TogetherCodeRoute: typeof TogetherCodeRoute
   EatIndexRoute: typeof EatIndexRoute
   ApiOauthCallbackRoute: typeof ApiOauthCallbackRoute
@@ -453,6 +492,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDailyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/household': {
+      id: '/api/household'
+      path: '/api/household'
+      fullPath: '/api/household'
+      preLoaderRoute: typeof ApiHouseholdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/menu': {
       id: '/api/menu'
       path: '/api/menu'
@@ -488,6 +534,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSuggestRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/whop-events': {
+      id: '/api/whop-events'
+      path: '/api/whop-events'
+      fullPath: '/api/whop-events'
+      preLoaderRoute: typeof ApiWhopEventsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/checkout/$planId': {
       id: '/checkout/$planId'
       path: '/checkout/$planId'
@@ -521,6 +574,13 @@ declare module '@tanstack/react-router' {
       path: '/experiences/$experienceId'
       fullPath: '/experiences/$experienceId'
       preLoaderRoute: typeof ExperiencesExperienceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/seat/$id': {
+      id: '/seat/$id'
+      path: '/seat/$id'
+      fullPath: '/seat/$id'
+      preLoaderRoute: typeof SeatIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/together/$code': {
@@ -578,14 +638,17 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
   ApiDailyRoute: ApiDailyRoute,
+  ApiHouseholdRoute: ApiHouseholdRoute,
   ApiMenuRoute: ApiMenuRoute,
   ApiNewsRoute: ApiNewsRoute,
   ApiOrderTogetherRoute: ApiOrderTogetherRoute,
   ApiPremiumStatusRoute: ApiPremiumStatusRoute,
   ApiSuggestRoute: ApiSuggestRoute,
+  ApiWhopEventsRoute: ApiWhopEventsRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
   EatDishRoute: EatDishRoute,
   ExperiencesExperienceIdRoute: ExperiencesExperienceIdRoute,
+  SeatIdRoute: SeatIdRoute,
   TogetherCodeRoute: TogetherCodeRoute,
   EatIndexRoute: EatIndexRoute,
   ApiOauthCallbackRoute: ApiOauthCallbackRoute,

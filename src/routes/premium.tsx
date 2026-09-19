@@ -11,7 +11,6 @@ import {
   OFFER_SHORT,
   PRICE_MONTHLY,
   PRICE_VALUE,
-  PRICE_YEARLY,
   PREMIUM_SECTIONS,
   STANDARD,
   TRIAL_DAYS,
@@ -58,9 +57,9 @@ function PremiumPage() {
               morsels45 Premium
             </p>
             <h1 className="mt-3 text-4xl font-bold sm:text-5xl">{OFFER_SHORT}</h1>
-            <p className="mt-2 text-lg text-[var(--text-dim)]">
-              then {PRICE_YEARLY}, or {PRICE_MONTHLY}
-            </p>
+            {/* No price here. There are four of them now, and the picker
+                below is the only thing that knows which one is selected — a
+                line naming two of them sat above a control showing a third. */}
             <p className="mt-4 text-[var(--text-dim)]">
               The decide game is free, and so is telling it what you do not eat. Premium is the
               part that remembers: it learns what you actually like, stops offering the same thing

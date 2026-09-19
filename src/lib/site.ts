@@ -144,6 +144,27 @@ export const PRICE_YEARLY = `${PRICE_ANNUAL}/year`
 export const PRICE_ANNUAL_PER_MONTH = `$${(PRICE_ANNUAL_VALUE / 12).toFixed(2)}`
 export const ANNUAL_SAVING = Math.round((1 - PRICE_ANNUAL_VALUE / (PRICE_VALUE * 12)) * 100)
 
+/*
+ * HOUSEHOLD: the same thing, for two people.
+ *
+ * The argument this app is sold against happens between two people, so a
+ * subscription that only ever covers one of them answers half of it. Priced
+ * at $3 a month over the solo plan rather than at double, because the second
+ * seat costs almost nothing to run and a household that cancels together is
+ * the churn worth avoiding.
+ *
+ * Same 50% shape on the yearly plan, so the one sentence — "half price, paid
+ * yearly" — is true of both tiers and there is only one discount to explain.
+ */
+export const HOUSEHOLD_SEATS = 2
+export const PRICE_HOUSEHOLD_VALUE = 7.99
+export const PRICE_HOUSEHOLD = '$7.99'
+export const PRICE_HOUSEHOLD_MONTHLY = `${PRICE_HOUSEHOLD}/month`
+export const PRICE_HOUSEHOLD_ANNUAL_VALUE = 47.99
+export const PRICE_HOUSEHOLD_ANNUAL = '$47.99'
+export const PRICE_HOUSEHOLD_YEARLY = `${PRICE_HOUSEHOLD_ANNUAL}/year`
+export const PRICE_HOUSEHOLD_PER_MONTH = `$${(PRICE_HOUSEHOLD_ANNUAL_VALUE / 12).toFixed(2)}`
+
 /** "7 days free, then $4.99/month" — the whole offer, for body copy. */
 export const OFFER = `${TRIAL_DAYS} days free, then ${PRICE_MONTHLY}`
 /** The same offer, yearly. */
