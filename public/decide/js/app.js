@@ -7142,7 +7142,7 @@
      */
     /*
      * An empty list means the model made this dish up, not that the book has a
-     * hole in it: all 133 catalogue dishes have at least one recipe, so the
+     * hole in it: every catalogue dish has at least one recipe, so the
      * only dishes that land here are today's five and the suggestions the chat
      * invents. "No recipe written for this one" read as a failure, and it was
      * the most common thing a free reader saw on the new shelf.
@@ -8628,7 +8628,7 @@
   /*
    * A shelf of five dishes the catalogue does not have, written each morning.
    *
-   * THEY ARE NOT CATALOGUE DISHES and never join it. The 133 in data.js have
+   * THEY ARE NOT CATALOGUE DISHES and never join it. The ones in data.js have
    * hand-checked tags that the question engine reasons over and the dietary
    * rules filter on; these have a declared "contains" list and nothing more.
    * Letting them into the engine would mean a plausible-but-wrong tag steering

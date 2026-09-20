@@ -1620,6 +1620,639 @@
               'Lemon squeezed over at the table. Serve with bread for the butter in the shell, which is the best part of it.'] }
   ]);
 
+  /* ---- the third intake: plant-based ------------------------------------
+     Written for the dishes added to data.js in the same batch. Every one of
+     these is vegan unless its ingredients say otherwise, which is the whole
+     reason the batch exists: the strictest profiles had almost nothing left
+     to be offered. Quantities are metric and deliberately rough — this is a
+     prompt to start cooking, not a reference text. */
+
+  recipes('Dal tadka', [
+    { name: 'The everyday one', time: 35, serves: 4, level: 'Easy',
+      ingredients: ['200g toor or masoor dal', '1 tsp turmeric', '1 tomato, chopped', '3 tbsp oil or ghee', '1 tsp cumin seeds', '3 garlic cloves, sliced', '2 dried chillies', '1 tsp garam masala'],
+      steps: ['Rinse the dal until the water runs clear, then simmer with the turmeric and three times its volume of water for 25 minutes, until it collapses.',
+              'Stir in the tomato and a good pinch of salt and cook another 5 minutes.',
+              'Heat the oil in a small pan. Add the cumin, then the garlic and chillies, and watch it — the garlic should go gold, not brown.',
+              'Pour the whole lot over the dal, stir once so it streaks, and finish with the garam masala.'] },
+    { name: 'Twenty minutes, one pan', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['150g red lentils', '1 tsp turmeric', '2 tbsp oil', '1 tsp cumin seeds', '2 garlic cloves, sliced', 'Chilli flakes', 'Lemon'],
+      steps: ['Simmer the lentils and turmeric in 600ml water for 15 minutes, stirring now and then.',
+              'While they go, fry the cumin, garlic and chilli in the oil until fragrant.',
+              'Tip the oil in, salt it properly, and squeeze over half a lemon.'] }
+  ]);
+
+  recipes('Rajma', [
+    { name: 'The Sunday version', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['2 tins kidney beans, drained', '2 onions, finely chopped', '4 garlic cloves', 'Thumb of ginger', '3 tomatoes, blitzed', '1 tsp cumin', '1 tsp coriander', '1 tsp garam masala', 'Oil'],
+      steps: ['Fry the onions in oil over medium heat for a full 12 minutes, until they are properly brown. This is the whole dish.',
+              'Add the garlic and ginger, crushed together, and cook 2 minutes.',
+              'Add the tomatoes and the ground spices and cook until the oil separates out at the edges.',
+              'Add the beans and 400ml water, then simmer 25 minutes, mashing a few beans against the side to thicken it.',
+              'Garam masala at the end, off the heat. Rice underneath.'] },
+    { name: 'Weeknight', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['1 tin kidney beans', '1 onion, chopped', '2 garlic cloves', '1 tin chopped tomatoes', '2 tsp curry powder', 'Oil'],
+      steps: ['Brown the onion hard in oil, then add the garlic and curry powder.',
+              'Tomatoes in, cook 10 minutes until it darkens.',
+              'Beans and a splash of water, 10 minutes more, mashing some of them as you go.'] }
+  ]);
+
+  recipes('Idli', [
+    { name: 'From scratch, with the waiting', time: 40, serves: 4, level: 'Medium',
+      ingredients: ['200g idli rice', '100g urad dal', '1/2 tsp fenugreek seeds', 'Salt'],
+      steps: ['Soak the rice, and separately the dal with the fenugreek, for 5 hours.',
+              'Grind the dal to a light foam with a little water, then the rice to a fine grit. Fold them together with salt.',
+              'Leave somewhere warm for 8 to 12 hours, until it has risen and smells sour.',
+              'Ladle into greased moulds and steam 12 minutes. A skewer should come out clean.'] },
+    { name: 'From a bought batter', time: 15, serves: 2, level: 'Very easy',
+      ingredients: ['Idli batter', 'Oil, for the moulds', 'Chutney or sambar, to serve'],
+      steps: ['Stir the batter and check it for salt.', 'Grease the moulds and fill them two thirds full.',
+              'Steam 12 minutes, then leave 2 minutes before turning them out or they tear.'] }
+  ]);
+
+  recipes('Lemon rice', [
+    { name: 'The proper tempering', time: 15, serves: 2, level: 'Easy',
+      ingredients: ['400g cooked rice, cold', '2 tbsp oil', '1 tsp mustard seeds', '1 tsp urad dal', 'A handful of peanuts', '10 curry leaves', '1/2 tsp turmeric', '1 lemon'],
+      steps: ['Heat the oil and add the mustard seeds. Wait for them to pop — they will, all at once.',
+              'Add the urad dal and peanuts and fry until both are gold, then the curry leaves, which will spit.',
+              'Turmeric in, off the heat, then the rice, broken up with your fingers first.',
+              'Salt, then the juice of the whole lemon, and stir until every grain is yellow.'] },
+    { name: 'Five minutes with leftovers', time: 5, serves: 1, level: 'Very easy',
+      ingredients: ['A bowl of cold rice', '1 tbsp oil', '1/4 tsp turmeric', 'Half a lemon', 'Salt'],
+      steps: ['Warm the oil with the turmeric.', 'Rice in, broken up, tossed until it is evenly coloured.',
+              'Lemon and salt off the heat.'] }
+  ]);
+
+  recipes('Coconut rice', [
+    { name: 'Cooked in the tin', time: 25, serves: 4, level: 'Very easy',
+      ingredients: ['300g jasmine rice', '1 tin coconut milk', '200ml water', '1 tsp salt', '1 tsp sugar'],
+      steps: ['Rinse the rice three times, until the water is nearly clear.',
+              'Everything in a pan, brought to a bare simmer.',
+              'Lid on, lowest heat, 12 minutes. Do not lift the lid.',
+              'Off the heat, still covered, 10 minutes more. Then fork it through.'] },
+    { name: 'The Southeast Asian one', time: 30, serves: 4, level: 'Easy',
+      ingredients: ['300g rice', '1 tin coconut milk', '200ml water', '2 pandan leaves, knotted', '1 tsp salt'],
+      steps: ['Rinse the rice and put it in the pan with everything else, pandan on top.',
+              'Simmer covered 12 minutes, then rest 10 off the heat.',
+              'Pull the pandan out and fluff. It should smell like a bakery.'] }
+  ]);
+
+  recipes('Upma', [
+    { name: 'With whatever is in the drawer', time: 20, serves: 2, level: 'Easy',
+      ingredients: ['150g coarse semolina', '2 tbsp oil', '1 tsp mustard seeds', '1 onion, chopped', 'Thumb of ginger, grated', '1 green chilli', 'A handful of peas and diced carrot', '450ml water'],
+      steps: ['Toast the semolina dry in the pan until it smells nutty, about 4 minutes, then tip it out.',
+              'Oil in, mustard seeds, then the onion, ginger and chilli until soft.',
+              'Vegetables and water, salted, brought to the boil.',
+              'Rain the semolina in with one hand while stirring with the other, or it will lump. Cover, lowest heat, 5 minutes.'] },
+    { name: 'Plain and quick', time: 12, serves: 1, level: 'Very easy',
+      ingredients: ['75g semolina', '1 tbsp oil', '1 tsp mustard seeds', '250ml water', 'Salt'],
+      steps: ['Toast the semolina, set it aside.', 'Pop the mustard seeds in the oil, add the salted water, bring to the boil.',
+              'Semolina in, stirring hard. Lid on, 4 minutes.'] }
+  ]);
+
+  recipes('Poha', [
+    { name: 'The Indore breakfast', time: 15, serves: 2, level: 'Easy',
+      ingredients: ['150g thick poha', '2 tbsp oil', '1 tsp mustard seeds', '1 onion, chopped', '1 potato, diced small', '1/2 tsp turmeric', '10 curry leaves', 'Lemon', 'Sev, to finish'],
+      steps: ['Rinse the poha in a sieve under the tap for 20 seconds, then leave it to drain. It should be damp, never wet.',
+              'Pop the mustard seeds in the oil, add the curry leaves, onion and potato, and cook until the potato is done.',
+              'Turmeric and salt, then the poha folded through gently — it breaks if you stir it like rice.',
+              'Lid on, 2 minutes. Lemon and sev at the table.'] },
+    { name: 'Without the potato', time: 10, serves: 1, level: 'Very easy',
+      ingredients: ['75g poha', '1 tbsp oil', '1/2 onion', '1/4 tsp turmeric', 'Peanuts', 'Lemon'],
+      steps: ['Rinse and drain the poha.', 'Fry the peanuts, then the onion, then the turmeric.',
+              'Fold the poha through, cover 2 minutes, lemon over it.'] }
+  ]);
+
+  recipes('Baingan bharta', [
+    { name: 'Over a flame', time: 45, serves: 3, level: 'Medium',
+      ingredients: ['2 large aubergines', '2 onions, chopped', '4 garlic cloves', 'Thumb of ginger', '2 tomatoes', '1 tsp cumin', '1 green chilli', 'Oil', 'Coriander'],
+      steps: ['Char the aubergines whole, directly on a gas flame or under a very hot grill, turning until the skin is black all over and they have collapsed. Twenty minutes, and worth every one.',
+              'Leave them in a covered bowl 10 minutes, then peel and chop the flesh roughly.',
+              'Fry the cumin, then the onion until brown, then the garlic, ginger and chilli.',
+              'Tomatoes in until they break down, then the aubergine. Cook it down hard, 10 minutes, mashing as you go.',
+              'Coriander, a lot of it, off the heat.'] },
+    { name: 'In the oven', time: 50, serves: 3, level: 'Easy',
+      ingredients: ['2 aubergines', '1 onion', '3 garlic cloves', '1 tin chopped tomatoes', '2 tsp garam masala', 'Oil'],
+      steps: ['Halve the aubergines, score them, oil them, and roast at 220C for 35 minutes until the flesh is soft and brown.',
+              'Scoop out and chop. Meanwhile brown the onion and garlic.',
+              'Tomatoes and spices in, reduced hard, then the aubergine folded through.'] }
+  ]);
+
+  recipes('Aloo gobi', [
+    { name: 'Dry, the way it should be', time: 35, serves: 3, level: 'Easy',
+      ingredients: ['1 cauliflower, in florets', '3 potatoes, in chunks', '1 tsp cumin seeds', '1 tsp turmeric', '1 tsp coriander', 'Thumb of ginger', '1 green chilli', '3 tbsp oil'],
+      steps: ['Fry the cumin seeds in the oil until they darken.',
+              'Potatoes in first, 8 minutes, then the cauliflower. Let both take colour before you touch them.',
+              'Ginger, chilli and ground spices, salted, tossed through.',
+              'Lid on, lowest heat, 15 minutes, shaking the pan rather than stirring. It should be dry and a little caught underneath.'] },
+    { name: 'Roasted', time: 40, serves: 3, level: 'Very easy',
+      ingredients: ['1 cauliflower', '3 potatoes', '3 tbsp oil', '2 tsp curry powder', '1 tsp turmeric', 'Lemon'],
+      steps: ['Toss everything with the oil and spices on the biggest tray you own.',
+              'Roast at 220C for 35 minutes, turning once.',
+              'Lemon over the top while it is still hot.'] }
+  ]);
+
+  recipes('Dhokla', [
+    { name: 'Steamed, with the tempering', time: 30, serves: 4, level: 'Medium',
+      ingredients: ['200g gram flour', '1 tbsp semolina', '1 tsp sugar', '1 tbsp lemon juice', '1 tsp eno or 1/2 tsp bicarbonate of soda', '2 tbsp oil', '1 tsp mustard seeds', '2 green chillies, split', '1 tsp sugar for the syrup'],
+      steps: ['Whisk the gram flour, semolina, sugar, salt, lemon and 200ml water to a batter like thick cream. Rest it 10 minutes.',
+              'Stir in the eno at the very last moment — it starts working immediately — and pour straight into a greased tin.',
+              'Steam 15 minutes. A skewer comes out clean.',
+              'Pop the mustard seeds in the oil with the chillies, add 4 tbsp water and the sugar, and pour that over the top. Cut into squares once it has soaked in.'] },
+    { name: 'The microwave one', time: 12, serves: 2, level: 'Easy',
+      ingredients: ['100g gram flour', '1 tbsp lemon juice', '1/2 tsp eno', 'Salt', 'Oil'],
+      steps: ['Batter as above, rested 5 minutes.', 'Eno in, poured into a greased microwave dish.',
+              'Full power 3 minutes, then rest 3 minutes before cutting.'] }
+  ]);
+
+  recipes('Pav bhaji', [
+    { name: 'The stall version', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['3 potatoes, boiled', '1 cauliflower, small, boiled', '150g peas', '2 onions, chopped', '3 tomatoes, chopped', '1 green pepper', '3 tbsp pav bhaji masala', '80g butter', '8 soft rolls', 'Lemon'],
+      steps: ['Melt half the butter and fry the onion until soft, keeping back a handful raw for the top.',
+              'Pepper in, then the tomatoes, cooked until they lose their shape entirely.',
+              'Masala and salt, then all the boiled vegetables, and now mash — properly, with a masher, for a good five minutes, adding splashes of water.',
+              'Simmer 10 minutes. It should be thick and orange and a bit rough.',
+              'Split the rolls, fry them cut-side down in the rest of the butter until gold, and serve with raw onion and lemon.'] },
+    { name: 'With what you have', time: 25, serves: 2, level: 'Very easy',
+      ingredients: ['2 potatoes', '200g frozen mixed vegetables', '1 onion', '1 tin chopped tomatoes', '2 tbsp pav bhaji masala', 'Butter', 'Rolls'],
+      steps: ['Boil the potatoes and vegetables until very soft.',
+              'Fry the onion in butter, add tomatoes and masala, cook 10 minutes.',
+              'Everything in, mashed hard, loosened with water. Fry the rolls in butter.'] }
+  ]);
+
+  recipes('Vada pav', [
+    { name: 'The whole thing', time: 40, serves: 4, level: 'Medium',
+      ingredients: ['4 potatoes, boiled and mashed', '1 tsp mustard seeds', '10 curry leaves', 'Thumb of ginger', '2 green chillies', '1/2 tsp turmeric', '150g gram flour', 'Oil for frying', '4 soft rolls', 'Dry garlic chutney'],
+      steps: ['Pop the mustard seeds in a little oil with the curry leaves, ginger and chilli, then fold through the mashed potato with the turmeric and plenty of salt. Roll into four balls.',
+              'Whisk the gram flour with water and a pinch of turmeric to a batter that coats a spoon.',
+              'Heat oil to 180C. Dip each ball and fry 4 minutes until the crust is set and gold.',
+              'Split a roll, chutney on both sides, vada in, press down. Eat standing up.'] },
+    { name: 'Baked, and honest about it', time: 35, serves: 4, level: 'Easy',
+      ingredients: ['4 potatoes, mashed', 'Ginger, chilli, turmeric', 'Gram flour batter', 'Oil spray', 'Rolls and chutney'],
+      steps: ['Make and shape the vada as above.', 'Dip in batter, put on lined tray, spray with oil.',
+              'Bake at 200C for 25 minutes, turning once. Not the same, and still good.'] }
+  ]);
+
+  recipes('Khichdi', [
+    { name: 'The one for when you are ill', time: 30, serves: 2, level: 'Very easy',
+      ingredients: ['100g rice', '100g moong dal', '1/2 tsp turmeric', '1 tbsp oil or ghee', '1 tsp cumin seeds', 'Salt'],
+      steps: ['Rinse the rice and dal together until the water clears.',
+              'Simmer with the turmeric and 900ml water for 25 minutes, until nothing has its own shape any more. Add water if it tightens.',
+              'Fry the cumin in the oil until it darkens and pour it over.',
+              'Salt at the table. It should be loose enough to eat with a spoon.'] },
+    { name: 'With vegetables', time: 35, serves: 3, level: 'Easy',
+      ingredients: ['100g rice', '100g moong dal', '1 carrot, diced', '100g peas', '1/2 tsp turmeric', '1 tsp cumin', 'Oil or ghee'],
+      steps: ['Fry the cumin, add the carrot for 3 minutes.',
+              'Rice, dal, peas, turmeric and 900ml water. Simmer 25 minutes.',
+              'Mash it slightly against the side of the pan before serving.'] }
+  ]);
+
+  recipes('Mujadara', [
+    { name: 'With the onions taken seriously', time: 50, serves: 4, level: 'Easy',
+      ingredients: ['200g brown or green lentils', '200g rice', '4 onions, sliced thin', '150ml olive oil', '1 tsp cumin', '1 tsp allspice'],
+      steps: ['Fry the onions in the oil over medium heat for 25 minutes. Stir rarely. They go past gold, past brown, to the edge of burnt — that is the flavour of the whole dish. Lift out half onto kitchen paper.',
+              'Simmer the lentils in plenty of water for 15 minutes, until nearly done, then drain, keeping the water.',
+              'Add the rice, spices and the onions still in the pan, plus 500ml of the lentil water. Salt well.',
+              'Lid on, lowest heat, 15 minutes, then 10 off the heat.',
+              'The crisp onions go on top at the table.'] },
+    { name: 'Faster', time: 30, serves: 2, level: 'Very easy',
+      ingredients: ['1 tin lentils, drained', '150g rice', '2 onions', '4 tbsp olive oil', '1 tsp cumin'],
+      steps: ['Fry the onions hard in the oil for 15 minutes.',
+              'Rice, cumin and 300ml water, simmered covered 12 minutes.',
+              'Lentils folded through at the end, warmed through.'] }
+  ]);
+
+  recipes('Ful medames', [
+    { name: 'Breakfast, properly', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['1 tin fava beans', '2 garlic cloves, crushed', '1 lemon', '3 tbsp olive oil', '1 tsp cumin', 'Parsley', 'Tomato, chopped', 'Flatbread'],
+      steps: ['Warm the beans in their own liquid for 10 minutes, then mash about half of them against the pan.',
+              'Garlic, cumin, salt and the juice of the whole lemon, stirred in off the heat.',
+              'Pour the oil over the top and do not stir it in.',
+              'Parsley and tomato on top. Bread, not cutlery.'] },
+    { name: 'With tahini', time: 15, serves: 2, level: 'Very easy',
+      ingredients: ['1 tin fava beans', '2 tbsp tahini', 'Lemon', 'Garlic', 'Chilli flakes', 'Olive oil'],
+      steps: ['Warm and half-mash the beans.', 'Loosen the tahini with lemon and cold water until it is pourable.',
+              'Beans in a bowl, tahini over, chilli and oil on top.'] }
+  ]);
+
+  recipes('Baba ganoush', [
+    { name: 'Charred over a flame', time: 40, serves: 4, level: 'Medium',
+      ingredients: ['2 aubergines', '3 tbsp tahini', '1 lemon', '1 garlic clove', 'Olive oil', 'Pomegranate seeds'],
+      steps: ['Burn the aubergines whole over a gas flame or under a fierce grill until the skin is black and they have gone soft. Twenty minutes, turning.',
+              'Rest them in a bowl under a plate, then peel. Leave the flesh in a sieve for 15 minutes — the bitter water needs to go.',
+              'Chop rather than blend, so it keeps some texture. Fold in the tahini, lemon, crushed garlic and salt.',
+              'Spread it wide, pool oil in the middle, scatter pomegranate.'] },
+    { name: 'Oven, no drama', time: 45, serves: 4, level: 'Very easy',
+      ingredients: ['2 aubergines', '3 tbsp tahini', 'Lemon', 'Garlic', 'Olive oil'],
+      steps: ['Halve, score and oil the aubergines. Roast at 220C for 35 minutes until collapsing and brown.',
+              'Scoop the flesh, drain it, chop it.', 'Tahini, lemon, garlic, salt. Oil on top.'] }
+  ]);
+
+  recipes('Tabbouleh', [
+    { name: 'Mostly parsley, as intended', time: 20, serves: 4, level: 'Easy',
+      ingredients: ['4 large bunches flat parsley', '2 tbsp fine bulgur', '2 tomatoes, diced very small', '4 spring onions', 'A handful of mint', '1 lemon', '4 tbsp olive oil'],
+      steps: ['Soak the bulgur in the juice of the lemon for 15 minutes. That is all the water it gets.',
+              'Chop the parsley by hand, and keep chopping. A processor bruises it to sludge.',
+              'Everything together, oil and salt last.',
+              'Eat within the hour — it weeps if it stands.'] },
+    { name: 'The grain-forward one', time: 20, serves: 4, level: 'Very easy',
+      ingredients: ['150g bulgur', '2 bunches parsley', '1 cucumber', '2 tomatoes', 'Lemon', 'Olive oil', 'Mint'],
+      steps: ['Pour 200ml boiling water over the bulgur, cover, 15 minutes, then fork it loose.',
+              'Chop everything small and fold it through.', 'Lemon and oil, generously, and salt properly.'] }
+  ]);
+
+  recipes('Imam bayildi', [
+    { name: 'Cooked until it gives up', time: 75, serves: 4, level: 'Medium',
+      ingredients: ['4 small aubergines', '3 onions, sliced thin', '6 garlic cloves, sliced', '4 tomatoes, chopped', '150ml olive oil', '1 tsp sugar', 'Parsley'],
+      steps: ['Peel the aubergines in stripes and slit each one down one side, without cutting through. Salt the slits and leave 20 minutes.',
+              'Cook the onions very slowly in most of the oil, 20 minutes, until sweet. Add the garlic, then the tomatoes and sugar, and cook to a jam.',
+              'Stuff the slits, packing them full, and sit them in a snug dish.',
+              'Pour over the rest of the oil and 150ml water, cover, and bake at 170C for 50 minutes.',
+              'Eat at room temperature, never hot, with parsley over.'] },
+    { name: 'Halved and roasted', time: 50, serves: 4, level: 'Easy',
+      ingredients: ['2 aubergines, halved', '2 onions', '4 garlic cloves', '1 tin chopped tomatoes', 'Olive oil'],
+      steps: ['Score and oil the aubergine halves, roast cut-side up at 200C for 30 minutes.',
+              'Meanwhile cook the onion and garlic soft, add the tomatoes, reduce 15 minutes.',
+              'Pile on top, back in for 15 minutes. Cool before eating.'] }
+  ]);
+
+  recipes('Batata harra', [
+    { name: 'Fried hard', time: 35, serves: 4, level: 'Easy',
+      ingredients: ['800g potatoes, in 2cm cubes', 'Oil for frying', '5 garlic cloves, crushed', '1 red chilli', 'A large bunch of coriander', '1 lemon'],
+      steps: ['Boil the potatoes 6 minutes, then drain and dry them completely. Wet potatoes will not crisp.',
+              'Fry in hot oil in batches until deep gold, 8 minutes a batch. Drain on paper.',
+              'In a clean pan, warm 2 tbsp oil with the garlic and chilli for 30 seconds — no more, or the garlic turns bitter.',
+              'Potatoes back in, coriander, salt, lemon. Toss and serve immediately.'] },
+    { name: 'Oven version', time: 45, serves: 4, level: 'Very easy',
+      ingredients: ['800g potatoes', '4 tbsp oil', '4 garlic cloves', 'Chilli flakes', 'Coriander', 'Lemon'],
+      steps: ['Parboil 6 minutes, drain, shake them about in the colander to rough the edges.',
+              'Roast at 220C in the oil for 35 minutes.',
+              'Toss with raw crushed garlic, chilli, coriander and lemon while hot.'] }
+  ]);
+
+  recipes('Warak enab', [
+    { name: 'Rolled properly', time: 90, serves: 6, level: 'Hard',
+      ingredients: ['1 jar vine leaves', '300g short grain rice', '3 tomatoes, diced small', '1 onion, diced small', 'A bunch of parsley and mint', '2 lemons', '120ml olive oil'],
+      steps: ['Rinse the leaves well and pat them dry. Line the bottom of a heavy pan with the torn ones.',
+              'Mix the rice raw with the tomato, onion, herbs, half the oil, salt and the juice of one lemon.',
+              'A teaspoon of filling per leaf, veined side up, sides folded in, rolled tight but not hard — the rice has to swell.',
+              'Pack them in layers, seam down. Sit a plate on top to hold them under.',
+              'Add water to just cover, the rest of the oil and lemon, and simmer on the lowest heat for 50 minutes.',
+              'Cool in the pan. They are a cold dish.'] },
+    { name: 'Lazy, in a dish', time: 45, serves: 4, level: 'Easy',
+      ingredients: ['Vine leaves', '200g rice', 'Tomato, onion, herbs', 'Lemon', 'Olive oil'],
+      steps: ['Mix the filling as above, adding 250ml water.',
+              'Layer leaves and filling in an oiled dish, finishing with leaves.',
+              'Cover tightly with foil and bake at 180C for 40 minutes. Cool before cutting.'] }
+  ]);
+
+  recipes('Yaki onigiri', [
+    { name: 'Grilled in a pan', time: 15, serves: 2, level: 'Very easy',
+      ingredients: ['400g cooked short grain rice, warm', '2 tbsp soy sauce', '1 tsp mirin', '1 tsp sesame oil'],
+      steps: ['Wet your hands, salt them, and press the rice into four firm triangles. Firm is the whole trick — loose ones fall apart in the pan.',
+              'Dry-fry them in a non-stick pan over medium heat for 4 minutes a side, until a pale crust forms.',
+              'Mix the soy, mirin and sesame oil and brush it on. Back in the pan 1 minute a side until it catches and smells toasted.'] },
+    { name: 'With a filling', time: 20, serves: 2, level: 'Easy',
+      ingredients: ['400g cooked rice', 'Pickled plum or miso', 'Soy sauce', 'Nori'],
+      steps: ['Flatten a handful of rice, put the filling in the middle, close it over and shape.',
+              'Grill as above and wrap a strip of nori round the bottom at the end.'] }
+  ]);
+
+  recipes('Inari sushi', [
+    { name: 'From the tin', time: 20, serves: 3, level: 'Very easy',
+      ingredients: ['1 packet seasoned inari pouches', '400g cooked short grain rice', '2 tbsp rice vinegar', '1 tbsp sugar', '1 tsp salt', 'Toasted sesame seeds'],
+      steps: ['Dissolve the sugar and salt in the vinegar and fold it through the warm rice with a cutting motion, not a stir.',
+              'Fan the rice as you go if you want it glossy. Let it cool to room temperature.',
+              'Open each pouch gently, fill two thirds full, and fold the top over.',
+              'Sesame on top.'] },
+    { name: 'Simmering your own', time: 45, serves: 4, level: 'Medium',
+      ingredients: ['8 aburaage sheets', '200ml water', '3 tbsp soy sauce', '3 tbsp sugar', '1 tbsp mirin', 'Sushi rice'],
+      steps: ['Pour boiling water over the aburaage to take off the excess oil, then press dry.',
+              'Cut in half, open into pouches, and simmer 15 minutes in the water, soy, sugar and mirin until most of it is absorbed.',
+              'Cool, squeeze gently, and fill with seasoned rice.'] }
+  ]);
+
+  recipes('Vegetable gyoza', [
+    { name: 'Folded and fried', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['30 gyoza wrappers', '1/2 small cabbage, shredded', '150g mushrooms, chopped fine', '2 spring onions', 'Thumb of ginger', '2 garlic cloves', '1 tbsp soy sauce', '1 tsp sesame oil', 'Oil for frying'],
+      steps: ['Salt the cabbage and leave it 15 minutes, then squeeze it dry in a tea towel. Hard. A wet filling tears the wrappers.',
+              'Fry the mushrooms until their water has gone, then cool and mix with everything else.',
+              'A teaspoon per wrapper, wet the rim, fold and pleat one side only.',
+              'Fry flat-side down in a little oil until the bottoms are gold, 3 minutes.',
+              'Add 80ml water, lid on, 6 minutes. Then lid off until the water has gone and the bottoms crisp again.'] },
+    { name: 'From frozen, unapologetically', time: 12, serves: 2, level: 'Very easy',
+      ingredients: ['12 frozen vegetable gyoza', '1 tbsp oil', '80ml water', 'Soy sauce and vinegar'],
+      steps: ['Oil in a cold pan, gyoza arranged flat-side down, heat turned to medium.',
+              'When they sizzle, 3 minutes, then water in and lid on for 6.',
+              'Lid off until dry and crisp. Dip in soy and vinegar.'] }
+  ]);
+
+  recipes('Tofu larb', [
+    { name: 'With toasted rice powder', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['400g firm tofu', '2 tbsp uncooked sticky rice', '2 limes', '2 tbsp soy sauce', '1 tsp sugar', '4 shallots, sliced', 'Mint and coriander, a lot', '1 tsp chilli flakes', 'Lettuce leaves'],
+      steps: ['Toast the raw rice in a dry pan until deep brown, 8 minutes, then grind it to a coarse powder. This is what makes it larb.',
+              'Press the tofu dry, crumble it, and fry hard until the edges catch.',
+              'Off the heat: lime juice, soy, sugar, chilli, shallots.',
+              'Herbs and rice powder folded through at the very last second. Scoop with lettuce.'] },
+    { name: 'Ten minutes', time: 10, serves: 2, level: 'Very easy',
+      ingredients: ['400g firm tofu', '2 limes', '2 tbsp soy sauce', 'Chilli flakes', 'Shallot', 'Mint and coriander', 'Crushed peanuts'],
+      steps: ['Crumble and fry the tofu until browned.',
+              'Dress with lime, soy and chilli off the heat.',
+              'Shallot, herbs and peanuts through at the end.'] }
+  ]);
+
+  recipes('Pad pak', [
+    { name: 'One very hot pan', time: 12, serves: 2, level: 'Easy',
+      ingredients: ['400g mixed greens — pak choi, beans, broccoli', '3 garlic cloves, crushed', '1 red chilli', '2 tbsp soy sauce', '1 tbsp vegetarian oyster sauce', '1 tsp sugar', 'Oil'],
+      steps: ['Have everything chopped and within reach before you start. This takes four minutes and there is no time to go looking.',
+              'Get the pan hotter than feels sensible. Oil, then garlic and chilli for 10 seconds.',
+              'Hardest vegetables first, tossed, 2 minutes. Then the leafy ones.',
+              'Sauces and sugar round the edge of the pan so they caramelise rather than boil. Toss once and serve.'] },
+    { name: 'With tofu, to make it dinner', time: 20, serves: 2, level: 'Easy',
+      ingredients: ['200g firm tofu, cubed', '400g mixed vegetables', 'Garlic, chilli', 'Soy sauce', 'Cornflour'],
+      steps: ['Toss the tofu in cornflour and fry until crisp on all sides. Lift out.',
+              'Stir-fry the vegetables as above.', 'Tofu back in at the end so it stays crisp.'] }
+  ]);
+
+  recipes('Gallo pinto', [
+    { name: 'Costa Rican breakfast', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['1 tin black beans, with their liquid', '300g cooked rice, cold', '1 onion, diced', '1 red pepper, diced', '2 garlic cloves', 'Coriander', 'Salsa Lizano or Worcestershire-style sauce'],
+      steps: ['Fry the onion and pepper until soft, then the garlic.',
+              'Beans in with a good splash of their black liquid — that is what colours the rice.',
+              'Rice in, broken up, tossed until every grain has gone grey-purple.',
+              'Coriander and a shake of the sauce at the end.'] },
+    { name: 'Cuban-leaning', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['1 tin black beans', '300g cold rice', '1 onion', 'Cumin', 'Oregano', 'Lime'],
+      steps: ['Soften the onion, add cumin and oregano.',
+              'Beans with their liquid, cooked down 5 minutes.',
+              'Rice folded through, lime over it.'] }
+  ]);
+
+  recipes('Patacones', [
+    { name: 'Fried twice', time: 25, serves: 3, level: 'Easy',
+      ingredients: ['3 green plantains', 'Oil for frying', 'Salt', 'Garlic water — 2 crushed cloves in 200ml warm water'],
+      steps: ['Peel the plantains by scoring the skin lengthways and prising it off. They do not peel like bananas.',
+              'Cut into 3cm chunks and fry at 160C for 4 minutes, until soft but barely coloured. Lift out.',
+              'Squash each one flat between two plates or with the bottom of a glass.',
+              'Dip briefly in the garlic water, then fry again at 190C for 3 minutes until crisp and gold.',
+              'Salt immediately, while they are still shining.'] },
+    { name: 'Air fryer', time: 30, serves: 3, level: 'Very easy',
+      ingredients: ['3 green plantains', '3 tbsp oil', 'Salt'],
+      steps: ['Chunk and toss in oil, air fry at 180C for 10 minutes.',
+              'Squash flat, oil again, back in at 200C for 8 minutes.',
+              'Salt at once. Less rich, still good.'] }
+  ]);
+
+  recipes('Frijoles negros', [
+    { name: 'From dried, slowly', time: 120, serves: 6, level: 'Easy',
+      ingredients: ['400g dried black beans, soaked overnight', '1 onion, halved', '1 green pepper', '4 garlic cloves', '2 bay leaves', '1 tbsp cumin', '2 tbsp olive oil', '1 tbsp vinegar'],
+      steps: ['Simmer the beans with the halved onion, pepper and bay in plenty of unsalted water. Salt now makes them tough — it goes in at the end.',
+              'An hour and a half, topping up the water, until they are properly soft.',
+              'Fish out the onion and pepper. Fry the garlic and cumin in the oil and stir it in.',
+              'Salt, then the vinegar, which is what stops it tasting flat. Mash a ladleful against the side to thicken.'] },
+    { name: 'From tins', time: 20, serves: 3, level: 'Very easy',
+      ingredients: ['2 tins black beans', '1 onion', '3 garlic cloves', '1 tsp cumin', 'Bay leaf', 'Vinegar', 'Oil'],
+      steps: ['Soften the onion, add garlic and cumin.',
+              'Beans with their liquid and the bay, simmered 15 minutes, mashing some.',
+              'Salt and a splash of vinegar at the end.'] }
+  ]);
+
+  recipes('Tacos de nopales', [
+    { name: 'Griddled', time: 25, serves: 3, level: 'Easy',
+      ingredients: ['4 nopales paddles, or a jar, rinsed well', '1 onion, sliced', '2 tomatoes', 'Corn tortillas', 'Coriander', 'Lime', 'Chilli'],
+      steps: ['If fresh, scrape off the spines with a knife and slice into strips. Rinse them until the water is no longer slippery — this matters.',
+              'Dry-griddle the nopales hard until they squeak and take colour, 8 minutes. Do not crowd the pan.',
+              'Add the onion and tomato and cook until soft.',
+              'Warm the tortillas directly on the flame, fill, and finish with coriander, lime and chilli.'] },
+    { name: 'From a jar, quickly', time: 12, serves: 2, level: 'Very easy',
+      ingredients: ['1 jar nopales', '1 onion', 'Tortillas', 'Coriander', 'Lime'],
+      steps: ['Rinse and drain the nopales thoroughly, then pat dry.',
+              'Fry hard with the onion until the edges brown.',
+              'Into warm tortillas with coriander and lime.'] }
+  ]);
+
+  recipes('Shiro', [
+    { name: 'Ethiopian, with berbere', time: 30, serves: 4, level: 'Easy',
+      ingredients: ['150g shiro powder (ground chickpea)', '1 onion, diced very fine', '3 garlic cloves', '2 tbsp berbere', '3 tbsp oil', '800ml water'],
+      steps: ['Cook the onion in the dry pan first, no oil, for 5 minutes until it softens in its own moisture. That is the Ethiopian way and it is worth doing.',
+              'Add the oil and garlic, then the berbere, and fry 2 minutes until it darkens.',
+              'Whisk the shiro powder into the water separately, then pour it in slowly, stirring.',
+              'Simmer 15 minutes, stirring often — it catches easily. It should be thick enough to hold a spoon-track. Injera or rice.'] },
+    { name: 'With chickpea flour', time: 25, serves: 3, level: 'Easy',
+      ingredients: ['100g gram flour', '1 onion', '2 tbsp berbere or 1 tbsp paprika and 1 tsp cayenne', 'Garlic', 'Oil'],
+      steps: ['Soften the onion in oil, add garlic and spice.',
+              'Whisk the flour into 600ml water and pour in gradually.',
+              'Simmer 15 minutes, stirring, until thick.'] }
+  ]);
+
+  recipes('Misir wot', [
+    { name: 'Properly hot', time: 45, serves: 4, level: 'Easy',
+      ingredients: ['300g red lentils', '2 onions, diced very fine', '4 garlic cloves', 'Thumb of ginger', '3 tbsp berbere', '3 tbsp oil', '1 tbsp tomato purée'],
+      steps: ['Dry-cook the onions in the pan for 8 minutes before any oil goes near them. They should be soft and sticky.',
+              'Oil, garlic and ginger in, then the berbere and purée, fried 3 minutes until it smells toasted rather than raw.',
+              'Lentils and 900ml water, simmered 25 minutes until they have gone completely.',
+              'Salt at the end. It thickens as it stands, so keep it looser than you think.'] },
+    { name: 'Milder', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['300g red lentils', '2 onions', 'Garlic and ginger', '1 tbsp paprika', '1 tsp cayenne', '1 tsp cardamom', 'Oil'],
+      steps: ['As above, swapping the berbere for the paprika, cayenne and cardamom.',
+              'Simmer until soft, salt at the end.'] }
+  ]);
+
+  recipes('Gomen', [
+    { name: 'Collards, slowly', time: 35, serves: 4, level: 'Very easy',
+      ingredients: ['500g collard greens or kale, shredded', '1 onion, sliced', '4 garlic cloves', 'Large thumb of ginger', '3 tbsp oil', '1 green chilli'],
+      steps: ['Boil the greens 5 minutes and drain them well. This takes the bitterness off.',
+              'Fry the onion in the oil until soft, then the garlic, ginger and chilli.',
+              'Greens in with a splash of water, lid on, lowest heat, 20 minutes.',
+              'Salt at the end. They should be soft, not squeaky.'] },
+    { name: 'Quick greens', time: 15, serves: 2, level: 'Very easy',
+      ingredients: ['300g kale', '3 garlic cloves', 'Ginger', 'Oil', 'Lemon'],
+      steps: ['Fry the garlic and ginger in oil for 1 minute.',
+              'Kale in with a splash of water, covered 8 minutes.',
+              'Salt and lemon.'] }
+  ]);
+
+  recipes('Chakalaka', [
+    { name: 'The full relish', time: 30, serves: 4, level: 'Very easy',
+      ingredients: ['2 onions, sliced', '3 carrots, grated', '2 peppers, sliced', '4 garlic cloves', '1 tbsp curry powder', '1 tin chopped tomatoes', '1 tin baked beans', '2 chillies', 'Oil'],
+      steps: ['Fry the onions until soft, then the garlic, chilli and curry powder.',
+              'Peppers in for 5 minutes, then the grated carrot, which should keep a little bite.',
+              'Tomatoes in, cooked down 10 minutes.',
+              'Beans folded through at the end and warmed, not boiled. Good hot, better cold the next day.'] },
+    { name: 'Without the beans', time: 20, serves: 4, level: 'Very easy',
+      ingredients: ['2 onions', '3 carrots', '2 peppers', 'Curry powder', 'Tinned tomatoes', 'Chilli'],
+      steps: ['Soften onions and peppers, add spice.',
+              'Carrot and tomatoes, cooked 12 minutes.',
+              'Season hard — it needs more salt than you expect.'] }
+  ]);
+
+  recipes('Ribollita', [
+    { name: 'Reboiled, as the name says', time: 90, serves: 6, level: 'Medium',
+      ingredients: ['1 tin cannellini beans', '1 onion, 2 carrots, 2 celery sticks, all diced', '4 garlic cloves', '1 tin chopped tomatoes', '1 head cavolo nero, shredded', '300g stale sourdough', '1.2L vegetable stock', 'Olive oil'],
+      steps: ['Cook the onion, carrot and celery in plenty of oil for 15 minutes, gently. No colour, just softness.',
+              'Garlic, then tomatoes, cooked 10 minutes until they darken.',
+              'Stock and beans — blitz half the beans first to thicken it — then the cavolo nero. Simmer 30 minutes.',
+              'Tear the bread in and stir until it collapses. Take it off the heat and leave it an hour.',
+              'Reheat to serve, which is the actual point of the dish, with a great deal of oil poured over.'] },
+    { name: 'Same day', time: 45, serves: 4, level: 'Easy',
+      ingredients: ['1 tin cannellini beans', 'Onion, carrot, celery', 'Tinned tomatoes', 'Kale', 'Stale bread', 'Stock', 'Olive oil'],
+      steps: ['Soften the vegetables, add tomatoes and stock.',
+              'Beans and kale, 20 minutes.',
+              'Bread torn in for the last 10 minutes. Oil over every bowl.'] }
+  ]);
+
+  recipes('Panzanella', [
+    { name: 'When the tomatoes are worth it', time: 30, serves: 4, level: 'Very easy',
+      ingredients: ['600g very ripe tomatoes, in rough chunks', '300g stale country bread, torn', '1 red onion, sliced thin', '1 cucumber', 'A bunch of basil', '4 tbsp olive oil', '2 tbsp red wine vinegar'],
+      steps: ['Salt the tomatoes in a colander set over a bowl and leave them 20 minutes. Keep what drips out — that juice is the dressing.',
+              'Soak the red onion in cold water 10 minutes to take its edge off, then drain.',
+              'Toss the torn bread in the tomato juice with the oil and vinegar and leave it 10 minutes to soften without going to mush.',
+              'Everything together, basil torn in by hand, another 10 minutes standing before you eat it.'] },
+    { name: 'With the bread toasted', time: 25, serves: 4, level: 'Very easy',
+      ingredients: ['Country bread', 'Tomatoes', 'Red onion', 'Basil', 'Olive oil', 'Vinegar', 'Garlic'],
+      steps: ['Tear and toast the bread with oil at 200C for 10 minutes, then rub with a cut garlic clove.',
+              'Salt the tomatoes, keep the juice, dress everything together.',
+              'Ten minutes standing, then eat. Better texture, less authentic.'] }
+  ]);
+
+  recipes('Pasta e ceci', [
+    { name: 'Starchy and thick', time: 35, serves: 3, level: 'Easy',
+      ingredients: ['2 tins chickpeas', '200g small pasta', '4 garlic cloves', '1 sprig rosemary', '2 tbsp tomato purée', '4 tbsp olive oil', '1 dried chilli'],
+      steps: ['Blitz one tin of chickpeas, liquid and all, to a purée. Keep the other whole.',
+              'Warm the oil gently with the garlic, rosemary and chilli for 5 minutes. Fish out the rosemary.',
+              'Purée in, whole chickpeas in, tomato purée in, plus 600ml water. Simmer 10 minutes.',
+              'Pasta straight into the pot — it cooks in the soup and the starch is the thickening. Stir often, add water if it tightens.',
+              'It should be neither soup nor pasta. Olive oil over the top.'] },
+    { name: 'Twenty minutes', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['1 tin chickpeas', '150g small pasta', '2 garlic cloves', 'Tomato purée', 'Olive oil', 'Rosemary'],
+      steps: ['Soften the garlic in oil with the rosemary.',
+              'Chickpeas with their liquid, purée and 400ml water, brought to a simmer.',
+              'Pasta in, cooked in it, stirred often.'] }
+  ]);
+
+  recipes('Caponata', [
+    { name: 'Sweet and sour', time: 50, serves: 4, level: 'Medium',
+      ingredients: ['2 aubergines, in 2cm cubes', '1 onion, sliced', '3 celery sticks', '2 tbsp capers', '80g green olives', '400g tinned tomatoes', '3 tbsp red wine vinegar', '1 tbsp sugar', 'Olive oil', 'Basil'],
+      steps: ['Salt the aubergine and leave it 30 minutes, then squeeze it dry. It will drink less oil this way.',
+              'Fry the aubergine in batches in hot oil until deep brown on all sides. Lift out.',
+              'Soften the onion and celery in the same pan, then the tomatoes, capers and olives.',
+              'Vinegar and sugar in, simmered 10 minutes until it smells sharp rather than raw.',
+              'Aubergine back in, warmed through, then left alone for a few hours. It is a room-temperature dish and it is better tomorrow.'] },
+    { name: 'Roasted, less oil', time: 45, serves: 4, level: 'Easy',
+      ingredients: ['2 aubergines', 'Onion, celery', 'Tinned tomatoes', 'Capers and olives', 'Vinegar and sugar', 'Olive oil'],
+      steps: ['Roast the cubed aubergine at 220C in 3 tbsp oil for 30 minutes.',
+              'Meanwhile make the sauce with the onion, celery, tomatoes, capers, olives, vinegar and sugar.',
+              'Fold together and leave to cool.'] }
+  ]);
+
+  recipes('Pisto', [
+    { name: 'Cooked down properly', time: 50, serves: 4, level: 'Very easy',
+      ingredients: ['1 aubergine', '2 courgettes', '2 peppers', '1 onion', '4 tomatoes, or 1 tin', '3 garlic cloves', '5 tbsp olive oil'],
+      steps: ['Dice everything about the same size. It matters less how big than that they match.',
+              'Onion and pepper in the oil first, 10 minutes over medium-low.',
+              'Aubergine next, which drinks the oil and gives it back later — another 10 minutes.',
+              'Courgette, then garlic, then tomatoes. Now leave it, on the lowest heat, for 20 minutes, stirring rarely.',
+              'It is ready when nothing is in a hurry and the oil has come back to the surface.'] },
+    { name: 'With chickpeas, to make it dinner', time: 55, serves: 4, level: 'Easy',
+      ingredients: ['Pisto as above', '1 tin chickpeas, drained', 'Smoked paprika', 'Parsley'],
+      steps: ['Make the pisto.',
+              'Fold the chickpeas through for the last 10 minutes so they take on the oil.',
+              'A good pinch of smoked paprika and plenty of parsley at the end.'] }
+  ]);
+
+  recipes('Polenta', [
+    { name: 'Stirred, the long way', time: 45, serves: 4, level: 'Easy',
+      ingredients: ['200g coarse polenta', '1.2L water or stock', '1 tsp salt', '3 tbsp olive oil'],
+      steps: ['Bring the salted water to a bare simmer and rain the polenta in with a whisk going. It lumps if you tip it.',
+              'Switch to a wooden spoon and stir every few minutes for 40. It will spit — use a long spoon and a deep pan.',
+              'It is done when it pulls away from the side of the pan and no longer tastes of raw grain.',
+              'Oil in at the end, beaten hard. Salt again; polenta takes more than you think.'] },
+    { name: 'Grilled the next day', time: 20, serves: 4, level: 'Very easy',
+      ingredients: ['Leftover polenta', 'Olive oil'],
+      steps: ['Pour the hot polenta into an oiled tin about 2cm deep and leave it to set, at least 2 hours.',
+              'Cut into slabs.', 'Griddle in oil, 5 minutes a side, until crisp and marked.'] }
+  ]);
+
+  recipes('Mango sticky rice', [
+    { name: 'The real thing', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['300g glutinous rice, soaked 4 hours', '1 tin coconut milk', '80g sugar', '1/2 tsp salt', '2 ripe mangoes', '1 tbsp toasted sesame or mung beans'],
+      steps: ['Drain the soaked rice and steam it in a lined steamer for 25 minutes, until translucent. Boiling it will not do.',
+              'Warm three quarters of the coconut milk with the sugar and salt until dissolved — do not boil it.',
+              'Pour it over the hot rice, stir once, cover, and leave 30 minutes. It looks far too wet. It will not be.',
+              'Slice the mango. Salt the reserved coconut milk a little more and spoon it over at the table.'] },
+    { name: 'Faster, with pudding rice', time: 35, serves: 2, level: 'Easy',
+      ingredients: ['150g pudding rice', '1 tin coconut milk', '60g sugar', 'Pinch of salt', '1 mango'],
+      steps: ['Simmer the rice with half the coconut milk, 200ml water and a pinch of salt for 20 minutes.',
+              'Sugar and most of the rest of the coconut milk in, cooked 5 more minutes.',
+              'Rest 10 minutes. Mango alongside, the last of the coconut milk over.'] }
+  ]);
+
+  recipes('Halva', [
+    { name: 'Tahini halva', time: 25, serves: 12, level: 'Medium',
+      ingredients: ['400g tahini, well stirred', '300g sugar', '100ml water', '1 tsp vanilla', 'Pistachios'],
+      steps: ['Warm the tahini gently to about body temperature.',
+              'Boil the sugar and water to 120C. A sugar thermometer is the difference between halva and toffee.',
+              'Pour the syrup into the tahini in a thin stream, stirring, and keep stirring only until it thickens and turns matt — about 30 seconds. Over-stirring makes it grainy in the wrong way.',
+              'Press into a lined tin with the pistachios, cover, and leave 12 hours before cutting.'] },
+    { name: 'Semolina halva', time: 30, serves: 8, level: 'Easy',
+      ingredients: ['200g coarse semolina', '150ml oil', '250g sugar', '600ml water', 'Cinnamon', 'Pine nuts'],
+      steps: ['Boil the sugar and water to a syrup, then set aside.',
+              'Toast the semolina in the oil, stirring constantly, for 12 minutes until it is properly brown and smells of biscuits.',
+              'Pour the hot syrup in — stand back, it erupts — and stir until it thickens.',
+              'Lid on, off the heat, 15 minutes. Then spoon out and dust with cinnamon.'] }
+  ]);
+
+  recipes('Sorbet', [
+    { name: 'With a machine', time: 30, serves: 4, level: 'Easy',
+      ingredients: ['600g ripe fruit, or 500ml juice', '150g sugar', '150ml water', '1 tbsp lemon juice'],
+      steps: ['Boil the sugar and water for 2 minutes to a syrup, then cool it completely.',
+              'Blend with the fruit and lemon, then sieve if it has seeds or skin.',
+              'Chill until properly cold — a warm mix churns to slush.',
+              'Churn 25 minutes, then freeze an hour to firm up.'] },
+    { name: 'Without one', time: 15, serves: 4, level: 'Very easy',
+      ingredients: ['500g frozen fruit', '80g icing sugar', '1 lemon', '2 tbsp water'],
+      steps: ['Blitz the frozen fruit with the sugar, lemon and water in a food processor. Stop and scrape twice.',
+              'It will look like sand, then suddenly turn smooth. That moment is the sorbet.',
+              'Eat immediately, or freeze 30 minutes for a firmer scoop.'] }
+  ]);
+
+  recipes('Date and nut balls', [
+    { name: 'Four ingredients', time: 15, serves: 12, level: 'Very easy',
+      ingredients: ['250g medjool dates, stoned', '150g almonds or walnuts', '2 tbsp cocoa', 'Pinch of salt', 'Desiccated coconut, to roll'],
+      steps: ['Blitz the nuts first, alone, until they are coarse crumbs. Doing this with the dates in gives you paste.',
+              'Add the dates, cocoa and salt and blitz until it starts to ball up around the blade.',
+              'If it is too dry, one more date. Too wet, a spoonful more nuts.',
+              'Roll into walnut-sized balls and turn them in coconut. Firm in the fridge 20 minutes.'] },
+    { name: 'With oats and peanut butter', time: 12, serves: 12, level: 'Very easy',
+      ingredients: ['200g dates', '100g oats', '3 tbsp peanut butter', 'Pinch of salt'],
+      steps: ['Blitz the dates to a paste with a splash of hot water.',
+              'Work in the oats, peanut butter and salt by hand.',
+              'Roll and chill.'] }
+  ]);
+
+  recipes('Barley tea', [
+    { name: 'Boiled', time: 15, serves: 4, level: 'Very easy',
+      ingredients: ['4 tbsp roasted barley', '1.5L water'],
+      steps: ['Bring the water to the boil, add the barley and turn it down.',
+              'Simmer 10 minutes. Longer makes it bitter rather than stronger.',
+              'Strain. Hot in winter, and it is better than it sounds chilled in summer.'] },
+    { name: 'Cold brewed overnight', time: 5, serves: 4, level: 'Very easy',
+      ingredients: ['4 tbsp roasted barley', '1.5L cold water'],
+      steps: ['Barley and cold water in a jug.', 'Fridge, 8 hours.', 'Strain. Rounder and sweeter than the boiled kind.'] }
+  ]);
+
+  recipes('Horchata', [
+    { name: 'Rice and cinnamon', time: 20, serves: 4, level: 'Easy',
+      ingredients: ['200g long grain rice', '1 cinnamon stick', '1.2L water', '100g sugar', '1 tsp vanilla'],
+      steps: ['Blitz the raw rice with the broken cinnamon stick and 400ml of the water until it is a rough slurry.',
+              'Leave it to stand at least 4 hours, or overnight in the fridge.',
+              'Blend again, then strain through a fine sieve lined with muslin, squeezing hard.',
+              'Stir in the rest of the water, the sugar and the vanilla. Serve over a lot of ice.'] },
+    { name: 'Quick, with rice milk', time: 5, serves: 2, level: 'Very easy',
+      ingredients: ['500ml rice milk', '1/2 tsp ground cinnamon', '2 tbsp sugar', '1/2 tsp vanilla', 'Ice'],
+      steps: ['Whisk everything together until the sugar has gone.',
+              'Over ice, with more cinnamon on top. Not the real thing, and it takes five minutes.'] }
+  ]);
+
   return {
     BOOK: BOOK,
     scale: scale,

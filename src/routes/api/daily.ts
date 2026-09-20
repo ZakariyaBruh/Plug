@@ -5,7 +5,7 @@ import { ALL_DISHES } from '#/lib/dishes'
 /*
  * /api/daily — five dishes to try, written fresh each day.
  *
- * WHY THIS IS NOT PART OF THE CATALOGUE. The 133 dishes in decide/js/data.js
+ * WHY THIS IS NOT PART OF THE CATALOGUE. The dishes in decide/js/data.js
  * are curated: every one has hand-checked tags that the question engine reasons
  * over and that the dietary rules filter on. These five are not that. They are
  * a discovery shelf — something to read about and go and cook — and they stay
