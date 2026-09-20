@@ -269,14 +269,20 @@ export const TRIAL_TERMS_ANNUAL = `Free for ${TRIAL_DAYS} days, then ${PRICE_YEA
  * however good it is.
  */
 export const WHAT_IT_IS =
-  'An assistant for working out what to eat. It asks, it remembers what you do not eat, and it gets you fed.'
+  'An assistant for working out what to eat. It asks, you point, and it gets you fed.'
 
 /** The three jobs, which every page is arranged around. */
 export const THE_JOBS: { name: string; blurb: string }[] = [
   {
-    name: 'It decides with you',
+    /*
+     * This used to be "It decides with you", which described a conversation the
+     * app was not actually having: it asked, it answered, and the only thing
+     * you could say back was no. Steering is the thing that makes the name
+     * true, so the name says it.
+     */
+    name: 'You never have to know what you want',
     blurb:
-      'You do not have to know what you want — that is the whole problem, and it is the part this is built for. A few either-ors, no wrong answers, one dish at the end of it. About eight questions, and never more than twenty.',
+      'A few either-ors, no wrong answers, one dish at the end of it — and if it is close but not right, you point. Lighter. Spicier. Sooner. It answers again in that direction instead of starting over. Knowing which way to lean is easy; knowing what you want is the hard thing nobody can do on an empty stomach.',
   },
   {
     name: 'It remembers what you don’t eat',

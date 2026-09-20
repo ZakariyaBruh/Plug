@@ -212,6 +212,48 @@ export function decide(answers: Answers): Verdict {
   return { dish: ranked[0].dish, letGo: ranked[0].missed }
 }
 
+/*
+ * STEERING, WHICH IS THE THING WORTH SHOWING.
+ *
+ * The preview asked five questions, gave one answer, and stopped. That is the
+ * old app: you could take the answer or leave it, and leaving it was the only
+ * thing you could say about it. The real one now lets you point — lighter,
+ * spicier, quicker — and the answer moves in that direction.
+ *
+ * Here every tag has already been spoken for by the five questions, so a
+ * steer FLIPS an answer rather than adding one, and the verdict is worked out
+ * again from scratch. Same engine, one thing changed, which is exactly what
+ * happens in the app.
+ */
+export type Steer = { tag: PreviewTag; value: Reply; label: string; said: string }
+
+/** What is worth offering, given what they said and what they got. */
+export function steersFor(answers: Answers, dish: PreviewDish): Steer[] {
+  const out: Steer[] = []
+  for (const q of PREVIEW_QUESTIONS) {
+    const said = answers[q.tag]
+    // Only a stated answer can be reversed; "either" was never a direction.
+    if (!said || said === 'either') continue
+    const flip: Reply = said === 'yes' ? 'no' : 'yes'
+    // No point offering a direction the dish is already in.
+    const has = level(dish, q.tag)
+    if (flip === 'yes' && has === 1) continue
+    if (flip === 'no' && has === 0) continue
+    out.push({
+      tag: q.tag,
+      value: flip,
+      label: flip === 'yes' ? q.yes : q.no,
+      said: `${flip === 'yes' ? q.yes : q.no}, then.`,
+    })
+  }
+  return out
+}
+
+/** The same answers with one of them changed. */
+export function withSteer(answers: Answers, steer: Steer): Answers {
+  return { ...answers, [steer.tag]: steer.value }
+}
+
 /** "crunchy" -> "Crunchy", for saying which answer had to give. */
 export function replyWords(tag: PreviewTag, said: Reply): string {
   const q = PREVIEW_QUESTIONS.find((x) => x.tag === tag)

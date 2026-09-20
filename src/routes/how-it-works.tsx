@@ -11,7 +11,7 @@ export const Route = createFileRoute('/how-it-works')({
       path: '/how-it-works',
       title: 'How it works — morsels45',
       description:
-        'How morsels45 turns “what should I eat” into a handful of either-ors, then one dish — and what Premium adds on top.',
+        'How morsels45 turns “what should I eat” into a handful of either-ors, then one dish you can push lighter, spicier or sooner until it is right — and what Premium adds on top.',
     }),
   component: HowItWorks,
 })
@@ -37,10 +37,21 @@ const STEPS = [
     title: 'Get one answer',
     body: 'Not a list of ten. One. If nothing could meet everything you asked for, it says which preference it had to let go of, instead of quietly handing you something that argues with you.',
   },
+  /*
+   * This step used to be called "Take it or leave it", and that was the honest
+   * name for what the app did: accept, or press a button that meant no and hope
+   * the next one landed. Refusing is not steering. What replaced it is the whole
+   * reason this page needed rewriting.
+   */
   {
     n: '05',
-    title: 'Take it or leave it',
-    body: '“That’s the one” banks the decision and the XP. “Not quite” tries again from where you are. Standard stops there. Premium can save it, snooze it, or strike it off for good.',
+    title: 'Point it, if it is close',
+    body: 'Under the answer are two or three directions that would actually move it — lighter, spicier, something hot, quicker. Tap one and it decides again with that added to what you already said. Nothing resets, nothing is asked twice, and the dish you just turned down does not come back. There is still a plain “just something else” for the nights when nothing about it was right.',
+  },
+  {
+    n: '06',
+    title: 'Then eat it',
+    body: '“That’s the one” banks the decision and the XP. Behind every dish is a recipe, a shopping list and a cook mode that reads the steps out one at a time. Premium can also save it, snooze it for a fortnight, or strike it off for good.',
   },
 ]
 
@@ -52,11 +63,13 @@ export function HowItWorks() {
       <main className="fade-in-up">
         <section className="mx-auto max-w-3xl px-6 pt-16 pb-10">
           <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">How it works</p>
-          <h1 className="mt-3 text-4xl font-bold sm:text-5xl">Twenty questions. One dinner.</h1>
+          <h1 className="mt-3 text-4xl font-bold sm:text-5xl">A few questions. One dinner.</h1>
           <p className="mt-4 text-[var(--text-dim)]">
-            morsels45 is a decide-for-me game, not a recipe blog. The free loop is the whole product
-            for most people. Premium is for the nights you already know what you never want, and the
-            nights you want to play it as a game.
+            morsels45 is a decide-for-me game, not a recipe blog. You do not have to know what you
+            want — you only have to answer easy either-ors, and then say which way to lean if the
+            answer is close. The free loop is the whole product for most people. Premium is for the
+            nights you already know what you never want, and the nights you want to play it as a
+            game.
           </p>
         </section>
 

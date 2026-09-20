@@ -137,9 +137,15 @@ function HomePage() {
                   An assistant does not guess. It asks. */}
               <em className="font-semibold text-[var(--amber)]">That&rsquo;s what I&rsquo;m for.</em>
             </h1>
+            {/* The second half of this used to end at "one answer with the
+                recipe behind it", which is where the old app ended too: take it
+                or leave it. Leaving it was the only thing you could say, and a
+                stranger reading that has to believe the first answer will be
+                right. Now the promise is the recovery, not the guess. */}
             <p className="mx-auto mt-6 max-w-xl text-lg text-[var(--text-dim)]">
-              A few easy either-ors — sweet or savoury, hot or cold, hands or cutlery. I rule out
-              everything you don&rsquo;t eat, and hand you one answer with the recipe behind it.
+              A few easy either-ors — sweet or savoury, hot or cold. Then one answer, with the
+              recipe behind it. Close but not quite? Point me lighter, spicier, sooner, and I
+              answer again that way.
             </p>
             {/* "Play free", not "Decide for me".
                 This page and the app's own opening screen looked like the same
@@ -221,9 +227,9 @@ function HomePage() {
             <h2 className="mt-2 text-3xl font-bold">Three beats. Dinner.</h2>
             <ol className="mt-10 grid gap-6 sm:grid-cols-3">
               {[
-                ['01', 'Answer either-ors', 'There are no wrong ones. Skip with “either” if you honestly do not mind.'],
-                ['02', 'Watch it narrow', 'The catalogue shrinks as you go. You can see it happening.'],
-                ['03', 'Get one answer', 'And a way to actually get it — cook it, or find it nearby (Premium).'],
+                ['01', 'Answer either-ors', 'There are no wrong ones. Skip with “either” if you honestly do not mind. The catalogue shrinks as you go and you can watch it happen.'],
+                ['02', 'Get one answer', 'One dish — not a shortlist of nine, which is the problem you came here with.'],
+                ['03', 'Point it, if it is close', 'Lighter. Spicier. Sooner. It answers again in that direction instead of starting over — then hands you the recipe, the shopping list, or somewhere nearby that serves it.'],
               ].map(([n, title, body]) => (
                 <li key={n} className="rounded-2xl border border-[var(--border)] p-6">
                   <p className="text-sm font-semibold text-[var(--amber)]">{n}</p>
@@ -346,7 +352,9 @@ function HomePage() {
         <section className="border-t border-[var(--border)] py-16 text-center">
           <div className="mx-auto max-w-3xl px-6 fade-in-up">
             <h2 className="text-3xl font-bold">Hungry. Undecided. Sorted.</h2>
-            <p className="mt-3 text-[var(--text-dim)]">Twenty seconds. One answer. Then go eat it.</p>
+            <p className="mt-3 text-[var(--text-dim)]">
+              Twenty seconds. One answer. Point it until it&rsquo;s right, then go eat it.
+            </p>
             {/* Same words as the button at the top of this page. Two buttons
                 doing the same thing on one page should not disagree about what
                 the thing costs. The Premium column above keeps "Play now",

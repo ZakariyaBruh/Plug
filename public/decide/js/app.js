@@ -3785,6 +3785,7 @@
     $('result-blurb').textContent = '';
     $('reasons').innerHTML = '';
     $('alternates').hidden = true;
+    if ($('steer')) $('steer').hidden = true;
     $('result-name').textContent = '…';
 
     var art = $('result-icon');
@@ -3899,6 +3900,9 @@
 
     fillAlternates(item);
     paintPair(item);
+    // Which directions are worth offering depends on what is on screen, so
+    // this is repainted with the dish rather than once per game.
+    paintSteers(item);
   }
 
   // Every alternate is a real button: tapping one swaps it into the result
@@ -5119,6 +5123,190 @@
 
   $('earn-close').addEventListener('click', closeEarn);
   $('earn-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeEarn(); });
+
+  /* ------------------------------------------------------------- steering */
+
+  /*
+   * WHICH WAY, RATHER THAN NO.
+   *
+   * The verdict had one thing to say about a dish you did not want, and that
+   * was "not quite". You could veto the answer but you could not point at
+   * anything, so the app guessed again from the same information and you
+   * declined again — which is why a session of it felt like refusing things
+   * rather than being helped.
+   *
+   * A steer is an ANSWER, given after the dish instead of before it. It goes
+   * into game.answer() exactly as a question's answer does, the whole
+   * catalogue is re-weighted, and the next dish is genuinely different in the
+   * direction asked. Nothing here is a filter bolted on the side: it is the
+   * same engine, told one more thing.
+   *
+   * `when` decides whether a direction is worth offering for the dish on
+   * screen. Offering "milder" for cereal or "quicker" for toast is the app
+   * not paying attention, and four sensible buttons beat eight thorough ones
+   * on a screen whose whole promise is that you do not have to think.
+   */
+  var STEERS = [
+    { id: 'lighter',  tag: 'light',   value: 'yes', label: 'Lighter',       said: 'Lighter, then.',
+      when: function (d) { return (d.tags.filling || 0) > 0 || (d.tags.indulgent || 0) > 0 || (d.tags.light || 0) === 0; } },
+    { id: 'heartier', tag: 'filling', value: 'yes', label: 'More filling',  said: 'Something with more to it.',
+      when: function (d) { return (d.tags.filling || 0) < 1; } },
+    { id: 'spicier',  tag: 'spicy',   value: 'yes', label: 'Spicier',       said: 'Turning the heat up.',
+      when: function (d) { return (d.tags.spicy || 0) < 1; } },
+    { id: 'milder',   tag: 'spicy',   value: 'no',  label: 'Less spicy',    said: 'Calmer, then.',
+      when: function (d) { return (d.tags.spicy || 0) > 0; } },
+    { id: 'quicker',  tag: 'quick',   value: 'yes', label: 'Quicker',       said: 'Something faster.',
+      when: function (d) { return (d.tags.quick || 0) < 1; } },
+    { id: 'warmer',   tag: 'hot',     value: 'yes', label: 'Something hot', said: 'Hot it is.',
+      when: function (d) { return (d.tags.hot || 0) < 1; } },
+    { id: 'fresher',  tag: 'fresh',   value: 'yes', label: 'Fresher',       said: 'Something fresher.',
+      when: function (d) { return (d.tags.fresh || 0) < 1 && (d.tags.drink || 0) < 1; } },
+    { id: 'comfort',  tag: 'comfort', value: 'yes', label: 'More comforting', said: 'Comfort, then.',
+      when: function (d) { return (d.tags.comfort || 0) < 1; } },
+    { id: 'cheaper',  tag: 'cheap',   value: 'yes', label: 'Cheaper',       said: 'Keeping it cheap.',
+      when: function (d) { return (d.tags.cheap || 0) < 1 && (d.tags.indulgent || 0) > 0; } }
+  ];
+
+  /* How many directions get offered at once. Four including the veto. */
+  var STEER_SHOWN = 3;
+
+  /*
+   * A tag already answered is not a direction any more — offering "spicier"
+   * to somebody who has just been asked about heat and said yes is the app
+   * forgetting the conversation it is in.
+   */
+  function steerAvailable(dish) {
+    var asked = {};
+    game.answers.forEach(function (a) { if (a.value !== 'either') asked[a.tag] = true; });
+
+    /*
+     * ONE DIRECTION PER AXIS. A dish tagged 0.5 for heat satisfies both
+     * "spicier" (it is not spicy) and "less spicy" (it is not un-spicy), so
+     * momos came up offering both at once — the app visibly arguing with
+     * itself and spending two of its three slots doing it. First match per
+     * tag wins, which is the one written earliest in STEERS.
+     */
+    var taken = {};
+    return STEERS.filter(function (steer) {
+      if (asked[steer.tag] || taken[steer.tag]) return false;
+      if (!steer.when(dish)) return false;
+      taken[steer.tag] = true;
+      return true;
+    });
+  }
+
+  function paintSteers(dish) {
+    var wrap = $('steer');
+    var row = $('steer-row');
+    if (!wrap || !row) return;
+
+    /*
+     * Shortcut modes — Knockout, Blitz, Shortlist and the rest — have no
+     * questions behind them and so nothing for an answer to change. They keep
+     * the plain "not quite", which there walks their own running order.
+     */
+    if (shortcut || !dish) {
+      wrap.hidden = true;
+      // A mode with no questions behind it keeps the plain veto, which there
+      // walks that mode's own running order.
+      $('reject-btn').hidden = false;
+      return;
+    }
+
+    /*
+     * The old "Not quite" comes out of the quiet list while steering is up.
+     * The steer row ends with the same veto, and two buttons that do exactly
+     * the same thing, eight lines apart, is the screen telling somebody to
+     * stop and read it — on the screen whose whole promise is that they do
+     * not have to.
+     */
+    $('reject-btn').hidden = true;
+
+    row.innerHTML = '';
+    var offered = steerAvailable(dish).slice(0, STEER_SHOWN);
+
+    offered.forEach(function (steer) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'steer-btn';
+      btn.textContent = steer.label;
+      btn.addEventListener('click', function () { applySteer(steer); });
+      row.appendChild(btn);
+    });
+
+    // The veto, still here, and now the quietest thing in the row.
+    var no = document.createElement('button');
+    no.type = 'button';
+    no.className = 'steer-btn is-plain';
+    no.textContent = offered.length ? 'Just something else' : 'Show me another';
+    no.addEventListener('click', rejectCurrent);
+    row.appendChild(no);
+
+    $('steer-lead').textContent = offered.length
+      ? 'Close? Point me somewhere.'
+      : 'Not it?';
+    wrap.hidden = false;
+  }
+
+  /*
+   * Take the direction, and land on something new.
+   *
+   * The dish on screen is struck off first: a steer that hands back the same
+   * dish because it still scores best reads as the app ignoring you, which is
+   * the exact complaint this is here to answer.
+   */
+  function applySteer(steer) {
+    if (busy) return;
+    var from = shownItem || game.best().item;
+
+    Sound.next();
+    game.reject(from.name);
+    game.answer(steer.tag, steer.value);
+
+    /*
+     * EVERYTHING TURNED DOWN STAYS DOWN. ranking() deliberately keeps rejected
+     * dishes in it — a rejection is "not that one, now", and shortlist() is
+     * what filters them. Skipping only the dish just steered away from meant
+     * the second steer could hand back the one the first steer rejected:
+     * masala chai, lighter, matcha latte, more filling, masala chai. Steering
+     * that walks you in a circle is worse than no steering.
+     */
+    var ranked = game.ranking().filter(function (r) {
+      return !game.rejected[r.item.name] && r.item.name !== from.name;
+    });
+
+    /*
+     * AND THE DIRECTION IS THE POINT. The new answer already faults anything
+     * that flatly contradicts it, so the top of the ranking usually honours
+     * the steer on its own — but a dish tagged 0.5 contradicts nothing and can
+     * outrank one tagged 1, and then "spicier" lands on something merely not
+     * un-spicy. Among the dishes tied on faults, prefer one that plainly goes
+     * the way it was pointed; fall back to the best of the rest.
+     */
+    var next = null;
+    for (var i = 0; i < ranked.length; i++) {
+      var has = ranked[i].item.tags[steer.tag] || 0;
+      var plain = steer.value === 'yes' ? has === 1 : has === 0;
+      if (plain) { next = ranked[i].item; break; }
+    }
+    if (!next && ranked.length) next = ranked[0].item;
+
+    if (!next) {
+      // Nothing left that fits. Say so rather than silently doing nothing.
+      Sound.reject();
+      return toast('\u{1F937}', 'Nothing left that way',
+        'That is everything I have in that direction. Try another.');
+    }
+
+    rankedItems = ranked.slice(0, 8).map(function (r) { return r.item; });
+    // The one that won the direction leads the alternates, wherever it placed.
+    rankedItems = [next].concat(rankedItems.filter(function (x) { return x !== next; }));
+
+    showResult(next);
+    // Said out loud so the change is legible: somebody who asked for lighter
+    // and got a different dish should be told that is why.
+    $('steer-lead').textContent = steer.said;
+  }
 
   function rejectCurrent() {
     if (busy) return;
@@ -11142,8 +11330,10 @@
       sub: 'That is the whole problem this solves, and it takes about twenty seconds.',
       next: 'Show me how' },
     { id: 'taste',
-      title: 'It asks. You answer. That is it.',
-      sub: 'Every question is two answers and neither is wrong. Have a go — right now, honestly:',
+      title: 'It asks. You answer. You point.',
+      sub: 'Every question is two answers and neither is wrong — and when the dish lands, if it ' +
+        'is close but not right, you point it lighter, spicier or sooner instead of starting ' +
+        'over. Have a go — right now, honestly:',
       next: 'Next' },
     { id: 'more',
       title: 'There is more in here than the game.',

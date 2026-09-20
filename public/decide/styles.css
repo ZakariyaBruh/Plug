@@ -3555,10 +3555,50 @@ body.is-beaming { overflow: hidden; }
 /* The allergy line. Set apart from the caveats above it with a rule rather
    than with colour, because it has to stay legible when no diet has been
    chosen and there are no caveats above it to be set apart from. */
-/* The line under the verdict actions. Quiet, and never competing with the
-   button it is describing. */
-.verdict-free { margin-top: var(--s3); max-width: 26rem; }
-.verdict-free b { color: var(--ink-2); font-weight: 600; }
+/* ==========================================================================
+   Steering — the row under the verdict that says which way to go
+   ========================================================================== */
+
+.steer { margin-top: var(--s4); }
+
+.steer-lead {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  letter-spacing: .02em;
+  margin-bottom: var(--s2);
+}
+
+/* Wraps rather than scrolls: there are never more than four of these and a
+   row that scrolls sideways hides the option somebody wanted. */
+.steer-row { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+.steer-btn {
+  min-height: var(--tap);
+  padding: .55rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--hair-lit);
+  background: none;
+  color: var(--ink-2);
+  font-family: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  transition: color var(--fast) var(--ease), border-color var(--fast) var(--ease),
+    background var(--fast) var(--ease);
+}
+
+.steer-btn:hover { color: var(--ink); border-color: var(--amber); }
+
+/* The last one in the row is the plain veto. Quieter than the directions,
+   because pointing somewhere is the thing worth doing and "no" is the
+   fallback, which is the opposite of how this used to read. */
+.steer-btn.is-plain { border-style: dashed; color: var(--ink-3); }
+.steer-btn.is-plain:hover { color: var(--ink-2); }
+
+.steer-btn[disabled] { opacity: .45; cursor: default; }
 
 .diet-allergy {
   margin-top: var(--s3);

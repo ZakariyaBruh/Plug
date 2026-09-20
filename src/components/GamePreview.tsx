@@ -7,9 +7,13 @@ import {
   REAL_QUESTIONS,
   decide,
   replyWords,
+  steersFor,
   stillStanding,
+  withSteer,
   type Answers,
+  type PreviewTag,
   type Reply,
+  type Steer,
 } from '#/lib/preview'
 
 /*
@@ -43,16 +47,36 @@ export function GamePreview() {
   const [answers, setAnswers] = useState<Answers>({})
   const [at, setAt] = useState(0)
   const [done, setDone] = useState(false)
+  /* What the last steer said back, so the answer acknowledges being pointed. */
+  const [said, setSaid] = useState<string | null>(null)
+  /*
+   * Axes already pushed. Without this the direction you just took gets offered
+   * straight back to you — every answer here is stated, so a steer flips one,
+   * and the flip is itself flippable. Two taps and you are back where you were,
+   * which reads as a broken toy rather than as steering. One push per axis.
+   */
+  const [pushed, setPushed] = useState<PreviewTag[]>([])
 
   const question = PREVIEW_QUESTIONS[at]
   const left = useMemo(() => stillStanding(answers).length, [answers])
   const verdict = useMemo(() => (done ? decide(answers) : null), [done, answers])
+  const steers = useMemo(
+    () =>
+      verdict
+        ? steersFor(answers, verdict.dish)
+            .filter((pick) => !pushed.includes(pick.tag))
+            .slice(0, 3)
+        : [],
+    [answers, pushed, verdict],
+  )
 
   const answer = useCallback(
     (said: Reply) => {
       if (done) return
       const next = { ...answers, [PREVIEW_QUESTIONS[at].tag]: said }
       setAnswers(next)
+      setSaid(null)
+      setPushed([])
       if (at + 1 < PREVIEW_QUESTIONS.length) {
         setAt(at + 1)
         return
@@ -69,7 +93,29 @@ export function GamePreview() {
     setAnswers({})
     setAt(0)
     setDone(false)
+    setSaid(null)
+    setPushed([])
   }, [])
+
+  /*
+   * POINTING, WHICH IS THE WHOLE PRODUCT.
+   *
+   * An answer you can only accept or refuse is a machine saying no at you. One
+   * you can push — lighter, hotter, sooner — is the thing this app actually
+   * does, so the preview has to do it too or it is advertising the old version.
+   * A steer changes one answer and re-decides; nothing is thrown away and the
+   * count of what is still standing moves with it.
+   */
+  const steer = useCallback(
+    (pick: Steer) => {
+      const next = withSteer(answers, pick)
+      setAnswers(next)
+      setSaid(pick.said)
+      setPushed((was) => [...was, pick.tag])
+      track('preview_steered', { toward: pick.label, dish: decide(next).dish.name })
+    },
+    [answers],
+  )
 
   /*
    * The keyboard, because the app plays entirely from the keyboard and a
@@ -107,11 +153,11 @@ export function GamePreview() {
           Try it here
         </p>
         <h2 className="mt-2 text-3xl font-bold">
-          {done ? 'That took about fifteen seconds.' : 'Five questions. One answer.'}
+          {done ? 'Now push it around.' : 'Five questions. One answer.'}
         </h2>
         <p className="mt-3 max-w-xl text-[var(--text-dim)]">
           {done
-            ? `The real game asks about eight, out of ${REAL_QUESTIONS}, over the whole catalogue.`
+            ? 'Not quite it? Point it lighter, hotter, sooner — it answers again. That is the whole app: you never have to know what you want, only which way to lean.'
             : `A short version of the real thing — five of its questions over ${PREVIEW_DISHES.length} of its ${DISH_COUNT} dishes. Nothing is saved and there is nothing to fill in.`}
         </p>
 
@@ -199,7 +245,7 @@ export function GamePreview() {
           ) : verdict ? (
             <div className="fade-in-up text-center">
               <p className="text-xs font-semibold uppercase tracking-widest text-[var(--amber)]">
-                You should eat
+                {said ?? 'You should eat'}
               </p>
               <p className="mt-4 text-6xl" aria-hidden="true">
                 {verdict.dish.icon}
@@ -225,14 +271,47 @@ export function GamePreview() {
                 </p>
               ) : null}
 
+              {/*
+                  POINT IT SOMEWHERE. Up to three directions, each one a real
+                  answer changed and the whole thing decided again — not a
+                  shortlist, not a "no thanks". The directions offered are only
+                  the ones that would actually move: a dish already crunchy is
+                  never offered crunchier.
+              */}
+              {steers.length > 0 ? (
+                <div className="mt-7">
+                  <p className="text-sm text-[var(--text-dim)]">Close? Point me somewhere.</p>
+                  <div className="mt-3 flex flex-wrap justify-center gap-2.5">
+                    {steers.map((pick) => (
+                      <button
+                        key={pick.tag}
+                        type="button"
+                        onClick={() => steer(pick)}
+                        className="rounded-full border border-[var(--border)] bg-[var(--bg-raised)] px-5 py-2.5 text-sm font-semibold hover:border-[var(--amber)] hover:bg-[var(--amber-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--amber)]"
+                      >
+                        {pick.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* Five axes, five pushes, then this preview has nothing left to
+                   lean on — which is a fact about the trailer, not the app, and
+                   saying so is better than the row quietly vanishing. */
+                <p className="mt-7 text-sm text-[var(--text-dim)]">
+                  That is every direction this little version has. The real one has more of them,
+                  and more menu to move through.
+                </p>
+              )}
+
               {/* The point of the whole section. It says what the real thing
                   has that this does not, in numbers, and then gets out of the
                   way — one loud button, one quiet one. */}
               <div className="mt-8 border-t border-[var(--border)] pt-8">
                 <p className="mx-auto max-w-md text-[var(--text-dim)]">
-                  That was a fifth of the questions over a fifth of the menu. The real one has{' '}
-                  <b className="text-[var(--text)]">{DISH_COUNT} dishes</b>, a recipe behind every
-                  one of them, and it remembers what you picked.
+                  That was five of {REAL_QUESTIONS} questions over a fifth of the menu. The real one
+                  has <b className="text-[var(--text)]">{DISH_COUNT} dishes</b>, a recipe behind
+                  every one of them, more directions to push in, and it remembers what you picked.
                 </p>
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                   <a

@@ -16,7 +16,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="morsels45">
 <meta property="og:title" content="morsels45 — what should you eat?">
-<meta property="og:description" content="A handful of either-or questions and you have an answer. 327 dishes, no sign-up, and an answer in about twenty seconds.">
+<meta property="og:description" content="A handful of either-or questions and you have an answer &mdash; then point it lighter, spicier or sooner until it is right. 327 dishes, no sign-up, about twenty seconds.">
 <meta property="og:url" content="https://morsels45-app.whop.site/decide/">
 <meta property="og:image" content="https://morsels45-app.whop.site/site-card.png">
 <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
 <meta property="og:image:alt" content="morsels45 — an assistant for working out what to eat">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="morsels45 — what should you eat?">
-<meta name="twitter:description" content="A handful of either-or questions and you have an answer. 327 dishes, no sign-up, and an answer in about twenty seconds.">
+<meta name="twitter:description" content="A handful of either-or questions and you have an answer &mdash; then point it lighter, spicier or sooner until it is right. 327 dishes, no sign-up, about twenty seconds.">
 <meta name="twitter:image" content="https://morsels45-app.whop.site/site-card.png">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#17171a">
@@ -154,6 +154,10 @@
         <li><span class="welcome-point-icon" aria-hidden="true">&#127860;</span>
           <span class="welcome-point-body"><b>One answer, not a list.</b>
           Forty things to scroll through is the problem, not the solution.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#129517;</span>
+          <span class="welcome-point-body"><b>Close? Point me.</b>
+          Lighter, spicier, sooner &mdash; I answer again that way. You never have to know what
+          you want, only which way to lean.</span></li>
         <li><span class="welcome-point-icon" aria-hidden="true">&#9201;&#65039;</span>
           <span class="welcome-point-body"><b>About eight questions.</b>
           Usually under a minute, start to dinner.</span></li>
@@ -289,9 +293,9 @@
          two screens are the same product and used to end on a promise to read
          minds. An assistant asks. -->
     <h1 class="landing-ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s what I&rsquo;m for.</em></h1>
-    <p class="landing-sub">A few easy either-ors &mdash; sweet or savoury, hot or cold, hands or
-    cutlery. I rule out everything you don&rsquo;t eat, and hand you one answer with the recipe
-    behind it.</p>
+    <p class="landing-sub">A few easy either-ors &mdash; sweet or savoury, hot or cold. Then one
+    answer, with the recipe behind it. Close but not quite? Point me lighter, spicier, sooner, and
+    I answer again that way.</p>
 
     <div class="landing-actions">
       <button class="go go-big" id="landing-start">
@@ -681,6 +685,23 @@
               <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
             </span>
           </button>
+          <!-- =============================================================
+               STEERING, WHICH IS THE POINT AND WAS MISSING.
+               The only thing you could say about a dish you did not want was
+               "no". That is a veto, not a conversation — you could reject
+               the answer but you could not point, so the app kept guessing
+               and you kept declining, which is an exhausting way to be
+               helped. These say which WAY to go, and the next dish is
+               different in that direction because the tag goes into the same
+               engine the questions feed.
+               Built in app.js (paintSteers), because which directions are
+               worth offering depends on the dish on screen: there is no
+               point offering "milder" for a bowl of cereal.
+               ============================================================= -->
+          <div class="steer" id="steer" hidden>
+            <p class="steer-lead" id="steer-lead">Close? Point me somewhere.</p>
+            <div class="steer-row" id="steer-row"></div>
+          </div>
           <div class="verdict-side">
             <button class="quiet" id="reject-btn">Not quite</button>
             <button class="quiet" id="share-btn">Share this</button>
@@ -690,13 +711,6 @@
             <a class="quiet" id="maps-btn" target="_blank" rel="noopener noreferrer">Search Maps near me</a>
             <button class="quiet" id="order-btn">Order it together <span class="tag-premium">Premium</span></button>
           </div>
-          <!-- Said out loud, because the thing that makes a guessing game
-               tiring is not being wrong, it is not knowing what being wrong
-               costs. It costs one tap, it takes a second, and the dish does
-               not come back. Somebody who knows that taps "Not quite"
-               happily instead of sitting there weighing it up. -->
-          <p class="fine verdict-free">Not it? <b>Not quite</b> takes a second, and I will not
-          offer that one again this round.</p>
         </div>
 
         <div class="alternates" id="alternates">
