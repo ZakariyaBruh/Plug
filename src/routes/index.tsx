@@ -11,7 +11,6 @@ import {
   DISH_COUNT,
   OFFER,
   OFFER_SHORT,
-  PRICE,
   PRICE_VALUE,
   PREMIUM_HEADLINES,
   SITE_CARD,
@@ -24,7 +23,6 @@ import {
   THE_INSIGHT,
   THE_JOBS,
   WHAT_IT_IS,
-  TRIAL_DAYS,
   pageHead,
   track,
 } from '#/lib/site'
@@ -181,10 +179,16 @@ function HomePage() {
             <InstallApp />
 
             <ul className="mx-auto mt-14 grid max-w-2xl grid-cols-3 gap-4 text-center">
+              {/* The third of these was the price, which put the ask above
+                  the gift — the wrong way round, and the one ordering
+                  mistake that reliably costs you the reader. Time to an
+                  answer is the actual promise, it is measured rather than
+                  claimed, and the price is two lines up on its own button
+                  and four sections down in full. */}
               {[
                 [String(DISH_COUNT), 'dishes'],
                 ['8', 'questions to an answer'],
-                [PRICE, `a month, after ${TRIAL_DAYS} free days`],
+                ['20s', 'from hungry to decided'],
               ].map(([n, label]) => (
                 <li key={label} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-raised)] px-3 py-5">
                   <b className="block text-2xl font-bold sm:text-3xl">{n}</b>
@@ -355,6 +359,15 @@ function HomePage() {
                 >
                   Everything in it
                 </Link>
+                {/* At the moment of the ask, not buried in the footer.
+                    Somebody deciding whether to hand over a card is exactly
+                    the reader that page is for. */}
+                <p className="mt-4 text-xs text-[var(--text-dim)]">
+                  <Link to="/honesty" className="underline underline-offset-4 hover:text-[var(--text)]">
+                    Every persuasive trick on this page, listed
+                  </Link>{' '}
+                  — including the four we will not use.
+                </p>
                 {viewer.hasPremium ? (
                   <a
                     href="/decide/"

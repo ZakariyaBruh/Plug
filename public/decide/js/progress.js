@@ -240,6 +240,7 @@
       streakBest: 0,
       lastPlayed: null,       // YYYY-MM-DD
       plan: null,             // { id, hour, phrase, at } — see PLAN_CUES
+      resume: null,           // { code, at } — half a decide game, see app.js
       nightOwl: false,
       earlyBird: false,
       badges: [],

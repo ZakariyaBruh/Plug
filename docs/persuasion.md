@@ -130,6 +130,19 @@ Effort makes a thing feel more valuable and more yours. The profile is
 something you build — rules, tastes, the dishes you struck off — so the app
 shows it as a built thing with a count, rather than as settings.
 
+### The Ovsiankina effect — resuming an interrupted decision
+The memory half of the Zeigarnik effect did not survive the 2025
+meta-analysis; the resumption half did — people pulled away from a task show a
+strong tendency to go back and finish it. Four answers given and a phone call
+arriving is exactly that, and the only thing previously on offer afterwards
+was the first question again, which is not a resumption but a punishment for
+being interrupted. Costs nothing to keep: the same two-characters-per-answer
+packing the Together links use, in a profile already written on every answer.
+It expires at six hours, and the expiry is the honest part — stale answers
+handed back as though they still counted would make the app confidently wrong
+rather than merely forgetful.
+→ `public/decide/js/app.js` (`saveResume`, `liveResume`, `resumeGame`)
+
 ### Commitment and consistency — the small yes first
 A playable preview on the landing page is a fifteen-second yes before the ask.
 It is not a teaser: it uses the real questions, the real wording and real

@@ -711,6 +711,7 @@
     var played = state.decisions > 0;
     var favourites = state.favourites || [];
 
+    paintResume();
     $('intro-fav-wrap').hidden = favourites.length === 0;
 
     /*
@@ -1583,6 +1584,93 @@
       out.push({ tag: Data.QUESTIONS[at].tag, value: value });
     }
     return out.length ? out : null;
+  }
+
+  /*
+   * HALF A DECISION, KEPT.
+   *
+   * People pulled away from a task show a strong tendency to go back and
+   * finish it — the Ovsiankina half of the Zeigarnik effect, and the half
+   * that came through the 2025 meta-analysis intact (the memory claim did
+   * not). Four answers given and a phone call arriving is exactly that, and
+   * until now the only thing on offer afterwards was the first question
+   * again, which is not a resumption, it is a punishment for being
+   * interrupted.
+   *
+   * Costs nothing to keep: the same two-characters-per-answer packing the
+   * Together links use, in the profile that is already being written to
+   * disk on every answer anyway.
+   *
+   * IT EXPIRES, and the expiry is the honest part. What somebody felt like
+   * at lunchtime is not what they feel like at eight, and handing back stale
+   * answers as though they still counted would be worse than losing them —
+   * the app would be confidently wrong rather than merely forgetful.
+   *
+   * ORDINARY GAMES ONLY. Knockout, Blitz, Together and the rest have their
+   * own running order and their own live state; half of one of those is not
+   * a thing five characters can describe.
+   */
+  var RESUME_HOURS = 6;
+  var RESUME_MIN = 2;   // one answer back is not worth an offer
+
+  function saveResume() {
+    if (shortcut || together.live) return;
+    var answers = game.answers || [];
+    if (answers.length < RESUME_MIN || panel !== 'question') return;
+    progress.state.resume = { code: packAnswers(answers), at: Date.now() };
+    progress.save();
+  }
+
+  function clearResume() {
+    if (!progress.state.resume) return;
+    progress.state.resume = null;
+    progress.save();
+  }
+
+  /** The saved game if there is a live one, otherwise null. */
+  function liveResume() {
+    var saved = progress.state.resume;
+    if (!saved || !saved.code) return null;
+    var age = Date.now() - (saved.at || 0);
+    if (age < 0 || age > RESUME_HOURS * 3600000) { clearResume(); return null; }
+    var answers = unpackAnswers(saved.code);
+    if (!answers || answers.length < RESUME_MIN) { clearResume(); return null; }
+    return { answers: answers, at: saved.at };
+  }
+
+  function resumeGame() {
+    var saved = liveResume();
+    if (!saved) return;
+    hideLanding();
+    together.live = false;
+    together.sets = [];
+    together.sending = false;
+    resetGame();
+    applyKnobs();
+    setView('decide');
+
+    /*
+     * Replayed through the engine rather than assigned, so the weights, the
+     * faults and the question bank all end up exactly where they would have
+     * been had nobody been interrupted. An answer whose tag has since left
+     * the catalogue is dropped by unpackAnswers before it gets here.
+     */
+    saved.answers.forEach(function (a) { game.answer(a.tag, a.value); });
+    clearResume();
+    step();
+  }
+
+  function paintResume() {
+    var wrap = $('landing-resume');
+    if (!wrap) return;
+    var saved = liveResume();
+    wrap.hidden = !saved;
+    if (!saved) return;
+
+    var n = saved.answers.length;
+    $('resume-btn').textContent = 'Pick up where you left off';
+    $('resume-note').textContent = n + ' ' + (n === 1 ? 'answer' : 'answers') +
+      ' in already. Or start again below — nothing is lost either way.';
   }
 
   function inviteUrl(code) {
@@ -3799,6 +3887,7 @@
     var asked = game.answers.length;
     game.answer(current.tag, value);
     step();
+    saveResume();
 
     // After step(), so the new question's render doesn't clear it.
     $('reaction').textContent = line;
@@ -3828,6 +3917,9 @@
   var shownItem = null;
 
   function reveal() {
+    // The task is no longer interrupted — it has an answer on it. Anything
+    // after this point is a different kind of unfinished.
+    clearResume();
     rankedItems = game.shortlist();
     var top = rankedItems[0];
 
@@ -8616,6 +8708,9 @@
     together.live = false;
     together.sets = [];
     together.sending = false;
+    // Asking for a fresh game is a decision about the old one. Kept, it would
+    // come back on the next visit as an offer nobody wanted twice.
+    clearResume();
     resetGame();
     applyKnobs();
     setView('decide');
@@ -8697,6 +8792,7 @@
   $('choice-neither').addEventListener('click', function (e) { answer('neither', e.currentTarget); });
   $('restart-btn').addEventListener('click', restart);
   $('accept-btn').addEventListener('click', accept);
+  $('resume-btn').addEventListener('click', resumeGame);
   $('plan-cal').addEventListener('click', downloadPlan);
   $('plan-clear').addEventListener('click', function () {
     progress.clearPlan();

@@ -106,6 +106,11 @@ export const TECHNIQUES: Technique[] = [
     here: 'Each screen offers one obvious next thing. Nothing has been removed to achieve that — every mode, every list and every setting is still here, just not all shouting at once.',
   },
   {
+    name: 'Unfinished business',
+    what: 'A task you were pulled away from nags at you, and people show a strong pull to go back and finish one.',
+    here: 'If you get four questions in and something interrupts you, the front screen offers to pick up where you left off instead of making you start again. It expires after six hours, because what you felt like at lunchtime is not what you feel like at eight and handing those answers back as though they still counted would be worse than losing them.',
+  },
+  {
     name: 'A small yes first',
     what: 'Somebody who has already done a small version of a thing is far more likely to do the larger one.',
     here: 'The playable preview on the front page. It is not a teaser: it uses the real questions, the real wording and real dishes, and hands you the real thing at the end.',

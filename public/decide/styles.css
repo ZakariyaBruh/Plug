@@ -4738,3 +4738,23 @@ body.is-welcoming { overflow: hidden; }
   font-variant-numeric: tabular-nums;
   min-width: 2.2rem;
 }
+
+
+/* ------------------------------------------------------- resume a decision */
+/*
+ * Above the big button rather than among the quiet row beneath it: somebody
+ * four answers in has a better offer here than starting again, and burying it
+ * with "Read about food" would mean nobody ever took it. Still not styled as
+ * the primary action — a fresh game has to stay the obvious thing for the
+ * other ninety per cent of visits.
+ */
+.landing-resume {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  margin: 0 0 var(--s4);
+  padding-left: .9rem;
+  border-left: 2px solid var(--amber);
+}
+
+.landing-resume .link-btn { font-size: var(--t-md); font-weight: 600; text-align: left; }
