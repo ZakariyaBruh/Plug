@@ -157,6 +157,70 @@ export const ANNUAL_SAVING = Math.round((1 - PRICE_ANNUAL_VALUE / (PRICE_VALUE *
  * yearly" — is true of both tiers and there is only one discount to explain.
  */
 export const HOUSEHOLD_SEATS = 2
+
+/*
+ * HOW THE SECOND SEAT ACTUALLY WORKS, IN ORDER.
+ *
+ * Household was buyable and nowhere explained. It sat behind one toggle on
+ * the plan picker with a two-line blurb, so the only way to find out what you
+ * were buying was to buy it — and "two people, one subscription" raises
+ * exactly the questions this answers: do we share a login, does it mix our
+ * tastes together, what happens if we split up, what happens if I cancel.
+ *
+ * Written as steps because the seat is handed over rather than bought: the
+ * buyer makes an invitation and sends it, and the person who opens it gets
+ * their own account. Nobody can guess that from a price.
+ */
+export const HOUSEHOLD_STEPS: { name: string; blurb: string }[] = [
+  {
+    name: 'One of you subscribes',
+    blurb:
+      'Whoever pays picks Household at checkout instead of Just me. Everything Premium switches on for them straight away, exactly as it would on the single plan.',
+  },
+  {
+    name: 'They make an invitation',
+    blurb:
+      'On their account page there is a Household panel with one button. It makes a link. That is the whole of it — no email to type in, no code to read out, nothing for the other person to set up in advance.',
+  },
+  {
+    name: 'They send the link to whoever they eat with',
+    blurb:
+      'However they like: a message, a shared note, read aloud across the kitchen. The link works once and only until the seat is taken, so a forwarded copy is refused rather than quietly handing Premium to a group chat.',
+  },
+  {
+    name: 'That person opens it and has Premium',
+    blurb:
+      'They sign in with a Whop account — free, and most people can make one in a few seconds — and it is on. No card, and nothing to cancel on their side.',
+  },
+]
+
+/*
+ * The questions "two people, one subscription" always raises, answered before
+ * anybody has to ask. Each of these is a real property of how the seat is
+ * built, not a reassurance: see lib/household.ts.
+ */
+export const HOUSEHOLD_FACTS: { name: string; blurb: string }[] = [
+  {
+    name: 'Two accounts, not a shared login',
+    blurb:
+      'They get their own tastes, their own rules, their own saved dishes and their own streak. Nothing of yours is visible to them and nothing of theirs is mixed into your picks. You are not passing a password around.',
+  },
+  {
+    name: 'Your rules stay yours',
+    blurb:
+      'If you are halal and they are not, or one of you cannot eat shellfish, neither setting touches the other. The only thing you share is the bill.',
+  },
+  {
+    name: 'You can take the seat back',
+    blurb:
+      'Same panel, one button. Their Premium goes off and the seat is free to give to somebody else. Useful when a flatmate moves out.',
+  },
+  {
+    name: 'It ends when your subscription does',
+    blurb:
+      'Cancel and both seats stop at the end of the period you already paid for. Theirs is not a separate subscription and they will never be charged for anything.',
+  },
+]
 export const PRICE_HOUSEHOLD_VALUE = 7.99
 export const PRICE_HOUSEHOLD = '$7.99'
 export const PRICE_HOUSEHOLD_MONTHLY = `${PRICE_HOUSEHOLD}/month`

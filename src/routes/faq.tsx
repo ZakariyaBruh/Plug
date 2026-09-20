@@ -30,6 +30,10 @@ const FAQS: [string, string][] = [
     `${DIET_FREE} It holds for every decision, every mode and every list — Tonight’s pick, the shortlist, the week plan and the daily shelf included. ${DIET_FREE_WHY}`,
   ],
   [
+    'Can two of us share one subscription?',
+    'Yes — that is the Household plan. One of you pays, and on your account page there is a button that makes an invitation link. Send it to whoever you eat with; they open it, sign in, and Premium is on for them. They get their own account: their own tastes, their own dietary rules, their own saved dishes. Nothing of yours is visible to them and nothing of theirs changes your picks. You can take the seat back whenever you like, and it ends when your subscription does — they are never charged for anything. The full walkthrough is on the Premium page.',
+  ],
+  [
     'Do I need an account?',
     'Not to play. Sign in with Whop when you want Premium to be on at another device — it is bound to the Whop account you pay with, not to a licence key or this browser. The features travel; what the game has learned about you does not, which is the next question down.',
   ],

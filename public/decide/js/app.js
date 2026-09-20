@@ -5123,7 +5123,10 @@
   function rejectCurrent() {
     if (busy) return;
     rejections++;
-    Sound.reject();
+    // Sound.next, not Sound.reject. See sound.js: this is the player
+    // steering, not the player getting something wrong, and it is the most
+    // common tap in the app.
+    Sound.next();
     // Reject whichever dish is actually on screen — the top pick, or an
     // alternate the player swapped to — not necessarily game.best().
     var dropped = shownItem || game.best().item;

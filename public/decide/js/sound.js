@@ -71,6 +71,17 @@
     bust:    function () { note(300, 0, 0.15, 'sawtooth', 0.09); note(150, 0.11, 0.34, 'sine', 0.09); },
 
     shrug:   function () { note(360, 0, 0.10, 'sine', 0.08); },
+
+    /*
+     * Turning a dish down is not an error and should not sound like one.
+     *
+     * "Not quite" played `reject` — a descending sawtooth buzz, the noise a
+     * form makes when you have typed your password wrong. Tapping it is the
+     * player steering, which is the single most common thing they do here,
+     * and the app was scolding them for it every time. This goes UP, briefly,
+     * and means "right, next".
+     */
+    next:    function () { note(440, 0, 0.05, 'triangle', 0.08); note(587, 0.05, 0.09, 'triangle', 0.08); },
     back:    function () { note(300, 0, 0.09, 'sine', 0.08); },
     roll:    function () { note(880, 0, 0.03, 'square', 0.03); },
     reveal:  function () { chord([523, 659, 784], 0.07, 0.32, 'triangle', 0.13); },

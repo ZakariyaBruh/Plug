@@ -120,11 +120,20 @@ function Switch({
 export function PlanPicker({
   size = 'lg',
   heading = true,
+  opensOn = 'solo',
 }: {
   size?: 'lg' | 'sm'
   heading?: boolean
+  /*
+   * Which side the "who it covers" switch starts on. Solo nearly everywhere,
+   * because most people are buying for themselves — and household at the foot
+   * of the section that has just spent four steps explaining the household
+   * plan, where opening on "Just me" made the reader undo the page's own
+   * argument before they could act on it.
+   */
+  opensOn?: 'solo' | 'household'
 }) {
-  const [who, setWho] = useState<'solo' | 'household'>('solo')
+  const [who, setWho] = useState<'solo' | 'household'>(opensOn)
   const [when, setWhen] = useState<'yearly' | 'monthly'>('yearly')
 
   const plan = PLANS[`${who}-${when}` as keyof typeof PLANS]
@@ -167,7 +176,11 @@ export function PlanPicker({
       {who === 'household' ? (
         <p className="mt-2 max-w-sm text-sm text-[var(--text-dim)]">
           One subscription, {HOUSEHOLD_SEATS} accounts. You hand the second seat to whoever you
-          eat with and they get their own tastes, their own rules and their own saved dishes.
+          eat with and they get their own tastes, their own rules and their own saved dishes.{' '}
+          {/* Nobody should have to buy a thing to find out how it works. */}
+          <a href="/premium#household" className="text-[var(--amber)] underline underline-offset-4">
+            How the seat works
+          </a>
         </p>
       ) : null}
 
