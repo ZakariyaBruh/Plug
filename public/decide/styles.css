@@ -4758,3 +4758,15 @@ body.is-welcoming { overflow: hidden; }
 }
 
 .landing-resume .link-btn { font-size: var(--t-md); font-weight: 600; text-align: left; }
+
+
+/*
+ * The runner-up on the landing. Not a second primary button — one loud thing
+ * per screen, and "Decide for me" is it — but lifted out of the quiet row so
+ * the one-tap route is findable by somebody who has no patience tonight.
+ */
+.landing-second {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom-color: var(--amber);
+}

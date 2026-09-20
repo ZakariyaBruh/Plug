@@ -486,9 +486,19 @@ export const PREMIUM_HEADLINES: { name: string; blurb: string }[] = [
       'Cook mode takes it one step at a time with the timer built in. The shopping list goes to the shop with you. And if you would rather not cook, it finds somewhere near you that actually serves the thing.',
   },
   {
+    /*
+     * The one line on this page that names who "you" is.
+     *
+     * Shared identity is the strongest thing in the persuasion literature and
+     * the easiest to fake badly — a brand inventing a tribe to belong to. The
+     * honest version needs no invention: the argument this product exists to
+     * settle is one that happens between two people, and it is a very
+     * specific two people who both recognise it instantly. Saying so is not a
+     * appeal to belonging, it is a description of the customer.
+     */
     name: 'Two of you, one answer',
     blurb:
-      `Household covers both of you on one subscription, each with your own tastes and your own rules. Together settles it on one phone in about twenty seconds. The shared browser orders it from two, with a cursor each.`,
+      `The argument this whole thing exists to settle happens between two people, so a subscription covering one of them answers half of it. Household covers both, each with your own tastes and your own rules. Together settles it on one phone in about twenty seconds. The shared browser orders it from two, with a cursor each.`,
   },
 ]
 

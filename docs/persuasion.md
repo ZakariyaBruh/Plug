@@ -119,6 +119,18 @@ every dietary rule are free and permanently free. That was already true and
 nowhere stated near the ask, which is reciprocity with the receipt thrown
 away.
 
+### Moment of desire — the offer where the want is
+An offer made at the moment somebody has demonstrated they want the thing
+converts far better than the same offer made on a rotation. Tapping a locked
+feature used to fire a toast and open the Whop checkout in the same gesture;
+it now opens a card naming the feature, with the trial, the price and the exit
+on it, and a "not now" the same size as the yes. It spends no prompt budget
+and is not counted as one of the rotating pitches, because it is not one —
+somebody asked for it. The permanent "not interested" is hidden on this card:
+that switch silences unprompted pitches, and offering it to somebody who just
+asked a question would be offering to turn off the answer.
+→ `public/decide/js/app.js` (`goPremium`, `openAd`)
+
 ### Loss aversion — framed on what is already yours
 Losing is felt about twice as strongly as gaining. Applied only where
 something is genuinely at stake and genuinely yours: at the end of a trial, a

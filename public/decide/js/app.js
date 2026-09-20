@@ -281,10 +281,52 @@
    * so the body does not need to say it again — and once it stops saying it,
    * there is no verb left to disagree with anything.
    */
+  /*
+   * THE MOMENT SOMEBODY REACHES FOR A LOCKED THING.
+   *
+   * This used to fire a toast and open the Whop checkout immediately, in the
+   * same gesture. Two things were wrong with that, and the second is the one
+   * that matters.
+   *
+   * It converts worse. The strongest moment to make an offer is the one where
+   * somebody has just demonstrated they want the thing — and the way to use
+   * that moment is to name what they reached for, not to skip straight past
+   * it to a card form. A checkout that arrives before an explanation is
+   * answering a question nobody has asked yet.
+   *
+   * And it fails the test this product sets itself: an influence you can see,
+   * and can decline at the same cost. Being moved to a payment page by a tap
+   * you thought would open a recipe is neither. There is now a sheet with the
+   * feature named on it and a "not now" the same size as the yes.
+   *
+   * The card is built here rather than added to ADS because it is not a
+   * prompt: it spends no budget, waits for no spacing, and appears only
+   * because somebody asked for it. `preview` is passed for exactly that
+   * reason — this is not one of the rotating pitches and must not be counted
+   * as one.
+   */
   function goPremium(what) {
-    toast('\u{2728}', 'Part of Premium',
-      what + ' — seven days free, opening checkout\u2026');
-    premiumApi.openUpgrade();
+    var named = what || 'This';
+    openAd({
+      id: 'desire',
+      kind: 'plus',
+      icon: '\u2728',
+      title: named + ' is part of Premium',
+      body: 'Seven days free, and it switches on everything marked Premium — not just this ' +
+            'one thing. Nothing is charged until the week is up, and cancelling is one link ' +
+            'on your account page.',
+      fine: 'Deciding stays free. Every dish, every recipe and everything you do not eat are ' +
+            'free permanently, whatever you do here.',
+      cta: 'Seven days free',
+      /*
+       * No "Not interested" on this one. That button silences the rotating
+       * pitches for good, which is the right thing to offer somebody we
+       * interrupted and quite the wrong thing to offer somebody who opened
+       * this themselves — they would be turning off the answer to a question
+       * they had just asked.
+       */
+      noNever: true
+    }, true);
   }
 
   // Paid content is shown blurred rather than removed. An empty pane says
@@ -5239,6 +5281,9 @@
     // "not for me" on an affiliate offer ends every affiliate offer, and it
     // should not take somebody three refusals to discover that.
     $('ad-never').textContent = ad.kind === 'aff' ? 'Not for me' : 'Not interested';
+    // See goPremium: a card somebody opened themselves does not get to offer
+    // them a switch that turns off future answers.
+    $('ad-never').hidden = !!ad.noNever;
 
     if (!preview) {
       var st = progress.state;

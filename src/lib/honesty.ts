@@ -101,6 +101,11 @@ export const TECHNIQUES: Technique[] = [
     here: 'Used only where something is genuinely yours and genuinely at stake — what you would stop being able to use if a subscription ended. Never as an invented deadline.',
   },
   {
+    name: 'Offers at the moment you reach for something',
+    what: 'An offer made when you have just shown you want a thing lands far better than the same offer made at random.',
+    here: 'Tapping something marked Premium opens a card naming the thing you tapped, with the price, the trial and how to cancel on it — and a “not now” the same size as the yes. It used to send you straight to a payment page in the same gesture, which converted worse and was not a choice.',
+  },
+  {
     name: 'Fewer choices',
     what: 'Past a handful of options, people take longer and buy less. The famous version is a jam stall: twenty-four flavours drew the bigger crowd and six flavours sold ten times as much.',
     here: 'Each screen offers one obvious next thing. Nothing has been removed to achieve that — every mode, every list and every setting is still here, just not all shouting at once.',
