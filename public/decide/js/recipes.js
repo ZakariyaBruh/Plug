@@ -74,7 +74,7 @@
               'Make four wells, crack an egg into each, cover and cook 5–7 minutes.',
               'Take it off while the yolks still move. Bread is not optional.'] },
     { name: 'Green, with spinach', time: 20, serves: 2, level: 'Easy',
-      ingredients: ['1 onion', '2 garlic cloves', '200g spinach', '100ml cream or yoghurt', '4 eggs', 'Cumin', 'Lemon'],
+      ingredients: ['1 onion', '2 garlic cloves', '200g spinach', '4 eggs', 'Cumin', 'Lemon', 'Olive oil'],
       steps: ['Soften the onion, add garlic and a big pinch of cumin.',
               'Wilt in the spinach a handful at a time, then stir through the cream.',
               'Season well and squeeze in lemon — green shakshuka needs the acid.',
@@ -121,7 +121,7 @@
               'Off the heat, stir in most of the cheese and the mustard powder. Season hard; pasta dulls it.',
               'Fold through the pasta, top with the rest of the cheese and breadcrumbs, bake 20 minutes at 200C.'] },
     { name: 'Stovetop, fifteen minutes', time: 15, serves: 2, level: 'Easy',
-      ingredients: ['200g macaroni', '150ml evaporated milk', '150g cheddar, grated', '1 egg', 'Mustard', 'Pepper'],
+      ingredients: ['200g macaroni', '150ml evaporated milk', '150g cheddar, grated', '1 tsp cornflour', 'Mustard', 'Pepper'],
       steps: ['Cook the pasta, drain, and return to the warm pan off the heat.',
               'Beat the egg into the evaporated milk with a spoon of mustard.',
               'Pour over the pasta and stir hard — the residual heat thickens it.',
@@ -202,7 +202,7 @@
               'Warm the tortillas directly over a flame or in a dry pan until they blister.',
               'Serve with raw onion, coriander and lime, and nothing else. Restraint is the point.'] },
     { name: 'Roast cauliflower', time: 35, serves: 2, level: 'Easy',
-      ingredients: ['1 cauliflower, in small florets', '2 tsp smoked paprika', '1 tsp cumin', 'Tortillas', 'Yoghurt', 'Lime', 'Pickled onion'],
+      ingredients: ['1 cauliflower, in small florets', '2 tsp smoked paprika', '1 tsp cumin', 'Tortillas', '1 avocado', 'Lime', 'Pickled onion'],
       steps: ['Toss the cauliflower with oil, paprika, cumin and salt.',
               'Roast at 220C for 25 minutes until charred at the edges — undercooked cauliflower ruins this.',
               'Thin the yoghurt with lime juice and salt.',
@@ -244,7 +244,7 @@
               'Pile it on, keeping the texture.',
               'Olive oil, chilli, and more salt than you think.'] },
     { name: 'With a soft egg', time: 12, serves: 1, level: 'Easy',
-      ingredients: ['1 avocado', '2 slices bread', '1 egg', 'Vinegar', 'Chilli flakes', 'Lemon'],
+      ingredients: ['1 avocado', '2 slices bread', '2 tbsp tahini', 'Dukkah', 'Chilli flakes', 'Lemon'],
       steps: ['Bring a small pan of water to a bare simmer with a splash of vinegar.',
               'Stir a whirlpool, drop the egg into the middle, cook 3 minutes.',
               'Meanwhile fork the avocado with lemon and salt onto toast.',
@@ -280,7 +280,7 @@
 
   recipes('Smoothie', [
     { name: 'Thick, not watery', time: 5, serves: 1, level: 'Very easy',
-      ingredients: ['1 frozen banana', '150g frozen berries', '150ml milk or oat milk', '2 tbsp yoghurt', '1 tbsp oats'],
+      ingredients: ['1 frozen banana', '150g frozen berries', '150ml oat milk', '1 tbsp nut butter', '1 tbsp oats'],
       steps: ['Frozen fruit, not ice — ice waters it down as it melts.',
               'Liquid goes in the blender first, then the soft things, then the frozen.',
               'Blend on low, then high, stopping to push down rather than adding more liquid.',
@@ -328,9 +328,9 @@
 
   recipes('Roast chicken', [
     { name: 'Simple, high heat', time: 90, serves: 4, level: 'Easy',
-      ingredients: ['1 whole chicken, about 1.6kg', '1 lemon', 'Butter, softened', 'Thyme', 'Salt', 'Potatoes and onions to sit under it'],
+      ingredients: ['1 whole chicken, about 1.6kg', '1 lemon', 'Olive oil', 'Thyme', 'Salt', 'Potatoes and onions to sit under it'],
       steps: ['Dry the skin thoroughly and salt it an hour ahead if you can.',
-              'Push butter and thyme under the breast skin. Halved lemon inside the cavity.',
+              'Work oil and thyme under the breast skin. Halved lemon inside the cavity.',
               'Sit it on top of the halved potatoes and onions so they cook in the fat.',
               'Roast 220C for 20 minutes, then 190C for another 50–60.',
               'Rest 15 minutes, loosely covered, before carving.'] }
@@ -606,7 +606,7 @@
 
   recipes('Popcorn', [
     { name: 'On the hob, properly', time: 10, serves: 2, level: 'Very easy',
-      ingredients: ['80g popcorn kernels', '2 tbsp neutral oil', '30g butter', 'Fine salt'],
+      ingredients: ['80g popcorn kernels', '3 tbsp neutral oil', 'Fine salt'],
       steps: ['Heat the oil with three kernels in, lid on. When they pop, the oil is ready.',
               'Add the rest, take the pan off the heat for 30 seconds, then return it. They pop together this way.',
               'Shake the pan constantly, lid slightly ajar so steam escapes and it stays crisp.',
@@ -633,7 +633,7 @@
 
   recipes('Pretzel', [
     { name: 'Soft pretzels, bicarb bath', time: 90, serves: 6, level: 'Medium',
-      ingredients: ['400g strong flour', '250ml warm water', '7g instant yeast', '1 tsp salt', '60g bicarbonate of soda', '1 egg, beaten', 'Coarse salt'],
+      ingredients: ['400g strong flour', '250ml warm water', '7g instant yeast', '1 tsp salt', '60g bicarbonate of soda', 'Coarse salt'],
       steps: ['Knead a firm dough, prove 45 minutes until doubled.',
               'Roll each piece into a long rope, thin at the ends, and twist into shape.',
               'Boil briefly in water with the bicarb — 30 seconds a side. This is what makes it a pretzel and not bread.',
@@ -660,7 +660,7 @@
 
   recipes('Churros', [
     { name: 'Choux-style, with chocolate', time: 40, serves: 4, level: 'Medium',
-      ingredients: ['250ml water', '120g plain flour', '30g butter', '1 egg', 'Oil for frying', 'Caster sugar and cinnamon', '100g dark chocolate, 100ml cream'],
+      ingredients: ['250ml water', '120g plain flour', '2 tbsp oil', 'Pinch of salt', 'Oil for frying', 'Caster sugar and cinnamon', '100g dark chocolate, 100ml oat milk'],
       steps: ['Boil the water and butter, tip in the flour off the heat and beat to a smooth ball.',
               'Cool 5 minutes, then beat in the egg until glossy.',
               'Pipe straight into 180C oil with a star nozzle, snipping with scissors.',
@@ -756,7 +756,7 @@
 
   recipes('Popsicle', [
     { name: 'Real fruit, no ice shards', time: 10, serves: 6, level: 'Very easy',
-      ingredients: ['500g ripe fruit', '3 tbsp sugar or honey', 'Squeeze of lime', 'Pinch of salt', '2 tbsp yoghurt or coconut milk (optional)'],
+      ingredients: ['500g ripe fruit', '3 tbsp sugar or honey', 'Squeeze of lime', 'Pinch of salt', '2 tbsp coconut milk (optional)'],
       steps: ['Blend the fruit with sugar, lime and salt, and taste it — it should be slightly too sweet.',
               'Freezing dulls sweetness by roughly a third. That is why shop lollies taste of nothing when they melt.',
               'A spoon of yoghurt or coconut milk stops big ice crystals forming.',
@@ -793,7 +793,7 @@
 
   recipes('Iced coffee', [
     { name: 'Cold brew, overnight', time: 720, serves: 4, level: 'Very easy',
-      ingredients: ['100g coarsely ground coffee', '1L cold water', 'Milk', 'Ice'],
+      ingredients: ['100g coarsely ground coffee', '1L cold water', 'Ice'],
       steps: ['Stir the grounds into cold water in a jar. Coarse grind only, or it turns muddy.',
               'Leave 12–18 hours at room temperature or in the fridge.',
               'Strain through a filter or muslin. It keeps a week.',
@@ -802,7 +802,7 @@
 
   recipes('Tea', [
     { name: 'Made properly', time: 5, serves: 1, level: 'Very easy',
-      ingredients: ['1 teabag or 1 tsp loose leaf', 'Freshly drawn water', 'Milk'],
+      ingredients: ['1 teabag or 1 tsp loose leaf', 'Freshly drawn water'],
       steps: ['Fresh water, boiled once. Reboiled water is flat and it does show.',
               'Warm the pot or mug first if you care; it keeps the brew at temperature.',
               'Black tea: full boiling, 3–4 minutes. Green: wait two minutes off the boil, 2 minutes only.',
@@ -1066,12 +1066,12 @@
   recipes('Tteokbokki', [
     { name: 'Fifteen minutes, one pan', time: 15, serves: 2, level: 'Very easy',
       ingredients: ['400g rice cakes', '500ml anchovy or vegetable stock', '3 tbsp gochujang',
-                    '1 tbsp gochugaru', '1 tbsp sugar', '1 tbsp soy sauce', '2 spring onions', '2 boiled eggs'],
+                    '1 tbsp gochugaru', '1 tbsp sugar', '1 tbsp soy sauce', '2 spring onions'],
       steps: ['Soak the rice cakes 10 minutes if they are not fresh, or they stay chalky in the middle.',
               'Bring the stock to a boil and whisk in the pastes, sugar and soy.',
               'Add the rice cakes and simmer, stirring, until the sauce thickens and clings — about 8 minutes.',
               'It gets hotter as it reduces, so taste before you add more chilli.',
-              'Spring onion and halved eggs on top.'] }
+              'Spring onion over the top.'] }
   ]);
 
   recipes('Butter chicken', [
@@ -1186,7 +1186,7 @@
   recipes('Doro wat', [
     { name: 'The onions take an hour', time: 150, serves: 4, level: 'Hard',
       ingredients: ['6 chicken legs', '1kg red onions', '4 tbsp berbere', '100g spiced butter',
-                    '1 tbsp ginger', '4 cloves garlic', '4 hard-boiled eggs', '2 tbsp tej or red wine'],
+                    '1 tbsp ginger', '4 cloves garlic', '4 hard-boiled eggs', '2 tbsp water'],
       steps: ['Chop the onions finely and cook them dry, no fat, on a low heat for a full hour. They collapse into a paste. This is the recipe.',
               'Only then add the butter, garlic and ginger.',
               'Berbere in and cook it out for 10 minutes — raw berbere tastes dusty.',
@@ -1351,13 +1351,13 @@
   recipes('Arepas', [
     { name: 'Warm maize pockets', time: 30, serves: 4, level: 'Easy',
       ingredients: ['250g masarepa (precooked maize flour)', '400ml warm water', '1 tsp salt',
-                    'Butter', 'Cheese, shredded chicken or black beans to fill'],
+                    'Something to fill them with'],
       steps: ['Only masarepa works — ordinary cornmeal or polenta will not hydrate the same way.',
               'Stir the flour into the salted water and let it sit 5 minutes to swell.',
               'Knead until it stops cracking at the edges when you flatten a ball. If it cracks, add water a spoon at a time.',
               'Form discs about 1cm thick. Griddle 5 minutes a side until a crust forms and it sounds hollow.',
               'Finish in the oven 10 minutes if they are thick.',
-              'Split like a pitta while hot, butter inside, then fill.'] }
+              'Split like a pitta while hot, then fill — black beans, avocado, shredded chicken or cheese, whichever you are in the mood for.'] }
   ]);
 
   recipes('Empanadas', [
@@ -1501,7 +1501,7 @@
 
   recipes('Moussaka', [
     { name: 'The proper bake', time: 105, serves: 6, level: 'A project',
-      ingredients: ['3 aubergines, sliced', '500g lamb mince', '1 onion, 3 garlic cloves', '400g chopped tomatoes', '1 tsp cinnamon', '50g butter, 50g flour, 600ml milk', '1 egg yolk', '60g cheese'],
+      ingredients: ['3 aubergines, sliced', '500g lamb mince', '1 onion, 3 garlic cloves', '400g chopped tomatoes', '1 tsp cinnamon', '50g butter, 50g flour, 600ml milk', '1 tsp cornflour', '60g cheese'],
       steps: ['Salt the aubergine slices for 20 minutes, pat dry, then griddle or roast until soft and bronzed.',
               'Brown the lamb with the onion and garlic. Add tomatoes and cinnamon and cook down 25 minutes until thick, not wet.',
               'Make a béchamel: butter, flour, then milk in slowly. Off the heat, beat in the yolk and half the cheese.',
@@ -1629,7 +1629,7 @@
 
   recipes('Dal tadka', [
     { name: 'The everyday one', time: 35, serves: 4, level: 'Easy',
-      ingredients: ['200g toor or masoor dal', '1 tsp turmeric', '1 tomato, chopped', '3 tbsp oil or ghee', '1 tsp cumin seeds', '3 garlic cloves, sliced', '2 dried chillies', '1 tsp garam masala'],
+      ingredients: ['200g toor or masoor dal', '1 tsp turmeric', '1 tomato, chopped', '3 tbsp oil', '1 tsp cumin seeds', '3 garlic cloves, sliced', '2 dried chillies', '1 tsp garam masala'],
       steps: ['Rinse the dal until the water runs clear, then simmer with the turmeric and three times its volume of water for 25 minutes, until it collapses.',
               'Stir in the tomato and a good pinch of salt and cook another 5 minutes.',
               'Heat the oil in a small pan. Add the cumin, then the garlic and chillies, and watch it — the garlic should go gold, not brown.',
@@ -1794,13 +1794,13 @@
 
   recipes('Khichdi', [
     { name: 'The one for when you are ill', time: 30, serves: 2, level: 'Very easy',
-      ingredients: ['100g rice', '100g moong dal', '1/2 tsp turmeric', '1 tbsp oil or ghee', '1 tsp cumin seeds', 'Salt'],
+      ingredients: ['100g rice', '100g moong dal', '1/2 tsp turmeric', '1 tbsp oil', '1 tsp cumin seeds', 'Salt'],
       steps: ['Rinse the rice and dal together until the water clears.',
               'Simmer with the turmeric and 900ml water for 25 minutes, until nothing has its own shape any more. Add water if it tightens.',
               'Fry the cumin in the oil until it darkens and pour it over.',
               'Salt at the table. It should be loose enough to eat with a spoon.'] },
     { name: 'With vegetables', time: 35, serves: 3, level: 'Easy',
-      ingredients: ['100g rice', '100g moong dal', '1 carrot, diced', '100g peas', '1/2 tsp turmeric', '1 tsp cumin', 'Oil or ghee'],
+      ingredients: ['100g rice', '100g moong dal', '1 carrot, diced', '100g peas', '1/2 tsp turmeric', '1 tsp cumin', 'Oil'],
       steps: ['Fry the cumin, add the carrot for 3 minutes.',
               'Rice, dal, peas, turmeric and 900ml water. Simmer 25 minutes.',
               'Mash it slightly against the side of the pan before serving.'] }
@@ -2251,6 +2251,563 @@
       ingredients: ['500ml rice milk', '1/2 tsp ground cinnamon', '2 tbsp sugar', '1/2 tsp vanilla', 'Ice'],
       steps: ['Whisk everything together until the sugar has gone.',
               'Over ice, with more cinnamon on top. Not the real thing, and it takes five minutes.'] }
+  ]);
+
+  /* ---- the fourth intake: breadth ---------------------------------------
+     Mains, fish, sandwiches, soups and puddings for the dishes added to
+     data.js in the same batch. Nothing here uses an ingredient the dish is
+     not tagged for: the tags are the dietary promise and the recipe under
+     them has to keep it. */
+
+
+  recipes('Lamb chops', [
+    { name: 'In a very hot pan', time: 15, serves: 2, level: 'Easy',
+      ingredients: ['4 lamb chops', '1 tbsp oil', 'Rosemary', '2 garlic cloves, bashed', 'Salt'],
+      steps: ['Salt the chops and leave them 20 minutes at room temperature.',
+              'Stand them fat-edge down in a hot dry pan first, held together with tongs, until the fat renders and browns. Three minutes, and it is the best part.',
+              'Lay them flat, 2 minutes a side for pink, with the rosemary and garlic in the fat.',
+              'Rest 5 minutes on a warm plate.'] },
+    { name: 'Marinated and grilled', time: 30, serves: 2, level: 'Very easy',
+      ingredients: ['4 lamb chops', '2 tbsp oil', '1 lemon', 'Oregano', 'Garlic'],
+      steps: ['Marinate in the oil, lemon, oregano and crushed garlic for 20 minutes.',
+              'Grill or barbecue 3 minutes a side over a fierce heat.',
+              'Squeeze over more lemon and rest briefly.'] }
+  ]);
+
+  recipes('Beef stew', [
+    { name: 'The long one', time: 210, serves: 6, level: 'Easy',
+      ingredients: ['1kg beef shin or chuck, in large chunks', '2 onions', '3 carrots', '3 celery sticks', '3 tbsp flour', '500ml beef stock', '2 bay leaves', 'Oil'],
+      steps: ['Dry the beef properly and brown it hard in batches. Crowding the pan steams it, and you will not get the colour back later.',
+              'Soften the vegetables in the same pot, scraping up what is stuck.',
+              'Flour in, cooked out 2 minutes, then the stock added gradually.',
+              'Beef back in with the bay. Lid on, 150C oven, 3 hours.',
+              'It is ready when a spoon goes through a piece without resistance. Skim the fat off the top.'] },
+    { name: 'Pressure cooker', time: 60, serves: 6, level: 'Easy',
+      ingredients: ['1kg beef chuck', 'Onions, carrots, celery', 'Stock', 'Flour', 'Bay'],
+      steps: ['Brown the beef in the pot on sauté, then the vegetables.',
+              'Flour, stock and bay in.', 'High pressure 45 minutes, then let it come down on its own.'] }
+  ]);
+
+  recipes('Shepherd’s pie', [
+    { name: 'Made properly', time: 90, serves: 4, level: 'Medium',
+      ingredients: ['600g lamb mince', '2 onions', '2 carrots', '2 tbsp tomato purée', '1 tbsp Worcestershire-style sauce', '400ml stock', '1kg potatoes', '80g butter', '100ml milk'],
+      steps: ['Brown the mince hard, in two batches, and pour off most of the fat.',
+              'Soften the onion and carrot, add the purée and cook it out for 2 minutes.',
+              'Mince back in with the stock and sauce. Simmer 40 minutes, uncovered, until thick. Runny filling makes a soggy pie.',
+              'Boil and mash the potatoes with the butter and warm milk. Season it harder than feels right.',
+              'Spread the mash over, fork the top into ridges, and bake at 200C for 25 minutes until the peaks are brown.'] },
+    { name: 'Weeknight', time: 45, serves: 4, level: 'Easy',
+      ingredients: ['500g lamb mince', '1 onion', '1 tin chopped tomatoes', 'Stock cube', '800g potatoes', 'Butter'],
+      steps: ['Brown the mince and onion together.', 'Tomatoes and stock cube, simmered 20 minutes.',
+              'Mash on top, forked, 20 minutes at 200C.'] }
+  ]);
+
+  recipes('Meatballs', [
+    { name: 'In tomato sauce', time: 60, serves: 4, level: 'Easy',
+      ingredients: ['500g beef mince', '50g breadcrumbs', '50ml milk', '1 egg', '40g parmesan, grated', '2 tins chopped tomatoes', '4 garlic cloves', 'Basil', 'Oil'],
+      steps: ['Soak the breadcrumbs in the milk for 5 minutes. This is what keeps them soft.',
+              'Mix with the mince, egg, parmesan and plenty of salt, handling it as little as you can, then roll into balls the size of a walnut.',
+              'Brown them all over in oil and lift out. They will not be cooked through yet.',
+              'Garlic in the same pan, then the tomatoes, simmered 15 minutes.',
+              'Meatballs back in, lid half on, 25 minutes. Basil at the end.'] },
+    { name: 'Baked, less mess', time: 45, serves: 4, level: 'Very easy',
+      ingredients: ['500g beef mince', 'Breadcrumbs, milk, egg, parmesan', 'Jar of tomato sauce', 'Garlic'],
+      steps: ['Mix and roll as above.', 'Bake at 200C for 18 minutes on a lined tray.',
+              'Drop into warmed sauce for 10 minutes so they take on some of it.'] }
+  ]);
+
+
+  recipes('Chicken shawarma', [
+    { name: 'Stacked and roasted', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['800g chicken thighs, boned', '2 tsp cumin', '2 tsp coriander', '1 tsp turmeric', '1 tsp cinnamon', '4 garlic cloves', '1 lemon', '4 tbsp oil', 'Flatbreads, pickles, garlic sauce'],
+      steps: ['Marinate the thighs in the spices, garlic, lemon and oil. An hour minimum, overnight if you can.',
+              'Stack them on a skewer stood upright in a tin, or simply layer them tightly in a small dish.',
+              'Roast at 200C for 45 minutes, until the outside is dark.',
+              'Rest, then shave thin slices off the outside with a sharp knife.',
+              'Into flatbread with pickles and a lot of garlic sauce.'] },
+    { name: 'In a pan, faster', time: 30, serves: 2, level: 'Easy',
+      ingredients: ['400g chicken thighs, sliced', 'Shawarma spices', 'Garlic', 'Lemon', 'Flatbread'],
+      steps: ['Toss the sliced chicken in spice and leave 15 minutes.',
+              'Fry hard in a wide pan, in one layer, until the edges char.',
+              'Lemon over, into bread.'] }
+  ]);
+
+  recipes('Bulgogi', [
+    { name: 'Marinated overnight', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['600g sirloin, sliced paper thin', '1 pear, grated', '4 tbsp soy sauce', '2 tbsp sugar', '1 tbsp sesame oil', '4 garlic cloves', '4 spring onions', 'Sesame seeds', 'Lettuce leaves'],
+      steps: ['Freeze the beef 30 minutes first — it slices far thinner that way.',
+              'Mix the marinade: the grated pear is not optional, it tenderises and sweetens at once.',
+              'Marinate at least 2 hours, ideally overnight.',
+              'Cook in a screaming hot pan in small batches. Any more and it boils.',
+              'Sesame and spring onion over, wrapped in lettuce at the table.'] },
+    { name: 'Quick weeknight', time: 25, serves: 2, level: 'Very easy',
+      ingredients: ['300g thin beef strips', 'Soy sauce, sugar, sesame oil', 'Garlic', 'Grated apple', 'Rice'],
+      steps: ['Mix and marinate 20 minutes.', 'Fry hard and fast in one layer.', 'Over rice with the pan juices.'] }
+  ]);
+
+  recipes('Chicken katsu curry', [
+    { name: 'Both halves from scratch', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['4 chicken breasts', '2 eggs', '100g flour', '150g panko', '2 onions', '2 carrots', '2 tbsp curry powder', '1 tbsp flour for the sauce', '600ml stock', '1 tbsp soy sauce', 'Oil'],
+      steps: ['Soften the onion and carrot in oil for 15 minutes, then the curry powder and flour for 2 more.',
+              'Stock in gradually, simmered 20 minutes, then blend smooth and add the soy. It should coat a spoon.',
+              'Beat the chicken flat between two sheets of paper — even thickness is the whole trick.',
+              'Flour, then egg, then panko, pressed on firmly.',
+              'Shallow-fry 4 minutes a side until deep gold. Rest, slice thick, sauce poured alongside rather than over the crust.'] },
+    { name: 'Oven-baked katsu', time: 40, serves: 2, level: 'Easy',
+      ingredients: ['2 chicken breasts', 'Flour, egg, panko', 'Katsu sauce', 'Oil spray'],
+      steps: ['Flatten and crumb as above.', 'Bake on a rack at 200C for 22 minutes, sprayed with oil.',
+              'Warm the sauce separately and pour at the table.'] }
+  ]);
+
+  recipes('Peking duck pancakes', [
+    { name: 'Slow-roast duck legs', time: 150, serves: 4, level: 'Medium',
+      ingredients: ['4 duck legs', '1 tbsp five spice', '20 thin pancakes', '1 cucumber, in batons', '6 spring onions, shredded', 'Hoisin sauce'],
+      steps: ['Rub the legs with five spice and plenty of salt and leave them uncovered in the fridge overnight if you can — dry skin is crisp skin.',
+              'Roast at 150C for 2 hours on a rack, then 220C for 15 minutes to crisp.',
+              'Rest, then shred the meat with two forks, skin and all.',
+              'Steam the pancakes 3 minutes.',
+              'Everyone builds their own: hoisin, duck, cucumber, spring onion, rolled.'] },
+    { name: 'With shop-bought duck', time: 25, serves: 2, level: 'Very easy',
+      ingredients: ['1 packet cooked aromatic duck', 'Pancakes', 'Cucumber', 'Spring onions', 'Hoisin'],
+      steps: ['Heat the duck through as the packet says, then crisp the skin under a hot grill for 4 minutes.',
+              'Shred, steam the pancakes, and put everything on the table.'] }
+  ]);
+
+
+  recipes('Goulash', [
+    { name: 'The Hungarian way', time: 150, serves: 6, level: 'Easy',
+      ingredients: ['1kg beef shin, in chunks', '4 onions, sliced', '3 tbsp sweet paprika', '1 tsp caraway', '2 peppers', '2 tomatoes', '3 potatoes', 'Oil'],
+      steps: ['Cook the onions in the oil for 20 minutes until they are truly soft and sweet. There is more onion than feels right and that is correct.',
+              'Off the heat, stir in the paprika — burnt paprika is bitter and there is no saving it.',
+              'Beef, caraway and just enough water to cover. Lid on, lowest heat, 2 hours.',
+              'Peppers, tomatoes and potatoes in for the last 30 minutes.',
+              'It should be a thick soup, not a stew. Add water if it tightens.'] },
+    { name: 'Pressure cooker', time: 60, serves: 6, level: 'Easy',
+      ingredients: ['1kg beef', '4 onions', 'Paprika', 'Caraway', 'Peppers', 'Potatoes'],
+      steps: ['Soften the onions on sauté, paprika off the heat.',
+              'Beef and water in, high pressure 40 minutes.',
+              'Release, add the vegetables, simmer 20 minutes with the lid off.'] }
+  ]);
+
+
+
+
+
+  recipes('Bolognese', [
+    { name: 'The four-hour one', time: 240, serves: 6, level: 'Easy',
+      ingredients: ['500g beef mince', '200g pork mince', '1 onion, 1 carrot, 1 celery stick, all diced very fine', '150ml milk', '200ml white wine', '400g tinned tomatoes', '2 tbsp tomato purée', 'Oil'],
+      steps: ['Soften the diced vegetables in oil for 15 minutes without colouring them.',
+              'Mince in, broken up, cooked until it has lost all its pink and started to catch.',
+              'Milk in, simmered until it has gone. This sounds strange and it is the step that makes it tender.',
+              'Wine next, reduced away, then the tomatoes and purée and 300ml water.',
+              'Lowest possible heat, lid ajar, 3 hours. Stir occasionally, add water when it tightens. Tagliatelle, not spaghetti.'] },
+    { name: 'Ninety minutes', time: 90, serves: 4, level: 'Very easy',
+      ingredients: ['500g beef mince', 'Onion, carrot, celery', '1 tin tomatoes', 'Tomato purée', '100ml milk', 'Stock'],
+      steps: ['Soften the vegetables, brown the mince.',
+              'Milk cooked away, then tomatoes, purée and stock.',
+              'Simmer 70 minutes with the lid ajar.'] }
+  ]);
+
+  recipes('Chicken tikka masala', [
+    { name: 'Marinated, then sauced', time: 70, serves: 4, level: 'Medium',
+      ingredients: ['700g chicken thighs, cubed', '150g yoghurt', '2 tbsp tikka spice mix', '2 onions', '4 garlic cloves', 'Thumb of ginger', '1 tin chopped tomatoes', '150ml double cream', '1 tsp garam masala', 'Oil'],
+      steps: ['Marinate the chicken in the yoghurt and half the spice for at least an hour.',
+              'Grill or roast it at 240C for 12 minutes until the edges blacken. The char is the tikka; without it this is just a curry.',
+              'Fry the onion until brown, then the garlic, ginger and rest of the spice.',
+              'Tomatoes in, cooked down 15 minutes, then blended smooth if you like it that way.',
+              'Cream and chicken in, simmered 10 minutes. Garam masala off the heat.'] },
+    { name: 'One pan, weeknight', time: 35, serves: 4, level: 'Easy',
+      ingredients: ['700g chicken', '2 tbsp curry paste', '1 onion', '1 tin tomatoes', '100ml cream', 'Garam masala'],
+      steps: ['Brown the chicken in the paste, lift out.',
+              'Onion soft, tomatoes in, 15 minutes.',
+              'Chicken back in with the cream, 10 minutes more.'] }
+  ]);
+
+  recipes('Sausage roll', [
+    { name: 'From a block of pastry', time: 45, serves: 6, level: 'Easy',
+      ingredients: ['500g puff pastry', '500g good sausagemeat', '1 onion, grated', '1 tsp sage', '1 tsp fennel seeds', '1 egg, beaten'],
+      steps: ['Squeeze the grated onion dry in a cloth and mix it into the meat with the herbs and plenty of pepper.',
+              'Roll the pastry into two long rectangles. Pipe or spoon the meat in a line down each.',
+              'Brush one edge with egg, roll over, seal seam-side down, and press with a fork.',
+              'Chill 20 minutes — warm pastry will not puff.',
+              'Cut into lengths, slash the tops, egg wash, and bake at 200C for 25 minutes.'] },
+    { name: 'With apple', time: 45, serves: 6, level: 'Easy',
+      ingredients: ['500g puff pastry', '500g sausagemeat', '1 apple, grated', 'Sage', 'Mustard', 'Egg'],
+      steps: ['Squeeze the grated apple dry and mix with the meat, sage and a spoon of mustard.',
+              'Roll, seal, chill and bake as above.'] }
+  ]);
+
+  recipes('Char siu', [
+    { name: 'Lacquered properly', time: 90, serves: 4, level: 'Medium',
+      ingredients: ['800g pork shoulder, in long strips', '3 tbsp hoisin', '2 tbsp honey', '2 tbsp soy sauce', '1 tbsp five spice', '2 garlic cloves', '1 tbsp shaoxing or dry sherry', 'Red food colouring, optional'],
+      steps: ['Marinate the pork overnight if you can, 2 hours at the very least. Keep back 3 tbsp of marinade.',
+              'Roast on a rack over a tray of water at 180C for 40 minutes, turning once. The water stops the drips burning.',
+              'Mix the reserved marinade with an extra spoon of honey and brush it on. Back in at 220C for 10 minutes.',
+              'Brush and blast once more. You want dark, sticky edges, not an even colour.',
+              'Rest 10 minutes, slice across the grain, over rice.'] },
+    { name: 'Pan-glazed strips', time: 40, serves: 2, level: 'Easy',
+      ingredients: ['400g pork loin strips', 'Hoisin, honey, soy, five spice', 'Garlic'],
+      steps: ['Marinate 30 minutes.', 'Fry hard, then add the marinade and let it reduce to a glaze, turning the pork in it.',
+              'Watch it — honey goes from caramel to burnt in under a minute.'] }
+  ]);
+
+  recipes('Chicken wings', [
+    { name: 'Fried, with the baking powder trick', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['1kg chicken wings, split', '1 tbsp baking powder', '1 tsp salt', 'Oil for frying', '80g butter', '100ml hot sauce'],
+      steps: ['Pat the wings bone dry and toss them in the baking powder and salt. Leave uncovered in the fridge for at least 4 hours — this is what makes the skin shatter.',
+              'Fry at 160C for 8 minutes, rest 10 minutes, then again at 190C for 4 minutes. Twice is the secret.',
+              'Melt the butter into the hot sauce and toss the wings through it while they are still shouting.',
+              'Serve immediately. They will not wait.'] },
+    { name: 'Oven, honestly good', time: 55, serves: 4, level: 'Very easy',
+      ingredients: ['1kg wings', '1 tbsp baking powder', 'Salt', 'Hot sauce and butter'],
+      steps: ['Dry, toss in baking powder and salt, and leave on a rack in the fridge as long as you can.',
+              'Bake on the rack at 120C for 30 minutes, then 220C for 20 minutes.',
+              'Toss in the sauce.'] }
+  ]);
+
+
+
+  recipes('Philly cheesesteak', [
+    { name: 'Chopped on the griddle', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['400g ribeye, frozen 30 minutes then sliced paper thin', '1 onion, sliced', '6 slices provolone or American cheese', '2 long soft rolls', 'Oil'],
+      steps: ['Cook the onion in oil on a flat pan until soft and brown, then push it to one side.',
+              'Beef onto the hot side in a single layer. Leave it 60 seconds, then chop it about with two spatulas as it cooks.',
+              'Mix the onion through, season, then lay the cheese over the top and let it melt into the meat.',
+              'Scoop the whole lot into the roll in one movement, using the roll as the scoop.'] },
+    { name: 'With peppers', time: 30, serves: 2, level: 'Very easy',
+      ingredients: ['400g thin beef', '1 onion', '1 green pepper', 'Cheese slices', 'Rolls'],
+      steps: ['Soften onion and pepper together.', 'Beef in, chopped as it cooks.',
+              'Cheese over, melted, then into warmed rolls.'] }
+  ]);
+
+  recipes('Fish tacos', [
+    { name: 'Battered', time: 35, serves: 4, level: 'Medium',
+      ingredients: ['600g white fish, in fingers', '120g flour', '1 tsp baking powder', '180ml cold soda water', 'Oil for frying', '12 corn tortillas', '1/4 red cabbage, shredded', 'Lime', '4 tbsp mayonnaise', '1 tsp chipotle paste'],
+      steps: ['Whisk the flour, baking powder, salt and cold soda water to a thin batter and leave it alone — over-mixing makes it heavy.',
+              'Heat the oil to 190C. Dip the fish and fry 3 minutes until pale gold. Drain on a rack, never on paper, or the bottom goes soft.',
+              'Mix the mayonnaise with the chipotle and a squeeze of lime.',
+              'Warm the tortillas on a dry pan. Cabbage first, fish, sauce, lime.'] },
+    { name: 'Grilled, lighter', time: 20, serves: 4, level: 'Very easy',
+      ingredients: ['600g white fish fillets', 'Chilli powder, cumin, lime', 'Tortillas', 'Cabbage', 'Coriander', 'Mayonnaise'],
+      steps: ['Rub the fish with spice and lime, grill 3 minutes a side, then flake it.',
+              'Warm tortillas, build with cabbage, fish and sauce.'] }
+  ]);
+
+  recipes('Grilled salmon', [
+    { name: 'Crisp skin, in a pan', time: 15, serves: 2, level: 'Easy',
+      ingredients: ['2 salmon fillets, skin on', '1 tbsp oil', 'Salt', 'Lemon'],
+      steps: ['Dry the skin thoroughly and salt it. Wet skin steams and never crisps.',
+              'Oil into a cold non-stick pan, salmon skin-side down, then turn the heat to medium. Starting cold renders the fat gently.',
+              'Press it flat for the first 20 seconds so it does not curl. Then leave it, 6 minutes, without touching it.',
+              'Turn for 60 seconds only. The middle should still be darker than the edges. Lemon over.'] },
+    { name: 'Roasted with a tray of things', time: 25, serves: 2, level: 'Very easy',
+      ingredients: ['2 salmon fillets', 'Cherry tomatoes', 'Courgette', 'Olives', 'Oil', 'Lemon'],
+      steps: ['Roast the vegetables at 200C for 12 minutes in oil.',
+              'Sit the salmon on top, back in for 10 minutes.',
+              'Lemon and oil over the lot.'] }
+  ]);
+
+  recipes('Prawn curry', [
+    { name: 'Goan-leaning, with coconut', time: 35, serves: 4, level: 'Easy',
+      ingredients: ['500g raw prawns, peeled', '1 tin coconut milk', '2 onions', '4 garlic cloves', 'Thumb of ginger', '2 tsp turmeric', '2 tsp ground coriander', '1 tbsp tamarind paste', '2 green chillies', 'Oil'],
+      steps: ['Brown the onions properly, 12 minutes, then the garlic, ginger and chilli.',
+              'Ground spices in for 1 minute, then the coconut milk and tamarind. Simmer 15 minutes so it thickens and loses its raw edge.',
+              'Prawns in for 3 minutes. Three. They go from perfect to rubber in about ninety seconds after that.',
+              'Salt at the end, rice underneath.'] },
+    { name: 'Twenty minutes', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['300g prawns', '1 tin coconut milk', '2 tbsp curry paste', 'Lime', 'Coriander'],
+      steps: ['Fry the paste in oil for 1 minute until fragrant.',
+              'Coconut milk in, simmered 10 minutes.',
+              'Prawns 3 minutes, lime and coriander off the heat.'] }
+  ]);
+
+  recipes('Moules marinière', [
+    { name: 'The classic', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['1kg mussels', '2 shallots, chopped fine', '2 garlic cloves', '200ml dry white wine', '50g butter', 'A large bunch of parsley', 'Bread'],
+      steps: ['Scrub the mussels and pull off the beards. Throw away any that are cracked, or that stay open when you tap them.',
+              'Soften the shallots and garlic in the butter without colouring them.',
+              'Wine in, brought to a hard boil, then the mussels and the lid on.',
+              'Four minutes, shaking the pan once. They are done the moment they open — any that stay shut go in the bin.',
+              'Parsley in, and the bread is for the liquor, which is the best part.'] },
+    { name: 'With cream', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['1kg mussels', 'Shallots, garlic, butter', '200ml white wine', '100ml double cream', 'Parsley'],
+      steps: ['As above, adding the cream after the mussels have opened.',
+              'Bring it back to a bare simmer only, then parsley and serve.'] }
+  ]);
+
+
+  recipes('Fish pie', [
+    { name: 'Three fish and a proper crust', time: 75, serves: 4, level: 'Medium',
+      ingredients: ['300g white fish', '200g salmon', '150g smoked haddock', '600ml milk', '1 bay leaf', '50g butter', '50g flour', 'Parsley', '1kg potatoes', '80g butter for the mash'],
+      steps: ['Poach all the fish in the milk with the bay for 5 minutes, then lift it out and keep the milk. Flake the fish into big pieces.',
+              'Make a white sauce with the butter, flour and the poaching milk. Cook it 5 minutes so it does not taste of flour.',
+              'Parsley in, a lot, then fold the fish through gently and spread it in a dish. Let it cool and set a little.',
+              'Mash the potatoes with butter and plenty of salt, and spread it over. Fork the top.',
+              'Bake at 200C for 30 minutes until the top is brown and the edges are bubbling.'] },
+    { name: 'With a fish pie mix', time: 50, serves: 4, level: 'Easy',
+      ingredients: ['600g fish pie mix', '500ml milk', 'Butter and flour', 'Parsley', '800g potatoes'],
+      steps: ['Poach the fish 4 minutes, keep the milk.', 'White sauce from the milk, parsley, fish folded in.',
+              'Mash on top, 30 minutes at 200C.'] }
+  ]);
+
+  recipes('Crab cakes', [
+    { name: 'Mostly crab', time: 40, serves: 4, level: 'Medium',
+      ingredients: ['500g white crab meat, picked over', '1 egg', '3 tbsp mayonnaise', '1 tsp mustard', '40g cracker crumbs', 'Spring onion', 'Lemon', 'Oil'],
+      steps: ['Pick through the crab for shell with your fingers, in good light. One fragment ruins the lot.',
+              'Fold — do not beat — the egg, mayonnaise, mustard and crumbs together, then the crab, keeping the lumps whole.',
+              'Shape into four fat cakes and chill 30 minutes. Warm mix falls apart in the pan.',
+              'Fry 4 minutes a side in a little oil until dark gold. Lemon over.'] },
+    { name: 'Baked', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['500g crab meat', 'Egg, mayonnaise, mustard, crumbs', 'Old Bay or paprika', 'Lemon'],
+      steps: ['Mix and shape as above, then chill.',
+              'Bake at 220C for 15 minutes on an oiled tray, turning once.'] }
+  ]);
+
+  recipes('Sardines on toast', [
+    { name: 'Four minutes', time: 5, serves: 1, level: 'Very easy',
+      ingredients: ['1 tin sardines in olive oil', '2 slices sourdough', '1 lemon', 'Chilli flakes', 'Parsley'],
+      steps: ['Toast the bread hard. It has to hold up.',
+              'Mash the sardines roughly with a fork, bones and all — they are soft and they are most of the calcium.',
+              'Pile on, squeeze the lemon, scatter chilli and parsley.',
+              'Pour the oil from the tin over the top rather than draining it away.'] },
+    { name: 'With tomato', time: 8, serves: 1, level: 'Very easy',
+      ingredients: ['1 tin sardines', 'Sourdough', '1 ripe tomato', 'Garlic clove', 'Olive oil'],
+      steps: ['Toast the bread and rub it with the cut garlic clove.',
+              'Grate the tomato over it, flesh only, and drizzle with oil.',
+              'Sardines on top, lemon, pepper.'] }
+  ]);
+
+  recipes('Tuna melt', [
+    { name: 'In a pan, pressed', time: 12, serves: 1, level: 'Very easy',
+      ingredients: ['1 tin tuna, drained well', '2 tbsp mayonnaise', '1 spring onion', '1 tsp mustard', '2 slices bread', '60g cheddar, grated', 'Butter'],
+      steps: ['Drain the tuna properly, pressing it against the tin. Wet filling makes a soggy sandwich.',
+              'Mix with the mayonnaise, mustard and spring onion.',
+              'Butter the outsides of the bread, not the insides. Cheese, tuna, cheese — the cheese on both sides is the glue.',
+              'Medium-low heat, 4 minutes a side, pressed with a spatula. Low and slow, or the cheese is still solid when the bread burns.'] },
+    { name: 'Open, under the grill', time: 10, serves: 2, level: 'Very easy',
+      ingredients: ['1 tin tuna', 'Mayonnaise', 'Cheddar', '2 slices bread', 'Tomato'],
+      steps: ['Toast the bread on one side under the grill.',
+              'Tuna mix on the untoasted side, tomato slices, cheese over.',
+              'Back under until bubbling and blistered.'] }
+  ]);
+
+  recipes('Eggs benedict', [
+    { name: 'With blender hollandaise', time: 30, serves: 2, level: 'Medium',
+      ingredients: ['4 eggs, plus 3 yolks for the sauce', '150g butter, melted and hot', '1 tbsp lemon juice', '2 muffins', '4 slices ham', 'Vinegar for the water'],
+      steps: ['Blitz the yolks with the lemon and a pinch of salt, then pour the hot melted butter in a thin, slow stream with the motor running. Too fast and it splits.',
+              'Keep the sauce somewhere warm, not hot. Over heat it will scramble.',
+              'Simmer a wide pan of water with a splash of vinegar. Crack each egg into a cup first, stir a gentle whirlpool, and slide it in.',
+              'Three minutes for a set white and a liquid yolk. Lift out with a slotted spoon onto kitchen paper.',
+              'Toasted muffin, ham, egg, sauce. In that order, immediately.'] },
+    { name: 'Cheat hollandaise', time: 20, serves: 2, level: 'Easy',
+      ingredients: ['4 eggs', '4 tbsp mayonnaise', '2 tbsp butter, melted', 'Lemon', 'Mustard', 'Muffins', 'Ham'],
+      steps: ['Warm the mayonnaise with the melted butter, lemon and a little mustard, whisking. It will not split on you.',
+              'Poach the eggs, toast the muffins, build as above.'] }
+  ]);
+
+  recipes('Breakfast burrito', [
+    { name: 'Wrapped and griddled', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['4 eggs', '2 large tortillas', '1 potato, diced small', '60g cheddar, grated', '1/2 onion', 'Hot sauce', 'Oil'],
+      steps: ['Fry the diced potato with the onion until crisp and cooked through, 12 minutes. Do this first; everything else is quick.',
+              'Scramble the eggs slowly, off the heat at the last moment — they carry on cooking in the wrap.',
+              'Warm the tortillas so they fold without cracking.',
+              'Fill in a line just below the middle: potato, egg, cheese, hot sauce. Fold the sides in first, then roll tight.',
+              'Griddle seam-side down for 2 minutes to seal it.'] },
+    { name: 'Made ahead, frozen', time: 40, serves: 6, level: 'Easy',
+      ingredients: ['8 eggs', '6 tortillas', 'Potato, onion, pepper', 'Cheese', 'Foil'],
+      steps: ['Cook the filling and let it cool completely — warm filling steams and goes soggy.',
+              'Wrap each burrito in foil and freeze.',
+              'From frozen: 25 minutes at 190C, still in the foil, opened for the last 5.'] }
+  ]);
+
+  recipes('Porridge', [
+    { name: 'With water and salt', time: 12, serves: 1, level: 'Very easy',
+      ingredients: ['50g rolled oats', '300ml water', 'A good pinch of salt'],
+      steps: ['Oats and cold water into the pan together, then bring it up slowly.',
+              'Stir often once it starts to thicken, 8 minutes, until it falls thickly off the spoon.',
+              'Salt in at the end. Scottish orthodoxy says salt and no sugar, and it is right — salt makes the oats taste of more.',
+              'Let it sit off the heat for a minute before eating; it thickens again.'] },
+    { name: 'Overnight oats', time: 5, serves: 1, level: 'Very easy',
+      ingredients: ['50g rolled oats', '150ml oat milk', '1 tbsp chia seeds', 'Fruit', 'Cinnamon'],
+      steps: ['Everything but the fruit into a jar, stirred.', 'Fridge overnight.',
+              'Fruit on top in the morning. Loosen with a splash more if it has gone stiff.'] }
+  ]);
+
+  recipes('Granola', [
+    { name: 'Clustered', time: 45, serves: 12, level: 'Very easy',
+      ingredients: ['400g rolled oats', '150g nuts, roughly chopped', '80ml oil', '120ml maple syrup or honey', '1 tsp cinnamon', 'Salt'],
+      steps: ['Mix everything and spread it in one layer on a big tray, pressed down firmly. Pressing is what makes clusters.',
+              'Bake at 150C for 35 minutes, turning the tray once but not stirring it.',
+              'Cool completely on the tray before you break it up. It crisps as it cools, not in the oven.'] },
+    { name: 'With dried fruit', time: 45, serves: 12, level: 'Very easy',
+      ingredients: ['400g oats', 'Nuts and seeds', 'Oil and syrup', '150g dried fruit'],
+      steps: ['Bake the oats, nuts and seeds as above.',
+              'Stir the dried fruit in only after it comes out — in the oven it turns to charcoal.'] }
+  ]);
+
+  recipes('Minestrone', [
+    { name: 'Whatever the week left', time: 50, serves: 6, level: 'Very easy',
+      ingredients: ['1 onion, 2 carrots, 2 celery sticks, diced', '3 garlic cloves', '1 courgette', '1 tin chopped tomatoes', '1 tin cannellini beans', '1.5L stock', '100g small pasta', 'Green beans', 'Olive oil', 'Basil'],
+      steps: ['Soften the onion, carrot and celery in oil for 15 minutes. This base is most of the flavour and it cannot be hurried.',
+              'Garlic, then tomatoes, cooked 5 minutes.',
+              'Stock and beans in, simmered 20 minutes.',
+              'Courgette, green beans and pasta for the last 10 — any earlier and the pasta turns to paste.',
+              'Olive oil and torn basil in every bowl.'] },
+    { name: 'Store cupboard', time: 30, serves: 4, level: 'Very easy',
+      ingredients: ['1 onion', '1 tin tomatoes', '1 tin mixed beans', 'Stock', '80g pasta', 'Frozen vegetables', 'Olive oil'],
+      steps: ['Soften the onion, add tomatoes and stock.',
+              'Beans in, 10 minutes.', 'Pasta and frozen vegetables for the last 10.'] }
+  ]);
+
+  recipes('Tom yum', [
+    { name: 'Clear, the way it comes', time: 30, serves: 4, level: 'Medium',
+      ingredients: ['400g raw prawns, shells kept', '1.2L water', '3 lemongrass stalks, bashed', '6 lime leaves', 'Thumb of galangal, sliced', '200g mushrooms', '3 tbsp fish sauce', '4 limes', '6 bird’s eye chillies, bruised', 'Coriander'],
+      steps: ['Fry the prawn shells in a dry pot for 2 minutes until they turn orange and smell sweet, then add the water. This is the stock and it takes ten minutes.',
+              'Strain, then return to the pot with the lemongrass, lime leaves, galangal and chillies. Simmer 10 minutes.',
+              'Mushrooms in for 3 minutes, then the prawns for 2.',
+              'Off the heat: fish sauce and lime juice, tasted and adjusted. It should be sour first, salty second, hot third.',
+              'Never boil it after the lime goes in.'] },
+    { name: 'Creamy, with paste', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['300g prawns', '2 tbsp tom yum paste', '800ml stock', '150g mushrooms', '100ml evaporated or coconut milk', 'Lime', 'Fish sauce'],
+      steps: ['Fry the paste 1 minute, add the stock, simmer 8 minutes.',
+              'Mushrooms, then prawns for 2 minutes.',
+              'Milk, lime and fish sauce off the heat.'] }
+  ]);
+
+  recipes('French onion soup', [
+    { name: 'An hour of onions', time: 90, serves: 4, level: 'Easy',
+      ingredients: ['1kg onions, sliced thin', '60g butter', '1 tbsp oil', '1 tsp sugar', '150ml dry white wine', '1.2L vegetable stock', '1 baguette', '150g gruyère, grated', 'Thyme'],
+      steps: ['Onions, butter, oil and a pinch of salt in a wide heavy pan, lid on, 15 minutes to sweat them down.',
+              'Lid off, sugar in, and now the long part: 45 minutes on medium-low, stirred every few minutes. They go gold, then amber, then properly brown. There is no shortcut and every minute you cut shows in the bowl.',
+              'Wine in, scraping the pan, reduced by half. Then the stock and thyme, simmered 20 minutes.',
+              'Toast rounds of baguette, float them on the soup in ovenproof bowls, heap the cheese on.',
+              'Under a hot grill until the cheese is blistered and running down the sides.'] },
+    { name: 'Without the grill', time: 80, serves: 4, level: 'Very easy',
+      ingredients: ['1kg onions', 'Butter', 'Stock', 'Thyme', 'Bread and cheese'],
+      steps: ['Caramelise the onions as above.', 'Stock and thyme, 20 minutes.',
+              'Make cheese on toast separately and drop it in at the table.'] }
+  ]);
+
+  recipes('Banoffee pie', [
+    { name: 'With tinned caramel', time: 30, serves: 8, level: 'Very easy',
+      ingredients: ['250g digestive biscuits', '100g butter, melted', '1 tin caramel', '4 bananas', '400ml double cream', 'Dark chocolate, to grate'],
+      steps: ['Crush the biscuits to crumbs and mix with the butter. Press hard into a tin, up the sides too, and chill 30 minutes.',
+              'Spread the caramel over the cold base.',
+              'Slice the bananas over it, in a close layer — they will not brown under the cream.',
+              'Whip the cream to soft peaks only. Stiff cream looks wrong and tastes worse.',
+              'Pile it on, grate chocolate over, and keep it cold until the moment it is cut.'] },
+    { name: 'Boiling your own caramel', time: 180, serves: 8, level: 'Medium',
+      ingredients: ['1 tin condensed milk', 'Digestives and butter', 'Bananas', 'Cream'],
+      steps: ['Boil the unopened tin, fully submerged, for 3 hours. Keep it covered with water the entire time — a dry tin is dangerous.',
+              'Cool it completely in the tin before opening.',
+              'Build as above.'] }
+  ]);
+
+  recipes('Eton mess', [
+    { name: 'Five minutes', time: 10, serves: 4, level: 'Very easy',
+      ingredients: ['400g strawberries', '300ml double cream', '4 meringue nests', '1 tbsp icing sugar', '1 lemon'],
+      steps: ['Crush a third of the strawberries with the icing sugar and a squeeze of lemon to make a rough sauce. Leave it 10 minutes to go syrupy.',
+              'Chop the rest.',
+              'Whip the cream to soft peaks — it must not be stiff or the mess will not fold.',
+              'Break the meringue in by hand, in uneven pieces, then fold everything together twice only. Two folds. It should be streaked, not pink.'] },
+    { name: 'With roasted rhubarb', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['400g rhubarb', '80g sugar', '1 orange', 'Cream', 'Meringues'],
+      steps: ['Roast the rhubarb with the sugar and orange juice at 180C for 20 minutes, then cool.',
+              'Fold through whipped cream and broken meringue as above.'] }
+  ]);
+
+  recipes('Panna cotta', [
+    { name: 'It should wobble', time: 20, serves: 4, level: 'Medium',
+      ingredients: ['500ml double cream', '100ml milk', '60g sugar', '1 vanilla pod', '2 sheets gelatine'],
+      steps: ['Soak the gelatine in cold water for 5 minutes until it goes floppy.',
+              'Warm the cream, milk, sugar and split vanilla pod to just below a simmer. Do not boil it.',
+              'Off the heat, squeeze the gelatine out and stir it in until it has completely gone.',
+              'Strain into moulds and chill at least 4 hours. Two sheets is deliberately the minimum — more sets it firm, and firm panna cotta is a bad panna cotta.',
+              'Dip the moulds in hot water for 3 seconds to turn out.'] },
+    { name: 'Coconut, no dairy', time: 20, serves: 4, level: 'Easy',
+      ingredients: ['400ml coconut milk', '200ml coconut cream', '60g sugar', '2 tsp agar agar', 'Lime zest'],
+      steps: ['Whisk the agar into the cold coconut milk, then bring to the boil for 2 minutes — agar needs boiling, unlike gelatine.',
+              'Sugar, cream and zest in, then poured into moulds.',
+              'Sets at room temperature in an hour. Firmer than the dairy one, by nature.'] }
+  ]);
+
+  recipes('Affogato', [
+    { name: 'As it comes', time: 3, serves: 1, level: 'Very easy',
+      ingredients: ['2 scoops vanilla ice cream', '1 shot hot espresso'],
+      steps: ['Put the ice cream in a small glass and put the glass in the freezer while you make the coffee. A cold glass buys you a minute.',
+              'Pull the espresso and pour it over at the table, not in the kitchen.',
+              'Eat it immediately. The whole thing is the ten seconds where it is both hot and frozen.'] },
+    { name: 'With something in it', time: 5, serves: 1, level: 'Very easy',
+      ingredients: ['2 scoops ice cream', '1 shot espresso', 'Amaretti biscuit', 'Cocoa'],
+      steps: ['Crush the biscuit over the ice cream.', 'Espresso poured over, cocoa dusted on top.'] }
+  ]);
+
+  recipes('Matcha latte', [
+    { name: 'Whisked properly', time: 5, serves: 1, level: 'Easy',
+      ingredients: ['1.5 tsp matcha powder', '60ml water at 80C', '200ml milk', 'Honey or sugar, optional'],
+      steps: ['Sift the matcha into the cup. Unsifted matcha lumps and never recovers.',
+              'Add the water — 80C, not boiling, or it turns bitter — and whisk in a W shape until it foams.',
+              'Warm and froth the milk, then pour it in slowly against the side.',
+              'Sweeten if you like; good matcha needs less than you think.'] },
+    { name: 'Iced', time: 5, serves: 1, level: 'Very easy',
+      ingredients: ['1.5 tsp matcha', '60ml warm water', 'Cold milk', 'Ice', 'Syrup'],
+      steps: ['Sift and whisk the matcha with the warm water until smooth.',
+              'Fill a glass with ice and cold milk, then pour the matcha over the top so it layers.'] }
+  ]);
+
+  recipes('Masala chai', [
+    { name: 'Boiled, not steeped', time: 12, serves: 2, level: 'Very easy',
+      ingredients: ['300ml water', '200ml whole milk', '2 tsp strong black tea', '4 cardamom pods, crushed', '1 cinnamon stick', 'Thumb of ginger, sliced', '2 cloves', 'Sugar to taste'],
+      steps: ['Bring the water to the boil with the crushed spices and ginger and let it go 3 minutes. Crushing matters — whole pods give you nothing.',
+              'Tea in, boiled another 2 minutes.',
+              'Milk and sugar in, brought back to the boil. Let it rise up the pan and pull it off, three times. That is what makes chai rather than spiced tea.',
+              'Strain from a height into the cups.'] },
+    { name: 'With a paste, quicker', time: 6, serves: 2, level: 'Very easy',
+      ingredients: ['300ml water', '200ml milk', '2 tsp tea', '1 tsp chai masala powder', 'Sugar'],
+      steps: ['Boil water, tea and masala 3 minutes.', 'Milk and sugar, brought up to the boil twice.', 'Strain.'] }
+  ]);
+
+  recipes('Hot toddy', [
+    { name: 'The standard', time: 5, serves: 1, level: 'Very easy',
+      ingredients: ['50ml whisky', '2 tsp honey', '1/2 lemon, juiced', '150ml hot water', '1 cinnamon stick', 'A slice of lemon with 3 cloves in it'],
+      steps: ['Warm the glass with hot water first and pour it away, or the drink is lukewarm in a minute.',
+              'Honey into the glass, a splash of hot water, stirred until it has dissolved. Honey will not dissolve in cold spirit.',
+              'Whisky and lemon juice in, then the rest of the water — hot, not boiling, or the whisky turns harsh.',
+              'Cinnamon stick to stir with, clove-studded lemon floated on top.'] },
+    { name: 'Without the alcohol', time: 5, serves: 1, level: 'Very easy',
+      ingredients: ['2 tsp honey', '1/2 lemon', '200ml hot water', 'Thumb of ginger, sliced', 'Cinnamon'],
+      steps: ['Steep the ginger and cinnamon in the hot water for 4 minutes.',
+              'Honey and lemon stirred in off the heat.'] }
+  ]);
+
+  recipes('Arancini', [
+    { name: 'From yesterday’s risotto', time: 45, serves: 4, level: 'Medium',
+      ingredients: ['600g cold risotto', '100g mozzarella, in small cubes', '2 eggs', '80g flour', '150g breadcrumbs', 'Oil for frying'],
+      steps: ['The risotto must be properly cold and stiff. Warm risotto will not hold a ball and there is no fixing it.',
+              'Take a heaped tablespoon, flatten it in your palm, put a cube of mozzarella in the middle and close it into a ball.',
+              'Flour, then beaten egg, then breadcrumbs. Press the crumbs on firmly and do the whole batch before you fry anything.',
+              'Fry at 180C for 4 minutes until deep gold, three or four at a time.',
+              'Drain on a rack and wait two minutes — the middle is molten and it will take the roof of your mouth off.'] },
+    { name: 'Baked', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['600g cold risotto', 'Mozzarella', 'Egg, flour, breadcrumbs', 'Oil spray'],
+      steps: ['Shape and crumb as above.', 'Spray well with oil and bake at 200C for 25 minutes, turning once.',
+              'Paler, less rich, and they still work.'] }
+  ]);
+
+
+  recipes('Bibingka', [
+    { name: 'Baked in banana leaf', time: 50, serves: 8, level: 'Medium',
+      ingredients: ['250g rice flour', '150g sugar', '2 tsp baking powder', '3 eggs', '400ml coconut milk', '100ml evaporated milk', '60g butter, melted', 'Banana leaf', 'Salted egg and grated coconut, to top'],
+      steps: ['Line a round tin with softened banana leaf — pass it briefly over a flame and it goes pliable and smells of the tropics.',
+              'Whisk the dry ingredients, then beat in the eggs, both milks and the butter until smooth.',
+              'Pour in and bake at 180C for 30 minutes, until a skewer comes out clean.',
+              'Brush with more butter, scatter sugar and grated coconut, and give it 5 minutes under the grill.',
+              'Eat warm. It is not the same cold.'] },
+    { name: 'Without the leaf', time: 45, serves: 8, level: 'Easy',
+      ingredients: ['250g rice flour', 'Sugar, baking powder', '3 eggs', 'Coconut milk', 'Butter', 'Grated coconut'],
+      steps: ['Line the tin with baking paper instead.',
+              'Mix and bake as above at 180C for 30 minutes.',
+              'Butter and coconut on top, grilled 5 minutes.'] }
   ]);
 
   return {

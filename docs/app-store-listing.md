@@ -54,7 +54,7 @@ do. 118 characters.
 >
 > ### What members get
 >
-> - **178 dishes**, each with a recipe, a step-by-step cook mode and a shopping list
+> - **217 dishes**, each with a recipe, a step-by-step cook mode and a shopping list
 > - **Nearby** — everywhere near them that serves it, sorted by what kind of place it is
 > - **Rules that stick, free** — vegetarian, vegan or pescatarian; halal, kosher, Hindu, Jain,
 >   Sattvic, Buddhist, Sikh, Adventist, Word of Wisdom or Ital; or one ingredient at a time.

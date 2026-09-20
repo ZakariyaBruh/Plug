@@ -389,6 +389,81 @@ function dietCheck(): Plugin {
       }
 
       /*
+       * AND THE RECIPES HAVE TO KEEP THE DISH'S PROMISE TOO.
+       *
+       * The tags say what is in a dish and the dietary rules are applied to
+       * them. The recipe underneath is prose and nothing was reading it — so
+       * a dish tagged without egg could carry a recipe whose sauce is
+       * mayonnaise, and somebody avoiding egg would be handed it by a rule
+       * they set precisely so they would not have to read the ingredients.
+       *
+       * This is a word search, which means it is crude, and crude is the
+       * right shape here: a false positive costs a tag or a reworded line,
+       * and a false negative costs somebody their dietary rule. EXCEPT is
+       * for the compounds that contain an animal word and are not the animal
+       * — coconut milk, oat milk, butternut, eggplant — and it is checked
+       * before the words are, so "coconut milk" never reads as milk.
+       */
+      const WORDS: [string, string[]][] = [
+        ['dairy', ['milks?', 'butter', 'buttermilk', 'creams?', 'cheeses?', 'yogh?urt',
+                   'parmesan', 'mozzarella', 'pecorino', 'gruyère', 'cheddar', 'ghee',
+                   'mascarpone', 'provolone', 'curd', 'cotija', 'feta']],
+        ['egg', ['eggs?', 'mayonnaise', 'mayo', 'meringues?', 'hollandaise']],
+        ['meat', ['beef', 'pork', 'bacon', 'hams?', 'lamb', 'chicken', 'ducks?', 'sausages?',
+                  'chorizo', 'pancetta', 'guanciale', 'lard', 'minces?', 'brisket', 'ribeye',
+                  'sirloin', 'pâté', 'gelatine']],
+        ['seafood', ['fish', 'prawns?', 'crab', 'salmon', 'tuna', 'anchov\\w*', 'sardines?',
+                     'mussels?', 'squid', 'haddock', 'cod', 'bonito', 'dashi', 'oysters?']],
+        ['alcohol', ['wine', 'whisk(?:y|ey)', 'beer', 'rum', 'sherry', 'shaoxing', 'vodka',
+                     'brandy', 'amaretto', 'tej']],
+      ]
+
+      /*
+       * Matched on whole words, because the first run of this said gomen was
+       * cooked in lard (collard greens), risotto contained mince (a minced
+       * shallot) and gazpacho was alcoholic (sherry vinegar). A check that
+       * cries wolf gets switched off, so it matches \b...\b and nothing else.
+       */
+      const EXCEPT = [
+        'coconut milk', 'coconut cream', 'coconut yoghurt', 'oat milk', 'almond milk',
+        'soy milk', 'rice milk', 'plant milk', 'cream of tartar', 'peanut butter',
+        'nut butter', 'butter bean', 'butternut', 'eggplant', 'sherry vinegar',
+        'wine vinegar', 'vegetarian oyster sauce', 'creamed corn', 'collard',
+        'minced', 'cocoa butter', 'shea butter',
+      ]
+
+      const book = load('recipes.js') as {
+        BOOK?: Record<string, { name?: string; ingredients?: string[]; steps?: string[] }[]>
+      }
+      const recipes = book.BOOK ?? {}
+      const byName = new Map(items.map((item) => [item.name, item]))
+      const smuggled: string[] = []
+
+      for (const [dish, versions] of Object.entries(recipes)) {
+        const item = byName.get(dish)
+        if (!item) continue
+        for (const version of versions) {
+          // Ingredients only. A step may mention a thing it is served WITH,
+          // and the ingredient list is what actually goes in.
+          let text = (version.ingredients ?? []).join(' ; ').toLowerCase()
+          for (const safe of EXCEPT) text = text.split(safe).join(' ')
+          for (const [tag, words] of WORDS) {
+            if ((item.tags[tag] ?? 0) > 0) continue
+            const hit = words.find((word) => new RegExp(`\\b${word}\\b`).test(text))
+            if (hit) smuggled.push(`${dish} ("${version.name ?? '?'}") uses "${hit}" but is not tagged ${tag}`)
+          }
+        }
+      }
+
+      if (smuggled.length) {
+        throw new Error(
+          'diet-check: a recipe reaches past its dish\'s tags —\n  ' +
+            smuggled.join('\n  ') +
+            '\nTag the dish for it, or take it out of the recipe.',
+        )
+      }
+
+      /*
        * A rule bites on anything above zero — a dish that MIGHT have pork in
        * it is not an answer you can give somebody who does not eat pork, so
        * the menu left to a diet is counted the same strict way the engine

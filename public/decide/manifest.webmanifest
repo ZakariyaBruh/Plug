@@ -34,7 +34,7 @@
     {
       "name": "Browse the menu",
       "short_name": "Menu",
-      "description": "All 178 dishes",
+      "description": "All 217 dishes",
       "url": "/decide/?go=dishes"
     },
     {
