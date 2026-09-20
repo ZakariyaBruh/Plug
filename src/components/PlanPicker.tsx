@@ -13,15 +13,21 @@ import {
   PREMIUM_PLAN_ID,
 } from '#/lib/products'
 import {
+  ANNUAL_SAVED,
   ANNUAL_SAVING,
+  HOUSEHOLD_SAVED,
   HOUSEHOLD_SEATS,
+  HOW_TO_LEAVE,
   PRICE_ANNUAL,
+  PRICE_ANNUAL_IF_MONTHLY,
   PRICE_ANNUAL_PER_MONTH,
   PRICE_ANNUAL_VALUE,
+  PRICE_HOUSEHOLD,
   PRICE_HOUSEHOLD_ANNUAL,
   PRICE_HOUSEHOLD_ANNUAL_VALUE,
-  PRICE_HOUSEHOLD_MONTHLY,
+  PRICE_HOUSEHOLD_IF_MONTHLY,
   PRICE_HOUSEHOLD_PER_MONTH,
+  PRICE_HOUSEHOLD_PER_SEAT,
   PRICE_HOUSEHOLD_VALUE,
   PRICE_MONTHLY,
   PRICE_VALUE,
@@ -37,36 +43,60 @@ import {
  * our own expense. So the switches carry the choice and the button stays
  * singular, reading out whichever of the four is selected.
  *
- * THE DEFAULTS ARE JUST ME, YEARLY. Most people buying this are buying it for
- * themselves, so "just me" is where it opens; yearly is preselected because it
- * is the cheaper of the two per month and the one worth having. Neither is
- * hidden and both alternatives print their own price, so nobody is being
- * walked past the option they came for.
+ * THE DEFAULTS ARE JUST ME, YEARLY, and that is the loudest thing on this
+ * page. Most people take whatever option requires no action — of every lever
+ * a pricing page can pull, the default effect is the one with the strongest
+ * replication behind it, and it is worth more than any amount of copy.
+ *
+ * It is also the one easiest to abuse, so: both alternatives sit on the same
+ * switch, at the same size, one tap away, each printing its own price in the
+ * same words. A default you can see and change is a suggestion. A default
+ * hidden behind a disclosure is a trick, and the difference is the whole of
+ * the ethics here. See docs/persuasion.md.
  *
  * All four plans carry the same seven-day trial, which is why the button says
  * the same thing whatever is selected and only the line above it changes.
  */
 
+/*
+ * WHAT EACH OF THE FOUR SAYS ABOUT ITSELF.
+ *
+ * Three fields rather than one sentence, because the yearly plans have an
+ * anchor to print and the monthly ones do not, and a single string cannot be
+ * struck through in the middle.
+ *
+ * `anchor` is twelve payments at this product's own monthly price — the real
+ * other way to buy the same thing, one tap away on the switch beside it. That
+ * is the only kind of reference price allowed here; see docs/persuasion.md.
+ */
 const PLANS = {
   'solo-yearly': {
     id: PREMIUM_ANNUAL_PLAN_ID,
     value: PRICE_ANNUAL_VALUE,
-    then: `then ${PRICE_ANNUAL} a year — ${PRICE_ANNUAL_PER_MONTH} a month, billed once`,
+    price: `${PRICE_ANNUAL} a year`,
+    anchor: `${PRICE_ANNUAL_IF_MONTHLY} if you paid monthly`,
+    note: `${PRICE_ANNUAL_PER_MONTH} a month, billed once. You keep ${ANNUAL_SAVED}.`,
   },
   'solo-monthly': {
     id: PREMIUM_PLAN_ID,
     value: PRICE_VALUE,
-    then: `then ${PRICE_MONTHLY}, cancel any time`,
+    price: `${PRICE_MONTHLY}`,
+    anchor: null,
+    note: 'Cancel any time.',
   },
   'household-yearly': {
     id: HOUSEHOLD_ANNUAL_PLAN_ID,
     value: PRICE_HOUSEHOLD_ANNUAL_VALUE,
-    then: `then ${PRICE_HOUSEHOLD_ANNUAL} a year for ${HOUSEHOLD_SEATS} — ${PRICE_HOUSEHOLD_PER_MONTH} a month, billed once`,
+    price: `${PRICE_HOUSEHOLD_ANNUAL} a year for ${HOUSEHOLD_SEATS}`,
+    anchor: `${PRICE_HOUSEHOLD_IF_MONTHLY} if you paid monthly`,
+    note: `${PRICE_HOUSEHOLD_PER_MONTH} a month, billed once — ${PRICE_HOUSEHOLD_PER_SEAT} each. You keep ${HOUSEHOLD_SAVED}.`,
   },
   'household-monthly': {
     id: HOUSEHOLD_MONTHLY_PLAN_ID,
     value: PRICE_HOUSEHOLD_VALUE,
-    then: `then ${PRICE_HOUSEHOLD_MONTHLY} for ${HOUSEHOLD_SEATS}, cancel any time`,
+    price: `${PRICE_HOUSEHOLD} a month for ${HOUSEHOLD_SEATS}`,
+    anchor: null,
+    note: 'Cancel any time.',
   },
 } as const
 
@@ -169,8 +199,19 @@ export function PlanPicker({
         <span
           className={`block font-normal text-[var(--text-dim)] ${heading ? 'text-sm' : 'text-base'}`}
         >
-          {plan.then}
+          {/* The price you pay, then the price you did not. The anchor is
+              struck through and stays dim: it is a comparison, not an offer,
+              and a struck-through number in the same weight as the live one
+              is how a pricing page starts lying by typography. */}
+          <b className="font-semibold text-[var(--text)]">then {plan.price}</b>
+          {plan.anchor ? (
+            <>
+              {' · '}
+              <s className="opacity-70">{plan.anchor}</s>
+            </>
+          ) : null}
         </span>
+        <span className="block text-sm font-normal text-[var(--text-dim)]">{plan.note}</span>
       </p>
 
       {who === 'household' ? (
@@ -194,6 +235,13 @@ export function PlanPicker({
       >
         Start {TRIAL_DAYS} days free
       </Link>
+
+      {/* THE EXIT, BESIDE THE ASK.
+          An easy way out is the most load-bearing trust signal on a page that
+          wants a card — and a reader who cannot find one is right to assume
+          the worst. Every clause is checkable: Account has one link, and so
+          does the Premium strip inside the game. */}
+      <p className="mt-3 max-w-sm text-xs text-[var(--text-dim)]">{HOW_TO_LEAVE}</p>
     </div>
   )
 }

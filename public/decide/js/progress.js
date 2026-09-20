@@ -898,6 +898,147 @@
     return bucket;
   };
 
+  /* ------------------------------------------------------------- noticing */
+  /*
+   * ONE TRUE THING ABOUT YOU, SAID AT THE END.
+   *
+   * The reward screen had elevation — confetti, a sound, XP — and nothing
+   * else. Of the four families of defining moment (elevation, insight, pride,
+   * connection), insight is the one a piece of software can actually deliver
+   * cheaply, because it already holds the evidence: sixty decisions with
+   * timestamps, a count per dish, and a yes/no tally per axis.
+   *
+   * So this returns a single sentence that is TRUE OF THE PERSON READING IT
+   * and that they did not say out loud. "That is the fourth time you have
+   * landed on ramen." Nobody tracks that about themselves. Being told it is
+   * the moment a profile stops being settings and starts being a thing that
+   * knows you — which is also, not coincidentally, the thing Premium is for.
+   *
+   * THE RULES.
+   *
+   * Everything here is counted, never inferred and never flattering. "You
+   * love spicy food" is a guess; "you have asked for heat nine times and
+   * turned it down once" is a fact with the arithmetic attached. If the
+   * numbers do not support a sentence, this returns null and the screen says
+   * nothing, which is a perfectly good outcome and happens often early on.
+   *
+   * DETERMINISTIC, on purpose. No shuffling, no random pick between several
+   * true things: the most specific applicable observation wins, always, so the
+   * same history produces the same sentence. An unpredictable reward on a
+   * screen somebody sees every night is a slot machine, and this app does not
+   * build those (see docs/persuasion.md).
+   */
+
+  /*
+   * How to say an axis out loud. Only the axes worth noticing are here — an
+   * observation about how often somebody wanted something handheld is true and
+   * boring, and a screen that says something boring every night trains people
+   * to stop reading it.
+   */
+  var LEANS = {
+    spicy:    { yes: 'asked for heat',            no: 'turned the heat down' },
+    sweet:    { yes: 'gone sweet',                no: 'gone savoury' },
+    hot:      { yes: 'wanted something hot',      no: 'wanted something cold' },
+    quick:    { yes: 'wanted it fast',            no: 'been happy to wait' },
+    comfort:  { yes: 'gone for comfort',          no: 'passed on comfort' },
+    light:    { yes: 'wanted something light',    no: 'wanted something heavier' },
+    fresh:    { yes: 'gone fresh',                no: 'gone the other way' },
+    indulgent:{ yes: 'gone indulgent',            no: 'kept it plain' },
+    cheap:    { yes: 'kept it cheap',             no: 'not minded the cost' }
+  };
+
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+
+  function ordinal(n) {
+    var rest = n % 100;
+    if (rest >= 11 && rest <= 13) return n + 'th';
+    // Indices 4..9 and 0 are absent from the list, so `|| 'th'` is the
+    // default — and it has to be applied to the SUFFIX, not to the whole
+    // string, or 4 concatenates to "4undefined" and that is truthy.
+    return n + (['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+  }
+
+  /*
+   * Returns { text } or null. `item` is the dish just accepted; it has not
+   * been written to history yet when the reward screen asks, so the counts
+   * here are read AFTER recordDecision and include it.
+   */
+  Progress.prototype.noticing = function (item, now) {
+    var s = this.state;
+    var when = now ? new Date(now) : new Date();
+
+    /*
+     * 1. THE SAME DISH AGAIN. The most specific thing that can be said, and
+     *    the one people react to, because it is the one they half-knew.
+     */
+    var times = (s.picks || {})[item.name] || 0;
+    if (times >= 3) {
+      return { text: 'That is the ' + ordinal(times) + ' time you have landed on ' +
+        item.name.toLowerCase() + '. At this point it is just your dish.' };
+    }
+
+    /*
+     * 2. A SETTLED OPINION. Five or more on one side of an axis and at least
+     *    four to one — below that it is a run, not a preference, and calling
+     *    a run a preference is exactly the overclaiming this app is trying
+     *    not to do.
+     */
+    var best = null;
+    Object.keys(LEANS).forEach(function (tag) {
+      var bucket = (s.taste || {})[tag];
+      if (!bucket) return;
+      ['yes', 'no'].forEach(function (side) {
+        var mine = bucket[side] || 0;
+        var other = bucket[side === 'yes' ? 'no' : 'yes'] || 0;
+        if (mine < 5 || mine < other * 4) return;
+        if (!best || mine > best.mine) best = { tag: tag, side: side, mine: mine, other: other };
+      });
+    });
+    if (best) {
+      return { text: 'You have ' + LEANS[best.tag][best.side] + ' ' + plural(best.mine, 'time', 'times') +
+        ' and gone the other way ' + plural(best.other, 'time', 'times') + '. That is not a phase.' };
+    }
+
+    /*
+     * 3. THE SAME HOUR. Four decisions inside the same two-hour window is a
+     *    routine, and naming somebody's routine back to them is the cheapest
+     *    true surprise in the file.
+     */
+    var hour = when.getHours();
+    var sameHour = (s.history || []).filter(function (entry) {
+      var h = new Date(entry.at).getHours();
+      var gap = Math.abs(h - hour);
+      return Math.min(gap, 24 - gap) <= 1;
+    }).length;
+    if (sameHour >= 4) {
+      return { text: plural(sameHour, 'time', 'times') + ' now you have worked this out at ' +
+        'around this hour. Whatever else is going on, dinner has a slot.' };
+    }
+
+    /*
+     * 4. BREADTH. The one people are most pleased to be told, because the
+     *    fear behind "what should I eat" is usually that the answer is always
+     *    the same four things.
+     */
+    var distinct = Object.keys(s.picks || {}).length;
+    if (distinct >= 10 && s.decisions >= distinct) {
+      return { text: plural(distinct, 'different dish', 'different dishes') + ' so far, across ' +
+        plural(s.decisions, 'decision', 'decisions') + '. You are not in a rut.' };
+    }
+
+    /*
+     * 5. A ROUND NUMBER. Last, because it is about the app rather than about
+     *    them — but a count of decisions is a count of arguments that did not
+     *    happen, and that is worth one line every tenth time.
+     */
+    if (s.decisions >= 10 && s.decisions % 10 === 0) {
+      return { text: plural(s.decisions, 'decision', 'decisions') + ' made here. That is ' +
+        plural(s.decisions, 'evening', 'evenings') + ' you did not spend arguing about it.' };
+    }
+
+    return null;
+  };
+
   // How much a tap on a chip is worth, in games.
   var LOVE_WEIGHT = 3;
 

@@ -20,6 +20,8 @@ import {
   SITE_TITLE,
   SITE_URL,
   STANDARD,
+  THE_GIFT,
+  THE_INSIGHT,
   THE_JOBS,
   WHAT_IT_IS,
   TRIAL_DAYS,
@@ -199,6 +201,25 @@ function HomePage() {
             it reads those three paragraphs differently. */}
         <GamePreview />
 
+        {/* THE INSIGHT BEAT, and it sits here on purpose.
+            Somebody who has just been handed an answer by five either-ors has
+            the evidence for this paragraph in their hands; the same paragraph
+            three screens earlier is a claim they have no way to check. The
+            Heaths' four families of defining moment are elevation, insight,
+            pride and connection — this page had elevation and nothing else. */}
+        <section className="border-t border-[var(--border)] py-16">
+          <div className="mx-auto max-w-3xl px-6">
+            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
+              {THE_INSIGHT.eyebrow}
+            </p>
+            <h2 className="mt-2 max-w-2xl text-3xl font-bold sm:text-4xl">{THE_INSIGHT.heading}</h2>
+            <p className="mt-5 max-w-2xl text-lg text-[var(--text-dim)]">{THE_INSIGHT.body}</p>
+            <p className="mt-4 max-w-2xl text-lg">
+              <b>{THE_INSIGHT.kicker}</b>
+            </p>
+          </div>
+        </section>
+
         {/* WHAT THIS IS, before how it works. The page went straight from the
             mechanic to six extra game modes, so a stranger read about Knockout
             before they read about dietary rules or recipes — and left with no
@@ -287,11 +308,13 @@ function HomePage() {
                 works, and that what you pay for is it remembering you — which
                 is the one thing a profile that saves nothing can never do. */}
             <h2 className="mt-2 text-3xl font-bold">Free answers the question. Premium remembers the answer.</h2>
+            {/* RECIPROCITY, WITH THE RECEIPT KEPT.
+                Give first and then ask — but the giving only counts if the
+                person knows it happened, and this product gives a great deal
+                and used to mention it three screens away from the price. */}
             <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              The decide game, the whole catalogue, and everything you do not eat are free and
-              always will be — applied to every decision, no account needed. Premium is the part
-              that keeps up with you: it learns what you like, stops offering it twice, gets you
-              as far as the table, and covers the person you eat with.
+              {THE_GIFT} It learns what you like, stops offering it twice, gets you as far as the
+              table, and covers the person you eat with.
             </p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
               <div className="rounded-2xl border border-[var(--border)] p-8">

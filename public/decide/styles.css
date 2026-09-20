@@ -1038,6 +1038,20 @@ kbd {
   color: var(--ink-3);
 }
 
+/*
+ * The count is the loudest thing on this line, which is the point of putting
+ * it there: it is the only part that carries information the player can act
+ * on, and it changes every question. `tabular-nums` so three digits falling to
+ * two does not shove the word beside it sideways.
+ */
+.closing-count {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.closing-count:empty { display: none; }
+
 /* a hairline that fills — no percentage chip, no bar in a box */
 .thread {
   display: block;
@@ -1083,6 +1097,21 @@ kbd {
 }
 
 .verdict-note { color: var(--ink-2); font-size: var(--t-md); max-width: 32ch; }
+
+/*
+ * The one true thing about you. Quieter than the closing line above it and
+ * set apart by a rule rather than by colour: it is an aside, not a reward,
+ * and giving it the amber would make a counted fact look like a prize.
+ */
+.verdict-notice {
+  margin-top: .8rem;
+  padding-top: .8rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--t-sm);
+  max-width: 34ch;
+  animation: toast-in .5s .35s both;
+}
 
 .reasons {
   list-style: none;

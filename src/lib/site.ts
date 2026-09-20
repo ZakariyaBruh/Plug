@@ -145,6 +145,26 @@ export const PRICE_ANNUAL_PER_MONTH = `$${(PRICE_ANNUAL_VALUE / 12).toFixed(2)}`
 export const ANNUAL_SAVING = Math.round((1 - PRICE_ANNUAL_VALUE / (PRICE_VALUE * 12)) * 100)
 
 /*
+ * THE ANCHOR, AND WHY IT IS ALLOWED TO BE ONE.
+ *
+ * People judge a price against whatever number they saw first, so a pricing
+ * page that shows $29.99 alone is being read against nothing. The number put
+ * beside it here is $59.88 — twelve payments at the monthly price, on this
+ * product, which is the actual other way to buy the same thing and is sitting
+ * one tap away on the same switch.
+ *
+ * That is the whole test for an anchor: it has to be a real alternative the
+ * reader could take. An invented "was $99" would be the identical technique
+ * and a lie, and the difference is not subtle to anybody who checks.
+ *
+ * Computed, not written down, for the same reason ANNUAL_SAVING is: two
+ * prices and a claim about the gap between them is three numbers that can
+ * disagree, and the one that gets caught is the claim.
+ */
+export const PRICE_ANNUAL_IF_MONTHLY = `$${(PRICE_VALUE * 12).toFixed(2)}`
+export const ANNUAL_SAVED = `$${(PRICE_VALUE * 12 - PRICE_ANNUAL_VALUE).toFixed(2)}`
+
+/*
  * HOUSEHOLD: the same thing, for two people.
  *
  * The argument this app is sold against happens between two people, so a
@@ -228,6 +248,43 @@ export const PRICE_HOUSEHOLD_ANNUAL_VALUE = 47.99
 export const PRICE_HOUSEHOLD_ANNUAL = '$47.99'
 export const PRICE_HOUSEHOLD_YEARLY = `${PRICE_HOUSEHOLD_ANNUAL}/year`
 export const PRICE_HOUSEHOLD_PER_MONTH = `$${(PRICE_HOUSEHOLD_ANNUAL_VALUE / 12).toFixed(2)}`
+export const PRICE_HOUSEHOLD_IF_MONTHLY = `$${(PRICE_HOUSEHOLD_VALUE * 12).toFixed(2)}`
+export const HOUSEHOLD_SAVED = `$${(PRICE_HOUSEHOLD_VALUE * 12 - PRICE_HOUSEHOLD_ANNUAL_VALUE).toFixed(2)}`
+/** Per person, per month, on the yearly household plan. The honest unit. */
+export const PRICE_HOUSEHOLD_PER_SEAT = `$${(PRICE_HOUSEHOLD_ANNUAL_VALUE / 12 / HOUSEHOLD_SEATS).toFixed(2)}`
+
+/*
+ * THE GIFT, SAID OUT LOUD BEFORE THE ASK.
+ *
+ * Reciprocity is give-then-ask, and this product gives a great deal: the
+ * whole decide game, every dish, a recipe behind each one, and every dietary
+ * rule — permanently, with no account. All of that was already true and none
+ * of it was ever stated next to the price, which is reciprocity with the
+ * receipt thrown away. Nobody feels given-to by something they were never
+ * told they were given.
+ *
+ * No numbers in it that are not checked elsewhere on the page.
+ */
+export const THE_GIFT =
+  'Deciding is free. Every dish, every recipe, and everything you do not eat — free, ' +
+  'permanently, with no account and no card. Premium is the part that keeps up with you.'
+
+/*
+ * HOW TO LEAVE, NEXT TO THE ASK RATHER THAN IN THE SMALL PRINT.
+ *
+ * Partly because an easy exit is the single most load-bearing trust signal on
+ * a page that wants a card, and a reader who cannot find one assumes the worst
+ * correctly. Partly because the FTC's amended Negative Option Rule requires
+ * cancelling to be as easy as subscribing, and a product that meets that bar
+ * may as well get credit for meeting it.
+ *
+ * Every clause here is checkable: Account → "Manage or cancel your
+ * subscription" is one link, and the same link is on the Premium strip inside
+ * the game.
+ */
+export const HOW_TO_LEAVE =
+  'Cancel from your account page — one link, no email to write and nobody to talk to. ' +
+  'Cancel during the trial and you are not charged at all.'
 
 /** "7 days free, then $4.99/month" — the whole offer, for body copy. */
 export const OFFER = `${TRIAL_DAYS} days free, then ${PRICE_MONTHLY}`
@@ -270,6 +327,39 @@ export const TRIAL_TERMS_ANNUAL = `Free for ${TRIAL_DAYS} days, then ${PRICE_YEA
  */
 export const WHAT_IT_IS =
   'An assistant for working out what to eat. It asks, you point, and it gets you fed.'
+
+/*
+ * THE INSIGHT, WHICH IS THE ONE THING THIS SITE KNOWS THAT THE READER DOES NOT.
+ *
+ * The Heaths' four families of defining moment are elevation, insight, pride
+ * and connection, and of the four, insight is the one a landing page can
+ * actually deliver: a sentence that rearranges something the reader already
+ * believed. This site had elevation (the reveal) and nothing else.
+ *
+ * The rearrangement is real and it is the product's whole thesis. People who
+ * cannot decide what to eat conclude they are indecisive. They are not. They
+ * are being asked an open question with several hundred answers and no
+ * shortlist, at the exact hour of the day when they have least left to think
+ * with — and open questions are the hardest kind for anybody. Change the
+ * question to a closed one and the same person answers instantly and
+ * correctly, every time.
+ *
+ * It is allowed to be here because it is true, it is checkable against the
+ * reader's own memory of last Tuesday, and believing it makes them better off
+ * whether or not they ever pay for anything.
+ */
+export const THE_INSIGHT = {
+  eyebrow: 'Why this works',
+  heading: 'You are not indecisive. It is a badly asked question.',
+  body:
+    '“What do you want to eat?” is an open question with hundreds of right answers, asked at the ' +
+    'hour of the day when you have the least left to think with. Nobody is good at those. Ask the ' +
+    'same person a closed one — hot or cold, now or later — and they answer in half a second and ' +
+    'they are never wrong, because there are no wrong ones.',
+  kicker:
+    'So this does not ask you the hard question. It asks you eight easy ones and does the hard ' +
+    'part itself.',
+}
 
 /** The three jobs, which every page is arranged around. */
 export const THE_JOBS: { name: string; blurb: string }[] = [

@@ -3719,7 +3719,42 @@
     $('meter-fill').style.width = Math.round(confidence * 100) + '%';
     $('hunch').textContent = game.answers.length ? Flavor.hunch(confidence) : 'Wide open';
 
+    /*
+     * HOW MANY ARE STILL STANDING, as a number rather than as a mood.
+     *
+     * shortlist() is the dishes contradicting nothing the player has said —
+     * the same list the reveal picks from — so this is not a progress bar
+     * dressed as a count, it is the count. Effort towards a goal rises as the
+     * goal gets closer, and three hundred falling to six does that where
+     * "getting warmer" does not.
+     *
+     * Said in words rather than as a bare integer, because "6" alone beside a
+     * question reads as a score. Hidden on question one: a number that has not
+     * moved yet is not evidence of anything.
+     */
+    var standing = game.shortlist().length;
+    $('still').textContent = game.answers.length && standing ? stillSaying(standing) : '';
+
     replay($('q-text'));
+  }
+
+  /*
+   * The count, in words.
+   *
+   * The same three phrasings the landing preview uses, deliberately: somebody
+   * who played the trailer and then tapped through should meet the sentence
+   * they already met. A bare integer beside a question also reads as a score
+   * rather than as progress, which is the opposite of what it is for.
+   *
+   * It goes static near the end — the engine keeps asking after the field is
+   * down to two, to break the tie between them — and "Down to 2" repeated
+   * reads as an achievement holding, where "2 left" repeated reads as a
+   * counter that has jammed.
+   */
+  function stillSaying(left) {
+    if (left === 1) return 'One left';
+    if (left <= 3) return 'Down to ' + left;
+    return left + ' left';
   }
 
   function step() {
@@ -4114,6 +4149,19 @@
      * not peppy. Nothing here congratulates anybody on tapping a button.
      */
     $('done-text').textContent = DONE_LINES[Math.floor(Math.random() * DONE_LINES.length)];
+
+    /*
+     * AND ONE TRUE THING ABOUT THEM.
+     *
+     * The closing line above is written by us and is the same for everybody
+     * on the same roll of the dice. This one is theirs: counted from their own
+     * sixty decisions, never inferred, and absent entirely when the numbers do
+     * not carry it. Read AFTER recordDecision so the dish just accepted is
+     * included in its own count — "the fourth time" should mean this one.
+     */
+    var notice = progress.noticing(item);
+    $('done-notice').hidden = !notice;
+    if (notice) $('done-notice').textContent = notice.text;
 
     /*
      * The end of the game, and the last and largest of the prompt slots.

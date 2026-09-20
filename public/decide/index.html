@@ -642,7 +642,16 @@
             </button>
             <button class="plain" id="choice-either">Either, honestly</button>
           </div>
-          <p class="closing"><span id="hunch">Wide open</span><i class="thread"><span id="meter-fill"></span></i></p>
+          <!--
+            The count, the word and the hairline. The count is the real number
+            of dishes still contradicting nothing, recomputed every question:
+            effort towards a goal rises as the goal gets closer, and a number
+            falling from three hundred to one does that work in a way that
+            "getting warmer" cannot. The landing page has promised this exact
+            number since the preview shipped; the app itself only ever said a
+            word.
+          -->
+          <p class="closing"><b class="closing-count" id="still"></b><span id="hunch">Wide open</span><i class="thread"><span id="meter-fill"></span></i></p>
         </div>
       </div>
 
@@ -730,6 +739,13 @@
             <h2 class="verdict-name" id="done-name">Sorted.</h2>
           </div>
           <p class="verdict-note" id="done-text">Go and eat it.</p>
+          <!--
+            ONE TRUE THING ABOUT YOU. Filled from progress.noticing(), which
+            counts rather than guesses, and stays hidden when the numbers do
+            not support a sentence — which is most of the first week. See the
+            long comment over noticing() in progress.js.
+          -->
+          <p class="verdict-notice" id="done-notice" hidden></p>
         </div>
 
         <p class="xp-line"><span id="xp-total">+0</span> <span>XP</span></p>

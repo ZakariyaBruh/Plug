@@ -19,6 +19,7 @@ import {
   PREMIUM_HEADLINES,
   PREMIUM_SECTIONS,
   STANDARD,
+  THE_GIFT,
   TRIAL_DAYS,
   TAX_NOTE,
   pageHead,
@@ -97,17 +98,32 @@ function PremiumPage() {
                 </Link>
               </div>
             ) : (
-              <div className="mt-8 flex justify-center">
-                {/* The h1 above is already "7 days free". */}
-                <PlanPicker heading={false} />
-              </div>
+              <>
+                {/* THE GIFT, IMMEDIATELY BEFORE THE ASK.
+                    Reciprocity is give-then-ask, and the giving here is large
+                    and permanent — and was stated nowhere near the price,
+                    which is reciprocity with the receipt thrown away. Nobody
+                    feels given-to by something they were never told they were
+                    given. It sits above the picker rather than below it
+                    because the order is the mechanism. */}
+                <p className="mx-auto mt-10 max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--bg-raised)] px-5 py-4 text-sm text-[var(--text-dim)]">
+                  <b className="text-[var(--text)]">You already have the main thing. </b>
+                  {THE_GIFT}
+                </p>
+                <div className="mt-8 flex justify-center">
+                  {/* The h1 above is already "7 days free". */}
+                  <PlanPicker heading={false} />
+                </div>
+              </>
             )}
+            {/* The picker now carries how to leave, right under its own
+                button, so this said the same thing a second time a hand's
+                width below it. What is left is the part the picker does not
+                say: what happens if you cancel after the trial, and tax. */}
             <p className="mt-4 text-sm text-[var(--text-dim)]">
-              Nothing is charged for {TRIAL_DAYS} days on either plan. Cancel before it ends and
-              you pay nothing; cancel afterwards and you keep it until the period you paid for
-              ends.
+              Cancel after the trial and you keep Premium until the period you already paid for
+              runs out. {TAX_NOTE}
             </p>
-            <p className="mt-2 text-sm text-[var(--text-dim)]">{TAX_NOTE}</p>
           </div>
         </section>
 
