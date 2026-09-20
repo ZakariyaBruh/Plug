@@ -168,6 +168,23 @@ you it is about to die, and nothing is taken away for missing a night. A
 product for people who are tired and hungry should not add a thing to feel bad
 about at 7pm.
 
+## The public copy
+
+`src/lib/honesty.ts` and `/honesty` are this document rewritten for the person
+the techniques are used on. It carries the same four refusals in plainer
+words, and `scripts/honesty-test.mjs` fails the build if any of them stops
+being named in both — the drift that actually happens is not a typo, it is
+somebody quietly dropping one on the way to shipping it.
+
+Publishing it is partly a differentiator and partly a forcing function: a
+technique that cannot be described plainly to the person it is used on should
+not be in the product, and having to write that sentence is the fastest way to
+find out. Two were dropped on that test while the page was being written: a
+decoy price tier (already refused above on replication grounds, and refused
+twice over once it had to be described to a reader), and an artificial pause
+before the reveal — a labour illusion — which is indefensible in a product
+whose entire pitch is that this takes twenty seconds.
+
 ## How to add to this file
 
 If you are adding something persuasive: name the effect, cite what it rests

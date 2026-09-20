@@ -4715,3 +4715,26 @@ body.is-welcoming { overflow: hidden; }
   gap: var(--s4);
   margin-top: var(--s3);
 }
+
+
+/* --------------------------------------------------- what I know about you */
+.known { list-style: none; margin: var(--s3) 0 0; padding: 0; }
+
+.known li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  padding: .5rem 0;
+  border-top: 1px solid var(--hair);
+  font-size: var(--t-sm);
+  color: var(--ink-2);
+}
+
+.known li:first-child { border-top: 0; }
+
+/* The number is the point of the row, so it is the only part in full ink. */
+.known b {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.2rem;
+}

@@ -34,6 +34,12 @@ export function SiteFooter() {
           <Link to="/privacy" className="hover:text-[var(--text)]">
             Privacy
           </Link>
+          {/* In the footer of every page on purpose. A page listing the ways
+              this site is trying to persuade you is worth nothing if it is
+              only reachable by somebody who already suspected. */}
+          <Link to="/honesty" className="hover:text-[var(--text)]">
+            What this does to you
+          </Link>
           {/* The affiliate programme existed in exactly one place before this:
               a button inside a prompt in the game that comes up occasionally.
               Nobody could go and find it on purpose. It belongs in the footer

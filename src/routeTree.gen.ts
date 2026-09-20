@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as DecideRouteImport } from './routes/decide'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as HonestyRouteImport } from './routes/honesty'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as OrderCompleteRouteImport } from './routes/order-complete'
 import { Route as PremiumRouteImport } from './routes/premium'
@@ -57,6 +58,11 @@ const DecideRoute = DecideRouteImport.update({
 const FaqRoute = FaqRouteImport.update({
   id: '/faq',
   path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HonestyRoute = HonestyRouteImport.update({
+  id: '/honesty',
+  path: '/honesty',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HowItWorksRoute = HowItWorksRouteImport.update({
@@ -190,6 +196,7 @@ export interface FileRoutesByFullPath {
   '/account': typeof AccountRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
+  '/honesty': typeof HonestyRoute
   '/how-it-works': typeof HowItWorksRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
@@ -221,6 +228,7 @@ export interface FileRoutesByTo {
   '/account': typeof AccountRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
+  '/honesty': typeof HonestyRoute
   '/how-it-works': typeof HowItWorksRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
@@ -253,6 +261,7 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
+  '/honesty': typeof HonestyRoute
   '/how-it-works': typeof HowItWorksRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
@@ -286,6 +295,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/decide'
     | '/faq'
+    | '/honesty'
     | '/how-it-works'
     | '/order-complete'
     | '/premium'
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/decide'
     | '/faq'
+    | '/honesty'
     | '/how-it-works'
     | '/order-complete'
     | '/premium'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/account'
     | '/decide'
     | '/faq'
+    | '/honesty'
     | '/how-it-works'
     | '/order-complete'
     | '/premium'
@@ -380,6 +392,7 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   DecideRoute: typeof DecideRouteWithChildren
   FaqRoute: typeof FaqRoute
+  HonestyRoute: typeof HonestyRoute
   HowItWorksRoute: typeof HowItWorksRoute
   OrderCompleteRoute: typeof OrderCompleteRoute
   PremiumRoute: typeof PremiumRoute
@@ -434,6 +447,13 @@ declare module '@tanstack/react-router' {
       path: '/faq'
       fullPath: '/faq'
       preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/honesty': {
+      id: '/honesty'
+      path: '/honesty'
+      fullPath: '/honesty'
+      preLoaderRoute: typeof HonestyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/how-it-works': {
@@ -630,6 +650,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   DecideRoute: DecideRouteWithChildren,
   FaqRoute: FaqRoute,
+  HonestyRoute: HonestyRoute,
   HowItWorksRoute: HowItWorksRoute,
   OrderCompleteRoute: OrderCompleteRoute,
   PremiumRoute: PremiumRoute,

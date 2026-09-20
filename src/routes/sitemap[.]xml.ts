@@ -25,6 +25,7 @@ const PAGES: Array<[path: string, priority: string]> = [
   ['/premium', '0.8'],
   ['/how-it-works', '0.7'],
   ['/faq', '0.6'],
+  ['/honesty', '0.4'],
   ['/privacy', '0.3'],
 ]
 

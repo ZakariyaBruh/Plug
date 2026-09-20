@@ -7677,6 +7677,116 @@
   });
 
   /* --------------------------------------------------------------- profile */
+  /*
+   * WHAT YOU HAVE BUILT HERE, IN ONE PLACE.
+   *
+   * Everything in this list is already on this screen somewhere — the diets
+   * are nine strips down, the struck-off dishes are eleven, the plan is on
+   * the reward screen. Scattered like that they are settings, and settings
+   * are a chore somebody did once. Gathered up with a number attached they
+   * are an investment, and people value what they have put work into far
+   * beyond what the work was worth.
+   *
+   * Which is a real effect and also, here, a true description: a profile with
+   * four rules on it genuinely is better at this than one with none, and the
+   * last line says by how much, counted against the catalogue rather than
+   * asserted.
+   *
+   * NOTHING SPECULATIVE IN IT. No "you seem to like", no completeness meter,
+   * no empty rows inviting anybody to fill them in. A row appears when there
+   * is a number to put in it and the whole panel hides when there are none,
+   * because a list of zeroes is a to-do list and this is not one.
+   */
+  function renderKnown() {
+    var wrap = $('known-wrap');
+    if (!wrap) return;
+    var state = progress.state;
+    var rows = [];
+
+    function row(n, text) { if (n > 0) rows.push({ n: n, text: text }); }
+
+    /*
+     * Named rather than counted where the names are short enough to fit,
+     * because "Halal, vegetarian" is a thing somebody recognises about
+     * themselves and "2 diets" is an inventory line.
+     */
+    var diets = (state.diets || []).map(function (id) {
+      for (var i = 0; i < ProgressLib.DIETS.length; i++) {
+        if (ProgressLib.DIETS[i].id === id) return ProgressLib.DIETS[i].label;
+      }
+      return null;
+    }).filter(Boolean);
+    /*
+     * Ticked rather than counted. "2 diets" is an inventory line; "Halal,
+     * vegetarian" is a thing somebody recognises about themselves, and a
+     * number in front of it would be counting the labels rather than saying
+     * anything.
+     */
+    if (diets.length) rows.push({ text: diets.join(', '), plain: true });
+
+    var named = (state.rules || []).length;
+    row(named, named === 1 ? 'single thing you would rather not be handed'
+                           : 'single things you would rather not be handed');
+
+    var banned = Object.keys(state.banned || {}).length;
+    row(banned, banned === 1 ? 'dish struck off for good' : 'dishes struck off for good');
+
+    var loves = (state.loves || []).length;
+    row(loves, loves === 1 ? 'thing you said you like' : 'things you said you like');
+
+    var saved = (state.favourites || []).length;
+    row(saved, saved === 1 ? 'dish saved' : 'dishes saved');
+
+    var rated = Object.keys(state.ratings || {}).length;
+    row(rated, rated === 1 ? 'verdict after eating' : 'verdicts after eating');
+
+    var distinct = Object.keys(state.picks || {}).length;
+    row(distinct, distinct === 1 ? 'different dish landed on' : 'different dishes landed on');
+
+    var plan = progress.plan();
+    if (plan) rows.push({ text: 'A plan — ' + plan.phrase, plain: true });
+
+    wrap.hidden = rows.length === 0;
+    if (!rows.length) return;
+
+    var list = $('known-list');
+    list.innerHTML = '';
+    rows.forEach(function (r) {
+      var li = document.createElement('li');
+      var b = document.createElement('b');
+      b.textContent = r.plain ? '✓' : r.n;
+      var span = document.createElement('span');
+      span.textContent = r.text;
+      li.appendChild(b);
+      li.appendChild(span);
+      list.appendChild(li);
+    });
+
+    /*
+     * AND WHAT IT ACTUALLY CHANGES.
+     *
+     * Counted against the real catalogue with the real rule test — the same
+     * effectiveRules() and breaksRules() every screen that serves a dish
+     * uses, so this cannot claim a filter the game does not apply. Without
+     * this line the panel is a receipt; with it, it is the reason the receipt
+     * was worth keeping.
+     */
+    var rules = effectiveRules();
+    var off = rules.length
+      ? Data.ITEMS.filter(function (dish) { return breaksRules(dish, rules); }).length
+      : 0;
+    var note = $('known-effect');
+    if (off > 0) {
+      note.hidden = false;
+      note.textContent = 'That takes ' + off + ' of the ' + Data.ITEMS.length +
+        ' dishes off the table before I ask you anything, every time, on every screen. ' +
+        'All of it stays in this browser.';
+    } else {
+      note.hidden = false;
+      note.textContent = 'All of it stays in this browser. Nothing here is sent anywhere.';
+    }
+  }
+
   function renderProfile() {
     var level = progress.level();
     var state = progress.state;
@@ -7706,6 +7816,7 @@
     $('tile-streak').textContent = state.streak;
     $('tile-dishes').textContent = Object.keys(state.picks).length;
 
+    renderKnown();
     renderPlus();
     renderFavourites();
     renderDietGroups('diet-groups', 'diet-caveats');
