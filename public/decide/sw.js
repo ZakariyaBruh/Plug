@@ -50,7 +50,6 @@ var SHELL = [
   'js/progress.js',
   'js/recipes.js',
   'js/sound.js',
-  'js/sync.js',
   'js/taste.js'
 ];
 

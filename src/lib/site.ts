@@ -217,7 +217,7 @@ export const THE_JOBS: { name: string; blurb: string }[] = [
   {
     name: 'It remembers what you don’t eat',
     blurb:
-      'Halal, kosher, vegetarian, vegan, an allergy, or the one ingredient you cannot stand. Told once, applied to every decision, every mode and every list — free on every profile, and free for good. Sign in and it follows you to your other devices.',
+      'Halal, kosher, vegetarian, vegan, an allergy, or the one ingredient you cannot stand. Told once, applied to every decision, every mode and every list — free on every profile, and free for good. It lives in the browser you play in; a new device starts fresh.',
   },
   {
     name: 'It gets you fed',
