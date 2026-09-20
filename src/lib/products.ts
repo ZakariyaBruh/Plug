@@ -79,3 +79,23 @@ export const SELLABLE_PLAN_IDS: readonly string[] = [
   PREMIUM_ANNUAL_PLAN_ID,
   ...HOUSEHOLD_PLAN_IDS,
 ]
+
+/*
+ * A FREE ACCOUNT, WHICH IS WHERE A PROFILE LIVES.
+ *
+ * Everything the game knows about somebody has always been in one browser's
+ * localStorage, so a new phone meant starting again — and "it remembers what
+ * you like" is not a promise you can keep in a place that only one device can
+ * reach.
+ *
+ * This app has no database. No KV, no D1, no R2: the worker is hosted by Whop
+ * and the only durable store in reach is Whop's own. So an account is a
+ * membership on a free plan, and the profile is that membership's metadata.
+ *
+ * ON ITS OWN PRODUCT, DELIBERATELY. Premium access is a check against
+ * PREMIUM_PRODUCT_ID, and a free plan attached to that product would hand out
+ * Premium to everybody who signed in. This product grants nothing at all: it
+ * exists to be a place to keep 3KB of somebody's own dinners.
+ */
+export const ACCOUNT_PRODUCT_ID = 'prod_hoNUXPfZ8aQJ3'
+export const ACCOUNT_PLAN_ID = 'plan_pJ4jecSQ1yMfm'

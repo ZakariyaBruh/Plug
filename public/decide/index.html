@@ -21,7 +21,7 @@
 <meta property="og:image" content="https://morsels45-app.whop.site/site-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="morsels45 — stop scrolling, start eating">
+<meta property="og:image:alt" content="morsels45 — an assistant for working out what to eat">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="morsels45 — what should you eat?">
 <meta name="twitter:description" content="A handful of either-or questions and you have an answer. 133 dishes, no sign-up, and an answer in about twenty seconds.">
@@ -285,9 +285,13 @@
          pitch clean, with nothing in front of it. -->
     <p class="landing-hello" id="landing-hello" hidden></p>
 
-    <h1 class="landing-ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s alright &mdash; I might.</em></h1>
-    <p class="landing-sub">A few easy either-ors &mdash; sweet or savoury, hot or cold, hands or cutlery &mdash;
-    and we&rsquo;ll work out what you actually feel like. Usually in about eight questions.</p>
+    <!-- Word for word what the site's own hero says, which is the point: the
+         two screens are the same product and used to end on a promise to read
+         minds. An assistant asks. -->
+    <h1 class="landing-ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s what I&rsquo;m for.</em></h1>
+    <p class="landing-sub">A few easy either-ors &mdash; sweet or savoury, hot or cold, hands or
+    cutlery. I rule out everything you don&rsquo;t eat, and hand you one answer with the recipe
+    behind it.</p>
 
     <div class="landing-actions">
       <button class="go go-big" id="landing-start">
@@ -1836,6 +1840,30 @@
       </div>
       <p class="fine" id="freeze-note" hidden></p>
 
+      <!-- ===================================================================
+           YOUR PROFILE, ON YOUR OTHER DEVICES.
+           Free, optional, and above the Premium strip on purpose: it is not
+           a paid feature and it should not be read as the first step of a
+           sales pitch. Everything the game knows about somebody lives in one
+           browser until they ask for this, and a halal or coeliac profile
+           that vanishes on a new phone is the app failing at the one thing
+           it promises to remember.
+           =================================================================== -->
+      <section class="strip" id="sync-strip">
+        <h2 class="strip-title">Your profile, everywhere</h2>
+        <p class="fine">What you have eaten, what you have saved, and above all what you
+        don&rsquo;t eat &mdash; kept so another device can pick it up. Free, no card, and
+        it is not Premium. <b>If you use it in two places, whichever you changed last
+        is the one that is kept.</b></p>
+        <div class="settings">
+          <div class="setting">
+            <span><b id="sync-state">Off</b><small id="sync-note">Right now this profile
+            only exists in this browser.</small></span>
+            <a class="quiet" id="sync-action" href="#">Turn it on</a>
+          </div>
+        </div>
+      </section>
+
       <!-- Premium here is exactly what the account page already knows: real
            Whop sign-in, real product access, checked server-side. Nothing to
            paste, nothing bound to this one browser — sign into the same Whop
@@ -2301,6 +2329,7 @@
      no licence key, no per-browser account. -->
 <script src="js/premium.js"></script>
 <script src="js/progress.js"></script>
+<script src="js/sync.js"></script>
 <script src="js/sound.js"></script>
 <script src="js/confetti.js"></script>
 <script src="js/places.js"></script>

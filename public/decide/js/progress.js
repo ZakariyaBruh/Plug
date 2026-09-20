@@ -249,6 +249,8 @@
       rules: [],              // tags never to be served, e.g. ['meat']
       diets: [],              // DIETS ids picked on the way in, e.g. ['halal']
       onboarded: false,       // has the first-run walkthrough been seen through
+      savedAt: 0,             // when this profile last changed, for syncing
+      sync: false,            // has this device been told to keep it on an account
 
       // --- morsels45 Premium ---
       plus: false,            // is the paid tier switched on
@@ -437,8 +439,50 @@
     });
   };
 
+  /*
+   * Every save stamps the state with the moment it happened.
+   *
+   * This is the whole of the conflict rule for syncing (see sync.js): two
+   * devices, and the one that wrote last is the one that is kept. It is
+   * stamped here rather than at the point of syncing so that it describes
+   * when the PROFILE changed, not when it was last uploaded — a device that
+   * has been edited and not yet uploaded still has the newer copy, and should
+   * win when it finally gets a connection.
+   *
+   * `onSave` is how sync.js hears about it without progress.js having to know
+   * that syncing exists.
+   */
   Progress.prototype.save = function () {
+    this.state.savedAt = Date.now();
     try { this.storage.setItem(KEY, JSON.stringify(this.state)); } catch (err) { /* not fatal */ }
+    if (typeof this.onSave === 'function') {
+      try { this.onSave(this.state); } catch (err) { /* a listener must never break a save */ }
+    }
+  };
+
+  /*
+   * Replace everything with a profile from somewhere else, and write it down.
+   *
+   * Used by sync.js when the copy on the server is newer than this one. It
+   * goes through blank() and the same field-by-field merge reload() uses, so
+   * a profile written by an older or newer build of the app still lands in a
+   * shape this build understands, and anything it does not recognise is
+   * dropped rather than carried into the running state.
+   */
+  Progress.prototype.adopt = function (incoming) {
+    if (!incoming || typeof incoming !== 'object') return false;
+    var fresh = blank();
+    Object.keys(fresh).forEach(function (k) {
+      if (incoming[k] !== undefined && incoming[k] !== null) fresh[k] = incoming[k];
+    });
+    this.state = fresh;
+    // Kept from the incoming copy rather than restamped: this profile is as
+    // old as it is, and restamping it would make a stale device look like the
+    // freshest one on the next comparison.
+    this.state.savedAt = Number(incoming.savedAt) || Date.now();
+    try { this.storage.setItem(KEY, JSON.stringify(this.state)); } catch (err) { /* not fatal */ }
+    this.reload();
+    return true;
   };
 
   Progress.prototype.level = function () {

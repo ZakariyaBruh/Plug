@@ -1,7 +1,7 @@
 export const SITE_NAME = 'morsels45'
 export const SITE_URL = 'https://morsels45-app.whop.site'
 export const SITE_CARD = `${SITE_URL}/site-card.png`
-export const SITE_CARD_ALT = 'morsels45 — stop scrolling, start eating'
+export const SITE_CARD_ALT = 'morsels45 — an assistant for working out what to eat'
 
 /*
  * The Android build — a signed release APK served from this site rather than
@@ -189,9 +189,46 @@ export const TRIAL_TERMS = `Free for ${TRIAL_DAYS} days, then ${PRICE_MONTHLY}. 
 /** The same terms for the yearly plan, which has the same trial. */
 export const TRIAL_TERMS_ANNUAL = `Free for ${TRIAL_DAYS} days, then ${PRICE_YEARLY}. Cancel any time before it ends and you are not charged.`
 
-export const SITE_TITLE = 'morsels45 — stop scrolling, start eating'
+/*
+ * WHAT THIS IS, IN ONE SENTENCE, AND WHY IT IS WRITTEN DOWN.
+ *
+ * The site used to promise to know what you wanted — "you don't know what you
+ * want; that's alright, I might" — which is a claim to read minds, and one
+ * nothing can keep. It also meant every feature could be justified as another
+ * way of guessing, so the thing sprawled: news, chat, six games, a shared
+ * browser, none of them answerable to anything.
+ *
+ * So the promise is a job rather than a gift. An assistant does not know what
+ * you want; it asks, it remembers what you told it, and it gets the thing
+ * done. Three jobs, in that order, and the test for anything new is which of
+ * the three it serves. Anything that serves none of them is not the product,
+ * however good it is.
+ */
+export const WHAT_IT_IS =
+  'An assistant for working out what to eat. It asks, it remembers what you do not eat, and it gets you fed.'
+
+/** The three jobs, which every page is arranged around. */
+export const THE_JOBS: { name: string; blurb: string }[] = [
+  {
+    name: 'It decides with you',
+    blurb:
+      'You do not have to know what you want — that is the whole problem, and it is the part this is built for. A few either-ors, no wrong answers, one dish at the end of it. About eight questions, and never more than twenty.',
+  },
+  {
+    name: 'It remembers what you don’t eat',
+    blurb:
+      'Halal, kosher, vegetarian, vegan, an allergy, or the one ingredient you cannot stand. Told once, applied to every decision, every mode and every list — free on every profile, and free for good. Sign in and it follows you to your other devices.',
+  },
+  {
+    name: 'It gets you fed',
+    blurb:
+      'An answer is not dinner. There is a recipe behind every dish, a shopping list you can take to the shop, a cook mode that walks you through it, and somewhere near you that serves it if you would rather not cook.',
+  },
+]
+
+export const SITE_TITLE = 'morsels45 — what should I eat?'
 export const SITE_DESCRIPTION =
-  `A 20-second food-decision game. Free to play, and free to tell it what you do not eat. Premium learns what you like, stops repeating itself, and opens a real browser two people can order in at once \u2014 ${OFFER}.`
+  `${WHAT_IT_IS} Free to play and free to tell it your rules — halal, kosher, vegetarian, an allergy. Premium remembers what you like and gets you from the answer to the table.`
 
 declare global {
   interface Window {

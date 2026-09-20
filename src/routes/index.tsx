@@ -20,6 +20,8 @@ import {
   SITE_TITLE,
   SITE_URL,
   STANDARD,
+  THE_JOBS,
+  WHAT_IT_IS,
   TRIAL_DAYS,
   pageHead,
   track,
@@ -128,11 +130,16 @@ function HomePage() {
               <br />
               You don&rsquo;t know what you want.
               <br />
-              <em className="font-semibold text-[var(--amber)]">That&rsquo;s alright — I might.</em>
+              {/* This used to end "That's alright — I might", a claim to know
+                  what somebody wants before they do. A lovely line and the
+                  wrong promise: nothing can keep it, and while it stood, every
+                  new feature could be justified as one more way of guessing.
+                  An assistant does not guess. It asks. */}
+              <em className="font-semibold text-[var(--amber)]">That&rsquo;s what I&rsquo;m for.</em>
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg text-[var(--text-dim)]">
-              A few easy either-ors — sweet or savoury, hot or cold, hands or cutlery — and
-              we&rsquo;ll work out what you actually feel like. Usually in about eight questions.
+              A few easy either-ors — sweet or savoury, hot or cold, hands or cutlery. I rule out
+              everything you don&rsquo;t eat, and hand you one answer with the recipe behind it.
             </p>
             {/* "Play free", not "Decide for me".
                 This page and the app's own opening screen looked like the same
@@ -186,6 +193,28 @@ function HomePage() {
             it reads those three paragraphs differently. */}
         <GamePreview />
 
+        {/* WHAT THIS IS, before how it works. The page went straight from the
+            mechanic to six extra game modes, so a stranger read about Knockout
+            before they read about dietary rules or recipes — and left with no
+            idea what the thing was FOR. Three jobs, in the order they happen.
+            Everything further down is one of them, or it is an extra. */}
+        <section className="border-t border-[var(--border)] py-16">
+          <div className="mx-auto max-w-5xl px-6">
+            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
+              What it&rsquo;s for
+            </p>
+            <h2 className="mt-2 max-w-2xl text-3xl font-bold">{WHAT_IT_IS}</h2>
+            <div className="mt-10 grid gap-8 sm:grid-cols-3">
+              {THE_JOBS.map((job) => (
+                <div key={job.name}>
+                  <h3 className="text-xl font-semibold">{job.name}</h3>
+                  <p className="mt-2 text-sm text-[var(--text-dim)]">{job.blurb}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="border-t border-[var(--border)] py-16">
           <div className="mx-auto max-w-5xl px-6">
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">How it works</p>
@@ -211,11 +240,15 @@ function HomePage() {
 
         <section className="border-t border-[var(--border)] bg-[var(--bg-raised)] py-16">
           <div className="mx-auto max-w-5xl px-6">
-            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Play it as a game</p>
-            <h2 className="mt-2 text-3xl font-bold">Six modes. Premium only.</h2>
+            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
+              When the questions are not the mood
+            </p>
+            {/* Demoted from a pillar to an extra, which is what it is: six more
+                ways to do the first job, not a fourth job. */}
+            <h2 className="mt-2 text-3xl font-bold">Six other ways to decide.</h2>
             <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              Standard is the questions, and everything you do not eat. Premium is Knockout,
-              Blitz, This or that, Shortlist, Together and Swipe.
+              Same catalogue, same rules, same one answer at the end — a different road to it.
+              All six are Premium; the questions are free and always will be.
             </p>
             <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[

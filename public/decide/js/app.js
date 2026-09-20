@@ -15,6 +15,7 @@
   var MapView = window.FoodMap;
   var Taste = window.FoodTaste;
   var PremiumLib = window.FoodPremium;
+  var SyncLib = window.FoodSync;
 
   var $ = function (id) { return document.getElementById(id); };
   var $$ = function (sel) { return Array.prototype.slice.call(document.querySelectorAll(sel)); };
@@ -100,6 +101,16 @@
   window.addEventListener('pagehide', function () { store.flushNow(); });
 
   var progress = new ProgressLib.Progress(store, null);
+
+  /*
+   * THE PROFILE, KEPT SOMEWHERE BOTH YOUR DEVICES CAN REACH.
+   *
+   * Optional, free, and off until somebody asks for it: see sync.js. Until
+   * they do, nothing changes — the profile stays in this browser and no
+   * request is made about it beyond the one that answers "do you have an
+   * account?".
+   */
+  var sync = new SyncLib.Sync(progress);
 
   var current = null;    // question on screen
   var sessionXp = 0;     // banked while playing, awarded on a decision
@@ -637,7 +648,7 @@
    * Hello, for somebody who has been here before.
    *
    * The landing already opens with the best line in the app — "You're hungry.
-   * You don't know what you want. That's alright, I might." — and a first-timer
+   * You don't know what you want. That's what I'm for." — and a first-timer
    * should get that with nothing in front of it. Somebody on their ninth visit
    * has read it eight times, and a word that knows what time it is and that
    * they kept a streak going is worth more to them than the pitch is.
@@ -7519,7 +7530,149 @@
     });
   }
 
-  window.addEventListener('focus', function () { syncPremium(true); });
+  window.addEventListener('focus', function () {
+    syncPremium(true);
+    // The same window. A profile that changed on another device almost always
+    // changed while this tab was in the background, so the moment this one
+    // comes back is the moment worth asking.
+    if (sync.on()) sync.settle();
+  });
+
+  /* ------------------------------------------------------- profile syncing */
+
+  /*
+   * WHAT THE STRIP SAYS, AND WHY IT IS THIS PLAIN.
+   *
+   * Four states and no jargon: off because nobody is signed in, off because
+   * there is no account yet, on, and on-but-the-last-attempt-failed. People
+   * do not think about sync until it has lost something, so the only useful
+   * thing this can do is say, at a glance, whether this profile currently
+   * exists anywhere but here.
+   */
+  function whenWordsShort(at) {
+    if (!at) return '';
+    var mins = Math.round((Date.now() - at) / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return mins + (mins === 1 ? ' minute ago' : ' minutes ago');
+    var hours = Math.round(mins / 60);
+    if (hours < 24) return hours + (hours === 1 ? ' hour ago' : ' hours ago');
+    var days = Math.round(hours / 24);
+    return days + (days === 1 ? ' day ago' : ' days ago');
+  }
+
+  function paintSync(state) {
+    var badge = $('sync-state');
+    var note = $('sync-note');
+    var action = $('sync-action');
+    if (!badge || !note || !action) return;
+
+    if (!state.signedIn) {
+      badge.textContent = 'Off';
+      note.textContent = 'This profile only exists in this browser. Signing in is free and ' +
+        'takes one tap — there is nothing to fill in.';
+      action.textContent = 'Sign in';
+      return;
+    }
+    if (!state.account) {
+      badge.textContent = 'Off';
+      note.textContent = 'Signed in. One more tap makes the free account that holds it.';
+      action.textContent = 'Turn it on';
+      return;
+    }
+
+    badge.textContent = state.busy ? 'Saving…' : 'On';
+    note.textContent = state.failed
+      ? 'Could not reach the server last time. Nothing has been lost — this browser still ' +
+        'has everything, and it will try again.'
+      : state.at
+        ? 'Kept ' + whenWordsShort(state.at) + '. Open morsels45 anywhere you are signed in ' +
+          'and it is the same profile.'
+        : 'On. It will be kept the next time anything changes.';
+    action.textContent = 'Save it now';
+  }
+
+  sync.onChange = paintSync;
+
+  /*
+   * A profile arrived from somewhere else and has been taken on. Everything
+   * painted from the profile has to be repainted, and the person has to be
+   * told — silently replacing what is on screen is how somebody concludes
+   * their data was lost.
+   */
+  sync.onAdopt = function () {
+    applyRules();
+    applyTaste();
+    renderProfile();
+    renderIntro();
+    repaintVaults();
+    Sound.reveal();
+    toast('\u{1F504}', 'Picked up where you left off',
+      'This is the profile from the last device you used.');
+  };
+
+  (function wireSync() {
+    var action = $('sync-action');
+    if (!action) return;
+    action.addEventListener('click', function (event) {
+      event.preventDefault();
+
+      if (!sync.state.signedIn) {
+        // Back to the game afterwards, not to the marketing site.
+        window.location.href = '/api/oauth/login?redirect_to=' + encodeURIComponent('/decide/?sync=1');
+        return;
+      }
+
+      if (!sync.state.account) {
+        action.textContent = 'One moment…';
+        sync.start().then(function (answer) {
+          if (answer && answer.ok) { progress.state.sync = true; progress.save(); }
+          if (answer && answer.ok && answer.already) return sync.settle();
+          if (answer && answer.ok && answer.url) {
+            window.location.href = answer.url;
+            return null;
+          }
+          Sound.reject();
+          toast('\u{26A0}\u{FE0F}', 'Could not make the account',
+            (answer && answer.why) || 'Try again in a minute.');
+          return paintSync(sync.state);
+        });
+        return;
+      }
+
+      sync.push(true).then(function (answer) {
+        if (answer && answer.ok) { Sound.tick(); return; }
+        Sound.reject();
+        toast('\u{26A0}\u{FE0F}', 'Could not save it',
+          'This browser still has everything. It will try again.');
+      });
+    });
+
+    sync.watch();
+
+    /*
+     * ASKING COSTS A REQUEST, SO IT IS NOT ASKED OF EVERYBODY.
+     *
+     * Most people will never turn this on, and a GET on every single load of
+     * the game to be told "not signed in" is a request spent on nothing. So
+     * the question is only asked of somebody who has turned it on before
+     * (progress.state.sync), or who has just come back from signing in — the
+     * OAuth redirect lands on /decide/?sync=1 for exactly that reason.
+     *
+     * Everybody else sees the strip in its off state, painted from nothing,
+     * and the first tap is what starts the conversation.
+     */
+    var justSignedIn = /[?&]sync=1\b/.test(window.location.search);
+    if (progress.state.sync || justSignedIn) {
+      sync.settle().then(function () {
+        var on = sync.on();
+        if (progress.state.sync !== on) {
+          progress.state.sync = on;
+          progress.save();
+        }
+      });
+    }
+    paintSync(sync.state);
+  })();
 
   // Tag -> the words the questions actually use, so the profile reads back in
   // the app's own language: "Actual food", not "drink".
