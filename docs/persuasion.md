@@ -68,13 +68,19 @@ middle is deliberately plain.
 The Heaths' four families of defining moment, one each: elevation is the
 reveal; insight is the line that tells you something about yourself you had
 not said out loud; pride is the count of decisions you have actually made;
-connection is the household seat and Together.
+connection is the household seat and Together. Insight is the one a piece of
+software can deliver cheaply, because it already holds the evidence: sixty
+decisions with timestamps, a count per dish, a yes/no tally per axis. Every
+sentence it produces is counted, never inferred, and it says nothing at all
+when the numbers do not carry one.
+→ `public/decide/js/progress.js` (`noticing`)
 
 ### Goal-gradient — the shrinking count
 Effort rises as a goal gets closer. The number of dishes still standing is on
-screen through every question and gets louder as it falls, because that is the
-part people say they like and it is doing real work.
-→ `public/decide/js/app.js`, `src/components/GamePreview.tsx`
+screen through every question, in the same three phrasings the landing preview
+uses. It is the real shortlist — the list the reveal picks from — not a
+progress bar dressed as a count.
+→ `public/decide/js/app.js` (`stillSaying`), `src/components/GamePreview.tsx`
 
 ### Endowed progress — a head start that was earned
 Nunes and Drèze gave one group a ten-stamp loyalty card with two stamps
@@ -88,8 +94,13 @@ profile says so. The difference from the car wash is that the stamps are real.
 The strongest lever in this document: d = 0.65 across 94 studies, roughly a
 doubling of follow-through, from binding a behaviour to a specific cue in an
 if-then plan. It is also the one most obviously on the user's side, since the
-plan is theirs and the cue is one they name.
-→ `public/decide/js/app.js`
+plan is theirs and the cue is one they name. The only reminder it can
+honestly offer is a calendar file: a web app cannot schedule a notification
+for tomorrow evening without an account, a push subscription and a backend
+that knows when you eat, and a `.ics` needs none of those and is deleted by
+its owner without asking us. Otherwise the plan is read back on the landing
+screen at the hour they named, and nowhere else.
+→ `public/decide/js/progress.js` (`PLAN_CUES`, `planIsDue`), `public/decide/js/app.js` (`paintPlan`, `planIcs`)
 
 ### Fogg's B = MAP — prompt at the moment of maximum ability
 Behaviour happens when motivation, ability and a prompt coincide. Motivation

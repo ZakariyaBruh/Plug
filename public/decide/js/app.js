@@ -680,6 +680,26 @@
     var band = HELLOS.filter(function (h) { return hour < h.until; })[0] || HELLOS[HELLOS.length - 1];
     var line = band.lines[Math.floor(Math.random() * band.lines.length)];
 
+    /*
+     * THEIR OWN PLAN, READ BACK AT THE HOUR THEY NAMED.
+     *
+     * This is the payoff for the if-then plan and the whole of what the app
+     * does with it: no notification, no email, nothing that arrives
+     * uninvited. If they open this screen within an hour of the moment they
+     * chose, and have not sorted dinner yet today, the greeting is the thing
+     * they told themselves — which is also the moment their motivation and
+     * their ability to act are both at their highest.
+     *
+     * It beats the time-of-day line because it is more specific and it is
+     * theirs. Everything else about the screen is unchanged: one button, and
+     * no suggestion that they are late for anything.
+     */
+    var plan = progress.plan();
+    if (plan && progress.planIsDue()) {
+      el.textContent = 'You said you would work this out ' + plan.phrase + '. Here I am.';
+      return;
+    }
+
     // A streak is the one fact about somebody that is worth saying out loud
     // here: it is theirs, it took effort, and it is the reason they came back.
     var streak = state.streak || 0;
@@ -4201,6 +4221,7 @@
     }
 
     renderRating(item);
+    paintPlan();
     setPanel('reward');
     paintStreak();
     Sound.win();
@@ -4208,6 +4229,162 @@
 
     if (outcome.leveledUp) setTimeout(function () { Sound.levelUp(); }, 700);
     queueToasts(outcome.badges);
+  }
+
+  /* ----------------------------------------------------------- the plan */
+  /*
+   * "When do you usually need this?"
+   *
+   * The whole of the mechanism is in progress.js — this is the screen for it.
+   * Three rules about where it appears and how loud it is:
+   *
+   * NOT ON THE FIRST DECISION. Asking somebody to commit to a nightly habit
+   * the first time they use a thing is asking them to predict a life they
+   * have not started. Two decisions in, they know whether this is for them.
+   *
+   * NOT A PROMPT. It does not spend the prompt budget, it does not open a
+   * dialog, and it never covers anything. It sits on the one screen where
+   * nothing is waiting, and a reader who never looks at it is never asked
+   * again by anything else.
+   *
+   * NOT A CONTRACT. Forgetting it is one tap and the tap is right next to it.
+   * A commitment device you cannot leave is not a commitment device, it is a
+   * subscription to feeling bad.
+   */
+  var PLAN_CUES = ProgressLib.PLAN_CUES;
+
+  function paintPlan() {
+    var wrap = $('plan-strip');
+    if (!wrap) return;
+
+    var plan = progress.plan();
+    var earned = (progress.state.decisions || 0) >= 2;
+
+    // Nothing to show: too early, and nothing set.
+    if (!plan && !earned) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var cues = $('plan-cues');
+    var done = $('plan-done');
+
+    if (plan) {
+      $('plan-title').textContent = 'Your plan';
+      $('plan-note').textContent = 'You said you would sort this out ' + plan.phrase +
+        '. I will be on that screen when you get there — nothing is sent anywhere, ' +
+        'and it never leaves this device.';
+      cues.hidden = true;
+      done.hidden = false;
+      return;
+    }
+
+    $('plan-title').textContent = 'Want this to be automatic?';
+    $('plan-note').textContent = 'Name the moment you usually need this and I will have it ' +
+      'ready then. Tying a thing to something that already happens is the only reliable way ' +
+      'anybody makes a habit out of anything.';
+    cues.hidden = false;
+    done.hidden = true;
+
+    cues.innerHTML = '';
+    PLAN_CUES.forEach(function (cue) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'plan-cue';
+      btn.textContent = cue.label;
+      btn.addEventListener('click', function () {
+        progress.setPlan(cue.id);
+        Sound.tick();
+        paintPlan();
+        toast('\u{1F553}', 'Noted', 'I will be ready ' + cue.phrase + '.');
+      });
+      cues.appendChild(btn);
+    });
+  }
+
+  /*
+   * THE CALENDAR FILE, WHICH IS THE ONLY REMINDER THIS APP CAN HONESTLY OFFER.
+   *
+   * A web app cannot schedule a notification for tomorrow evening: the
+   * Notification Triggers API is one browser behind a flag, and anything
+   * server-side would mean an account, a push subscription and a backend that
+   * knows when you eat. A calendar entry needs none of that, works offline,
+   * fires when the phone is asleep, and is deleted by the person who owns it
+   * without asking us.
+   *
+   * Floating local time on purpose — no Z, no TZID. "Around seven" means seven
+   * wherever they are, which is what somebody who travels actually wants and
+   * is the one case a fixed UTC stamp gets wrong.
+   */
+  function planIcs(plan) {
+    function two(n) { return (n < 10 ? '0' : '') + n; }
+    var now = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), plan.hour, 0, 0);
+    // If today's slot has been and gone, start tomorrow rather than putting a
+    // past event in somebody's calendar.
+    if (start.getTime() < now.getTime()) start.setDate(start.getDate() + 1);
+
+    function local(d) {
+      return d.getFullYear() + two(d.getMonth() + 1) + two(d.getDate()) +
+        'T' + two(d.getHours()) + two(d.getMinutes()) + '00';
+    }
+    function utc(d) {
+      return d.getUTCFullYear() + two(d.getUTCMonth() + 1) + two(d.getUTCDate()) +
+        'T' + two(d.getUTCHours()) + two(d.getUTCMinutes()) + two(d.getUTCSeconds()) + 'Z';
+    }
+
+    return [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//morsels45//decide//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      'UID:morsels45-plan-' + plan.at + '@morsels45',
+      'DTSTAMP:' + utc(now),
+      'DTSTART:' + local(start),
+      'DURATION:PT15M',
+      'RRULE:FREQ=DAILY',
+      'SUMMARY:What am I eating?',
+      'DESCRIPTION:You said you would work this out ' + plan.phrase +
+        '. Takes about twenty seconds.\\n\\nhttps://morsels45-app.whop.site/decide/',
+      'URL:https://morsels45-app.whop.site/decide/',
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      'TRIGGER:PT0S',
+      'DESCRIPTION:What am I eating?',
+      'END:VALARM',
+      'END:VEVENT',
+      // The trailing empty string is not a typo: RFC 5545 wants the last line
+      // terminated too, and a handful of parsers drop the final component
+      // without it.
+      'END:VCALENDAR',
+      ''
+    ].join('\r\n');
+  }
+
+  function downloadPlan() {
+    var plan = progress.plan();
+    if (!plan) return;
+    try {
+      var blob = new Blob([planIcs(plan)], { type: 'text/calendar;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'morsels45.ics';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      Sound.tick();
+      toast('\u{1F4C5}', 'Saved', 'Open it and your calendar will ask once, then repeat daily.');
+    } catch (err) {
+      /*
+       * Downloads can be refused outright — a sandboxed frame, a locked-down
+       * browser. Saying so is better than a button that looks like it worked.
+       */
+      Sound.reject();
+      toast('\u{1F937}', 'Your browser said no',
+        'It would not let me hand over a file. The plan is still saved here.');
+    }
   }
 
   /* -------------------------------------------------------------- ratings */
@@ -8409,6 +8586,12 @@
   $('choice-neither').addEventListener('click', function (e) { answer('neither', e.currentTarget); });
   $('restart-btn').addEventListener('click', restart);
   $('accept-btn').addEventListener('click', accept);
+  $('plan-cal').addEventListener('click', downloadPlan);
+  $('plan-clear').addEventListener('click', function () {
+    progress.clearPlan();
+    Sound.tick();
+    paintPlan();
+  });
   $('reject-btn').addEventListener('click', rejectCurrent);
   $('again-btn').addEventListener('click', goHome);
   $('done-again-btn').addEventListener('click', restart);

@@ -4677,3 +4677,41 @@ body.is-welcoming { overflow: hidden; }
 .welcome-dot { width: 1.75rem; height: 2px; background: var(--hair-lit); }
 .welcome-dot.is-done { background: var(--amber-dim); }
 .welcome-dot.is-on { background: var(--amber); }
+
+
+/* ------------------------------------------------------------- the plan */
+/*
+ * The cue chips. Deliberately the same shape as the steer buttons on the
+ * result screen: both are "point me", one at a dish and one at a habit, and
+ * a reader who has learned one shape should not have to learn a second.
+ */
+.plan-cues {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin-top: var(--s3);
+}
+
+.plan-cue {
+  min-height: var(--tap);
+  border: 1px solid var(--hair-lit);
+  background: none;
+  color: var(--ink-2);
+  border-radius: 999px;
+  padding: .55rem 1rem;
+  font-family: var(--text);
+  font-size: var(--t-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.plan-cue:hover { color: var(--ink); border-color: var(--amber); }
+.plan-cue:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.plan-cue.is-on { color: var(--paper-ink); background: var(--amber); border-color: var(--amber); }
+
+.plan-done {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s4);
+  margin-top: var(--s3);
+}

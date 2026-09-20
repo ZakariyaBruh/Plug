@@ -239,6 +239,7 @@
       streak: 0,
       streakBest: 0,
       lastPlayed: null,       // YYYY-MM-DD
+      plan: null,             // { id, hour, phrase, at } — see PLAN_CUES
       nightOwl: false,
       earlyBird: false,
       badges: [],
@@ -898,6 +899,75 @@
     return bucket;
   };
 
+  /* ------------------------------------------------------------ the plan */
+  /*
+   * AN IF-THEN PLAN, WHICH IS THE BEST-EVIDENCED THING IN THIS FILE.
+   *
+   * Gollwitzer's implementation intentions — binding a behaviour to a named
+   * cue, "after I X, I will Y" — run at about d = 0.65 across 94 studies,
+   * roughly a doubling of follow-through. Almost nothing else in behavioural
+   * science is both that well replicated and that cheap to build.
+   *
+   * It is also the one lever here that is unambiguously the user's own. The
+   * plan is written by them, in their words, about a thing they already want
+   * to happen; the app's entire role is to remember it and say it back at the
+   * right hour. Nothing is sent, nothing is scheduled without being asked for,
+   * and forgetting it is one tap.
+   *
+   * WHY A CUE AND NOT A TIME. "At 6pm" is a reminder and a reminder is a
+   * prompt somebody can ignore. "When I get in" is an anchor to something
+   * that already happens, which is the whole mechanism — the hour is only
+   * carried so the landing screen knows roughly when to expect them and so a
+   * calendar file has something to put in it.
+   */
+  var PLAN_CUES = [
+    { id: 'home',  label: 'When I get in',  hour: 18, phrase: 'when you get in' },
+    { id: 'six',   label: 'Around six',     hour: 18, phrase: 'around six' },
+    { id: 'seven', label: 'Around seven',   hour: 19, phrase: 'around seven' },
+    { id: 'eight', label: 'Around eight',   hour: 20, phrase: 'around eight' }
+  ];
+
+  Progress.prototype.plan = function () { return this.state.plan || null; };
+
+  Progress.prototype.setPlan = function (id, now) {
+    var cue = null;
+    for (var i = 0; i < PLAN_CUES.length; i++) if (PLAN_CUES[i].id === id) cue = PLAN_CUES[i];
+    if (!cue) return null;
+    this.state.plan = {
+      id: cue.id, hour: cue.hour, phrase: cue.phrase,
+      at: (now ? new Date(now) : new Date()).getTime()
+    };
+    this.save();
+    return this.state.plan;
+  };
+
+  Progress.prototype.clearPlan = function () {
+    this.state.plan = null;
+    this.save();
+  };
+
+  /** Already decided something today, so there is nothing to remind anybody of. */
+  Progress.prototype.decidedToday = function (now) {
+    return !!this.state.lastPlayed && this.state.lastPlayed === this.today(now);
+  };
+
+  /*
+   * Is this roughly the hour they named, and have they not done it yet?
+   *
+   * An hour either side, because "around seven" is not 19:00:00 and a window
+   * that only opens on the hour would miss most of the people it is for. It
+   * closes once they have decided today: the plan is for getting them fed,
+   * not for getting them back into the app.
+   */
+  Progress.prototype.planIsDue = function (now) {
+    var plan = this.plan();
+    if (!plan) return false;
+    if (this.decidedToday(now)) return false;
+    var hour = (now ? new Date(now) : new Date()).getHours();
+    var gap = Math.abs(hour - plan.hour);
+    return Math.min(gap, 24 - gap) <= 1;
+  };
+
   /* ------------------------------------------------------------- noticing */
   /*
    * ONE TRUE THING ABOUT YOU, SAID AT THE END.
@@ -1219,6 +1289,7 @@
     ENDLESS_RULES: ENDLESS_RULES,
     FREE_SAVES: FREE_SAVES,
     LOVE_WEIGHT: LOVE_WEIGHT,
+    PLAN_CUES: PLAN_CUES,
     XP: XP,
     blank: blank,
     dayKey: dayKey,

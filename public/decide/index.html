@@ -757,6 +757,24 @@
           <div class="rates" id="rates"></div>
         </section>
 
+        <!--
+          THE IF-THEN PLAN. Binding a thing you want to do to a cue that
+          already happens is the best-evidenced behaviour-change tool there
+          is (see the comment over PLAN_CUES in progress.js), and it is the
+          one persuasive thing on this screen that is entirely the reader's
+          own: they write it, it stays on this device, and forgetting it is
+          one tap. Free on every profile, like the rules.
+        -->
+        <section class="strip" id="plan-strip" hidden>
+          <h2 class="strip-title" id="plan-title">Want this to be automatic?</h2>
+          <p class="fine" id="plan-note"></p>
+          <div class="plan-cues" id="plan-cues"></div>
+          <div class="plan-done" id="plan-done" hidden>
+            <button class="plain" id="plan-cal">Put it in my calendar</button>
+            <button class="plain" id="plan-clear">Forget it</button>
+          </div>
+        </section>
+
         <div class="levelup" id="levelup" hidden>
           <span class="levelup-art" id="levelup-icon" aria-hidden="true">🍽️</span>
           <span><strong>Level up.</strong> <span id="levelup-text">You&rsquo;re now a Foodie</span></span>
