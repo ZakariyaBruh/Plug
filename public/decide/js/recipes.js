@@ -2710,7 +2710,9 @@
               'Strain from a height into the cups.'] },
     { name: 'With a paste, quicker', time: 6, serves: 2, level: 'Very easy',
       ingredients: ['300ml water', '200ml milk', '2 tsp tea', '1 tsp chai masala powder', 'Sugar'],
-      steps: ['Boil water, tea and masala 3 minutes.', 'Milk and sugar, brought up to the boil twice.', 'Strain.'] }
+      steps: ['Boil the water with the tea and the masala powder for 3 minutes. Ready-ground spice gives itself up faster than whole, so this is the one place the shortcut costs nothing.',
+              'Milk and sugar in, brought up to the boil and pulled off twice rather than three times.',
+              'Strain into the cups from a height. Thinner than the boiled version, and still a good cup of tea.'] }
   ]);
 
   recipes('Hot toddy', [

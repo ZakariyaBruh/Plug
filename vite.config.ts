@@ -263,6 +263,44 @@ function recipeBook(): Plugin {
       }
 
       /*
+       * 1:1 IS NOT THE SAME AS "HAS A RECIPE".
+       *
+       * The count above is satisfied by `recipes('Ramen', [])`, and by a
+       * version with a name and nothing else. Both would pass every check in
+       * this file and then hand somebody who tapped through to cook an empty
+       * page — which is a worse outcome than the missing-recipe case this
+       * plugin was written for, because nothing anywhere would look wrong.
+       *
+       * So the shape is checked as well as the key. Deliberately low bars:
+       * one ingredient and one step, because a two-line variant that leans on
+       * the one above it ("Gyudon as above", "Leftover polenta") is a real
+       * entry and this must not start rejecting them. What it catches is
+       * empty, which is the failure that actually happens when a batch of
+       * dishes is added faster than the recipes for them.
+       */
+      const hollow: string[] = []
+      for (const [dish, versions] of Object.entries(book as Record<string, unknown>)) {
+        if (!Array.isArray(versions) || versions.length === 0) {
+          hollow.push(`${dish}: no versions at all`)
+          continue
+        }
+        versions.forEach((version, at) => {
+          const v = version as { name?: string; ingredients?: unknown[]; steps?: unknown[] }
+          const where = `${dish} (${v.name ?? `version ${at + 1}`})`
+          if (!v.name) hollow.push(`${where}: no name`)
+          const ingredients = (v.ingredients ?? []).filter((x) => typeof x === 'string' && x.trim())
+          const steps = (v.steps ?? []).filter((x) => typeof x === 'string' && x.trim())
+          if (!ingredients.length) hollow.push(`${where}: nothing to buy`)
+          if (!steps.length) hollow.push(`${where}: nothing to do`)
+        })
+      }
+      if (hollow.length) {
+        throw new Error(
+          'recipe-book: a dish has a recipe entry with nothing in it —\n  ' + hollow.join('\n  '),
+        )
+      }
+
+      /*
        * And every OTHER place the app writes one of these numbers down.
        *
        * The error above used to tell whoever hit it to "update DISH_COUNT (and
