@@ -4386,6 +4386,1237 @@
               'Cream and cinnamon on top.'] }
   ]);
 
+
+  /* ---- the seventh intake: east and central Asia ------------------- */
+
+  recipes('Zhajiangmian', [
+    { name: 'The Beijing way', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['400g minced pork', '4 tbsp sweet bean sauce', '2 tbsp yellow bean paste', '1 onion, diced', '2 spring onions', '1 tbsp soy sauce', '1 tsp sugar', '500g wheat noodles', '1 cucumber, in matchsticks'],
+      steps: ['Fry the pork in a dry wok until the fat renders and it browns properly. Do not rush this part.',
+              'Add the onion and cook until soft, then the two bean pastes, soy and sugar.',
+              'Turn it low and let it cook down for 25 minutes, stirring now and then, until it is dark and thick and oily.',
+              'Boil the noodles, drain, and divide between bowls.',
+              'A big spoon of sauce on top, raw cucumber alongside. Mix it all at the table.'] },
+    { name: 'Weeknight, half the time', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['250g minced pork', '3 tbsp sweet bean sauce', '1 tbsp soy sauce', '1 tsp sugar', '250g noodles', 'Cucumber'],
+      steps: ['Brown the mince hard, add the sauce, soy and sugar with a splash of water.',
+              'Simmer 10 minutes while the noodles cook.',
+              'Cucumber on top. It is not as deep and it is still very good.'] }
+  ]);
+
+  recipes('Taiwanese beef noodle soup', [
+    { name: 'Braised properly', time: 180, serves: 4, level: 'Medium',
+      ingredients: ['1kg beef shin, in chunks', '3 tbsp doubanjiang', '4 tbsp soy sauce', '2 tomatoes, quartered', '1 onion, sliced', '4 garlic cloves', 'Thumb of ginger', '2 star anise', '1 cinnamon stick', '400g thick wheat noodles', 'Pickled mustard greens', 'Pak choi'],
+      steps: ['Blanch the beef in boiling water for 3 minutes and rinse. This is what keeps the broth clear.',
+              'Fry the onion, garlic and ginger in oil, then the doubanjiang for a minute until it smells fierce.',
+              'Add the beef, tomatoes, soy, spices and enough water to cover by an inch.',
+              'Simmer very gently for two and a half hours. It is ready when a spoon goes through the shin.',
+              'Cook the noodles separately — never in the broth. Beef, broth, greens, a spoon of pickles on top.'] },
+    { name: 'Pressure cooker', time: 60, serves: 4, level: 'Easy',
+      ingredients: ['800g beef shin', '3 tbsp doubanjiang', '4 tbsp soy sauce', '1 onion', 'Ginger', 'Star anise', 'Noodles', 'Greens'],
+      steps: ['Blanch and rinse the beef.',
+              'Everything in the pressure cooker with water to cover. 45 minutes at pressure, then let it come down on its own.',
+              'Noodles and greens separately. Assemble.'] }
+  ]);
+
+  recipes('Lu rou fan', [
+    { name: 'Belly, chopped not minced', time: 90, serves: 4, level: 'Easy',
+      ingredients: ['600g pork belly, skin on, in small dice', '4 shallots, sliced', '4 tbsp soy sauce', '1 tbsp dark soy', '2 tbsp rock sugar', '1 star anise', '1 tsp five spice', 'White pepper', 'Rice, to serve'],
+      steps: ['Fry the shallots in a little oil until deep brown and crisp, then lift most of them out.',
+              'Render the pork in the same pan over medium heat until the fat runs and the edges catch.',
+              'Both soys, the sugar, the spices and 400ml water. Bring up, then down to the barest simmer.',
+              'An hour and a quarter, lid ajar, until it is glossy and thick enough to coat a spoon.',
+              'Over hot rice, with the crisp shallots scattered back on. Pickled cucumber if you have it.'] },
+    { name: 'With shoulder, quicker', time: 45, serves: 3, level: 'Very easy',
+      ingredients: ['500g pork shoulder, diced small', '3 shallots', 'Soy sauce', 'Sugar', 'Five spice', 'Rice'],
+      steps: ['Brown the shallots, brown the pork.',
+              'Soy, sugar, five spice, 250ml water. Simmer 35 minutes uncovered.',
+              'Leaner and faster. Over rice.'] }
+  ]);
+
+  recipes('Sheng jian bao', [
+    { name: 'Fried, steamed, fried', time: 120, serves: 4, level: 'Hard',
+      ingredients: ['300g plain flour', '1 tsp instant yeast', '180ml warm water', '400g minced pork', '2 spring onions, chopped', '1 tbsp soy sauce', '1 tsp sesame oil', '100ml cooled pork stock jelly', 'Sesame seeds'],
+      steps: ['Make a soft dough with the flour, yeast and water. Knead 8 minutes, prove until doubled.',
+              'Mix the pork, spring onion, soy and sesame oil, then fold through the set stock jelly — that is the soup.',
+              'Roll small discs, pleat a spoonful of filling into each, seam upwards.',
+              'Seam UP in an oiled pan over medium heat. Fry 2 minutes until the bottoms are gold.',
+              'Pour in 100ml water, lid on, 8 minutes. Take the lid off and let the last of it fry dry.',
+              'Sesame seeds, more spring onion. Bite a small hole first or you will regret it.'] },
+    { name: 'With shop wrappers', time: 40, serves: 2, level: 'Medium',
+      ingredients: ['1 pack thick bao or gyoza wrappers', '250g minced pork', 'Spring onion', 'Soy sauce', 'Sesame oil'],
+      steps: ['Fill and pleat the wrappers.',
+              'Same method: fry seam up, add water, lid on 7 minutes, uncover and crisp.',
+              'No soup inside, but the bottom is the point anyway.'] }
+  ]);
+
+  recipes('Siu mai', [
+    { name: 'Pork and prawn', time: 45, serves: 4, level: 'Medium',
+      ingredients: ['300g minced pork', '150g raw prawns, roughly chopped', '4 dried shiitake, soaked and diced', '1 tbsp soy sauce', '1 tsp sesame oil', '1 tsp sugar', '1 tbsp cornflour', 'White pepper', '30 wonton wrappers', 'Roe or diced carrot, to top'],
+      steps: ['Mix the pork with the soy, sesame oil, sugar, cornflour and pepper, then beat it in one direction for a full minute until it turns sticky.',
+              'Fold in the prawn and mushroom. Chill for 20 minutes.',
+              'Press a wrapper into the circle of your thumb and finger, drop in a spoonful, squeeze the middle and flatten the top.',
+              'Steam over high heat for 9 minutes.',
+              'Eat straight from the basket with chilli oil.'] },
+    { name: 'Pork only', time: 35, serves: 3, level: 'Easy',
+      ingredients: ['400g minced pork', '2 tbsp soy sauce', 'Sesame oil', 'Cornflour', 'Shiitake', 'Wonton wrappers'],
+      steps: ['Same filling method, pork only, mushrooms for texture.',
+              'Fill, steam 9 minutes.'] }
+  ]);
+
+  recipes('Cheung fun', [
+    { name: 'Steamed on a tray', time: 40, serves: 2, level: 'Medium',
+      ingredients: ['100g rice flour', '20g cornflour', '15g tapioca starch', '300ml water', '1 tsp oil', '4 tbsp light soy sauce', '2 tbsp water', '1 tbsp sugar', 'Sesame seeds'],
+      steps: ['Whisk the flours into the water with the oil until completely smooth and thin as milk.',
+              'Oil a flat metal tray. Ladle on a very thin layer — it should barely cover.',
+              'Steam 3 minutes until it bubbles and goes translucent.',
+              'Scrape it off and roll it loosely with an oiled scraper. Repeat, stirring the batter each time.',
+              'Warm the soy, water and sugar together and pour it over. Sesame on top.'] },
+    { name: 'With the batter left to rest', time: 50, serves: 2, level: 'Medium',
+      ingredients: ['Rice flour', 'Cornflour', 'Water', 'Oil', 'Soy sauce', 'Sugar'],
+      steps: ['Make the batter an hour ahead and let it settle; it steams smoother.',
+              'Same method. Thinner layers make softer rolls.'] }
+  ]);
+
+  recipes('Lion’s head meatballs', [
+    { name: 'Braised in cabbage', time: 90, serves: 4, level: 'Medium',
+      ingredients: ['600g minced pork, not too lean', '1 tbsp cornflour', '2 tbsp soy sauce', '1 tsp sugar', '1 spring onion, chopped', 'Thumb of ginger, grated', '1 Chinese cabbage, quartered', '600ml stock', 'White pepper'],
+      steps: ['Mix the pork with the cornflour, soy, sugar, spring onion, ginger and pepper, then throw it against the bowl twenty times. It should hold together tightly.',
+              'Shape four very large balls, bigger than you think.',
+              'Brown them gently all over in oil — they are fragile, use two spoons.',
+              'Lay the cabbage in a pot, sit the meatballs on it, pour the stock around.',
+              'Cover and simmer an hour. They will soften rather than firm up, which is the whole idea.'] },
+    { name: 'Steamed, lighter', time: 50, serves: 4, level: 'Easy',
+      ingredients: ['500g minced pork', 'Cornflour', 'Ginger', 'Spring onion', 'Cabbage leaves', 'Soy sauce'],
+      steps: ['Same mix, same throwing.',
+              'Sit the balls on cabbage leaves in a steamer, 35 minutes.',
+              'Cleaner tasting, and no browning to go wrong.'] }
+  ]);
+
+  recipes('Twice-cooked pork', [
+    { name: 'Hui guo rou', time: 45, serves: 3, level: 'Medium',
+      ingredients: ['400g pork belly, in one piece', '2 spring onions', 'Thumb of ginger', '2 tbsp doubanjiang', '1 tbsp fermented black beans, rinsed', '1 leek, sliced on the angle', '2 green peppers, in squares', '1 tsp sugar', '1 tbsp soy sauce'],
+      steps: ['Simmer the belly whole with the spring onion and ginger for 25 minutes. Cool it completely — ideally in the fridge.',
+              'Slice it as thinly as you possibly can.',
+              'Dry-fry the slices in a hot wok until the fat runs out and the edges curl and brown.',
+              'Push them aside, fry the doubanjiang and black beans in the rendered fat until the oil turns red.',
+              'Leek and peppers in, sugar and soy, toss hard for a minute. The vegetables should still snap.'] },
+    { name: 'From leftover roast pork', time: 15, serves: 2, level: 'Very easy',
+      ingredients: ['Cold roast pork, sliced thin', 'Doubanjiang', 'Leek', 'Green pepper', 'Soy sauce', 'Sugar'],
+      steps: ['Fry the cold slices hard until they crisp at the edges.',
+              'Bean paste, then vegetables, then soy and sugar. Two minutes total.'] }
+  ]);
+
+  recipes('Big plate chicken', [
+    { name: 'Da pan ji, with the noodles', time: 70, serves: 4, level: 'Medium',
+      ingredients: ['1 chicken, jointed into small pieces', '3 potatoes, in chunks', '2 onions, sliced', '2 green peppers', '4 dried chillies', '2 tbsp doubanjiang', '1 tbsp Sichuan peppercorns', '3 garlic cloves', '2 tbsp soy sauce', '1 tsp sugar', '300g wide flat noodles'],
+      steps: ['Brown the chicken hard in a wide pan, in batches, and set aside.',
+              'Fry the chillies and peppercorns for 30 seconds, then the onion, garlic and bean paste.',
+              'Chicken back in with the potatoes, soy, sugar and water to nearly cover.',
+              'Simmer 35 minutes, until the potato is falling and the sauce has reduced by half.',
+              'Peppers in for the last 5 minutes. Boil the noodles and tip them into the pan to finish in the sauce.',
+              'Serve in the pan, in the middle, for everyone.'] },
+    { name: 'Thighs only, weeknight', time: 40, serves: 3, level: 'Easy',
+      ingredients: ['8 chicken thighs', '2 potatoes', '1 onion', 'Doubanjiang', 'Soy sauce', 'Noodles'],
+      steps: ['Brown the thighs, add everything else with water to cover.',
+              '25 minutes. Noodles in at the end.'] }
+  ]);
+
+  recipes('Liangpi', [
+    { name: 'Washed flour, the real way', time: 180, serves: 3, level: 'Hard',
+      ingredients: ['300g strong flour', '150ml water', '3 tbsp black vinegar', '3 tbsp chilli oil', '2 garlic cloves, crushed into water', '1 tsp sesame paste', '1 cucumber, shredded', 'Bean sprouts'],
+      steps: ['Make a stiff dough and rest it 30 minutes. Then wash it in a bowl of water, squeezing, until the water runs milky and only a sticky lump of gluten is left.',
+              'Let the starchy water settle for two hours and pour off the clear top.',
+              'Steam the gluten lump for 20 minutes and cut it into cubes.',
+              'Ladle thin layers of the settled starch into an oiled tray, steam 3 minutes each until translucent, and cut into wide ribbons.',
+              'Dress with vinegar, chilli oil, garlic water and sesame paste. Cucumber, sprouts, gluten cubes on top.'] },
+    { name: 'With shop-bought sheets', time: 15, serves: 2, level: 'Very easy',
+      ingredients: ['1 pack fresh liangpi or wide rice noodles', 'Black vinegar', 'Chilli oil', 'Garlic', 'Cucumber', 'Bean sprouts'],
+      steps: ['Loosen the sheets in warm water and cut into ribbons.',
+              'Dress heavily — it wants more vinegar than feels sensible.',
+              'Cucumber and sprouts. Serve cold.'] }
+  ]);
+
+  recipes('Jianbing', [
+    { name: 'On a flat pan', time: 20, serves: 2, level: 'Medium',
+      ingredients: ['60g plain flour', '30g mung bean flour', '200ml water', '2 eggs', '2 tbsp sweet bean sauce', '1 tsp chilli sauce', '2 spring onions, chopped', 'Coriander', '2 sheets of crisp fried wonton skin'],
+      steps: ['Whisk both flours into the water until thin and lump-free.',
+              'Pour a ladle onto a wide, lightly oiled pan and spread it thin with the back of the ladle.',
+              'Crack an egg on top and spread it over the surface while the crepe is still wet.',
+              'Scatter spring onion and coriander, then flip once the base is set.',
+              'Brush with bean sauce and chilli, lay the crisp sheet on, fold in the sides and fold it in half twice.',
+              'Eat immediately, standing up, from a piece of paper.'] },
+    { name: 'Tortilla shortcut', time: 8, serves: 1, level: 'Very easy',
+      ingredients: ['1 large flour tortilla', '1 egg', 'Hoisin or sweet bean sauce', 'Chilli sauce', 'Spring onion', 'Crisp wonton skin'],
+      steps: ['Crack the egg into a pan and immediately press the tortilla on top of it.',
+              'Flip when set, sauce it, add the crackers, fold.',
+              'Not the real thing. Two minutes.'] }
+  ]);
+
+  recipes('Roujiamo', [
+    { name: 'With the bread made', time: 150, serves: 4, level: 'Medium',
+      ingredients: ['600g pork belly or shoulder, in chunks', '2 star anise', '1 cinnamon stick', '1 tsp fennel seed', '3 tbsp soy sauce', '2 tbsp rock sugar', 'Thumb of ginger', '300g plain flour', '1 tsp instant yeast', '170ml water', 'Coriander', '1 green chilli'],
+      steps: ['Braise the pork with the spices, soy, sugar, ginger and water to cover for two hours, until it shreds under a fork.',
+              'Meanwhile make a firm dough with the flour, yeast and water. Prove 40 minutes, divide into 8, roll into flat discs.',
+              'Cook the discs in a dry pan over medium heat, 3 minutes a side, until blistered and dry. They should sound hollow.',
+              'Chop the pork on a board with some of its fat and a little of the braising liquid, plus coriander and chilli.',
+              'Split a bun and stuff it. It should be slightly too full.'] },
+    { name: 'Pitta and leftover pork', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['Leftover slow-cooked pork', 'Pitta bread', 'Coriander', 'Green chilli', 'Soy sauce'],
+      steps: ['Chop the pork fine with coriander and chilli and a splash of soy.',
+              'Warm the pitta in a dry pan until it puffs, split, fill.'] }
+  ]);
+
+  recipes('Hot and sour soup', [
+    { name: 'Thick, peppery, vegetarian', time: 25, serves: 4, level: 'Easy',
+      ingredients: ['1 litre vegetable stock', '6 dried shiitake, soaked and sliced', '150g firm tofu, in strips', '1 handful wood ear, soaked', '4 tbsp black vinegar', '1.5 tsp ground white pepper', '2 tbsp soy sauce', '3 tbsp cornflour in water', '2 eggs, beaten', '2 spring onions', '1 tsp sesame oil'],
+      steps: ['Bring the stock up with the mushrooms and their soaking water, the wood ear and the tofu. Simmer 10 minutes.',
+              'Soy sauce, vinegar and — this is the part people underdo — all of the white pepper.',
+              'Stir in the cornflour slurry and let it thicken for a minute.',
+              'Take it off the boil. Pour the beaten egg in a thin stream while stirring one way, and stop stirring.',
+              'Sesame oil and spring onion off the heat. Taste: it wants more vinegar than you think.'] },
+    { name: 'Fifteen minutes from a tin', time: 15, serves: 2, level: 'Very easy',
+      ingredients: ['600ml vegetable stock', '1 tin bamboo shoots', 'Mushrooms', 'Black vinegar', 'White pepper', 'Cornflour', '1 egg'],
+      steps: ['Stock, bamboo and mushrooms up to a simmer for 5 minutes.',
+              'Vinegar and pepper, thicken, then the egg in a stream.'] }
+  ]);
+
+  recipes('Youtiao and soy milk', [
+    { name: 'Fried from scratch', time: 90, serves: 4, level: 'Hard',
+      ingredients: ['300g plain flour', '1.5 tsp baking powder', '0.5 tsp bicarbonate of soda', '1 tsp salt', '180ml water', '1 tbsp oil', 'Oil for deep frying', '1 litre unsweetened soy milk', 'Sugar or soy sauce, to season'],
+      steps: ['Mix everything into a very soft, sticky dough. Do not knead it much. Oil the top, cover, and rest it in the fridge for at least 4 hours — overnight is better.',
+              'Turn it out onto a floured board and press into a long rectangle. Cut into strips a finger wide.',
+              'Stack pairs of strips and press a chopstick down the middle to join them.',
+              'Stretch each pair long and lower into oil at 190C. They puff almost at once — keep turning so they colour evenly.',
+              'Warm the soy milk. Sweet, or savoury with a splash of soy and vinegar, which is the better one.',
+              'Tear the sticks and dunk.'] },
+    { name: 'Shop-bought, warmed', time: 10, serves: 2, level: 'Very easy',
+      ingredients: ['Frozen youtiao', 'Unsweetened soy milk', 'Sugar'],
+      steps: ['Oven at 200C for 6 minutes, or air fryer for 4, until crisp again.',
+              'Warm soy milk alongside. Dunk each piece for two seconds only.'] }
+  ]);
+
+  recipes('Oyster omelette', [
+    { name: 'O a jian', time: 20, serves: 2, level: 'Medium',
+      ingredients: ['12 small oysters, shucked', '3 eggs', '3 tbsp sweet potato starch', '5 tbsp water', '2 handfuls of chrysanthemum greens or lettuce', '2 spring onions', '3 tbsp ketchup', '1 tbsp chilli sauce', '1 tsp sugar', '1 tbsp soy sauce'],
+      steps: ['Whisk the starch into the water until it is like thin cream. This, not the egg, is what makes it stretchy.',
+              'Get a pan properly hot with a good film of oil. Lay in the oysters for 30 seconds.',
+              'Pour the starch slurry over and let it set into a translucent sheet, 2 minutes.',
+              'Beat the eggs and pour them over the top, then pile on the greens and spring onion.',
+              'Flip in halves — it will not come away cleanly and that is fine. Another minute.',
+              'Mix the sauce ingredients and pour over. Eat with a spoon.'] },
+    { name: 'Without oysters', time: 15, serves: 2, level: 'Easy',
+      ingredients: ['3 eggs', 'Sweet potato starch', 'Water', 'Lettuce', 'Spring onion', 'Ketchup', 'Chilli sauce'],
+      steps: ['Same method, no oysters. Still gluey, still good, no longer the dish.',
+              'A few prawns are a closer swap than nothing.'] }
+  ]);
+
+  recipes('Tonkatsu', [
+    { name: 'Loin, panko, twice', time: 30, serves: 2, level: 'Easy',
+      ingredients: ['2 pork loin chops, boneless, about 2cm thick', '3 tbsp plain flour', '1 egg, beaten', '80g panko', 'Oil for frying', '0.25 white cabbage, shredded as fine as you can', 'Tonkatsu sauce', 'Lemon'],
+      steps: ['Nick the fat line at the edge of each chop in three places so it does not curl up in the pan.',
+              'Season, then flour, egg and panko — press the crumbs on rather than patting.',
+              'Fry in 2cm of oil at 170C, 4 minutes a side, until a deep even gold.',
+              'Rest on a rack, never a plate, for 3 minutes.',
+              'Slice into fingers. Cabbage on the side, sauce poured over, lemon squeezed.'] },
+    { name: 'Oven, less oil', time: 35, serves: 2, level: 'Very easy',
+      ingredients: ['2 pork chops', 'Flour', '1 egg', 'Panko', 'Oil spray', 'Cabbage', 'Tonkatsu sauce'],
+      steps: ['Toast the panko in a dry pan until golden first — the oven will not do it for you.',
+              'Crumb as above, spray with oil, bake at 210C for 20 minutes, turning once.'] }
+  ]);
+
+  recipes('Zaru soba', [
+    { name: 'With proper tsuyu', time: 20, serves: 2, level: 'Easy',
+      ingredients: ['200g dried soba', '300ml water', '10g kombu', '15g bonito flakes', '3 tbsp soy sauce', '1 tbsp sugar', '2 spring onions, sliced thin', 'Wasabi', 'Nori, shredded'],
+      steps: ['Steep the kombu in cold water for 20 minutes, bring it almost to a boil and lift it out.',
+              'Add the bonito, take it off the heat, wait 2 minutes and strain. Stir in the soy and sugar. Chill it.',
+              'Boil the soba in a lot of unsalted water, 4 minutes, and taste one — they overcook fast.',
+              'Rinse under cold water, rubbing them with your hands to get the starch off. This is not optional.',
+              'Drain hard, pile on a mat or a plate. Nori on top, dipping sauce and condiments alongside.',
+              'Dip only the bottom third. Do not drown them.'] },
+    { name: 'Bottled sauce, ten minutes', time: 10, serves: 1, level: 'Very easy',
+      ingredients: ['100g soba', 'Bottled mentsuyu, diluted as the bottle says', 'Spring onion', 'Wasabi'],
+      steps: ['Boil, rinse cold, drain.',
+              'Dilute the sauce, add the onion and wasabi. Done.'] }
+  ]);
+
+  recipes('Omurice', [
+    { name: 'Wrapped, not draped', time: 25, serves: 2, level: 'Medium',
+      ingredients: ['400g cooked rice, cold', '1 chicken breast, diced small', '0.5 onion, diced', '4 tbsp ketchup', '1 tbsp soy sauce', '6 eggs', 'Oil', 'Salt'],
+      steps: ['Fry the onion and chicken in oil until cooked through, then the rice, breaking it up.',
+              'Ketchup and soy in, and keep frying for 2 minutes so the ketchup loses its raw edge. Set aside warm.',
+              'Beat 3 eggs with a pinch of salt and pour into a hot oiled non-stick pan. Stir for 10 seconds then leave it.',
+              'While the top is still wet, lay half the rice down the middle and fold both sides over with a spatula.',
+              'Turn it out onto a plate seam down, and shape it with a tea towel into an oval.',
+              'More ketchup over the top, in a line. Repeat for the second one.'] },
+    { name: 'The easy way: omelette on top', time: 18, serves: 2, level: 'Very easy',
+      ingredients: ['Cold rice', 'Chicken', 'Onion', 'Ketchup', '4 eggs'],
+      steps: ['Make the ketchup rice, pile it on plates.',
+              'Cook two flat omelettes and drape one over each pile.',
+              'Nobody minds.'] }
+  ]);
+
+  recipes('Sukiyaki', [
+    { name: 'At the table', time: 30, serves: 4, level: 'Easy',
+      ingredients: ['600g beef sirloin, sliced paper thin', '100ml soy sauce', '100ml water', '3 tbsp sugar', '1 Chinese cabbage, chopped', '1 pack shiitake', '1 block firm tofu, cubed', '1 bundle shirataki noodles', '4 spring onions', '4 eggs'],
+      steps: ['Mix the soy, water and sugar. That is the whole sauce.',
+              'Heat a heavy pan at the table. Rub it with a piece of beef fat, then lay in a few slices of beef and let them colour.',
+              'Splash in some sauce, then add cabbage, mushrooms, tofu and noodles around the edges.',
+              'Simmer gently — top the sauce up with water as it reduces, it should not go salty.',
+              'Everyone cracks an egg into their own bowl and beats it. Dip each hot piece in the raw egg before eating.',
+              'Keep adding as you go. It should last an hour.'] },
+    { name: 'One pan on the hob', time: 25, serves: 3, level: 'Very easy',
+      ingredients: ['400g thin beef', 'Soy sauce', 'Sugar', 'Cabbage', 'Tofu', 'Mushrooms', '3 eggs'],
+      steps: ['Everything in a wide pan with the sauce and a splash of water.',
+              'Simmer 12 minutes. Beaten egg in bowls to dip.'] }
+  ]);
+
+  recipes('Chawanmushi', [
+    { name: 'Steamed in cups', time: 30, serves: 4, level: 'Medium',
+      ingredients: ['3 eggs', '450ml dashi, cooled', '1 tsp soy sauce', '0.5 tsp salt', '4 slices fish cake', '4 shiitake, sliced', 'A few mitsuba or parsley leaves'],
+      steps: ['Beat the eggs gently — you want no foam at all. Stir in the cooled dashi, soy and salt.',
+              'Strain the mixture twice through a fine sieve. This is the difference between silk and scrambled egg.',
+              'Divide the fish cake and mushroom between four cups and pour the custard over.',
+              'Cover each with foil. Steam over LOW heat, lid slightly ajar, for 12–15 minutes.',
+              'It is done when it wobbles as one piece and a skewer comes out clean with clear liquid.',
+              'A leaf on top. Eat warm with a spoon.'] },
+    { name: 'In the oven, in a tray of water', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['3 eggs', 'Dashi', 'Soy sauce', 'Mushrooms', 'Fish cake'],
+      steps: ['Same custard, strained.',
+              'Cups in a roasting tin, boiling water halfway up, foil over the whole tin.',
+              '150C for 25 minutes.'] }
+  ]);
+
+  recipes('Karaage', [
+    { name: 'Fried twice', time: 40, serves: 3, level: 'Easy',
+      ingredients: ['600g chicken thigh, skin on, in large bite pieces', '2 tbsp soy sauce', '1 tbsp grated ginger', '2 garlic cloves, grated', '1 tsp sugar', '1 tsp sesame oil', '6 tbsp potato starch', 'Oil for frying', 'Lemon wedges'],
+      steps: ['Marinate the chicken in everything but the starch for 30 minutes. Longer is not better — it goes salty.',
+              'Drain, then toss each piece in potato starch and shake the excess off hard.',
+              'Fry at 160C for 90 seconds. Lift out and rest 4 minutes. They will look underdone. They are.',
+              'Fry again at 190C for 45 seconds, until deep gold and loud.',
+              'Salt, lemon, and eat them within five minutes.'] },
+    { name: 'Air fryer', time: 30, serves: 2, level: 'Very easy',
+      ingredients: ['400g chicken thigh', 'Soy sauce', 'Ginger', 'Garlic', 'Potato starch', 'Oil spray'],
+      steps: ['Marinate, coat in starch, spray well with oil.',
+              '200C for 14 minutes, turning once. Crisp, not the same, still worth it.'] }
+  ]);
+
+  recipes('Oyakodon', [
+    { name: 'One pan, one bowl', time: 15, serves: 1, level: 'Very easy',
+      ingredients: ['1 chicken thigh, sliced', '0.5 onion, sliced thin', '120ml chicken stock', '1.5 tbsp soy sauce', '1 tbsp sugar', '2 eggs, barely beaten', '1 bowl hot rice', '1 spring onion'],
+      steps: ['Simmer the onion in the stock, soy and sugar in a small pan for 3 minutes.',
+              'Chicken in, and cook it through — 4 minutes, it is thigh, it forgives.',
+              'Beat the eggs loosely, so there are still streaks of white. Pour two thirds in a circle over the top.',
+              'Lid on, 45 seconds. Pour the rest in, lid on, 30 seconds more, then off the heat.',
+              'Slide the whole thing onto the rice. The top should still be wet and just short of set.'] },
+    { name: 'For two, in a frying pan', time: 20, serves: 2, level: 'Easy',
+      ingredients: ['2 chicken thighs', '1 onion', 'Chicken stock', 'Soy sauce', 'Sugar', '4 eggs', 'Rice'],
+      steps: ['Same, in a wider pan, and divide it in half with a spatula before serving.',
+              'Do not stir the egg once it is in.'] }
+  ]);
+
+  recipes('Taiyaki', [
+    { name: 'In a fish mould', time: 30, serves: 6, level: 'Medium',
+      ingredients: ['150g plain flour', '1 tsp baking powder', '40g sugar', '1 egg', '180ml milk', '1 tbsp melted butter', '250g sweet red bean paste'],
+      steps: ['Whisk the dry ingredients, then the egg, milk and butter, into a batter a little thinner than pancake batter.',
+              'Heat and oil both sides of the mould well.',
+              'Fill each side about a third, drop a spoon of bean paste in the middle of one, then top both with more batter.',
+              'Close it and cook 2 minutes, then flip and cook 2 minutes more.',
+              'They should be crisp at the fins and soft in the body. Eat hot.'] },
+    { name: 'Custard, in a waffle iron', time: 25, serves: 4, level: 'Easy',
+      ingredients: ['Same batter', 'Thick custard or chocolate spread', 'Butter for the iron'],
+      steps: ['Not fish-shaped, and nobody will mind.',
+              'Batter, filling in the middle, more batter, close, 3 minutes.'] }
+  ]);
+
+  recipes('Dorayaki', [
+    { name: 'Honey batter', time: 30, serves: 4, level: 'Easy',
+      ingredients: ['2 eggs', '70g sugar', '1 tbsp honey', '120g plain flour', '0.5 tsp baking powder', '2 tbsp water', '200g sweet red bean paste'],
+      steps: ['Beat the eggs, sugar and honey until pale and slightly thickened.',
+              'Sift in the flour and baking powder, fold, then loosen with the water. Rest the batter 20 minutes.',
+              'Cook tablespoon rounds in a dry non-stick pan over low-medium heat — no oil, or they go patchy.',
+              'Turn when the surface is covered in open bubbles. A minute more.',
+              'Sandwich pairs with the bean paste, more in the middle than the edges so the sides stay closed.'] },
+    { name: 'Chocolate, for the unconvinced', time: 25, serves: 4, level: 'Very easy',
+      ingredients: ['Same batter', 'Chocolate spread', 'Banana'],
+      steps: ['Same pancakes.',
+              'Spread and a slice of banana between them.'] }
+  ]);
+
+  recipes('Samgyetang', [
+    { name: 'Whole small chicken', time: 90, serves: 2, level: 'Easy',
+      ingredients: ['1 small chicken (about 800g)', '4 tbsp glutinous rice, soaked 2 hours', '1 dried ginseng root', '6 garlic cloves', '4 jujubes', '1 spring onion', 'Salt and black pepper'],
+      steps: ['Rinse the chicken well and trim the tail fat.',
+              'Stuff the cavity with the drained rice, two garlic cloves and a jujube. Cross the legs to close it.',
+              'Sit it in a deep pot with the ginseng, the rest of the garlic and jujubes, and water to just cover.',
+              'Bring up, skim, then simmer very gently for an hour. The broth should go pale and slightly thick.',
+              'Serve in the bowl it cooked in. Salt and pepper on the side to dip the meat in, not in the pot.'] },
+    { name: 'With thighs, in half the time', time: 45, serves: 2, level: 'Very easy',
+      ingredients: ['6 chicken thighs, bone in', 'Glutinous rice', 'Garlic', 'Jujube', 'Spring onion'],
+      steps: ['Everything in a pot with water to cover.',
+              '35 minutes gently. The rice cooks loose in the broth instead of in the bird.'] }
+  ]);
+
+  recipes('Sundubu jjigae', [
+    { name: 'In an earthenware pot', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['1 tube silken tofu', '400ml anchovy stock', '2 tbsp gochugaru', '1 tbsp gochujang', '3 garlic cloves, minced', '0.5 onion, sliced', '1 courgette, sliced', '1 tbsp soy sauce', '1 tsp sesame oil', '2 eggs', '2 spring onions'],
+      steps: ['Fry the gochugaru gently in oil with the garlic for 30 seconds until the oil goes red. Do not let it burn.',
+              'Onion and courgette in for 2 minutes, then the gochujang and soy.',
+              'Pour in the stock and bring to a hard boil.',
+              'Break the tofu in with a spoon in big pieces. Do not stir it much — it should stay in clouds.',
+              'Boil 5 minutes, crack an egg in, sesame oil and spring onion, and take it to the table still bubbling.'] },
+    { name: 'Vegetarian, with kelp stock', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['Silken tofu', 'Kelp and mushroom stock', 'Gochugaru', 'Gochujang', 'Garlic', 'Courgette', 'Soy sauce'],
+      steps: ['Same method with kelp and dried shiitake stock.',
+              'A spoon of doenjang gives back the depth the anchovies took with them.'] }
+  ]);
+
+  recipes('Jajangmyeon', [
+    { name: 'Fried bean paste, properly', time: 40, serves: 3, level: 'Medium',
+      ingredients: ['5 tbsp chunjang black bean paste', '4 tbsp oil', '300g pork shoulder, diced small', '1 large onion, diced', '1 courgette, diced', '1 potato, diced', '1 tbsp sugar', '2 tbsp cornflour in water', '400g thick wheat noodles', '1 cucumber, in matchsticks'],
+      steps: ['Fry the bean paste in the oil over low heat for 3 minutes, stirring — raw chunjang is bitter and this is the step everyone skips.',
+              'Lift the paste out. Brown the pork in the same pan, then the onion, potato and courgette until softening.',
+              'Paste back in with the sugar and 300ml water. Simmer 12 minutes until the potato is tender.',
+              'Thicken with the cornflour slurry until it coats a spoon.',
+              'Boil the noodles, drain, sauce on top, cucumber over that. Mix it violently before eating.'] },
+    { name: 'Vegetarian, with mushrooms', time: 30, serves: 2, level: 'Easy',
+      ingredients: ['Chunjang', 'Oil', 'Mushrooms', 'Onion', 'Courgette', 'Potato', 'Sugar', 'Cornflour', 'Noodles'],
+      steps: ['Same, with a big handful of chopped mushrooms in place of the pork.',
+              'Fry the paste properly. That is where all of it comes from.'] }
+  ]);
+
+  recipes('Kimbap', [
+    { name: 'The standard roll', time: 45, serves: 3, level: 'Medium',
+      ingredients: ['400g short grain rice, cooked and cooled a little', '1 tbsp sesame oil', '1 tsp salt', '4 sheets nori', '2 eggs', '1 carrot, in matchsticks', '1 bunch spinach', '4 strips yellow pickled radish', '4 strips of burdock or cucumber', 'Sesame seeds'],
+      steps: ['Season the warm rice with the sesame oil and salt and spread it out to cool to body temperature.',
+              'Make a flat omelette and cut it into long strips. Fry the carrot briefly in oil. Blanch and squeeze the spinach, then dress it with a little sesame oil and salt.',
+              'Lay a nori sheet shiny side down and spread rice over three quarters of it, thin, leaving the far edge bare.',
+              'Lay the fillings in a line a third of the way up. Roll tightly with the mat, pressing as you go.',
+              'Brush the roll with sesame oil and scatter seeds. Wipe the knife between every cut or it will drag.',
+              'Cut thick. It travels better than it keeps.'] },
+    { name: 'Vegetable only, for a lunchbox', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['Cooked rice', 'Nori', 'Cucumber', 'Pickled radish', 'Carrot', 'Perilla leaves', 'Sesame oil'],
+      steps: ['Same roll without the egg, with a perilla leaf laid along the rice.',
+              'Keeps better than the standard one, which is the point of a lunchbox.'] }
+  ]);
+
+  recipes('Galbi', [
+    { name: 'Marinated in pear', time: 240, serves: 4, level: 'Easy',
+      ingredients: ['1.2kg beef short ribs, flanken cut', '1 Asian pear, grated', '1 onion, grated', '6 tbsp soy sauce', '3 tbsp sugar', '2 tbsp sesame oil', '5 garlic cloves, grated', '1 tbsp grated ginger', 'Black pepper', 'Spring onions', 'Lettuce leaves'],
+      steps: ['Rinse the ribs in cold water for 20 minutes to draw out the blood, then pat them very dry.',
+              'Mix everything else into a marinade. The pear is doing real work here — it tenderises, so do not go past 6 hours.',
+              'Marinate 4 hours in the fridge, turning once.',
+              'Grill over high heat, 2–3 minutes a side. They are thin; they want char, not time.',
+              'Cut between the bones with scissors at the table. Eat wrapped in lettuce with rice and ssamjang.'] },
+    { name: 'Under the grill', time: 200, serves: 3, level: 'Very easy',
+      ingredients: ['800g short ribs', 'Pear', 'Soy sauce', 'Sugar', 'Garlic', 'Sesame oil'],
+      steps: ['Same marinade, 3 hours.',
+              'Grill on the top shelf, 4 minutes a side, watching. The sugar burns quickly.'] }
+  ]);
+
+  recipes('Dakgalbi', [
+    { name: 'On a hot plate, with cheese', time: 45, serves: 3, level: 'Easy',
+      ingredients: ['700g chicken thigh, in chunks', '3 tbsp gochujang', '1 tbsp gochugaru', '2 tbsp soy sauce', '1 tbsp sugar', '4 garlic cloves', '1 tbsp grated ginger', '0.25 cabbage, chopped', '2 sweet potatoes, sliced', '2 spring onions', '2 rice cakes handfuls', '150g grated mozzarella'],
+      steps: ['Mix the gochujang, gochugaru, soy, sugar, garlic and ginger and rub it through the chicken. 30 minutes at least.',
+              'Get a wide heavy pan very hot with a little oil. Chicken in, spread out, and leave it to catch before stirring.',
+              'Cabbage, sweet potato and rice cakes in. Lid on, 12 minutes, stirring twice.',
+              'Uncover and let the sauce reduce and stick.',
+              'Push everything to the edges, pile the cheese in the middle, lid back on for 3 minutes.',
+              'Eat from the pan. Fried rice in the leftovers afterwards is the tradition.'] },
+    { name: 'Without the cheese', time: 35, serves: 3, level: 'Very easy',
+      ingredients: ['Chicken thigh', 'Gochujang', 'Cabbage', 'Sweet potato', 'Rice cakes', 'Perilla leaves'],
+      steps: ['Same, minus the cheese, plus a handful of torn perilla at the end.',
+              'Closer to how it is eaten in Chuncheon.'] }
+  ]);
+
+  recipes('Budae jjigae', [
+    { name: 'Everything in', time: 30, serves: 4, level: 'Very easy',
+      ingredients: ['1 tin spam, sliced', '4 frankfurter sausages, sliced', '200g kimchi with its juice', '1 block tofu, sliced', '1 onion, sliced', '2 tbsp gochugaru', '1 tbsp gochujang', '3 garlic cloves', '1 tbsp soy sauce', '800ml stock', '1 pack instant noodles', '2 slices processed cheese', '2 spring onions'],
+      steps: ['Arrange everything except the noodles, cheese and spring onion in a wide pan in neat sections. It matters for about a minute and then it does not.',
+              'Mix the gochugaru, gochujang, garlic and soy into a paste and dot it in the middle.',
+              'Pour the stock around and bring to a boil.',
+              'Boil hard for 10 minutes, then add the noodles and cook 3 minutes more.',
+              'Cheese on top, spring onion, and take it to the table still going.'] },
+    { name: 'Without the tin', time: 25, serves: 3, level: 'Very easy',
+      ingredients: ['Good sausages', 'Bacon', 'Kimchi', 'Tofu', 'Gochugaru', 'Stock', 'Noodles', 'Cheese'],
+      steps: ['Fry the sausage and bacon first so the fat gets into it.',
+              'Everything else as above. Better ingredients, slightly worse dish, and that is the joke.'] }
+  ]);
+
+  recipes('Bingsu', [
+    { name: 'Milk ice, shaved', time: 20, serves: 2, level: 'Easy',
+      ingredients: ['500ml whole milk', '3 tbsp condensed milk', '200g sweet red bean paste', '1 handful strawberries', '2 tbsp crushed nuts', 'Rice cakes, optional'],
+      steps: ['Mix the milk with one tablespoon of the condensed milk and freeze it in a shallow tray overnight.',
+              'Scrape it into fine shavings with a fork, or blitz the frozen blocks briefly in a blender.',
+              'Pile it high in cold bowls — use bowls that have been in the freezer.',
+              'Bean paste, fruit, nuts on top, the rest of the condensed milk drizzled over.',
+              'Four spoons. It has about six minutes before it is a drink.'] },
+    { name: 'Mango, no bean', time: 15, serves: 2, level: 'Very easy',
+      ingredients: ['Frozen milk cubes', 'Mango', 'Condensed milk'],
+      steps: ['Blitz the frozen milk cubes to snow.',
+              'Mango and condensed milk over. That is it.'] }
+  ]);
+
+  recipes('Manti', [
+    { name: 'Folded small', time: 120, serves: 4, level: 'Hard',
+      ingredients: ['400g plain flour', '200ml water', '1 tsp salt', '400g minced lamb', '2 onions, grated and squeezed dry', 'Black pepper', '400g thick yoghurt', '3 garlic cloves, crushed', '80g butter', '2 tsp dried mint', '1 tsp chilli flakes', '1 tbsp tomato paste'],
+      steps: ['Make a firm dough with the flour, water and salt. Knead 10 minutes and rest it, covered, for 30.',
+              'Mix the lamb with the grated onion, salt and a lot of black pepper.',
+              'Roll the dough as thin as you can manage and cut into 3cm squares. Put a pea of filling on each and pinch all four corners up to meet.',
+              'Boil in salted water for 12 minutes, or steam them for 25.',
+              'Beat the garlic into the yoghurt. Melt the butter with the tomato paste, mint and chilli until it foams.',
+              'Yoghurt over the drained manti, butter over the yoghurt. Do not serve them dry.'] },
+    { name: 'Using gyoza wrappers', time: 45, serves: 3, level: 'Easy',
+      ingredients: ['1 pack gyoza wrappers', '300g minced lamb', '1 onion, grated', 'Yoghurt', 'Garlic', 'Butter', 'Dried mint', 'Chilli flakes'],
+      steps: ['Fill and pinch the corners as above. They will be bigger than they should be.',
+              'Boil 6 minutes. Same garlic yoghurt, same burnt butter.'] }
+  ]);
+
+  recipes('Lagman', [
+    { name: 'Pulled by hand', time: 120, serves: 4, level: 'Hard',
+      ingredients: ['450g strong flour', '220ml salted water', 'Oil for coating', '500g lamb shoulder, in strips', '2 onions, sliced', '2 peppers, sliced', '3 tomatoes, chopped', '2 potatoes, diced', '4 garlic cloves', '1 tbsp cumin', '1 tsp chilli flakes', 'Coriander', '1 litre stock'],
+      steps: ['Make a stiff dough, knead, rest an hour, then roll into ropes, oil them heavily and rest again for another hour. The oil and the waiting are what let them stretch.',
+              'Brown the lamb hard in a wide pan. Onions, then peppers, then garlic and cumin.',
+              'Tomatoes and potato in, stock over, and simmer 40 minutes.',
+              'Pull the ropes out long and thin, doubling and swinging them, and drop straight into boiling water. Two minutes.',
+              'Noodles in bowls, stew ladled over, coriander and chilli on top.'] },
+    { name: 'With shop noodles', time: 55, serves: 4, level: 'Easy',
+      ingredients: ['Thick wheat noodles', 'Lamb shoulder', 'Onion', 'Peppers', 'Tomato', 'Potato', 'Cumin', 'Stock'],
+      steps: ['Make the stew exactly as above.',
+              'Boil the noodles separately and keep them apart until the bowl.'] }
+  ]);
+
+  recipes('Kabuli pulao', [
+    { name: 'Layered and steamed', time: 150, serves: 6, level: 'Medium',
+      ingredients: ['1kg lamb on the bone', '2 onions, sliced', '500g basmati, soaked 2 hours', '3 carrots, in long matchsticks', '100g raisins', '3 tbsp sugar', '2 tsp ground cumin', '1 tsp ground cardamom', '1 tsp cinnamon', 'Oil', 'Salt'],
+      steps: ['Fry the onion in oil until very dark — almost too dark. Add the lamb and brown it, then water to cover and simmer 90 minutes.',
+              'Lift the lamb out and keep the stock. Strain it.',
+              'Fry the carrot with the sugar until glazed, then the raisins for 30 seconds until they swell. Set aside.',
+              'Parboil the drained rice in salted water for 5 minutes and drain.',
+              'Layer rice, lamb, rice in a heavy pot. Pour over 500ml of the stock with the spices in it. Lid wrapped in a tea towel.',
+              'Lowest heat, 35 minutes. Tip out, pile the carrots and raisins on top.'] },
+    { name: 'One pot, weeknight', time: 60, serves: 4, level: 'Easy',
+      ingredients: ['600g diced lamb', 'Onion', 'Basmati', 'Carrot', 'Raisins', 'Cumin', 'Cardamom'],
+      steps: ['Brown the lamb and onion, add the spices and 800ml water, simmer 35 minutes.',
+              'Soaked rice in, lid on, 15 minutes, then rest 10 off the heat.',
+              'Glazed carrot and raisins on top at the end.'] }
+  ]);
+
+  recipes('Ashak', [
+    { name: 'Leek dumplings, three layers', time: 90, serves: 4, level: 'Hard',
+      ingredients: ['350g plain flour', '180ml water', '1 tsp salt', '4 leeks, very finely chopped', '1 tsp chilli flakes', '300g minced lamb', '1 onion, chopped', '1 tbsp tomato paste', '1 tsp turmeric', '400g thick yoghurt', '3 garlic cloves', '2 tsp dried mint', 'Oil'],
+      steps: ['Make a plain dough and rest it 30 minutes.',
+              'Salt the chopped leek, leave 15 minutes, then squeeze out every drop of water. Toss with chilli.',
+              'Cook the mince with the onion, tomato paste and turmeric with a splash of water until thick.',
+              'Roll the dough thin, cut 8cm circles, fill with leek and fold into half moons.',
+              'Boil 6 minutes.',
+              'Garlic yoghurt on the plate first, dumplings on that, meat sauce over, mint and more yoghurt on top. In that order or it is a different dish.'] },
+    { name: 'Vegetarian, with more leek', time: 60, serves: 3, level: 'Medium',
+      ingredients: ['Dough or gyoza wrappers', 'Leeks', 'Chilli flakes', 'Yoghurt', 'Garlic', 'Split peas', 'Tomato paste', 'Dried mint'],
+      steps: ['Cook yellow split peas with onion, tomato paste and turmeric until thick, in place of the meat.',
+              'Same three layers.'] }
+  ]);
+
+  recipes('Beshbarmak', [
+    { name: 'Boiled meat and wide noodles', time: 180, serves: 6, level: 'Medium',
+      ingredients: ['1.5kg lamb on the bone', '3 onions', '2 bay leaves', '10 peppercorns', '400g plain flour', '190ml water', 'Salt', 'Parsley or dill'],
+      steps: ['Cover the meat with cold water, bring up slowly, and skim properly for the first ten minutes. Add one onion, the bay and peppercorns.',
+              'Simmer two and a half hours until the meat falls off the bone. Keep the broth.',
+              'Make a firm noodle dough from the flour, water and salt. Rest 30 minutes, roll thin, cut into squares the size of a playing card.',
+              'Slice the other two onions into rings and soften them in a ladle of hot skimmed broth.',
+              'Boil the noodle squares in the broth, 4 minutes, and lay them on a wide platter.',
+              'Pulled meat over, onions over that, herbs on top. Broth in cups on the side.'] },
+    { name: 'With lasagne sheets', time: 150, serves: 4, level: 'Easy',
+      ingredients: ['1kg lamb', 'Onions', 'Bay', 'Fresh lasagne sheets, cut into squares'],
+      steps: ['Same broth and meat.',
+              'Fresh lasagne sheets in the broth for 3 minutes. Close enough.'] }
+  ]);
+
+  recipes('Shashlik', [
+    { name: 'Marinated overnight', time: 300, serves: 4, level: 'Easy',
+      ingredients: ['1kg lamb leg or shoulder, in 4cm cubes', '3 onions, two grated and one in rings', '2 tsp ground coriander', '1 tbsp paprika', '1 tsp black pepper', '3 tbsp vinegar or lemon juice', '2 tsp salt', 'Flatbread', 'Sumac'],
+      steps: ['Mix the cubes with the grated onion, spices, vinegar and salt. Cover and leave overnight in the fridge.',
+              'Thread onto flat metal skewers, fat and lean alternating, pressed close together but not squashed.',
+              'Cook over coals that have gone grey, turning every couple of minutes. About 12 minutes total.',
+              'Rest the skewers on a plate under foil for 5 minutes.',
+              'Slide off onto warm flatbread, with the onion rings tossed in sumac and vinegar.'] },
+    { name: 'Under the grill', time: 260, serves: 3, level: 'Very easy',
+      ingredients: ['700g lamb', 'Onion', 'Paprika', 'Coriander', 'Lemon'],
+      steps: ['Same marinade, 4 hours minimum.',
+              'Highest shelf, hottest grill, 4 minutes a side. Not the same as fire, still good.'] }
+  ]);
+
+  recipes('Qurutob', [
+    { name: 'Torn bread under qurut', time: 30, serves: 4, level: 'Easy',
+      ingredients: ['2 flatbreads, ideally a day old', '200g qurut, or 300g thick yoghurt with 1 tsp salt', '3 onions, sliced', '100ml oil', '2 tomatoes, chopped', '1 cucumber, chopped', 'Coriander, dill and basil, a lot'],
+      steps: ['Fry the onions slowly in the oil until deep brown and sweet. Keep the oil.',
+              'Loosen the qurut with warm water until it pours like thick cream. If using yoghurt, salt it well.',
+              'Tear the bread into rough pieces into a wide bowl and pour the qurut over. Let it sit two minutes to soak.',
+              'Fried onions and their oil over the top.',
+              'Tomato, cucumber and a great deal of herbs. Eaten with hands, from the middle, by everyone at once.'] },
+    { name: 'With pitta and yoghurt', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['Pitta', 'Thick yoghurt', 'Onion', 'Oil', 'Tomato', 'Herbs'],
+      steps: ['Toast the pitta until dry, then tear.',
+              'Salted thinned yoghurt over, fried onions on top, herbs.'] }
+  ]);
+
+  recipes('Shurpa', [
+    { name: 'Clear, with a lot of dill', time: 120, serves: 6, level: 'Very easy',
+      ingredients: ['1kg lamb on the bone', '2 onions, sliced', '3 carrots, in thick rounds', '3 potatoes, halved', '2 tomatoes, quartered', '1 pepper, in strips', '1 tsp cumin seed', 'A very large bunch of dill', 'Salt and pepper'],
+      steps: ['Cover the lamb with cold water and bring it up slowly. Skim carefully — this soup is meant to be clear.',
+              'Simmer an hour, barely moving. Add the onion and carrot.',
+              'Thirty minutes later, the potato, tomato, pepper and cumin.',
+              'Another 25 minutes until the potato is soft but whole.',
+              'Salt at the end, not the start. Half the dill in the pot, half in the bowls.'] },
+    { name: 'Quicker, with chops', time: 55, serves: 4, level: 'Very easy',
+      ingredients: ['6 lamb chops', 'Onion', 'Carrot', 'Potato', 'Tomato', 'Cumin', 'Dill'],
+      steps: ['Same method, 25 minutes on the meat before the vegetables go in.',
+              'Less body in the broth, same afternoon.'] }
+  ]);
+
+
+  /* ---- the eighth intake: the Atlantic side ------------------------ */
+
+  recipes('Lomo saltado', [
+    { name: 'In a very hot wok', time: 30, serves: 3, level: 'Easy',
+      ingredients: ['500g beef sirloin, in thick strips', '3 tbsp soy sauce', '3 tbsp red wine vinegar', '1 red onion, in thick wedges', '2 tomatoes, in wedges', '1 yellow chilli, sliced', '600g chips, freshly fried', 'Coriander', 'Rice, to serve'],
+      steps: ['Season the beef and get a wok or heavy pan as hot as it will go with a little oil.',
+              'Sear the beef in two batches, 90 seconds each, and lift it out. It should still be pink.',
+              'Onion in, 1 minute — it must stay crunchy. Then the chilli and tomato for 30 seconds.',
+              'Beef back in with the soy and vinegar. It will steam violently. Toss for 20 seconds.',
+              'Tip the hot chips in, toss twice, coriander over. Serve with rice as well as the chips, which is the point of the dish.'] },
+    { name: 'With oven chips, on a weeknight', time: 25, serves: 2, level: 'Very easy',
+      ingredients: ['350g beef', 'Soy sauce', 'Red wine vinegar', 'Red onion', 'Tomato', 'Oven chips', 'Coriander'],
+      steps: ['Chips in the oven first, and get them properly dark.',
+              'Everything else as above. Add the chips at the very last second or they go soft.'] }
+  ]);
+
+  recipes('Papa a la huancaína', [
+    { name: 'The yellow sauce', time: 30, serves: 4, level: 'Very easy',
+      ingredients: ['6 waxy potatoes', '200g queso fresco or feta', '3 tbsp aji amarillo paste', '150ml evaporated milk', '6 cream crackers', '1 garlic clove', '2 hard-boiled eggs', 'Black olives', 'Lettuce leaves'],
+      steps: ['Boil the potatoes whole in salted water until a knife slides in. Cool and slice thick.',
+              'Blitz the cheese, chilli paste, milk, crackers and garlic until completely smooth. The crackers are the thickener — add more if it is loose.',
+              'Taste for salt. It should be sharp and hot enough to notice.',
+              'Lay the potato on lettuce, pour the sauce over so it covers.',
+              'Halved egg and olives on top. Serve cold with the sauce at room temperature.'] },
+    { name: 'Quicker, with cream cheese', time: 20, serves: 3, level: 'Very easy',
+      ingredients: ['Potatoes', 'Cream cheese', 'Aji amarillo paste', 'Milk', 'Garlic', 'Eggs'],
+      steps: ['Blitz cream cheese, chilli paste, a splash of milk and garlic.',
+              'Over boiled sliced potato, egg on top.'] }
+  ]);
+
+  recipes('Causa', [
+    { name: 'Pressed in layers', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['1kg yellow potatoes', '3 tbsp aji amarillo paste', '3 tbsp lime juice', '4 tbsp oil', '2 avocados, sliced', '1 tomato, sliced', '2 hard-boiled eggs', 'Salt', 'Olives'],
+      steps: ['Boil and peel the potatoes, then rice or mash them while hot and leave to cool completely.',
+              'Work in the chilli paste, lime, oil and a lot of salt. It should be smooth, bright yellow and stiff enough to hold a shape.',
+              'Line a tin or a ring with cling film. Half the potato in, pressed flat.',
+              'Avocado and tomato over it, seasoned, then the rest of the potato on top, pressed down hard.',
+              'An hour in the fridge. Turn out, slice like a cake, egg and olives on top.'] },
+    { name: 'In a glass, no pressing', time: 30, serves: 2, level: 'Very easy',
+      ingredients: ['Mashed potato, cooled', 'Aji amarillo paste', 'Lime', 'Avocado', 'Egg'],
+      steps: ['Season the mash as above.',
+              'Layer it with avocado in a glass. Egg on top. Chill 20 minutes.'] }
+  ]);
+
+  recipes('Anticuchos', [
+    { name: 'Over coals', time: 240, serves: 4, level: 'Easy',
+      ingredients: ['800g beef heart, trimmed and cut into 3cm squares', '4 tbsp aji panca paste', '4 tbsp red wine vinegar', '4 garlic cloves', '1 tsp cumin', '2 tsp salt', 'Oil', 'Boiled potato and corn, to serve'],
+      steps: ['Trim every scrap of sinew from the heart. This is most of the work and it decides whether it is tender.',
+              'Mix the chilli paste, vinegar, garlic, cumin and salt and marinate the meat 3 hours, or overnight.',
+              'Thread three or four pieces per skewer, tightly.',
+              'Very hot coals, 2 minutes a side. They are thin and they go from perfect to rubber quickly.',
+              'Brush with the leftover marinade thinned with oil as they cook. Potato and corn alongside.'] },
+    { name: 'With beef sirloin instead', time: 200, serves: 3, level: 'Very easy',
+      ingredients: ['600g beef sirloin', 'Aji panca paste', 'Vinegar', 'Garlic', 'Cumin'],
+      steps: ['Same marinade, 3 hours.',
+              'Grill hard and fast. Not the real thing, and a good skewer.'] }
+  ]);
+
+  recipes('Arroz chaufa', [
+    { name: 'Leftover rice, hot pan', time: 20, serves: 3, level: 'Very easy',
+      ingredients: ['600g cold cooked rice', '2 chicken breasts, diced', '3 eggs', '4 spring onions', '1 red pepper, diced', '3 tbsp soy sauce', '1 tbsp grated ginger', '2 garlic cloves', '1 tsp sesame oil'],
+      steps: ['Beat the eggs and cook them flat in the wok. Slide out, roll, slice into ribbons.',
+              'Chicken in on high heat until browned and cooked, then ginger and garlic for 20 seconds.',
+              'Pepper in, then the cold rice, broken up with the back of a spoon.',
+              'Keep it moving for 3 minutes so the rice actually fries rather than steams.',
+              'Soy, sesame oil, egg ribbons and spring onion folded in at the end.'] },
+    { name: 'Vegetarian, with more egg', time: 15, serves: 2, level: 'Very easy',
+      ingredients: ['Cold rice', '4 eggs', 'Spring onion', 'Pepper', 'Soy sauce', 'Ginger'],
+      steps: ['Same method with no chicken and a fourth egg.',
+              'A splash of vinegar at the end lifts it.'] }
+  ]);
+
+  recipes('Asado', [
+    { name: 'Slowly, over wood', time: 300, serves: 8, level: 'Medium',
+      ingredients: ['1 rack of beef short ribs (tira de asado)', '1kg flank or skirt', '4 chorizo sausages', 'Coarse salt', '1 bunch parsley', '4 garlic cloves', '2 tbsp oregano', '100ml red wine vinegar', '150ml oil'],
+      steps: ['Build the fire with hardwood and let it burn down to embers. Rake embers under the grill — never flames.',
+              'Salt the beef heavily half an hour before it goes on.',
+              'Ribs bone-side down first, high above the coals, for two hours. Do not touch them.',
+              'Turn once, lower the grill, another 40 minutes. The chorizo and flank go on for the last 20.',
+              'Chop the parsley, garlic and oregano and mix with the vinegar, oil and salt for the chimichurri.',
+              'Rest everything 10 minutes, carve on a board, chimichurri on the side, not on top.'] },
+    { name: 'On a gas barbecue', time: 90, serves: 4, level: 'Easy',
+      ingredients: ['Beef short ribs', 'Flank steak', 'Chorizo', 'Coarse salt', 'Chimichurri ingredients'],
+      steps: ['Indirect heat, lid down, 200C for an hour on the ribs.',
+              'Over direct heat for the last 10 minutes to crust. Flank and chorizo fast and hot.'] }
+  ]);
+
+  recipes('Provoleta', [
+    { name: 'In a small iron pan', time: 12, serves: 4, level: 'Very easy',
+      ingredients: ['1 thick round of provolone (about 2cm)', '1 tsp dried oregano', '1 tsp chilli flakes', '1 tbsp olive oil', 'Bread, to serve'],
+      steps: ['Leave the cheese out of the fridge for an hour and pat the surface dry.',
+              'Get a small heavy pan hot with a film of oil. Lay the cheese in.',
+              'Three minutes without touching it, until a crust forms underneath and the top starts sweating.',
+              'Flip carefully with a fish slice, oregano and chilli on top, 2 minutes more.',
+              'To the table in the pan. It has about three minutes before it sets again, so bring the bread first.'] },
+    { name: 'Under the grill', time: 10, serves: 3, level: 'Very easy',
+      ingredients: ['Provolone round', 'Oregano', 'Chilli flakes', 'Olive oil'],
+      steps: ['In a shallow dish, oil and herbs on top.',
+              'Hottest grill, 6 minutes, until blistered.'] }
+  ]);
+
+  recipes('Locro', [
+    { name: 'The long winter one', time: 240, serves: 8, level: 'Easy',
+      ingredients: ['300g dried white maize, soaked overnight', '200g white beans, soaked overnight', '500g pork belly, diced', '2 chorizo, sliced', '400g pumpkin, diced', '1 sweet potato, diced', '2 onions', '1 tbsp paprika', '1 tsp cumin', 'Spring onion and chilli oil, to finish'],
+      steps: ['Cover the drained maize and beans with water and simmer 90 minutes, topping up as needed.',
+              'Brown the pork and chorizo in another pan and add them with their fat.',
+              'Onions, paprika and cumin in. Another hour on low, stirring so it does not catch.',
+              'Pumpkin and sweet potato in for the last 45 minutes — they should dissolve and thicken it.',
+              'It is ready when a spoon stands up in it. Chilli oil and spring onion on top in the bowl.'] },
+    { name: 'With tinned hominy', time: 90, serves: 4, level: 'Very easy',
+      ingredients: ['2 tins hominy', '1 tin white beans', 'Pork belly', 'Chorizo', 'Pumpkin', 'Paprika', 'Cumin'],
+      steps: ['Brown the meats, add everything, simmer 50 minutes.',
+              'Mash some of the pumpkin against the side to thicken it.'] }
+  ]);
+
+  recipes('Chivito', [
+    { name: 'Built properly', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['2 thin beef fillet steaks', '4 rashers bacon', '2 slices ham', '2 slices mozzarella', '2 eggs', '2 soft rolls', 'Mayonnaise', 'Lettuce, tomato', 'Pickled peppers', 'Olives'],
+      steps: ['Fry the bacon until crisp and set aside in the fat.',
+              'Sear the steaks hard, 90 seconds a side, then lay the ham and cheese on top and cover the pan for a minute to melt it.',
+              'Fry the eggs in the bacon fat.',
+              'Toast the rolls. Mayonnaise on both sides, lettuce and tomato on the bottom.',
+              'Steak with its cheese, bacon, egg, peppers, olives. Lid on. Press once. Give up on eating it neatly.'] },
+    { name: 'Al plato — on a plate, no bread', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['Steak', 'Bacon', 'Ham', 'Cheese', 'Eggs', 'Chips', 'Salad'],
+      steps: ['Same components, piled on a plate with chips instead of in a roll.',
+              'How half of Montevideo eats it.'] }
+  ]);
+
+  recipes('Pão de queijo', [
+    { name: 'From tapioca starch', time: 40, serves: 6, level: 'Easy',
+      ingredients: ['250g sour tapioca starch (polvilho azedo)', '120ml milk', '60ml oil', '1 tsp salt', '2 eggs', '150g grated hard cheese'],
+      steps: ['Bring the milk, oil and salt to a rolling boil and pour it straight onto the starch. Stir hard — it will look like a disaster.',
+              'Let it cool until you can touch it, then beat in the eggs one at a time.',
+              'Beat in the cheese. The dough is sticky and that is correct.',
+              'Wet your hands and roll walnut-sized balls onto a lined tray.',
+              '200C for 20 minutes until puffed and pale gold. Do not open the oven early.',
+              'Eat within ten minutes. They are not the same cold.'] },
+    { name: 'Blender batter, in a muffin tin', time: 30, serves: 6, level: 'Very easy',
+      ingredients: ['Tapioca starch', 'Milk', 'Oil', 'Eggs', 'Grated cheese'],
+      steps: ['Blitz everything cold in a blender to a loose batter.',
+              'Pour into a greased mini muffin tin, two thirds full. 200C, 20 minutes.'] }
+  ]);
+
+  recipes('Moqueca', [
+    { name: 'Capixaba, in a clay pot', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['800g firm white fish, in thick pieces', '2 limes', '1 onion, in rings', '2 peppers, in rings', '3 tomatoes, in rings', '4 garlic cloves', '400ml coconut milk', '3 tbsp dende palm oil', 'Coriander', 'Salt'],
+      steps: ['Rub the fish with lime juice, garlic and salt and leave it 20 minutes.',
+              'Lay onion, pepper and tomato rings across the bottom of a wide pot in layers.',
+              'Fish on top, then another layer of vegetables. Do not stir at any point.',
+              'Pour the coconut milk and palm oil over, lid on, and simmer 18 minutes.',
+              'Coriander over the top. Serve from the pot with rice and farofa.'] },
+    { name: 'Prawn, quicker', time: 25, serves: 3, level: 'Very easy',
+      ingredients: ['500g raw prawns', 'Lime', 'Onion', 'Pepper', 'Tomato', 'Coconut milk', 'Coriander'],
+      steps: ['Same layering. Prawns need 6 minutes, not 18.',
+              'Add them once the vegetables have softened.'] }
+  ]);
+
+  recipes('Coxinha', [
+    { name: 'The teardrop', time: 90, serves: 6, level: 'Hard',
+      ingredients: ['2 chicken breasts', '500ml chicken stock', '300g plain flour', '2 tbsp butter', '150g cream cheese', '1 onion, grated', '2 garlic cloves', 'Parsley', '2 eggs, beaten', '200g breadcrumbs', 'Oil for frying'],
+      steps: ['Poach the chicken in the stock, then shred it and keep the stock.',
+              'Mix the shredded chicken with the cream cheese, softened onion, garlic and parsley. Season hard.',
+              'Bring 400ml of the stock and the butter to a boil, tip in all the flour at once and beat until it forms one smooth ball that leaves the pan. Cool it.',
+              'Take a piece of dough, flatten it in your palm, put filling in the middle and close it into a teardrop with a point.',
+              'Egg, then breadcrumbs. Chill 30 minutes — skip this and they burst.',
+              'Fry at 170C for 4 minutes until deep gold.'] },
+    { name: 'Baked, round, no shaping', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['Same dough and filling', 'Egg', 'Breadcrumbs', 'Oil spray'],
+      steps: ['Roll into balls rather than teardrops.',
+              'Crumb, spray well, 200C for 25 minutes turning once.'] }
+  ]);
+
+  recipes('Açaí bowl', [
+    { name: 'From frozen pulp', time: 10, serves: 2, level: 'Very easy',
+      ingredients: ['2 packs frozen unsweetened açaí pulp', '1 frozen banana', '2 tbsp guaraná syrup or honey', 'Splash of apple juice', 'Granola', 'Sliced banana and strawberry'],
+      steps: ['Break the frozen pulp into a blender with the frozen banana and the syrup.',
+              'Add only a splash of juice — too much and it becomes a smoothie, which is the usual mistake.',
+              'Blitz in short bursts, scraping down, until it is thick enough to hold a spoon upright.',
+              'Into cold bowls. Granola and fruit on top, not stirred through.'] },
+    { name: 'With powder, thicker', time: 8, serves: 1, level: 'Very easy',
+      ingredients: ['2 tbsp açaí powder', '1 frozen banana', 'Frozen berries', 'Splash of oat milk', 'Granola'],
+      steps: ['Blitz the frozen fruit with the powder and as little liquid as it will take.',
+              'Toppings on. Not the same colour, near enough the same bowl.'] }
+  ]);
+
+  recipes('Brigadeiro', [
+    { name: 'Rolled', time: 30, serves: 20, level: 'Very easy',
+      ingredients: ['1 tin condensed milk', '3 tbsp cocoa powder', '1 tbsp butter', 'Chocolate sprinkles'],
+      steps: ['Everything except the sprinkles into a heavy pan over medium-low heat.',
+              'Stir constantly with a spatula, scraping the bottom, for about 10 minutes.',
+              'It is ready when you can draw the spatula across the base and the gap stays open for a second.',
+              'Pour onto a greased plate and cool completely — at least an hour.',
+              'Grease your hands, roll small balls, roll them in sprinkles.'] },
+    { name: 'In a spoon, undercooked on purpose', time: 15, serves: 6, level: 'Very easy',
+      ingredients: ['Condensed milk', 'Cocoa', 'Butter'],
+      steps: ['Cook it two minutes less so it stays soft.',
+              'Spoon into little cups. Brigadeiro de colher, and it is the better one.'] }
+  ]);
+
+  recipes('Ajiaco', [
+    { name: 'With three potatoes and guascas', time: 90, serves: 6, level: 'Easy',
+      ingredients: ['4 chicken breasts on the bone', '2 litres water', '500g waxy potatoes, sliced', '500g floury potatoes, chunked', '500g small yellow potatoes, whole', '2 corn cobs, in thirds', '3 tbsp dried guascas', '1 onion', 'Cream', 'Capers', 'Avocado'],
+      steps: ['Simmer the chicken with the onion in the water for 30 minutes, then lift it out and shred it.',
+              'The floury potatoes go in first and are meant to disintegrate — they are the thickener.',
+              'Forty minutes later add the waxy and yellow potatoes and the corn.',
+              'Guascas in for the last 10 minutes only. Any longer and they turn bitter.',
+              'Chicken back in. Serve with cream, capers and avocado on the side for everyone to add.'] },
+    { name: 'Without guascas', time: 70, serves: 4, level: 'Very easy',
+      ingredients: ['Chicken thighs', 'Three kinds of potato', 'Corn', 'Oregano and a bay leaf', 'Cream', 'Capers'],
+      steps: ['Same method. Oregano stands in, badly but willingly.',
+              'The three potatoes matter more than the herb does.'] }
+  ]);
+
+  recipes('Bandeja paisa', [
+    { name: 'The whole tray', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['400g cooked red beans with their liquor', '400g minced pork', '4 chorizo', '4 pieces pork belly for chicharrón', '4 eggs', '400g cooked white rice', '2 plantains, sliced', '2 avocados', '4 arepas'],
+      steps: ['Score the pork belly skin, salt it, and roast at 200C for 45 minutes until it blisters and crackles.',
+              'Simmer the beans with a little of the pork fat until thick.',
+              'Brown the mince with onion and cumin. Grill the chorizo.',
+              'Fry the plantain slices until dark at the edges. Fry the eggs last.',
+              'Everything on one plate, nothing touching if you can manage it, avocado and an arepa on the side.',
+              'There is no polite way to serve this and no polite amount of it.'] },
+    { name: 'A smaller tray', time: 35, serves: 2, level: 'Easy',
+      ingredients: ['Tinned red beans', 'Chorizo', 'Minced pork', 'Egg', 'Rice', 'Plantain', 'Avocado'],
+      steps: ['Skip the chicharrón, which is the part that takes the hour.',
+              'Everything else as above, on a normal plate.'] }
+  ]);
+
+  recipes('Sancocho', [
+    { name: 'Bone-in, long', time: 120, serves: 6, level: 'Very easy',
+      ingredients: ['1 chicken, jointed', '2 corn cobs, in thirds', '500g cassava, in chunks', '2 plantains, in thick rounds', '3 potatoes', '1 onion', '1 pepper', '4 garlic cloves', 'Coriander stalks', '2.5 litres water'],
+      steps: ['Bring the chicken up in the water with the onion, pepper, garlic and coriander stalks. Skim.',
+              'Simmer 40 minutes, then add the corn and cassava.',
+              'Twenty minutes later, the plantain and potato.',
+              'Another 25 minutes until everything is soft and the broth has gone slightly thick from the starch.',
+              'Salt properly at the end. Rice, avocado and a wedge of lime on the side.'] },
+    { name: 'With what is in the cupboard', time: 70, serves: 4, level: 'Very easy',
+      ingredients: ['Chicken thighs', 'Sweet potato', 'Potato', 'Corn', 'Onion', 'Coriander'],
+      steps: ['Same idea with whatever roots you have.',
+              'It wants a lot of salt and a lot of coriander at the end.'] }
+  ]);
+
+  recipes('Pabellón criollo', [
+    { name: 'Four stripes', time: 150, serves: 4, level: 'Medium',
+      ingredients: ['800g beef flank', '1 onion', '1 red pepper', '4 garlic cloves', '2 tbsp tomato purée', '1 tsp cumin', '400g black beans, cooked', '300g rice', '2 ripe plantains', 'Oil'],
+      steps: ['Simmer the flank with half the onion for 90 minutes until it pulls apart. Keep the broth.',
+              'Shred the beef along the grain into long threads.',
+              'Fry the rest of the onion, the pepper and garlic, add the tomato purée and cumin, then the beef and a ladle of broth. Reduce until barely wet.',
+              'Warm the black beans with a little of the same sofrito.',
+              'Fry the plantain slices until very dark and sweet.',
+              'Four stripes on the plate: rice, beans, beef, plantain. Do not mix them before serving.'] },
+    { name: 'With tinned beans and quick beef', time: 40, serves: 3, level: 'Easy',
+      ingredients: ['Beef skirt', 'Onion', 'Pepper', 'Tomato purée', 'Tinned black beans', 'Rice', 'Plantain'],
+      steps: ['Sear and slice the skirt thin instead of shredding flank.',
+              'Everything else the same, and the plantain still has to be nearly black.'] }
+  ]);
+
+  recipes('Tequeños', [
+    { name: 'Wrapped in a spiral', time: 60, serves: 6, level: 'Medium',
+      ingredients: ['300g plain flour', '80g butter, cold and cubed', '1 tsp sugar', '1 tsp salt', '100ml cold water', '400g firm white cheese, in fingers', 'Oil for frying'],
+      steps: ['Rub the butter into the flour, sugar and salt, then bring together with the water. Do not knead it much. Rest 30 minutes.',
+              'Roll thin and cut into long strips about 2cm wide.',
+              'Wrap each cheese finger in a spiral, overlapping slightly, and pinch both ends closed properly. A gap means the cheese escapes.',
+              'Freeze for 15 minutes — this is the trick.',
+              'Fry at 175C for 3 minutes, turning, until golden and blistered.',
+              'Eat hot. Guasacaca or a sweet chilli sauce alongside.'] },
+    { name: 'With puff pastry', time: 30, serves: 4, level: 'Very easy',
+      ingredients: ['1 sheet puff pastry', 'Halloumi or firm white cheese', 'Oil'],
+      steps: ['Cut the pastry into strips and wrap the cheese the same way.',
+              'Fry or bake at 200C for 18 minutes. Puffier and less chewy.'] }
+  ]);
+
+  recipes('Salteñas', [
+    { name: 'With the soup set in jelly', time: 180, serves: 8, level: 'Hard',
+      ingredients: ['500g chicken thigh, diced', '2 potatoes, diced small', '1 onion, diced', '3 tbsp aji panca paste', '1 tsp cumin', '400ml chicken stock', '2 tsp gelatine', '500g plain flour', '120g butter', '1 egg', '1 tsp sugar', '180ml warm water', 'Turmeric, for colour'],
+      steps: ['Cook the onion, chilli paste and cumin, add the chicken and potato and the stock, and simmer 15 minutes.',
+              'Stir the gelatine into the hot liquid, then chill the whole filling overnight until it sets firm. This is the entire secret.',
+              'Make a dough with the flour, butter, egg, sugar, turmeric and water. Rest an hour.',
+              'Roll discs, put a scoop of the cold set filling in each, and seal with a rope pleat along the top edge.',
+              'Chill again for 20 minutes. Bake at 220C for 15 minutes until the pastry sets and colours.',
+              'Eat standing, upright, with a bite from the top corner first.'] },
+    { name: 'Wetter and easier, in a muffin tin', time: 90, serves: 6, level: 'Medium',
+      ingredients: ['Same filling, set', 'Shortcrust pastry', 'Egg for glazing'],
+      steps: ['Line a muffin tin with pastry, fill with the set filling, lid on top, sealed.',
+              'Bake at 210C for 20 minutes. Less elegant, much less leakage.'] }
+  ]);
+
+  recipes('Flan', [
+    { name: 'Baked in a water bath', time: 90, serves: 8, level: 'Medium',
+      ingredients: ['200g sugar, for the caramel', '3 tbsp water', '500ml whole milk', '1 tin condensed milk', '4 eggs', '2 egg yolks', '1 tsp vanilla'],
+      steps: ['Melt the sugar with the water in a dry pan without stirring until it is deep amber. Pour it straight into the mould and swirl.',
+              'Warm the milk. Whisk the eggs, yolks, condensed milk and vanilla, then pour the warm milk in slowly while whisking.',
+              'Strain it. Twice. This is what makes the texture.',
+              'Pour over the set caramel, cover with foil, and bake at 160C in a tin of boiling water for 50 minutes.',
+              'It should still wobble in the middle. Chill overnight — not four hours, overnight.',
+              'Run a knife round and turn it out. The caramel becomes the sauce.'] },
+    { name: 'Small ones, quicker', time: 50, serves: 4, level: 'Easy',
+      ingredients: ['Caramel', 'Condensed milk', 'Milk', '3 eggs'],
+      steps: ['Same custard in ramekins.',
+              '160C in a water bath for 30 minutes. Chill 4 hours.'] }
+  ]);
+
+  recipes('Alfajores', [
+    { name: 'Cornflour biscuits', time: 90, serves: 12, level: 'Medium',
+      ingredients: ['200g cornflour', '150g plain flour', '150g butter, soft', '100g sugar', '3 egg yolks', '1 tsp baking powder', 'Zest of 1 lemon', '300g dulce de leche', 'Desiccated coconut'],
+      steps: ['Cream the butter and sugar, beat in the yolks and zest.',
+              'Fold in both flours and the baking powder. It will be very soft — chill it for an hour.',
+              'Roll to 6mm between sheets of paper and cut small rounds.',
+              'Bake at 170C for 9 minutes. They should stay pale. A browned alfajor is an overbaked one.',
+              'Cool completely, then sandwich generously with dulce de leche.',
+              'Roll the exposed edge in coconut. Keep them a day before eating if you can.'] },
+    { name: 'Chocolate-dipped', time: 100, serves: 12, level: 'Medium',
+      ingredients: ['Same biscuits', 'Dulce de leche', '200g dark chocolate'],
+      steps: ['Sandwich as above, then dip the whole thing in melted chocolate.',
+              'Set on paper. The Cordobés version.'] }
+  ]);
+
+  recipes('Oxtail stew', [
+    { name: 'Browned, then hours', time: 240, serves: 4, level: 'Easy',
+      ingredients: ['1.5kg oxtail', '2 tbsp browning sauce or dark soy', '1 onion, chopped', '4 garlic cloves', '1 tbsp allspice', '4 sprigs thyme', '1 scotch bonnet, whole', '2 carrots', '1 tin butter beans', '1 tbsp tomato purée', '1 litre stock'],
+      steps: ['Season the oxtail overnight with the garlic, thyme, allspice and browning.',
+              'Brown it hard in a heavy pot, in batches, until genuinely dark. Do not crowd it.',
+              'Onion and tomato purée in, then the stock, the carrots and the whole scotch bonnet — unpierced.',
+              'Lid on, lowest heat, three hours. Check it has liquid every 45 minutes.',
+              'Lift the chilli out before it splits. Butter beans in for the last 20 minutes.',
+              'Skim the fat. Rice and peas on the side.'] },
+    { name: 'Pressure cooker', time: 90, serves: 4, level: 'Very easy',
+      ingredients: ['Oxtail', 'Allspice', 'Thyme', 'Onion', 'Scotch bonnet', 'Butter beans', 'Stock'],
+      steps: ['Brown properly first — the pressure cooker will not do that for you.',
+              '50 minutes at pressure, natural release, beans stirred in after.'] }
+  ]);
+
+  recipes('Curry goat', [
+    { name: 'Better the next day', time: 180, serves: 6, level: 'Easy',
+      ingredients: ['1.5kg goat on the bone, in chunks', '4 tbsp Caribbean curry powder', '1 tbsp allspice', '6 garlic cloves', '2 onions', 'Thyme', '1 scotch bonnet', '3 potatoes', '1 tin coconut milk', 'Oil'],
+      steps: ['Rub the goat with half the curry powder, the garlic, thyme and allspice. Leave it overnight.',
+              'Burn the rest of the curry powder in hot oil for 30 seconds until it darkens — this is the step that makes it taste like the real thing.',
+              'Sear the meat in that oil, then onions, then water to cover and the whole scotch bonnet.',
+              'Two hours at a bare simmer, lid ajar.',
+              'Potatoes in for the last 30 minutes, coconut milk for the last 10.',
+              'Better tomorrow. Genuinely, measurably better.'] },
+    { name: 'With lamb shoulder', time: 120, serves: 4, level: 'Very easy',
+      ingredients: ['1kg diced lamb shoulder', 'Curry powder', 'Allspice', 'Garlic', 'Thyme', 'Potato', 'Coconut milk'],
+      steps: ['Same method, 90 minutes instead of two hours.',
+              'Milder, and nobody will be unhappy.'] }
+  ]);
+
+  recipes('Rice and peas', [
+    { name: 'With kidney beans', time: 50, serves: 6, level: 'Very easy',
+      ingredients: ['400g long grain rice', '1 tin kidney beans with the liquid', '1 tin coconut milk', '2 spring onions, bruised', '4 sprigs thyme', '1 whole scotch bonnet', '4 allspice berries', '1 garlic clove', 'Salt'],
+      steps: ['Bring the beans, their liquid, the coconut milk, thyme, spring onion, allspice, garlic and the whole chilli to a boil with 300ml water.',
+              'Simmer 10 minutes so the liquid takes on everything.',
+              'Rinse the rice and stir it in. Taste the liquid — it should be slightly over-salted.',
+              'Lid on, lowest heat, 20 minutes. Do not lift the lid.',
+              'Off the heat 10 minutes. Lift the chilli and thyme out, fork it through.',
+              'If the chilli splits, you will know within one mouthful.'] },
+    { name: 'With gungo peas', time: 60, serves: 6, level: 'Very easy',
+      ingredients: ['Rice', 'Tin of gungo (pigeon) peas', 'Coconut milk', 'Thyme', 'Spring onion', 'Scotch bonnet'],
+      steps: ['Exactly the same. The Christmas version.',
+              'Slightly earthier and worth trying at least once.'] }
+  ]);
+
+  recipes('Callaloo', [
+    { name: 'Cooked down soft', time: 35, serves: 4, level: 'Very easy',
+      ingredients: ['500g callaloo or spinach and chard, chopped', '1 onion, sliced', '3 garlic cloves', '4 sprigs thyme', '1 whole scotch bonnet', '200ml coconut milk', '1 tomato, chopped', 'Black pepper', 'Oil'],
+      steps: ['Soften the onion and garlic in oil with the thyme.',
+              'Tomato in for 3 minutes until it collapses.',
+              'Greens in with a splash of water and the whole chilli sat on top. Lid on.',
+              'Twenty minutes on low. It should go dark and completely soft — this is not a dish that wants to stay bright green.',
+              'Coconut milk in for the last 5 minutes, lots of black pepper, chilli out.'] },
+    { name: 'Quicker, with frozen spinach', time: 20, serves: 3, level: 'Very easy',
+      ingredients: ['Frozen spinach', 'Onion', 'Garlic', 'Thyme', 'Coconut milk', 'Scotch bonnet'],
+      steps: ['Same, straight from frozen.',
+              'Cook the water off properly before the coconut milk goes in.'] }
+  ]);
+
+  recipes('Escovitch fish', [
+    { name: 'Fried whole, dressed hot', time: 40, serves: 2, level: 'Medium',
+      ingredients: ['2 whole snapper, scaled and scored', '2 tsp allspice', 'Flour for dusting', 'Oil for frying', '1 carrot, in matchsticks', '1 onion, sliced', '1 pepper, sliced', '1 scotch bonnet, sliced', '150ml white vinegar', '1 tsp sugar', '6 pimento berries'],
+      steps: ['Season the fish inside the scores with salt and allspice and leave 20 minutes. Pat dry, dust with flour.',
+              'Fry in 2cm of hot oil, 5 minutes a side, until the skin is crisp and the fins snap. Drain on a rack.',
+              'Boil the vinegar with the sugar and pimento, then add the carrot, onion and peppers for 2 minutes only. They must stay crunchy.',
+              'Pour the whole hot dressing over the fish while both are still hot.',
+              'Leave 15 minutes before eating. It is better at room temperature than straight away, and better again tomorrow.'] },
+    { name: 'With fillets', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['4 white fish fillets', 'Flour', 'Allspice', 'Vinegar', 'Carrot', 'Onion', 'Scotch bonnet'],
+      steps: ['Fry skin side down until crisp, 4 minutes, then 1 minute over.',
+              'Same vinegar dressing poured over hot.'] }
+  ]);
+
+  recipes('Griot', [
+    { name: 'Marinated, braised, fried', time: 240, serves: 6, level: 'Medium',
+      ingredients: ['1.5kg pork shoulder, in large cubes', '4 limes', '2 bitter oranges or 1 orange plus 1 lime', '1 onion', '6 garlic cloves', '1 scotch bonnet', 'Thyme', '4 cloves', 'Oil for frying'],
+      steps: ['Wash the pork in the juice of two limes and drain. Marinate overnight with the citrus, onion, garlic, thyme, cloves and chilli.',
+              'Tip the lot into a pot with a splash of water, cover, and braise 90 minutes until tender.',
+              'Lift the meat out and let it dry on a rack. Reduce the braising liquid to a few spoonfuls.',
+              'Fry the cubes in hot oil until the outsides are dark and crisp, 5 minutes.',
+              'Toss in the reduced liquid off the heat. Pikliz and fried plantain alongside.'] },
+    { name: 'Oven-finished', time: 200, serves: 4, level: 'Easy',
+      ingredients: ['Pork shoulder', 'Citrus', 'Garlic', 'Thyme', 'Scotch bonnet'],
+      steps: ['Same marinade and braise.',
+              'Finish under a hot grill on a rack, 12 minutes, turning, instead of frying.'] }
+  ]);
+
+  recipes('Mofongo', [
+    { name: 'In a wooden mortar', time: 40, serves: 4, level: 'Medium',
+      ingredients: ['4 green plantains', '150g pork crackling, chopped', '6 garlic cloves', '4 tbsp olive oil', 'Salt', 'Chicken stock, warm'],
+      steps: ['Peel the plantains under running water — they fight back — and cut into thick rounds.',
+              'Fry them in oil at 165C for 6 minutes until cooked through but pale. They should not brown.',
+              'Crush the garlic with the oil and salt in a mortar into a rough paste.',
+              'Add the hot plantain a few pieces at a time and pound, working in the crackling as you go.',
+              'Splash in warm stock if it stiffens. It should hold together but not be smooth.',
+              'Press into a bowl, turn out, and pour more broth around it.'] },
+    { name: 'Trifongo, with cassava', time: 50, serves: 4, level: 'Medium',
+      ingredients: ['2 green plantains', '1 ripe plantain', '300g cassava, boiled', '6 garlic cloves', '4 tbsp olive oil', 'Pork crackling', 'Warm stock'],
+      steps: ['Fry the green plantain as before and boil the cassava until it falls apart.',
+              'Pound all three together with the garlic paste — the ripe plantain sweetens it and the cassava makes it smoother.',
+              'Same well in the middle, same broth poured round it.'] }
+  ]);
+
+  recipes('Arroz con gandules', [
+    { name: 'With a proper sofrito', time: 50, serves: 6, level: 'Easy',
+      ingredients: ['400g medium grain rice', '1 tin pigeon peas, drained', '100g cured ham or bacon, diced', '4 tbsp sofrito (onion, pepper, garlic, coriander, blitzed)', '2 tbsp tomato purée', '1 tsp dried oregano', '2 sachets sazón or 1 tsp annatto', '700ml stock', '8 olives', 'Oil'],
+      steps: ['Render the ham in oil in a heavy pot until it catches.',
+              'Sofrito in, and cook it for a full 4 minutes — it should darken and stop smelling raw.',
+              'Tomato purée, oregano, annatto, then the peas and olives.',
+              'Rice in, stirred to coat in the fat. Stock over, taste for salt.',
+              'Boil hard uncovered until the liquid is level with the rice, then lid on, lowest heat, 20 minutes.',
+              'Rest 10 minutes. The crust on the bottom — the pegao — is the best part and is not a mistake.'] },
+    { name: 'Vegetarian', time: 45, serves: 4, level: 'Very easy',
+      ingredients: ['Rice', 'Pigeon peas', 'Sofrito', 'Tomato purée', 'Annatto', 'Vegetable stock', 'Olives'],
+      steps: ['Same without the ham, with an extra spoon of sofrito and a little more oil.',
+              'Still gets a pegao if the heat is low enough for long enough.'] }
+  ]);
+
+  recipes('Ropa vieja', [
+    { name: 'Shredded into rags', time: 180, serves: 6, level: 'Easy',
+      ingredients: ['1kg beef flank or skirt', '2 onions, sliced', '2 peppers, sliced', '6 garlic cloves', '1 tin chopped tomatoes', '2 tbsp tomato purée', '2 tsp cumin', '1 tsp oregano', '2 bay leaves', '1 tbsp capers', '100g green olives'],
+      steps: ['Simmer the beef with one onion, the bay and water to cover for 90 minutes, until it shreds. Keep 400ml of the broth.',
+              'Pull the meat apart along the grain with two forks. Long threads, not chunks.',
+              'Soften the second onion, the peppers and garlic slowly — 15 minutes, not 5.',
+              'Cumin, oregano, tomato purée, tinned tomatoes and the reserved broth. Simmer 20 minutes.',
+              'Beef back in with the olives and capers. Another 25 minutes uncovered until it is thick and glossy.',
+              'Rice, black beans and fried plantain.'] },
+    { name: 'Slow cooker', time: 480, serves: 6, level: 'Very easy',
+      ingredients: ['Beef skirt', 'Onion', 'Peppers', 'Tinned tomatoes', 'Cumin', 'Olives'],
+      steps: ['Everything in raw, on low, 8 hours.',
+              'Shred in the pot at the end and reduce on the hob for 15 minutes if it is loose.'] }
+  ]);
+
+  recipes('Thieboudienne', [
+    { name: 'Fish, rice, vegetables, in that order', time: 120, serves: 6, level: 'Hard',
+      ingredients: ['1kg firm fish steaks', '1 bunch parsley', '6 garlic cloves', '1 scotch bonnet', '500g broken rice', '4 tbsp tomato purée', '1 tin chopped tomatoes', '2 onions', '1 cassava, in chunks', '2 carrots', '1 small cabbage, in wedges', '1 aubergine', 'Oil', 'Dried fish or fish stock'],
+      steps: ['Blitz the parsley, garlic and chilli into a paste and stuff it into slits cut in the fish.',
+              'Fry the fish briefly on both sides and lift out.',
+              'In the same oil, cook the onion and tomato purée hard for 10 minutes until it darkens — this is where the colour comes from.',
+              'Tinned tomatoes and 2 litres water. Add the vegetables in order of how long they take: cassava and carrot first, cabbage and aubergine later.',
+              'Fish back in for the last 10 minutes. Lift everything out onto a platter.',
+              'Cook the rinsed rice in the remaining broth, covered, 25 minutes, until it drinks all of it. Rice on the dish, fish and vegetables on top.'] },
+    { name: 'One pot, fewer vegetables', time: 70, serves: 4, level: 'Medium',
+      ingredients: ['White fish fillets', 'Rice', 'Tomato purée', 'Onion', 'Carrot', 'Cabbage', 'Fish stock'],
+      steps: ['Same order, half the vegetables.',
+              'The rice still has to cook in the broth. That is the dish.'] }
+  ]);
+
+  recipes('Yassa', [
+    { name: 'Under a mountain of onions', time: 90, serves: 4, level: 'Very easy',
+      ingredients: ['8 chicken thighs', '6 large onions, sliced thin', '6 lemons, juiced', '3 tbsp Dijon mustard', '4 garlic cloves', '2 bay leaves', '1 scotch bonnet', '2 tbsp oil', 'Salt and pepper'],
+      steps: ['Marinate the chicken and the sliced onion together in the lemon juice, mustard, garlic and seasoning. Four hours minimum, overnight if you can.',
+              'Lift the chicken out, wipe it, and brown it hard in oil. Set aside.',
+              'Tip all the onion and marinade into the pan and cook it down for 30 minutes, stirring, until it goes soft and sweet and loses the raw lemon edge.',
+              'Chicken back in with the bay and the whole chilli, lid on, 25 minutes.',
+              'Taste. It should be sharp, sweet and savoury at once. Over rice.'] },
+    { name: 'Grilled first, for the char', time: 100, serves: 4, level: 'Easy',
+      ingredients: ['Chicken thighs', 'Onions', 'Lemon', 'Dijon mustard', 'Garlic', 'Bay'],
+      steps: ['Marinate as above, then grill the chicken over coals or under a hot grill until charred rather than browning it in a pan.',
+              'Cook the onions down separately for 30 minutes, then bring the two together for 15.',
+              'The smoke is the difference, and it is a large one.'] }
+  ]);
+
+  recipes('Maafe', [
+    { name: 'Groundnut stew', time: 110, serves: 6, level: 'Very easy',
+      ingredients: ['800g lamb or beef, in chunks', '200g smooth peanut butter', '2 onions', '4 tbsp tomato purée', '1 tin chopped tomatoes', '2 sweet potatoes', '1 carrot', '1 small cabbage wedge', '1 scotch bonnet', '1 litre stock', 'Oil'],
+      steps: ['Brown the meat hard and set it aside.',
+              'Onions and tomato purée in the same pot for 8 minutes until dark.',
+              'Loosen the peanut butter with a ladle of hot stock into a smooth paste, then stir it in — adding it straight from the jar makes it seize.',
+              'Meat back in with the rest of the stock, tinned tomatoes and the whole chilli. Simmer 50 minutes.',
+              'Sweet potato and carrot in for 25 minutes, cabbage for the last 10.',
+              'It is ready when a layer of red oil sits on the surface. Over rice.'] },
+    { name: 'Vegetarian, with more roots', time: 55, serves: 4, level: 'Very easy',
+      ingredients: ['Peanut butter', 'Onion', 'Tomato purée', 'Sweet potato', 'Carrot', 'Cabbage', 'Chickpeas', 'Stock'],
+      steps: ['Same base, chickpeas in place of the meat.',
+              'Loosen the peanut butter first, always.'] }
+  ]);
+
+  recipes('Waakye', [
+    { name: 'With sorghum leaves', time: 70, serves: 6, level: 'Easy',
+      ingredients: ['200g black-eyed beans, soaked', '400g long grain rice', '6 dried sorghum leaves', '0.5 tsp bicarbonate of soda', 'Salt', 'Oil'],
+      steps: ['Boil the beans with the sorghum leaves and the bicarbonate in plenty of water for 40 minutes. The water will turn deep red-brown.',
+              'Fish the leaves out. The beans should be nearly tender.',
+              'Add the rinsed rice and enough of the coloured water to sit 2cm above it. Salt.',
+              'Boil until the water is level with the rice, then lid on, lowest heat, 20 minutes.',
+              'Rest 10 minutes and fork through. Shito, gari and a boiled egg on the side make it the real thing.'] },
+    { name: 'Without the leaves', time: 60, serves: 4, level: 'Very easy',
+      ingredients: ['Black-eyed beans', 'Rice', 'Salt'],
+      steps: ['Same method with plain water. It will be brown rather than red.',
+              'Tastes close. Looks wrong to anybody who grew up with it.'] }
+  ]);
+
+  recipes('Kelewele', [
+    { name: 'Ginger and chilli', time: 25, serves: 4, level: 'Very easy',
+      ingredients: ['3 very ripe plantains', '1 thumb ginger, grated', '1 tsp cayenne', '0.5 tsp aniseed or fennel, crushed', '1 tsp salt', '2 tbsp water', 'Oil for frying', 'Roasted peanuts'],
+      steps: ['The plantains must be properly black-skinned. Yellow ones will not work.',
+              'Cube them and toss with the ginger, cayenne, aniseed, salt and water. Leave 10 minutes.',
+              'Fry in 2cm of oil at 175C, in batches, for 3 minutes until dark at the edges.',
+              'Drain on paper and salt again while hot.',
+              'Peanuts alongside. Best eaten out of a paper bag.'] },
+    { name: 'Air fried', time: 25, serves: 3, level: 'Very easy',
+      ingredients: ['Ripe plantains', 'Ginger', 'Cayenne', 'Oil spray'],
+      steps: ['Same spicing, sprayed well with oil.',
+              '200C for 14 minutes, shaking twice. Less good and much less oil.'] }
+  ]);
+
+  recipes('Moi moi', [
+    { name: 'Steamed in leaves or tins', time: 90, serves: 6, level: 'Medium',
+      ingredients: ['400g black-eyed beans, soaked and peeled', '1 red onion', '2 red peppers', '1 scotch bonnet', '100ml oil', '1 tsp ground crayfish, optional', '2 hard-boiled eggs, sliced', '300ml warm water', 'Salt'],
+      steps: ['Rub the soaked beans between your palms under water until the skins float off. Keep rinsing until they are all gone. This takes 15 minutes and there is no shortcut.',
+              'Blitz the peeled beans with the onion, peppers, chilli and just enough water to move the blades. It should be thick, not runny.',
+              'Beat in the oil and salt. Beat it for longer than feels necessary — air is what makes it light.',
+              'Pour into greased ramekins or foil parcels, pushing a slice of egg into each.',
+              'Steam, covered, for 50 minutes. Test with a skewer: clean means done.',
+              'Turn out. It should be firm enough to slice and soft enough to spoon.'] },
+    { name: 'With tinned beans', time: 50, serves: 4, level: 'Easy',
+      ingredients: ['2 tins black-eyed beans, drained and rinsed', 'Onion', 'Red pepper', 'Oil', 'Egg'],
+      steps: ['The skins are already off, which saves the worst part.',
+              'Blitz, beat, steam 40 minutes. Slightly denser.'] }
+  ]);
+
+  recipes('Kitfo', [
+    { name: 'Warmed, not cooked', time: 25, serves: 3, level: 'Medium',
+      ingredients: ['500g very fresh lean beef, minced twice or hand-chopped', '80g niter kibbeh (spiced clarified butter)', '2 tbsp mitmita', '0.5 tsp ground cardamom', 'Salt', '200g ayib or cottage cheese', 'Cooked greens', 'Injera'],
+      steps: ['Buy the beef from somebody you trust and use it the day you buy it. This matters more than anything else here.',
+              'Melt the niter kibbeh gently until warm, not hot.',
+              'Work the mitmita, cardamom and salt into the meat with your hands.',
+              'Pour the warm butter over and mix until the meat is glossy and barely warmed through — it should still be red.',
+              'Serve at once with the cheese and greens beside it, and injera underneath.',
+              'Ask for it leb leb if you want it briefly warmed in the pan instead.'] },
+    { name: 'Cooked through', time: 25, serves: 3, level: 'Very easy',
+      ingredients: ['Minced beef', 'Niter kibbeh', 'Mitmita', 'Cardamom', 'Cottage cheese'],
+      steps: ['Fry the mince in the spiced butter until just cooked.',
+              'A different dish and a perfectly good one.'] }
+  ]);
+
+  recipes('Tibs', [
+    { name: 'Hard and fast', time: 25, serves: 3, level: 'Very easy',
+      ingredients: ['600g lamb leg, in small cubes', '3 tbsp niter kibbeh or butter', '1 red onion, in thick wedges', '2 green chillies, split', '1 tbsp rosemary, chopped', '3 garlic cloves', '1 tsp berbere', 'Salt', 'Injera or flatbread'],
+      steps: ['Get a heavy pan extremely hot. Melt the spiced butter in it.',
+              'Lamb in, in one layer, and left alone for 2 minutes to catch properly.',
+              'Onion, garlic, rosemary and chilli in. Toss hard for 3 minutes — the onion should still have bite.',
+              'Berbere and salt at the end, off the heat, or it burns.',
+              'To the table in the pan, still spitting. Bread to pick it up with.'] },
+    { name: 'With beef and a bit of sauce', time: 30, serves: 3, level: 'Very easy',
+      ingredients: ['Beef sirloin', 'Butter', 'Onion', 'Tomato', 'Berbere', 'Rosemary'],
+      steps: ['Same method, plus a chopped tomato at the end.',
+              'Makes enough sauce to matter without turning it into a stew.'] }
+  ]);
+
+  recipes('Nyama choma', [
+    { name: 'Over charcoal, salt only', time: 120, serves: 6, level: 'Easy',
+      ingredients: ['2kg goat ribs and leg, on the bone', 'Coarse salt', '2 tomatoes', '1 red onion', '1 chilli', '1 lime', 'Coriander'],
+      steps: ['Salt the meat heavily and leave it an hour at room temperature. That is the entire seasoning.',
+              'Build a charcoal fire and let it settle to a low, even heat. High heat is the usual mistake.',
+              'Meat on, well above the coals, turning every 10 minutes. It wants 60 to 90 minutes.',
+              'It is done when the outside is dry and dark and a knife meets no resistance.',
+              'Chop the tomato, onion, chilli and coriander with lime and salt for the kachumbari.',
+              'Cut the meat up on a board with a cleaver. Eat with your hands, kachumbari and ugali alongside.'] },
+    { name: 'Oven then grill', time: 150, serves: 4, level: 'Very easy',
+      ingredients: ['Goat or lamb on the bone', 'Coarse salt', 'Kachumbari ingredients'],
+      steps: ['Salted, wrapped in foil, 150C for 2 hours.',
+              'Unwrap and finish under the hottest grill for 12 minutes to dry the outside.'] }
+  ]);
+
+  recipes('Ugali and sukuma wiki', [
+    { name: 'Stiff, and greens beside it', time: 30, serves: 4, level: 'Easy',
+      ingredients: ['400g white maize flour', '1 litre water', '1 large bunch collard greens or kale, shredded', '1 onion, sliced', '2 tomatoes, chopped', '2 tbsp oil', 'Salt'],
+      steps: ['Bring the water to a boil with a pinch of salt. Rain in about a third of the flour, whisking, and let it thicken for 3 minutes.',
+              'Add the rest a handful at a time, working it against the side of the pan with a wooden spoon.',
+              'Keep folding and pressing for 8 minutes. It is ready when it pulls away from the pan cleanly in one mass.',
+              'Turn it out onto a plate and shape it into a dome with a wet bowl.',
+              'For the greens: soften the onion, add the tomato and cook it down, then the greens with a splash of water. 8 minutes, covered. Salt at the end.',
+              'Tear a piece of ugali, press a dent in it, scoop.'] },
+    { name: 'Softer, if you are new to it', time: 25, serves: 3, level: 'Very easy',
+      ingredients: ['Maize flour', 'Water', 'Greens', 'Onion', 'Tomato'],
+      steps: ['Use a little more water for a softer ugali.',
+              'Easier to make and easier to eat, though nobody in Nairobi would serve it.'] }
+  ]);
+
+  recipes('Harira', [
+    { name: 'Thickened with tadouira', time: 75, serves: 6, level: 'Medium',
+      ingredients: ['150g brown lentils', '1 tin chickpeas', '2 onions, grated', '3 celery sticks, chopped fine', '1 tin chopped tomatoes', '2 tbsp tomato purée', '1 tsp turmeric', '1 tsp ginger', '1 tsp cinnamon', 'Large bunch coriander and parsley', '3 tbsp plain flour', '100ml water', 'Lemon', 'Dates, to serve'],
+      steps: ['Soften the onion and celery in oil with all the spices for 8 minutes.',
+              'Tomatoes, purée, lentils and 1.5 litres water. Simmer 35 minutes.',
+              'Chickpeas and most of the herbs in. Another 15 minutes.',
+              'Whisk the flour into the cold water until completely smooth — this is the tadouira.',
+              'Pour it into the simmering soup in a thin stream, stirring the whole time, and cook 10 minutes more until it turns velvety.',
+              'Lemon juice and the rest of the herbs at the end. A date on the side, which is not optional in Ramadan and is a good idea anyway.'] },
+    { name: 'Without the flour', time: 50, serves: 4, level: 'Very easy',
+      ingredients: ['Lentils', 'Chickpeas', 'Tomato', 'Celery', 'Onion', 'Turmeric', 'Coriander', 'Lemon'],
+      steps: ['Same soup, unthickened.',
+              'Blitz a ladleful and stir it back in if you want body without the flour.'] }
+  ]);
+
+  recipes('Zaalouk', [
+    { name: 'Cooked down to a paste', time: 45, serves: 4, level: 'Very easy',
+      ingredients: ['2 aubergines', '4 tomatoes, grated', '4 garlic cloves, crushed', '1 tsp paprika', '1 tsp cumin', '0.5 tsp cayenne', '4 tbsp olive oil', 'Large bunch coriander', 'Lemon', 'Bread'],
+      steps: ['Char the aubergines whole over a flame or under a hot grill until the skins blacken and they collapse. Twenty minutes.',
+              'Scrape the flesh out and chop it roughly.',
+              'Cook the grated tomato with the garlic, spices and oil for 12 minutes until it darkens and thickens.',
+              'Aubergine in, and cook another 15 minutes, mashing with a fork, until almost no liquid is left.',
+              'Coriander and lemon off the heat. Better at room temperature, better again the next day, and eaten with bread rather than a fork.'] },
+    { name: 'Roasted, hands off', time: 55, serves: 4, level: 'Very easy',
+      ingredients: ['Aubergines', 'Tomatoes', 'Garlic', 'Cumin', 'Paprika', 'Olive oil', 'Coriander'],
+      steps: ['Roast cubed aubergine at 220C for 30 minutes instead of charring.',
+              'Then into the tomato base for 10 minutes. Less smoky, no less good.'] }
+  ]);
+
+  recipes('Malva pudding', [
+    { name: 'Drowned straight from the oven', time: 60, serves: 8, level: 'Easy',
+      ingredients: ['200g sugar', '2 eggs', '2 tbsp apricot jam', '150g plain flour', '1 tsp bicarbonate of soda', '1 tbsp butter', '1 tsp vinegar', '150ml milk', 'For the sauce: 250ml cream, 100g butter, 100g sugar, 3 tbsp water'],
+      steps: ['Beat the sugar and eggs until pale, then beat in the jam.',
+              'Melt the butter with the vinegar and add it with the milk, alternating with the flour and bicarbonate.',
+              'Into a greased dish, 180C for 35 minutes until dark and risen.',
+              'While it bakes, bring all the sauce ingredients to a boil together.',
+              'The moment the pudding comes out, pour every drop of the hot sauce over it. It will look like far too much.',
+              'Leave 10 minutes to drink it. Serve with cream or custard, which is excessive and correct.'] },
+    { name: 'Individual ones', time: 45, serves: 6, level: 'Easy',
+      ingredients: ['Same batter', 'Same sauce'],
+      steps: ['Into ramekins, 180C for 20 minutes.',
+              'Sauce over each while hot. They soak faster than the big one.'] }
+  ]);
+
   return {
     BOOK: BOOK,
     scale: scale,
