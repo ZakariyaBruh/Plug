@@ -23,7 +23,7 @@ export const SITE_CARD_ALT = 'morsels45 — an assistant for working out what to
  * "112" did: that number outlived three separate batches of new dishes,
  * on the front page, the FAQ, the premium list and both social cards.
  */
-export const DISH_COUNT = 411
+export const DISH_COUNT = 450
 
 /*
  * The affiliate programme.

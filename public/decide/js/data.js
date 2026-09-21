@@ -1427,7 +1427,103 @@
     item('Zaalouk', '\u{1F346}', 'Aubergine and tomato cooked down to a smoky paste, scooped with bread.',
       'healthy light fresh shareable allium homemade cheap'),
     item('Malva pudding', '\u{1F36E}', 'Apricot sponge drowned in hot cream the moment it comes out.',
-      'sweet hot soft indulgent dairy egg comfort shareable homemade fruity')
+      'sweet hot soft indulgent dairy egg comfort shareable homemade fruity'),
+
+    /* ---- the ninth intake: the last of the gaps, and 450 ---------------
+     *
+     * What was left after the map was filled in: the European kitchens that
+     * had one dish standing in for a country, the Indian regions that are not
+     * Punjab, the Philippines and Malaysia, the Levant past the mezze, and a
+     * pudding shelf that stopped at the Mediterranean.
+     */
+    item('Currywurst', '\u{1F32D}', 'Sliced sausage under curried ketchup, eaten with a small wooden fork standing up.',
+      'hot meat pork spicy handheld messy cheap quick fried filling'),
+    item('Rösti', '\u{1F954}', 'Grated potato pressed into a pan and fried until both sides are a single crust.',
+      'hot root crunchy fried soft comfort dairy homemade cheap filling'),
+    item('Fondue', '\u{1F9C0}', 'A pot of melted cheese and wine, and a rule about what happens if you drop your bread.',
+      'hot cheesy dairy shareable indulgent filling alcohol soft allium bready'),
+    item('Cassoulet', '\u{1F372}', 'Beans and several kinds of pork under a crust you are meant to break and let sink.',
+      'hot meat pork filling comfort indulgent allium root homemade soupy'),
+    item('Tartiflette', '\u{1F954}', 'Potato, bacon and a whole reblochon, baked until the top browns and the middle runs.',
+      'hot cheesy dairy meat pork root filling indulgent comfort allium alcohol'),
+    item('Bitterballen', '\u{1F362}', 'Crisp spheres of ragout that are molten inside and will burn you every time.',
+      'hot meat beef fried crunchy handheld shareable indulgent dairy egg'),
+    item('Stamppot', '\u{1F954}', 'Potato mashed through kale or endive, with a sausage pushed into the middle.',
+      'hot root soft comfort filling cheap dairy meat pork homemade'),
+    item('Pelmeni', '\u{1F95F}', 'Small meat dumplings boiled and eaten under soured cream and black pepper.',
+      'hot meat pork beef filling comfort soft shareable dairy allium homemade'),
+    item('Blini', '\u{1F95E}', 'Small buckwheat pancakes, soured cream on top, and the topping is the argument.',
+      'soft shareable dairy egg handheld homemade cheap breakfast'),
+    item('Olivier salad', '\u{1F957}', 'Diced everything under mayonnaise, and on every table in the country at New Year.',
+      'root fresh shareable egg chicken meat filling allium light'),
+    item('Lángos', '\u{1FAD3}', 'Fried dough the size of a plate, rubbed with garlic, buried under soured cream and cheese.',
+      'hot fried bready crunchy handheld cheesy dairy allium indulgent cheap'),
+    item('Ćevapi', '\u{1F32D}', 'Little skinless sausages, ten to a portion, in flatbread with raw onion.',
+      'hot meat beef handheld shareable filling messy allium bready'),
+    item('Welsh rarebit', '\u{1F9C0}', 'Cheese, mustard and beer cooked into a paste and grilled onto toast.',
+      'hot cheesy dairy bready quick comfort indulgent alcohol soft egg'),
+    item('Scotch egg', '\u{1F95A}', 'A soft-boiled egg wrapped in sausagemeat and breadcrumbs, cut to show off the yolk.',
+      'meat pork egg fried crunchy handheld shareable filling bready'),
+
+    /* ---- India, past Punjab ------------------------------------------- */
+    item('Chole bhature', '\u{1FAD3}', 'Black chickpea curry with a balloon of fried bread that deflates as you tear it.',
+      'hot spicy filling bready fried carby shareable allium root comfort indulgent dairy'),
+    item('Paneer tikka', '\u{1F9C0}', 'Cubes of paneer in yoghurt and spices, charred at the edges off a skewer.',
+      'hot cheesy dairy spicy handheld shareable healthy allium homemade'),
+    item('Vindaloo', '\u{1F35B}', 'Goan, and originally Portuguese: pork, vinegar, garlic and a great deal of chilli.',
+      'hot meat pork spicy filling comfort allium root homemade'),
+    item('Rasam', '\u{1F372}', 'Thin, sour, peppery, and drunk from the bowl as often as spooned.',
+      'hot soupy spicy light healthy quick allium root comfort cheap'),
+    item('Aloo paratha', '\u{1FAD3}', 'Flatbread stuffed with spiced potato, cooked in ghee, eaten with yoghurt and pickle.',
+      'hot bready root soft filling comfort breakfast dairy homemade cheap allium'),
+    item('Kathi roll', '\u{1F32F}', 'Paratha cooked with egg on one side, filled with kebab and onion, rolled in paper.',
+      'hot meat chicken handheld spicy filling quick messy egg bready allium dairy'),
+    item('Litti chokha', '\u{1F360}', 'Dough balls stuffed with roasted gram flour, cooked in ash, smashed into charred aubergine.',
+      'hot bready root healthy filling homemade shareable dairy cheap allium'),
+
+    /* ---- Malaysia and the Philippines --------------------------------- */
+    item('Nasi lemak', '\u{1F35A}', 'Coconut rice with sambal, peanuts, anchovies, cucumber and half an egg.',
+      'hot carby filling spicy shareable egg seafood breakfast root allium comfort'),
+    item('Char kway teow', '\u{1F35C}', 'Flat noodles fried in pork fat over an unreasonable flame, with cockles and egg.',
+      'hot carby filling seafood shellfish egg meat pork allium indulgent messy quick'),
+    item('Gado-gado', '\u{1F957}', 'Blanched vegetables and egg under a thick warm peanut sauce.',
+      'healthy fresh light shareable egg filling allium homemade'),
+    item('Sinigang', '\u{1F372}', 'Sour soup — tamarind, tomato and whatever greens — and the sourness is the point.',
+      'hot soupy meat pork healthy comfort filling fresh root allium seafood'),
+    item('Kare-kare', '\u{1F372}', 'Oxtail in a thick peanut and annatto sauce, eaten with salty shrimp paste on the side.',
+      'hot meat beef filling comfort indulgent root allium soft'),
+    item('Bún bò Huế', '\u{1F35C}', 'Lemongrass and chilli beef noodle soup, heavier and hotter than pho and prouder of it.',
+      'hot soupy meat beef pork spicy carby filling allium seafood shellfish'),
+
+    /* ---- the Levant past the mezze ------------------------------------ */
+    item('Musakhan', '\u{1FAD3}', 'Chicken roasted over flatbread with sumac onions, the bread soaking up everything.',
+      'hot meat chicken bready filling shareable allium comfort messy handheld'),
+    item('Mansaf', '\u{1F35A}', 'Lamb cooked in fermented dried yoghurt over rice, eaten from one tray with the right hand.',
+      'hot meat carby filling shareable dairy comfort allium soft'),
+    item('Kibbeh', '\u{1F95F}', 'Bulgur shells stuffed with spiced mince and pine nuts, fried into torpedoes.',
+      'hot meat fried crunchy handheld shareable filling allium'),
+    item('Muhammara', '\u{1F336}', 'Roasted red pepper and walnut, thick with pomegranate molasses and chilli.',
+      'spicy fresh shareable light healthy cheap homemade allium fruity'),
+
+    /* ---- North America ------------------------------------------------- */
+    item('Poutine', '\u{1F35F}', 'Chips, squeaking cheese curds and hot gravy, in that order and no other.',
+      'hot cheesy dairy fried filling indulgent messy comfort meat carby'),
+    item('Lobster roll', '\u{1F99E}', 'Cold lobster in a split bun, either buttered or dressed, and people take sides.',
+      'seafood shellfish handheld filling indulgent fresh bready egg dairy'),
+    item('Shrimp and grits', '\u{1F364}', 'Prawns and bacon over a bowl of grits loosened with cheese.',
+      'hot seafood shellfish comfort filling cheesy dairy soft meat pork allium'),
+    item('Key lime pie', '\u{1F967}', 'Sharp green custard in a biscuit crust, and it should make you wince slightly.',
+      'sweet fruity dairy egg soft indulgent shareable'),
+
+    /* ---- and the pudding shelf ----------------------------------------- */
+    item('Cannoli', '\u{1F365}', 'A fried tube filled with sweet ricotta, and never filled until you order it.',
+      'sweet crunchy dairy handheld shareable indulgent chocolate egg alcohol'),
+    item('Bakewell tart', '\u{1F967}', 'Frangipane over raspberry jam in pastry, with flaked almonds on top.',
+      'sweet soft dairy egg fruity shareable indulgent homemade'),
+    item('Kulfi', '\u{1F366}', 'Denser than ice cream because it is never churned, on a stick, tasting of cardamom.',
+      'sweet dairy soft light handheld shareable'),
+    item('Turkish coffee', '\u{2615}', 'Ground to dust, boiled three times, and drunk down to the sludge and no further.',
+      'drink hot caffeine quick shareable cheap')
   ];
 
   return { QUESTIONS: QUESTIONS, TAGS: TAGS, LEARNABLE: LEARNABLE, DIET_TAGS: DIET_TAGS,

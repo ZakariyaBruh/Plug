@@ -5617,6 +5617,589 @@
               'Sauce over each while hot. They soak faster than the big one.'] }
   ]);
 
+
+  /* ---- the ninth intake: the last of the gaps ---------------------- */
+
+  recipes('Currywurst', [
+    { name: 'Berlin style', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['4 bratwurst', '200ml passata', '3 tbsp tomato purée', '2 tbsp curry powder', '1 tbsp paprika', '1 tbsp white wine vinegar', '1 tbsp sugar', '1 tsp onion powder', 'More curry powder, to dust'],
+      steps: ['Simmer the passata, purée, half the curry powder, paprika, vinegar and sugar for 10 minutes until thick and glossy.',
+              'Fry or grill the sausages until the skins split and blister.',
+              'Slice them into rounds on the plate — in Berlin, skinless; in the Ruhr, with skin.',
+              'Sauce over, then a heavy dusting of raw curry powder on top. That last dusting is the dish.',
+              'Chips on the side, wooden fork, standing up.'] },
+    { name: 'From a jar of ketchup', time: 12, serves: 2, level: 'Very easy',
+      ingredients: ['4 sausages', '6 tbsp ketchup', '2 tbsp curry powder', '1 tsp paprika', 'Splash of vinegar'],
+      steps: ['Warm the ketchup with the spices and vinegar for 3 minutes.',
+              'Over sliced fried sausage, more curry powder on top.'] }
+  ]);
+
+  recipes('Rösti', [
+    { name: 'One big one', time: 35, serves: 2, level: 'Medium',
+      ingredients: ['800g waxy potatoes', '40g butter', '1 tbsp oil', 'Salt', 'Black pepper'],
+      steps: ['Parboil the potatoes whole for 8 minutes, then cool them completely — ideally overnight in the fridge.',
+              'Peel and grate on the coarse side. Do not rinse; the starch is the glue.',
+              'Season and press into a hot pan with the butter and oil, flattening into an even disc.',
+              'Medium heat, 12 minutes, without touching it. Shake the pan — it should move as one piece.',
+              'Slide it onto a plate, invert the pan over it, and flip. Another 10 minutes.',
+              'Cut in wedges. A fried egg on top is not traditional and is a good idea.'] },
+    { name: 'Small ones, from raw', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['Potatoes', 'Butter', 'Salt'],
+      steps: ['Grate raw and squeeze out as much water as you can in a tea towel.',
+              'Small mounds in butter, 5 minutes a side, pressed flat.'] }
+  ]);
+
+  recipes('Fondue', [
+    { name: 'Moitié-moitié', time: 25, serves: 4, level: 'Easy',
+      ingredients: ['400g Gruyère, grated', '400g Vacherin or Emmental, grated', '1 garlic clove', '300ml dry white wine', '1 tbsp cornflour', '1 tbsp kirsch', 'Nutmeg', 'Black pepper', '2 crusty loaves, in cubes'],
+      steps: ['Rub the inside of the pot hard with the cut garlic clove, then leave it in.',
+              'Warm the wine until it steams. Never let it boil.',
+              'Add the cheese a large handful at a time, stirring in a figure of eight, and wait for each to melt before the next.',
+              'Mix the cornflour with the kirsch and stir it in. It will tighten and go glossy.',
+              'Nutmeg and pepper. Move to the burner, keep it at the barest bubble.',
+              'Stir every time you dip, scraping the bottom. The crust that forms at the end is the best part of the evening.'] },
+    { name: 'Smaller, for two', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['400g Gruyère and Emmental', '150ml white wine', 'Garlic', 'Cornflour', 'Bread'],
+      steps: ['Half quantities, same method.',
+              'A splash more wine if it seizes; a little more cornflour if it splits.'] }
+  ]);
+
+  recipes('Cassoulet', [
+    { name: 'Over two days', time: 300, serves: 8, level: 'Hard',
+      ingredients: ['600g dried white beans, soaked overnight', '4 duck legs confit', '400g pork belly, in chunks', '4 Toulouse sausages', '200g pork rind', '1 onion studded with cloves', '4 garlic cloves', '2 carrots', '1 bouquet garni', '2 tbsp tomato purée'],
+      steps: ['Simmer the beans with the rind, studded onion, carrot and bouquet garni for 90 minutes. Season late.',
+              'Brown the pork belly and sausages. Warm the duck legs to release their fat and lift them out.',
+              'Layer in a deep dish: beans, meats, beans, with the tomato purée stirred into the bean liquor and poured over to just cover.',
+              '150C for two and a half hours.',
+              'Every 30 minutes, break the crust that has formed on top and push it under. Seven times is the number people argue about.',
+              'Rest it overnight and reheat the next day. It is better, and that is not folklore.'] },
+    { name: 'One afternoon, tinned beans', time: 120, serves: 6, level: 'Easy',
+      ingredients: ['3 tins haricot beans', 'Duck legs', 'Pork belly', 'Toulouse sausages', 'Onion', 'Garlic', 'Thyme', 'Stock'],
+      steps: ['Brown the meats, layer with the drained beans and stock to just cover.',
+              '160C for 90 minutes, breaking the crust three times.'] }
+  ]);
+
+  recipes('Tartiflette', [
+    { name: 'With a whole reblochon', time: 70, serves: 4, level: 'Very easy',
+      ingredients: ['1kg waxy potatoes', '200g lardons or thick bacon', '2 onions, sliced', '1 whole reblochon', '100ml white wine', '2 tbsp crème fraîche', 'Black pepper'],
+      steps: ['Boil the potatoes whole until just done, cool, then peel and slice thick.',
+              'Fry the lardons until the fat runs, add the onions and cook until soft and gold.',
+              'Wine in, and let it almost disappear.',
+              'Layer potato, bacon and onion in a dish, with the crème fraîche dotted through and a lot of pepper.',
+              'Cut the reblochon in half through its middle and lay both halves rind-up on top.',
+              '200C for 25 minutes until the top is brown and the middle is liquid.'] },
+    { name: 'With camembert', time: 60, serves: 4, level: 'Very easy',
+      ingredients: ['Potatoes', 'Bacon', 'Onion', '1 camembert', 'Crème fraîche'],
+      steps: ['Same, with a camembert split in half.',
+              'Not tartiflette and nobody at the table will complain.'] }
+  ]);
+
+  recipes('Bitterballen', [
+    { name: 'From a set ragout', time: 180, serves: 6, level: 'Medium',
+      ingredients: ['400g cooked beef, shredded very fine', '60g butter', '60g plain flour', '500ml strong beef stock', '2 tbsp chopped parsley', '1 tsp nutmeg', '2 eggs, beaten', '150g breadcrumbs', 'Oil for frying', 'Mustard, to serve'],
+      steps: ['Make a thick roux with the butter and flour and cook it 2 minutes.',
+              'Add the stock a ladle at a time, whisking, until it is very thick — far thicker than a sauce.',
+              'Stir in the beef, parsley and nutmeg, season hard, and spread it in a tray.',
+              'Refrigerate at least 3 hours, until you can cut it into cubes that hold.',
+              'Roll into balls, then flour, egg, breadcrumbs, then egg and breadcrumbs AGAIN. The double coat is what stops them bursting.',
+              'Fry at 180C for 3 minutes. Mustard, and a warning about the temperature.'] },
+    { name: 'Smaller, with leftover stew', time: 150, serves: 4, level: 'Easy',
+      ingredients: ['Leftover beef stew, shredded', 'Butter', 'Flour', 'Stock', 'Egg', 'Breadcrumbs'],
+      steps: ['Thicken the stew with a roux until it sets solid when cold.',
+              'Same double crumb, same fry.'] }
+  ]);
+
+  recipes('Stamppot', [
+    { name: 'Boerenkool, with kale', time: 40, serves: 4, level: 'Very easy',
+      ingredients: ['1.2kg floury potatoes', '400g curly kale, shredded fine', '4 smoked sausages', '100ml milk', '60g butter', 'Mustard', 'Salt and pepper'],
+      steps: ['Boil the potatoes. For the last 6 minutes, pile the kale on top of them and put the lid on.',
+              'Sit the sausages on top of the kale to warm through at the same time. One pan, three jobs.',
+              'Lift the sausages out. Drain, then mash the potato and kale together with the warm milk and butter.',
+              'It should be rough rather than smooth, and green all the way through.',
+              'A well in the middle of each plate, gravy or mustard in it, sausage on top.'] },
+    { name: 'Hutspot, with carrot and onion', time: 40, serves: 4, level: 'Very easy',
+      ingredients: ['Potatoes', 'Carrots', 'Onions', 'Butter', 'Milk', 'Smoked sausage'],
+      steps: ['Boil the potato, carrot and onion together, then mash.',
+              'Sweeter, older, and the one with a siege story attached.'] }
+  ]);
+
+  recipes('Pelmeni', [
+    { name: 'Made and frozen', time: 120, serves: 6, level: 'Medium',
+      ingredients: ['500g plain flour', '220ml water', '1 tsp salt', '300g minced pork', '300g minced beef', '1 onion, grated', '100ml iced water', 'Black pepper', 'Soured cream', 'Butter', 'Dill'],
+      steps: ['Make a firm dough with the flour, water and salt. Knead 10 minutes, rest 40.',
+              'Mix both minces with the grated onion, plenty of pepper and the iced water. The water is what keeps them juicy.',
+              'Roll the dough very thin and cut small circles. Fill, fold into half moons, then bring the two corners together and pinch.',
+              'Freeze them on a tray at this point — they cook better from frozen and this is how everyone actually does it.',
+              'Boil in salted water. They rise; give them 3 minutes after that.',
+              'Drain, toss in butter, soured cream and dill on top. Black pepper and vinegar if you grew up with it.'] },
+    { name: 'Fried afterwards', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['Frozen pelmeni', 'Butter', 'Onion', 'Soured cream'],
+      steps: ['Boil, drain well, then fry in butter with onion until the edges crisp.',
+              'The best thing to do with leftovers, and arguably better than the original.'] }
+  ]);
+
+  recipes('Blini', [
+    { name: 'Buckwheat, yeasted', time: 120, serves: 6, level: 'Medium',
+      ingredients: ['150g buckwheat flour', '100g plain flour', '1 tsp instant yeast', '400ml warm milk', '2 eggs, separated', '1 tsp sugar', '1 tsp salt', '30g melted butter', 'Soured cream and dill, to serve'],
+      steps: ['Whisk the yeast, sugar and warm milk into both flours and leave, covered, for an hour until bubbling.',
+              'Beat in the yolks, salt and melted butter.',
+              'Whisk the whites to soft peaks and fold them in last. The batter should be loose and full of air.',
+              'Cook small rounds in a buttered pan over medium heat, 90 seconds a side.',
+              'Stack under a cloth. Soured cream and dill, or whatever you are celebrating with.'] },
+    { name: 'Unyeasted, in twenty minutes', time: 20, serves: 4, level: 'Very easy',
+      ingredients: ['Buckwheat and plain flour', 'Milk', '2 eggs', 'Baking powder', 'Butter'],
+      steps: ['Whisk everything with a teaspoon of baking powder and rest it 10 minutes.',
+              'Same small rounds. Flatter, and fine.'] }
+  ]);
+
+  recipes('Olivier salad', [
+    { name: 'The New Year one', time: 45, serves: 6, level: 'Very easy',
+      ingredients: ['4 potatoes', '3 carrots', '4 eggs', '2 chicken breasts, poached', '6 pickled cucumbers', '200g peas', '250g mayonnaise', '1 tsp mustard', 'Dill', 'Salt and pepper'],
+      steps: ['Boil the potatoes and carrots whole, and hard-boil the eggs. Cool everything completely.',
+              'Dice everything to the same size — about 7mm. This is the entire craft of the dish and it is worth doing properly.',
+              'Fold together with the peas, mayonnaise, mustard and a lot of black pepper.',
+              'An hour in the fridge before serving, minimum. It needs to settle.',
+              'Dill on top. It will be better tomorrow and gone by then.'] },
+    { name: 'Lighter, with less dressing', time: 40, serves: 4, level: 'Very easy',
+      ingredients: ['Potato', 'Carrot', 'Eggs', 'Pickles', 'Peas', '4 tbsp mayonnaise', '2 tsp mustard', 'Lemon juice', 'Dill'],
+      steps: ['Same dice, same chilling, a third of the dressing.',
+              'Loosen it with lemon and a spoon of the pickle brine instead. Sharper, and purists will tell you so.'] }
+  ]);
+
+  recipes('Lángos', [
+    { name: 'With potato in the dough', time: 120, serves: 4, level: 'Medium',
+      ingredients: ['300g strong flour', '1 boiled potato, riced', '7g instant yeast', '200ml warm milk', '1 tsp sugar', '1 tsp salt', 'Oil for frying', '3 garlic cloves', '200ml soured cream', '150g grated cheese'],
+      steps: ['Mix the flour, riced potato, yeast, milk, sugar and salt into a soft, sticky dough. Knead 8 minutes.',
+              'Prove until doubled, about an hour.',
+              'Divide into four and stretch each by hand into a rough disc, thinner in the middle. Do not roll it.',
+              'Fry in 3cm of oil at 180C, 90 seconds a side, until deep gold and puffed.',
+              'Crush the garlic with a little salt and water and rub it straight onto the hot surface.',
+              'Soured cream and a great deal of cheese. Eat immediately, with both hands.'] },
+    { name: 'No potato, quicker prove', time: 75, serves: 3, level: 'Easy',
+      ingredients: ['Flour', 'Yeast', 'Warm water', 'Salt', 'Oil', 'Garlic', 'Soured cream', 'Cheese'],
+      steps: ['Straight dough, 40 minutes prove in a warm place.',
+              'Slightly less tender. Same garlic, same excess.'] }
+  ]);
+
+  recipes('Ćevapi', [
+    { name: 'Ten to a portion', time: 90, serves: 4, level: 'Easy',
+      ingredients: ['500g minced beef', '300g minced lamb', '1 tsp bicarbonate of soda', '4 garlic cloves, crushed', '1 tsp paprika', '2 tsp salt', '100ml sparkling water', 'Somun or pitta bread', '1 large onion, chopped raw', 'Ajvar and kajmak, to serve'],
+      steps: ['Mix the minces with the bicarbonate, garlic, paprika and salt, then work in the sparkling water.',
+              'Knead it hard for 5 minutes until it turns pale and tacky, then rest it in the fridge overnight. The bicarbonate and the wait are what make the texture.',
+              'Roll finger-length sausages, about as thick as your thumb.',
+              'Grill over high heat, 3 minutes a side, until well marked.',
+              'Into the bread, which should be split and warmed over the grill so it takes on the fat.',
+              'Raw onion, ajvar, and no cutlery.'] },
+    { name: 'Same day', time: 30, serves: 3, level: 'Very easy',
+      ingredients: ['Minced beef and lamb', 'Garlic', 'Paprika', 'Sparkling water', 'Pitta', 'Onion'],
+      steps: ['Skip the overnight rest and knead for longer.',
+              'Looser, still good, slightly more likely to fall through the grill.'] }
+  ]);
+
+  recipes('Welsh rarebit', [
+    { name: 'The proper paste', time: 20, serves: 2, level: 'Easy',
+      ingredients: ['200g mature cheddar, grated', '25g butter', '25g plain flour', '100ml dark beer', '1 tbsp Worcestershire sauce', '2 tsp English mustard', '1 egg yolk', 'Black pepper', '4 thick slices bread'],
+      steps: ['Melt the butter, stir in the flour and cook 1 minute, then whisk in the beer until smooth and thick.',
+              'Cheese in off the heat, a handful at a time, then the mustard, Worcestershire and pepper.',
+              'Beat in the yolk last. Cool it until it is spreadable — this is the difference between rarebit and cheese on toast.',
+              'Toast the bread on one side only, under the grill.',
+              'Spread the paste thickly right to the edges on the untoasted side.',
+              'Back under the hottest grill until it blisters and goes brown in patches.'] },
+    { name: 'Buck rarebit', time: 25, serves: 2, level: 'Easy',
+      ingredients: ['Same paste', 'Bread', '2 eggs'],
+      steps: ['Same rarebit, with a poached egg on top of each.',
+              'That is the whole difference and it is worth the name change.'] }
+  ]);
+
+  recipes('Scotch egg', [
+    { name: 'With a soft yolk', time: 50, serves: 4, level: 'Medium',
+      ingredients: ['5 eggs', '400g sausagemeat', '1 tsp dried sage', '1 tsp mustard powder', '3 tbsp plain flour', '120g panko', 'Oil for frying', 'Salt and pepper'],
+      steps: ['Boil four eggs for exactly 6 minutes 30 seconds, then straight into iced water. Peel carefully.',
+              'Mix the sausagemeat with the sage, mustard powder and plenty of seasoning.',
+              'Flatten a quarter of it on cling film, sit an egg in the middle, and use the film to wrap it round. Seal every seam.',
+              'Flour, then the fifth egg beaten, then panko.',
+              'Fry at 165C for 6 minutes, turning. Any hotter and the crumb burns before the meat cooks.',
+              'Rest 5 minutes. Cut with a serrated knife, in one stroke.'] },
+    { name: 'Baked', time: 45, serves: 4, level: 'Easy',
+      ingredients: ['Eggs', 'Sausagemeat', 'Panko', 'Flour', 'Oil spray'],
+      steps: ['Toast the panko in a dry pan first, or it stays pale.',
+              '200C for 25 minutes. Less crisp, much less oil, and the yolk survives better.'] }
+  ]);
+
+  recipes('Chole bhature', [
+    { name: 'Black chickpeas, fried bread', time: 180, serves: 4, level: 'Medium',
+      ingredients: ['300g dried chickpeas, soaked overnight', '2 black tea bags', '2 onions, blitzed', '3 tomatoes, blitzed', '2 tbsp ginger-garlic paste', '2 tbsp chole masala', '1 tsp amchur', '300g plain flour', '3 tbsp yoghurt', '1 tsp semolina', '0.5 tsp baking powder', 'Oil for frying'],
+      steps: ['Pressure cook the chickpeas with the tea bags — that is what turns them dark. Forty minutes, or two hours in a pot.',
+              'Fry the onion paste until properly brown, then the ginger-garlic, then the tomato, until the oil separates out.',
+              'Chole masala and amchur in, then the chickpeas with a ladle of their cooking water. Simmer 25 minutes, mashing a few against the side.',
+              'For the bhature: mix the flour, yoghurt, semolina and baking powder into a soft dough and rest it 2 hours.',
+              'Roll ovals and slide into hot oil, pressing them under with a spoon until they balloon. Thirty seconds a side.',
+              'Serve the moment the bread comes out. It deflates within a minute and that is fine.'] },
+    { name: 'Tinned chickpeas, shop naan', time: 40, serves: 3, level: 'Very easy',
+      ingredients: ['2 tins chickpeas', 'Onion', 'Tomato', 'Chole masala', 'Ginger-garlic paste', 'Naan'],
+      steps: ['Same masala base, 20 minutes with the chickpeas.',
+              'A black tea bag in the pot gets some of the colour back.'] }
+  ]);
+
+  recipes('Paneer tikka', [
+    { name: 'Off a skewer', time: 60, serves: 4, level: 'Easy',
+      ingredients: ['400g paneer, in large cubes', '200g thick yoghurt', '2 tbsp gram flour', '1 tbsp ginger-garlic paste', '1 tbsp kashmiri chilli powder', '1 tsp garam masala', '1 tsp kasuri methi', '1 tbsp lemon juice', '1 pepper and 1 onion, in squares', 'Oil'],
+      steps: ['Toast the gram flour in a dry pan for 2 minutes — raw, it tastes of nothing good.',
+              'Whisk it into the yoghurt with all the spices, lemon and salt. It should be thick enough to cling.',
+              'Fold the paneer and vegetables through gently and leave 30 minutes. Longer and the paneer goes rubbery.',
+              'Thread onto skewers, alternating.',
+              'Hottest grill or a very hot griddle, 10 minutes, turning, until the edges char in places.',
+              'Lemon and raw onion. Chutney on the side.'] },
+    { name: 'In the oven, no skewers', time: 50, serves: 3, level: 'Very easy',
+      ingredients: ['Paneer', 'Yoghurt', 'Gram flour', 'Chilli powder', 'Garam masala', 'Peppers'],
+      steps: ['Same marinade, spread on a tray.',
+              '230C for 15 minutes, then 3 minutes under the grill for the char.'] }
+  ]);
+
+  recipes('Vindaloo', [
+    { name: 'Goan, with vinegar', time: 150, serves: 4, level: 'Medium',
+      ingredients: ['800g pork shoulder, in chunks', '10 dried kashmiri chillies', '1 tsp cumin seed', '1 tsp black peppercorns', '6 cloves', '1 cinnamon stick', '10 garlic cloves', 'Thumb of ginger', '150ml palm or cider vinegar', '1 tsp sugar', '2 onions, sliced', 'Oil'],
+      steps: ['Soak the chillies in hot water for 20 minutes, then blitz with all the whole spices, garlic, ginger and the vinegar into a smooth paste.',
+              'Rub half the paste through the pork and leave it overnight. This is a marinade, not a sauce, and the wait is the dish.',
+              'Fry the onion slowly until deep brown, then add the rest of the paste and cook it 5 minutes.',
+              'Pork in with its marinade and just enough water to stop it catching.',
+              'Lid on, lowest heat, 90 minutes. It should be thick and dark, not soupy.',
+              'Sugar and salt at the end to balance the vinegar. Better the next day, like most things with vinegar in.'] },
+    { name: 'With chicken thighs', time: 60, serves: 3, level: 'Easy',
+      ingredients: ['Chicken thighs', 'Vindaloo paste', 'Onion', 'Vinegar', 'Sugar'],
+      steps: ['Same paste, 2 hours marinating.',
+              '30 minutes simmering. Not the original and a good curry.'] }
+  ]);
+
+  recipes('Rasam', [
+    { name: 'With a fresh masala', time: 30, serves: 4, level: 'Easy',
+      ingredients: ['1 lime-sized ball of tamarind, soaked', '2 tomatoes, crushed by hand', '1 tbsp rasam powder', '1 tsp black peppercorns', '1 tsp cumin seed', '3 garlic cloves', '1 tbsp cooked toor dal, optional', 'Curry leaves', '1 tsp mustard seed', '1 dried chilli', 'Sesame or sunflower oil', 'Coriander'],
+      steps: ['Crush the peppercorns, cumin and garlic roughly in a mortar. Rough, not powder.',
+              'Strain the tamarind water into a pot with the tomatoes, rasam powder, salt and 700ml water.',
+              'Simmer 10 minutes until the raw tamarind smell goes.',
+              'Add the crushed spices and the dal if using. Now watch it: the moment it froths up at the edges, take it off. It must never boil hard.',
+              'Temper the mustard seed, chilli and curry leaves in hot oil until they pop and pour it in.',
+              'Coriander over. Drink it from the bowl or pour it over rice.'] },
+    { name: 'Lemon rasam, no tamarind', time: 20, serves: 3, level: 'Very easy',
+      ingredients: ['Tomatoes', 'Lemon juice', 'Pepper', 'Cumin', 'Curry leaves', 'Mustard seed'],
+      steps: ['Same method with lemon juice stirred in off the heat instead of tamarind.',
+              'Brighter, and better when you are ill.'] }
+  ]);
+
+  recipes('Aloo paratha', [
+    { name: 'Stuffed and griddled', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['300g chapati flour', '200ml water', '4 potatoes, boiled and mashed', '1 green chilli, minced', '1 tbsp grated ginger', '1 tsp ajwain', '1 tsp amchur', '1 tsp garam masala', 'Coriander', 'Ghee', 'Yoghurt and pickle, to serve'],
+      steps: ['Make a soft dough with the flour and water and rest it 30 minutes.',
+              'Mix the mash with the chilli, ginger, spices, coriander and salt. It must be completely dry and completely cool, or it will tear the dough.',
+              'Roll a small disc, put a ball of filling in the middle, gather the edges over the top and pinch shut. Press flat.',
+              'Roll out gently from the centre, turning as you go. Slowly — speed is what splits them.',
+              'Cook on a dry hot tava, 1 minute, flip, brush with ghee, flip again and press the edges with a cloth until it puffs.',
+              'Yoghurt, pickle and a lump of butter on top.'] },
+    { name: 'Folded, easier', time: 45, serves: 3, level: 'Easy',
+      ingredients: ['Chapati flour', 'Potato', 'Ginger', 'Chilli', 'Ghee'],
+      steps: ['Spread filling on a rolled disc, fold it in thirds like a letter, then in thirds again, and roll out.',
+              'Far less likely to burst. Slightly less even inside.'] }
+  ]);
+
+  recipes('Kathi roll', [
+    { name: 'Egg paratha, chicken inside', time: 45, serves: 2, level: 'Medium',
+      ingredients: ['2 parathas or flaky flatbreads', '2 eggs, beaten', '300g chicken thigh, in strips', '3 tbsp yoghurt', '1 tbsp ginger-garlic paste', '1 tsp garam masala', '1 tsp chilli powder', '1 red onion, sliced thin', '1 lime', 'Green chutney', 'Chaat masala'],
+      steps: ['Marinate the chicken in the yoghurt, ginger-garlic and spices for 30 minutes, then fry hard until charred at the edges.',
+              'Soak the sliced onion in lime juice with a pinch of salt — it turns pink and loses its harshness.',
+              'Cook a paratha in a hot pan. Pour half the beaten egg on top of it and flip it immediately so the egg cooks onto the bread.',
+              'Egg side up, spread chutney down the middle.',
+              'Chicken, pickled onion, chaat masala and lime.',
+              'Roll tight and wrap the bottom half in paper. That paper is load-bearing.'] },
+    { name: 'Paneer, same method', time: 35, serves: 2, level: 'Easy',
+      ingredients: ['Parathas', 'Eggs', 'Paneer', 'Yoghurt', 'Spices', 'Red onion', 'Lime', 'Chutney'],
+      steps: ['Same marinade on paneer cubes, 15 minutes only.',
+              'Fry hard and fast so it chars without drying out.'] }
+  ]);
+
+  recipes('Litti chokha', [
+    { name: 'Baked, then smashed into the chokha', time: 90, serves: 4, level: 'Medium',
+      ingredients: ['300g wholemeal flour', '1 tsp ajwain', '150ml water', '200g sattu (roasted gram flour)', '1 tbsp pickle oil', '1 green chilli', '1 tbsp grated ginger', 'Coriander', '2 aubergines', '3 tomatoes', '4 potatoes', '4 garlic cloves', 'Mustard oil', 'Ghee'],
+      steps: ['Make a stiff dough with the flour, ajwain, salt and water. Rest 30 minutes.',
+              'Mix the sattu with the pickle oil, chilli, ginger, coriander, lemon and salt into a crumbly, damp filling.',
+              'Stuff balls of dough with it, seal well and flatten slightly.',
+              'Bake at 200C for 25 minutes, turning once, until cracked and dry. Over coals is better if you have them.',
+              'For the chokha: char the aubergines, tomatoes and whole garlic directly over a flame until black. Peel and mash together with raw mustard oil, salt and chilli. Boil and mash the potatoes into it.',
+              'Dunk each litti in melted ghee and break it into the chokha with your hand.'] },
+    { name: 'In an air fryer', time: 60, serves: 3, level: 'Easy',
+      ingredients: ['Dough', 'Sattu filling', 'Aubergine', 'Tomato', 'Potato', 'Mustard oil', 'Ghee'],
+      steps: ['180C for 20 minutes, turning twice.',
+              'Char the aubergine under the grill. You lose the smoke and keep the dish.'] }
+  ]);
+
+  recipes('Nasi lemak', [
+    { name: 'With sambal made properly', time: 70, serves: 4, level: 'Medium',
+      ingredients: ['400g rice', '1 tin coconut milk', '3 pandan leaves, knotted', '2cm ginger, sliced', '10 dried chillies, soaked', '2 shallots', '2 garlic cloves', '1 tsp belacan', '2 tbsp tamarind water', '1 tbsp sugar', '100g dried anchovies', '100g peanuts', '4 eggs', '1 cucumber'],
+      steps: ['Rinse the rice and cook it in the coconut milk plus water to the usual level, with the pandan and ginger sitting on top.',
+              'Fry the anchovies and peanuts separately until crisp, and set aside. Keep the oil.',
+              'Blitz the chillies, shallots, garlic and belacan into a paste, then fry it in that oil for 15 minutes, patiently, until it darkens and the oil separates.',
+              'Tamarind, sugar and salt in. It should be sweet, salty, sour and hot in that order.',
+              'Boil the eggs 8 minutes and halve them.',
+              'On the plate: rice in the middle, sambal, anchovies, peanuts, cucumber and egg around it. Never stirred together before it reaches the table.'] },
+    { name: 'With shop sambal', time: 35, serves: 3, level: 'Very easy',
+      ingredients: ['Rice', 'Coconut milk', 'Pandan', 'Jarred sambal', 'Dried anchovies', 'Peanuts', 'Eggs', 'Cucumber'],
+      steps: ['Coconut rice as above.',
+              'Fry the jarred sambal for 5 minutes with a little sugar and tamarind to wake it up.'] }
+  ]);
+
+  recipes('Char kway teow', [
+    { name: 'One portion at a time', time: 25, serves: 2, level: 'Hard',
+      ingredients: ['400g fresh flat rice noodles', '2 tbsp pork lard', '4 garlic cloves, minced', '100g prawns, peeled', '80g Chinese sausage, sliced thin', '100g cockles, optional', '2 eggs', '2 tbsp dark soy', '1 tbsp light soy', '1 tsp chilli paste', '2 handfuls bean sprouts', '2 spring onions, in lengths'],
+      steps: ['Separate the noodles by hand first. Cold from the fridge they break; let them come to room temperature.',
+              'Cook ONE portion at a time in the hottest wok you can manage. Two portions halves the heat and you get a stew.',
+              'Lard in, garlic for 10 seconds, sausage and prawns until they colour.',
+              'Noodles in, then both soys and the chilli paste. Toss and press them against the wok so they catch and blister.',
+              'Push everything aside, crack in an egg, let it set for 15 seconds, then fold it through.',
+              'Sprouts and spring onion in for 20 seconds only, still crunching. Straight onto the plate.'] },
+    { name: 'Without lard or cockles', time: 20, serves: 2, level: 'Medium',
+      ingredients: ['Flat rice noodles', 'Oil', 'Garlic', 'Prawns', 'Egg', 'Dark and light soy', 'Bean sprouts', 'Chives'],
+      steps: ['Same method with oil. It will not taste the same and it will still be very good.',
+              'The heat matters more than the lard does.'] }
+  ]);
+
+  recipes('Gado-gado', [
+    { name: 'With a stone-ground sauce', time: 40, serves: 4, level: 'Easy',
+      ingredients: ['200g raw peanuts, fried, or 150g peanut butter', '3 garlic cloves', '2 red chillies', '2 tbsp palm sugar', '2 tbsp tamarind water', '1 tbsp sweet soy', '200ml water', '200g green beans', '200g cabbage, shredded', '100g bean sprouts', '2 potatoes, boiled', '200g firm tofu, fried', '4 eggs, boiled', '1 cucumber', 'Emping or rice crackers'],
+      steps: ['Pound or blitz the peanuts with the garlic, chilli, sugar and salt into a coarse paste.',
+              'Loosen with the water, tamarind and sweet soy until it pours thickly. Taste: sweet, salty, sour, hot.',
+              'Blanch the beans, cabbage and sprouts separately, each for only a minute or two. They should keep their colour.',
+              'Arrange everything in sections on a platter, still slightly warm.',
+              'Pour the sauce over in a wide stripe rather than tossing it through.',
+              'Crackers on top, crushed at the table. Emping are the bitter ones and the right ones.'] },
+    { name: 'From a jar, on a weeknight', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['Peanut butter', 'Sweet soy', 'Lime', 'Chilli', 'Blanched vegetables', 'Boiled eggs', 'Fried tofu'],
+      steps: ['Whisk peanut butter with sweet soy, lime and hot water until it pours.',
+              'Over whatever vegetables are in the fridge, blanched.'] }
+  ]);
+
+  recipes('Sinigang', [
+    { name: 'Sour with tamarind', time: 90, serves: 5, level: 'Very easy',
+      ingredients: ['800g pork belly or ribs, in chunks', '1 onion, quartered', '2 tomatoes, quartered', '200g tamarind pulp, or 1 sachet sinigang mix', '1 daikon, sliced', '200g green beans', '1 aubergine, sliced', '2 handfuls water spinach or spinach', '2 long green chillies', 'Fish sauce'],
+      steps: ['Boil the pork with the onion in 2 litres of water, skimming, for 45 minutes.',
+              'Simmer the tamarind pulp in a ladle of the broth, mash it, and strain the sour liquid back in.',
+              'Tomato and daikon in for 10 minutes, then the aubergine and beans for 6.',
+              'Greens and whole chillies in at the very end, off the heat.',
+              'Season with fish sauce rather than salt — it wants that particular savouriness.',
+              'It should be properly sour. If it makes you blink, it is right.'] },
+    { name: 'With prawns, quicker', time: 35, serves: 3, level: 'Very easy',
+      ingredients: ['Prawns', 'Tamarind or sinigang mix', 'Tomato', 'Daikon', 'Aubergine', 'Spinach', 'Fish sauce'],
+      steps: ['Build the sour broth with the vegetables first, 20 minutes.',
+              'Prawns in for the last 4 minutes only.'] }
+  ]);
+
+  recipes('Kare-kare', [
+    { name: 'Oxtail, peanut, annatto', time: 240, serves: 6, level: 'Medium',
+      ingredients: ['1.2kg oxtail', '1 onion', '4 tbsp annatto seeds, or 2 tsp powder', '150g ground toasted rice', '200g peanut butter', '1 aubergine, sliced', '1 bundle pak choi', '200g green beans', '1 banana heart, optional', 'Shrimp paste, to serve'],
+      steps: ['Simmer the oxtail with the onion for three hours until it is genuinely falling apart. Keep 1.5 litres of the broth.',
+              'Steep the annatto in a little hot broth and strain — that is the colour, and it is not chilli.',
+              'Toast raw rice in a dry pan until brown, then grind it to powder. This is the thickener and the reason it tastes like itself.',
+              'Bring the broth up with the annatto, peanut butter and ground rice, whisking, until it coats a spoon.',
+              'Oxtail back in, then the vegetables in order of toughness, 4 to 8 minutes each.',
+              'Do not salt it. It is meant to be under-seasoned, because the shrimp paste on the side does that job.'] },
+    { name: 'With beef shin', time: 150, serves: 4, level: 'Easy',
+      ingredients: ['Beef shin', 'Annatto', 'Peanut butter', 'Ground toasted rice', 'Aubergine', 'Green beans', 'Pak choi'],
+      steps: ['Two hours on the shin rather than three on the tail.',
+              'Same sauce. Leaner, and it misses the gelatine.'] }
+  ]);
+
+  recipes('Bún bò Huế', [
+    { name: 'With a lemongrass broth', time: 240, serves: 6, level: 'Hard',
+      ingredients: ['1kg beef shin', '500g pork hock', '6 lemongrass stalks, bruised', '1 onion, charred', '3 tbsp shrimp paste', '3 tbsp sugar', '4 tbsp chilli oil with annatto', 'Fish sauce', '500g thick round rice noodles', 'Banana blossom, herbs, lime, sliced onion, to serve'],
+      steps: ['Blanch the beef and pork for 5 minutes and rinse. Cover with 4 litres fresh water.',
+              'Charred onion and lemongrass in. Simmer three hours, skimming for the first twenty minutes.',
+              'Mix the shrimp paste with a ladle of broth, let it settle, and pour the clear part back in. Never the sediment.',
+              'Sugar, fish sauce and the chilli-annatto oil. Taste: it should be hot, sour-free, and much bolder than pho.',
+              'Slice the meat. Cook the noodles separately.',
+              'Noodles, meat, broth, then a plate of herbs, blossom and lime for everyone to wreck their own bowl with.'] },
+    { name: 'Shortcut, three hours less', time: 60, serves: 4, level: 'Medium',
+      ingredients: ['Good beef stock', 'Lemongrass', 'Shrimp paste', 'Chilli oil', 'Thin sliced beef', 'Round rice noodles', 'Herbs'],
+      steps: ['Steep bruised lemongrass in hot stock for 30 minutes, then season as above.',
+              'Pour the boiling broth over raw thin-sliced beef in the bowl.'] }
+  ]);
+
+  recipes('Musakhan', [
+    { name: 'Roasted over the bread', time: 90, serves: 4, level: 'Easy',
+      ingredients: ['8 chicken thighs, bone in', '6 large onions, sliced thin', '4 tbsp sumac, plus more', '150ml olive oil', '1 tsp allspice', '0.5 tsp cinnamon', '4 taboon or large flatbreads', '80g pine nuts', 'Lemon', 'Salt'],
+      steps: ['Rub the chicken with sumac, allspice, salt and half the oil and leave it an hour.',
+              'Cook the onions in the rest of the oil over low heat for 40 minutes, until collapsed and sweet but not browned. Stir in 3 tbsp sumac.',
+              'Roast the chicken at 200C for 35 minutes, skin up, until dark.',
+              'Lay a flatbread in a dish, spread it thickly with onion, then the chicken on top with every drop of its fat.',
+              'Back in the oven for 10 minutes so the bread drinks it.',
+              'Toasted pine nuts, more sumac, lemon. Eaten with hands, bread and all.'] },
+    { name: 'Rolled, for a crowd', time: 80, serves: 6, level: 'Easy',
+      ingredients: ['Cooked shredded chicken', 'Sumac onions', 'Thin flatbreads', 'Pine nuts', 'Olive oil'],
+      steps: ['Spread onion and chicken on thin breads, roll into cigars, pack into a dish.',
+              'Oil over, 200C for 15 minutes until crisp.'] }
+  ]);
+
+  recipes('Mansaf', [
+    { name: 'With jameed', time: 150, serves: 8, level: 'Medium',
+      ingredients: ['1.5kg lamb on the bone', '500g jameed (dried fermented yoghurt), soaked overnight', '2 tsp turmeric', '1 tsp cardamom', '1 cinnamon stick', '500g rice', '80g butter', '100g toasted almonds and pine nuts', '4 large flatbreads', 'Parsley'],
+      steps: ['Simmer the lamb with the cinnamon and cardamom for 90 minutes, skimming. Keep the broth.',
+              'Blend the soaked jameed with some of its water until completely smooth, then strain it.',
+              'Warm it very gently with a ladle of broth and the turmeric, stirring constantly in one direction. It will split if it boils — this is the only difficult part.',
+              'Add the lamb and keep it just below a simmer for 30 minutes.',
+              'Cook the rice in broth with butter.',
+              'Lay the bread on a wide tray, ladle sauce over it, rice on top, then the lamb, then more sauce, then the nuts. One tray, everyone standing round it.'] },
+    { name: 'With thick yoghurt', time: 120, serves: 6, level: 'Easy',
+      ingredients: ['Lamb', 'Thick yoghurt', '1 tbsp cornflour', 'Turmeric', 'Rice', 'Flatbread', 'Almonds'],
+      steps: ['Whisk cornflour into the yoghurt before heating — without it, it splits every time.',
+              'Warm it slowly with broth, stirring one way. Less sharp than jameed, and it holds.'] }
+  ]);
+
+  recipes('Kibbeh', [
+    { name: 'Fried torpedoes', time: 120, serves: 6, level: 'Hard',
+      ingredients: ['300g fine bulgur', '400g very lean minced lamb, for the shell', '1 onion, grated', '1 tsp allspice', '300g minced lamb, for the filling', '1 onion, diced', '60g pine nuts', '1 tsp cinnamon', '1 tsp seven spice', 'Oil for frying'],
+      steps: ['Soak the bulgur 20 minutes, then squeeze it bone dry.',
+              'Blitz it with the lean mince, grated onion, allspice and salt into a smooth paste. Chill it an hour — cold dough is workable dough.',
+              'Fry the filling mince with the diced onion, pine nuts and spices until dry. Cool completely.',
+              'Wet your hands. Take a ball of shell, push your finger into it to make a hollow cone, turning as you go until the walls are thin.',
+              'Fill, pinch the top closed and taper both ends into points.',
+              'Fry at 175C for 4 minutes until deep brown. Yoghurt on the side.'] },
+    { name: 'Kibbeh bil sanieh, in a tray', time: 70, serves: 8, level: 'Easy',
+      ingredients: ['Same shell mix', 'Same filling', 'Olive oil'],
+      steps: ['Press half the shell mix into an oiled tray, filling over it, the rest on top.',
+              'Score into diamonds, oil the surface, 200C for 35 minutes.',
+              'All of the flavour, none of the shaping.'] }
+  ]);
+
+  recipes('Muhammara', [
+    { name: 'With roasted peppers', time: 40, serves: 6, level: 'Very easy',
+      ingredients: ['4 red peppers', '150g walnuts, toasted', '60g breadcrumbs', '2 tbsp pomegranate molasses', '1 tsp Aleppo pepper', '1 tsp cumin', '1 garlic clove', '3 tbsp olive oil', 'Lemon', 'Salt'],
+      steps: ['Roast or char the peppers until blackened, then steam them in a covered bowl for 10 minutes and peel.',
+              'Pulse the walnuts and breadcrumbs first, on their own, to a coarse rubble.',
+              'Add the peppers, molasses, spices, garlic and lemon and pulse again. Stop while it is still rough — smooth muhammara is a dip that has lost its nerve.',
+              'Work in the oil by hand.',
+              'Rest an hour. More molasses if it needs sharpening, more Aleppo if it needs heat.'] },
+    { name: 'From a jar of peppers', time: 15, serves: 4, level: 'Very easy',
+      ingredients: ['Jarred roasted peppers, drained well', 'Walnuts', 'Breadcrumbs', 'Pomegranate molasses', 'Aleppo pepper', 'Olive oil'],
+      steps: ['Dry the peppers on paper first or it will be watery.',
+              'Same pulsing. Fifteen minutes to something people ask about.'] }
+  ]);
+
+  recipes('Poutine', [
+    { name: 'Curds, gravy, in that order', time: 45, serves: 2, level: 'Medium',
+      ingredients: ['800g floury potatoes, in thick chips', 'Oil for frying', '250g fresh cheese curds, at room temperature', '30g butter', '30g plain flour', '500ml beef stock', '1 tbsp cider vinegar', '1 tsp Worcestershire sauce', 'Black pepper'],
+      steps: ['Fry the chips at 140C for 6 minutes, drain, and rest 20 minutes. Then fry again at 190C until deep gold.',
+              'Make a brown roux with the butter and flour — cook it past blonde, 4 minutes.',
+              'Whisk in the stock, vinegar and Worcestershire and simmer 10 minutes until it coats a spoon.',
+              'Chips in a bowl, curds scattered over them while the chips are still spitting.',
+              'Gravy over the top, hot enough to soften the curds without melting them flat.',
+              'They should squeak. Cold curds do not squeak and are the usual thing that goes wrong.'] },
+    { name: 'Vegetarian gravy', time: 40, serves: 2, level: 'Easy',
+      ingredients: ['Chips', 'Cheese curds', 'Butter', 'Flour', 'Mushroom stock', 'Soy sauce', 'Cider vinegar'],
+      steps: ['Same roux with a strong mushroom stock and a splash of soy for depth.',
+              'Darker than it looks like it should be, and it works.'] }
+  ]);
+
+  recipes('Lobster roll', [
+    { name: 'Maine style, cold and dressed', time: 30, serves: 2, level: 'Easy',
+      ingredients: ['400g cooked lobster meat, in big chunks', '3 tbsp mayonnaise', '1 celery stick, diced fine', '1 tbsp lemon juice', '1 tbsp chives', '2 split-top buns', '30g butter, softened', 'Salt and pepper'],
+      steps: ['Keep the lobster in large pieces. Shredded lobster in a roll is a waste of a lobster.',
+              'Fold gently with the mayonnaise, celery, lemon, chives and seasoning. Chill 20 minutes.',
+              'Butter both flat sides of the buns and griddle them until properly golden — this is not a step to skip.',
+              'Fill generously so the meat sits proud of the bun.',
+              'More chives, and a lemon wedge nobody will use.'] },
+    { name: 'Connecticut style, warm and buttered', time: 20, serves: 2, level: 'Very easy',
+      ingredients: ['Cooked lobster meat', '60g butter', 'Lemon', 'Split-top buns'],
+      steps: ['Warm the lobster through in melted butter over very low heat. Two minutes, no more.',
+              'Into a griddled bun with the butter spooned over. No mayonnaise, and people do have opinions.'] }
+  ]);
+
+  recipes('Shrimp and grits', [
+    { name: 'Low country', time: 45, serves: 4, level: 'Easy',
+      ingredients: ['200g stone-ground grits', '600ml water', '300ml milk', '60g butter', '100g sharp cheddar, grated', '500g large prawns, peeled', '150g bacon, chopped', '3 spring onions', '2 garlic cloves', '1 tbsp lemon juice', 'Hot sauce'],
+      steps: ['Whisk the grits into the boiling water and milk, then turn it right down.',
+              'Forty minutes, stirring every five. Quick grits take ten and taste like it.',
+              'Butter and cheese in at the end. They should pour slowly, not hold a shape.',
+              'Fry the bacon until crisp and lift out. Cook the prawns in the fat, 90 seconds a side, with the garlic.',
+              'Spring onion, lemon and a splash of water off the heat to make a pan sauce.',
+              'Grits in wide bowls, prawns and bacon on top, sauce over, hot sauce at the table.'] },
+    { name: 'Polenta instead', time: 30, serves: 3, level: 'Very easy',
+      ingredients: ['Quick polenta', 'Milk', 'Butter', 'Cheddar', 'Prawns', 'Bacon', 'Garlic', 'Lemon'],
+      steps: ['Polenta in 8 minutes with milk and butter.',
+              'Same prawns. Not grits, and close enough to be worth doing on a Tuesday.'] }
+  ]);
+
+  recipes('Key lime pie', [
+    { name: 'Three ingredients in the filling', time: 50, serves: 8, level: 'Very easy',
+      ingredients: ['250g digestive biscuits', '110g butter, melted', '2 tbsp sugar', '1 tin condensed milk', '4 egg yolks', '150ml lime juice', 'Zest of 3 limes', '300ml double cream'],
+      steps: ['Blitz the biscuits, mix with the butter and sugar, press into a tin and bake at 180C for 10 minutes. Cool.',
+              'Whisk the yolks with the zest until slightly thickened, then beat in the condensed milk.',
+              'Add the lime juice last and whisk 2 minutes. It thickens in the bowl — that is the acid setting it, before it ever sees the oven.',
+              'Pour into the crust and bake at 160C for 15 minutes, until set with a slight wobble.',
+              'Cool, then at least four hours in the fridge.',
+              'Whipped cream on top, and no sugar in the cream. The pie has enough.'] },
+    { name: 'No-bake', time: 20, serves: 8, level: 'Very easy',
+      ingredients: ['Biscuit base', 'Condensed milk', 'Lime juice and zest', 'Double cream'],
+      steps: ['Whisk condensed milk with lime juice until thick, fold in softly whipped cream.',
+              'Into the chilled base. Six hours in the fridge. Softer and just as sharp.'] }
+  ]);
+
+  recipes('Cannoli', [
+    { name: 'Shells and all', time: 120, serves: 10, level: 'Hard',
+      ingredients: ['250g plain flour', '2 tbsp sugar', '30g butter', '100ml marsala or white wine', '1 egg white, for sealing', 'Oil for frying', '500g ricotta, drained overnight', '120g icing sugar', '80g chocolate chips', 'Candied peel', 'Pistachios'],
+      steps: ['Make a firm dough with the flour, sugar, butter and wine. Knead 10 minutes and rest it an hour.',
+              'Drain the ricotta overnight in a sieve. Wet ricotta makes soggy cannoli and there is no fixing it later.',
+              'Roll the dough paper thin, cut discs, wrap round metal tubes and seal the overlap with egg white.',
+              'Fry at 180C for 2 minutes until blistered and gold. Slide off the tubes while warm.',
+              'Beat the drained ricotta with the icing sugar until smooth, then fold in the chocolate.',
+              'Fill from both ends with a piping bag, and only when somebody is ready to eat it. Pistachios on the ends.'] },
+    { name: 'The filling, in a glass', time: 20, serves: 6, level: 'Very easy',
+      ingredients: ['Drained ricotta', 'Icing sugar', 'Chocolate chips', 'Broken shop cannoli shells or amaretti'],
+      steps: ['Layer the sweetened ricotta with crushed shells or biscuits in glasses.',
+              'All of the good part and none of the frying.'] }
+  ]);
+
+  recipes('Bakewell tart', [
+    { name: 'Frangipane over jam', time: 90, serves: 8, level: 'Medium',
+      ingredients: ['250g shortcrust pastry', '4 tbsp raspberry jam', '125g butter, soft', '125g caster sugar', '2 eggs', '125g ground almonds', '25g plain flour', '0.5 tsp almond extract', '30g flaked almonds'],
+      steps: ['Line a tart tin with the pastry and blind bake at 190C for 15 minutes, then 5 minutes more without the beans.',
+              'Spread the jam over the base while the pastry is still warm, right to the edges.',
+              'Cream the butter and sugar, beat in the eggs one at a time, then fold in the almonds, flour and extract.',
+              'Spread over the jam carefully — do not stir the two together.',
+              'Flaked almonds on top. 180C for 30 minutes until set and golden.',
+              'Cool in the tin. Warm with custard, or cold with tea, and the second one is correct.'] },
+    { name: 'Iced, the cherry one', time: 100, serves: 8, level: 'Medium',
+      ingredients: ['Same tart', '150g icing sugar', 'Water', '1 glacé cherry'],
+      steps: ['Bake without the flaked almonds and cool completely.',
+              'Thick water icing poured over, one cherry in the middle. Not from Bakewell, and what most people mean.'] }
+  ]);
+
+  recipes('Kulfi', [
+    { name: 'Reduced milk, no churning', time: 300, serves: 6, level: 'Easy',
+      ingredients: ['1 litre whole milk', '150g sugar', '1 tsp ground cardamom', 'Pinch of saffron', '60g pistachios, chopped', '2 tbsp ground almonds'],
+      steps: ['Bring the milk to a boil in a wide heavy pan, then simmer on low.',
+              'Reduce it by two thirds, stirring and scraping the skin back in every few minutes. This takes 50 minutes and it is the whole recipe.',
+              'Sugar, cardamom, saffron and the ground almonds in. Another 5 minutes.',
+              'Cool, then stir in most of the pistachios.',
+              'Into moulds or paper cups with a stick. Freeze at least 6 hours.',
+              'Dip the mould in warm water for 5 seconds to release. Denser than ice cream, because nothing has been whipped into it.'] },
+    { name: 'The quick one, with condensed milk', time: 250, serves: 6, level: 'Very easy',
+      ingredients: ['1 tin evaporated milk', '1 tin condensed milk', '200ml double cream', 'Cardamom', 'Pistachios'],
+      steps: ['Whisk everything together cold.',
+              'Freeze in moulds. Sweeter, softer, and ready in an afternoon.'] }
+  ]);
+
+  recipes('Turkish coffee', [
+    { name: 'In a cezve', time: 10, serves: 2, level: 'Medium',
+      ingredients: ['2 heaped tsp coffee ground to powder', '2 demitasse cups of cold water', 'Sugar to taste', '1 cardamom pod, optional'],
+      steps: ['Measure the water with the cups you will drink from. Cold water into the cezve.',
+              'Stir in the coffee and any sugar now — it cannot be stirred later.',
+              'Lowest possible heat. Do not stir again. It takes three or four minutes and rushing it is the only way to ruin it.',
+              'When the foam rises to the rim, lift it off. Spoon a little foam into each cup.',
+              'Return it to the heat twice more, letting it rise each time, then pour slowly.',
+              'Wait a minute for the grounds to settle. Drink to the sludge and stop there.'] },
+    { name: 'In a small saucepan', time: 8, serves: 1, level: 'Easy',
+      ingredients: ['1 heaped tsp powdered coffee', '1 small cup cold water', 'Sugar'],
+      steps: ['Same method in the smallest pan you own.',
+              'Harder to catch the foam. Watch it the whole time and take it off early.'] }
+  ]);
+
   return {
     BOOK: BOOK,
     scale: scale,
