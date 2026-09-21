@@ -13,7 +13,7 @@
     "deploy": "whop apps deploy",
     "typecheck": "tsc --noEmit",
     "indexnow": "node scripts/indexnow.mjs",
-    "test": "bun run scripts/whop-token-test.mjs && bun run scripts/diet-test.mjs && bun run scripts/honesty-test.mjs"
+    "test": "bun run scripts/whop-token-test.mjs && bun run scripts/diet-test.mjs && bun run scripts/honesty-test.mjs && bun run scripts/nav-test.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.18",

@@ -12,7 +12,14 @@ export function SiteFooter() {
             Stop scrolling. Start eating. Free to play. Premium is extra.
           </p>
         </div>
+        {/* EVERY PAGE ON THE SITE IS IN HERE, and scripts/nav-test.mjs fails
+            the build if one stops being. A footer that is nearly complete is
+            worse than one that is obviously partial: it stops anybody
+            looking. */}
         <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[var(--text-dim)]">
+          <Link to="/" className="hover:text-[var(--text)]">
+            Home
+          </Link>
           <a href="/decide/" className="hover:text-[var(--text)]">
             Play
           </a>

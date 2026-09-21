@@ -25,13 +25,23 @@ export function SiteHeader({
           <a href="/decide/" className="hover:text-[var(--text)]">
             Play
           </a>
-          <Link to="/how-it-works" className="hover:text-[var(--text)]">
+          {/* "All dishes" was reachable only from the footer, which is an
+              odd place to hide four hundred and fifty pages. */}
+          <Link to="/eat" className="hover:text-[var(--text)]">
+            Dishes
+          </Link>
+          <Link to="/how-it-works" className="hidden hover:text-[var(--text)] sm:inline">
             How it works
           </Link>
           <Link to="/premium" className="hover:text-[var(--text)]">
             Premium
           </Link>
-          <Link to="/faq" className="hidden hover:text-[var(--text)] sm:inline">
+          {/* This used to be the link that disappeared below 640px, which is
+              most of the traffic. The header cannot hold everything on a
+              phone, so what it drops there is now the page that explains the
+              mechanic rather than the page that answers "how do I cancel" —
+              and both are in the footer on every page regardless. */}
+          <Link to="/faq" className="hover:text-[var(--text)]">
             FAQ
           </Link>
           {user ? (

@@ -12202,6 +12202,31 @@
     $('install-wrap').hidden = true;
   });
 
+  /*
+   * THE WAY OUT, ON THE FRONT DOOR TOO.
+   *
+   * The footer lives after the app shell, in normal document flow. The
+   * landing screen is a fixed overlay covering everything below the top bar,
+   * with the body's own scrolling switched off — so the footer was underneath
+   * it, technically visible to anything measuring boxes and completely
+   * unreachable to a thumb. Unreachable on the FIRST screen anybody sees,
+   * which is the one screen where somebody is most likely to be looking for
+   * what this thing is and who wrote it.
+   *
+   * Cloned rather than written twice. Two lists of the same eight links is
+   * two lists that drift, and the one that drifts is always the copy nobody
+   * remembers exists. scripts/nav-test.mjs checks the markup; this makes the
+   * landing carry exactly what the markup says.
+   */
+  (function footerOnTheLanding() {
+    var foot = document.querySelector('.appfoot');
+    var inner = document.querySelector('#landing .landing-inner');
+    if (!foot || !inner) return;
+    var copy = foot.cloneNode(true);
+    copy.classList.add('is-onlanding');
+    inner.appendChild(copy);
+  })();
+
   /* ------------------------------------------------------------------ boot */
   $('landing-dishes').textContent = String(Data.ITEMS.length);
   $('landing-recipes').textContent = String(Recipes.count());

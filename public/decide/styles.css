@@ -3368,6 +3368,8 @@ body.is-beaming { overflow: hidden; }
   .rail-foot { margin: 0 0 0 auto; }
 
   .content { margin-left: 0; padding: var(--s6) var(--s5) var(--s8); max-width: none; }
+  /* The rail is a top bar here, so there is nothing on the left to clear. */
+  .appfoot { margin-left: 0; }
   .toasts { left: 50%; transform: translateX(-50%); }
   .recipe-inner { grid-template-columns: 1fr; gap: var(--s4); }
 }
@@ -4769,4 +4771,77 @@ body.is-welcoming { overflow: hidden; }
   color: var(--ink);
   font-weight: 600;
   border-bottom-color: var(--amber);
+}
+
+
+/* --------------------------------------------------------------- app footer */
+/*
+ * The way back out to the rest of the site. Quiet on purpose: nobody opened
+ * this app looking for the privacy page, and a footer that competes with the
+ * game would be a worse answer than no footer at all. It is where people look
+ * when they are looking, and invisible when they are not.
+ *
+ * Inside the scroll rather than fixed: a bar pinned to the bottom of a screen
+ * whose whole job is one big button underneath the question would be taking
+ * space from the thing people came for.
+ */
+.appfoot {
+  border-top: 1px solid var(--hair);
+  /*
+   * Clear of the rail.
+   *
+   * Above 60rem the rail is a fixed column down the left at z-index 45, and
+   * this footer is in normal flow at the bottom of the document — so its
+   * left-hand end sat underneath it. "Home" and "All dishes" were the two
+   * links a person could see and could not click, which is the worst kind of
+   * broken because it looks fine. .content already offsets by the same amount
+   * for the same reason; below 60rem the rail becomes a top bar and the
+   * override further down puts this back to zero.
+   */
+  margin-left: var(--rail-w);
+  margin-top: var(--s7);
+  padding: var(--s5) var(--s5) calc(var(--s6) + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+
+.appfoot-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3) var(--s5);
+}
+
+.appfoot-nav a {
+  color: var(--ink-3);
+  text-decoration: none;
+  font-size: var(--t-sm);
+  /* A 44px target even though these are text links: this is a phone app and
+     a row of 14px links a thumb cannot hit is a row of links nobody uses. */
+  min-height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+}
+
+.appfoot-nav a:hover,
+.appfoot-nav a:focus-visible { color: var(--ink); }
+
+.appfoot-fine { color: var(--ink-3); font-size: var(--t-xs); margin: 0; }
+.appfoot-fine a { color: var(--ink-2); }
+
+
+/*
+ * The copy of the footer that sits at the bottom of the landing screen. Same
+ * links, no side padding of its own — the landing column already has it — and
+ * a little more air above, because it follows a list of quiet actions and
+ * needs to read as a different kind of thing from them.
+ */
+.appfoot.is-onlanding {
+  padding-left: 0;
+  padding-right: 0;
+  /* The landing column is already clear of the rail; offsetting again would
+     push it off the right of the screen. */
+  margin-left: 0;
+  margin-top: var(--s6);
+  width: 100%;
 }
