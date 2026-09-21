@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { AFFILIATES_URL, SITE_URL, pageHead } from '#/lib/site'
+import { AFFILIATES_URL, REPLAY_ON, SITE_URL, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
@@ -82,10 +82,32 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    /*
+     * REWRITTEN BECAUSE IT WAS WRONG.
+     *
+     * It said the one thing reported was that somebody reached an answer,
+     * "no dish name" — and the event had carried the dish name since the day
+     * it was written. Then the funnel events were added and it became wronger.
+     * A privacy page that describes less than the product sends is the only
+     * kind of inaccuracy here that actually matters, so this now lists every
+     * event by name and says what rides on each.
+     */
     heading: 'Analytics, and what counts as one',
     body: [
-      'This app is hosted by Whop, which adds its own analytics to every page it serves — that is the platform’s, not ours, and it is covered by Whop’s privacy policy. The one thing this app tells it directly is that somebody reached an answer and accepted it. No dish name, no profile, nothing about who.',
+      'This app is hosted by Whop, which adds its own analytics to every page it serves — that is the platform’s, not ours, and it is covered by Whop’s privacy policy.',
+      'What this app tells it directly is a short list, and here is all of it: that a decision started, that it reached an answer, that an answer was accepted, that a Premium card was shown, and that somebody tapped through to pay. Along with those go the number of questions it took, how many dishes were turned down, which Premium card it was, and — on the accepted one only — the name of the dish.',
+      'What does not go: your dietary rules, your saved dishes, your ratings, your taste profile, anything you type, and anything that identifies you. The reason those are safe is not a promise, it is where they live — see the section above.',
       'There is no Google Analytics here, no advertising pixel of our own, and nothing that follows you to other sites.',
+      /*
+       * Appears only while session replay is actually switched on. The
+       * sentence and the script are driven by the same constant, so this page
+       * cannot describe a world the product is not in — in either direction.
+       */
+      ...(REPLAY_ON
+        ? [
+            'One exception, and it is on right now: Microsoft Clarity records anonymised replays of sessions on this site — where a cursor went, what was tapped, where somebody got stuck — so we can see why people stop rather than guessing. It masks text content by default, it is not tied to your name or your account, and it is covered by Microsoft’s privacy policy. It is here to find broken screens, and it will be taken out again when it has.',
+          ]
+        : []),
     ],
   },
   {
@@ -117,6 +139,11 @@ const SECTIONS: Section[] = [
  */
 const THIRD_PARTIES: [string, string][] = [
   ['Whop', 'Sign-in, payments, subscription status, and the analytics on every page it serves.'],
+  // Driven by the same constant as the script and the paragraph above, so
+  // this list cannot fall out of step with what is actually loaded.
+  ...(REPLAY_ON
+    ? ([['Microsoft Clarity', 'Anonymised session replay, while we work out where people get stuck.']] as [string, string][])
+    : []),
   ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions.'],
   ['Hyperbeam', 'Runs the shared browser, when you open one.'],
   ['OpenStreetMap and Photon', 'Look up places near you, when you use Nearby and allow location.'],

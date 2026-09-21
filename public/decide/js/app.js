@@ -3914,6 +3914,10 @@
     if (!next) return reveal();
     renderQuestion(next.question);
     setPanel('question');
+    if (!funnelStarted) {
+      funnelStarted = true;
+      beacon('decide_started', { mode: shortcut ? 'shortcut' : 'questions' });
+    }
   }
 
   function answer(value, source) {
@@ -3950,6 +3954,48 @@
     }
   }
 
+  /* ---------------------------------------------------------- the funnel */
+  /*
+   * WHERE PEOPLE STOP.
+   *
+   * For a long time this app reported exactly one event — "decided" — which
+   * is the bottom of the funnel and tells you nothing about the way down.
+   * Five days of ad traffic made the cost of that obvious: 513 people opened
+   * this screen, 34 reached the Premium page and a handful reached a
+   * checkout. Nothing in between was measured, so "where did the other 479
+   * go" had no answer at all, and every possible fix was a guess.
+   *
+   * So: started, answered, revealed, accepted. Four points, and the gaps
+   * between them are the whole diagnosis — somebody who never starts is a
+   * landing-page problem, somebody who starts and never reveals is a
+   * question-flow problem, and somebody who reveals and never accepts got an
+   * answer they did not want.
+   *
+   * WHAT IS NOT SENT. No dish names on anything but the accept (where it is
+   * the one fact worth having), no answers, no profile, nothing that
+   * describes a person rather than a step. The privacy page says what leaves
+   * this browser and this has to keep that sentence true.
+   *
+   * Guarded, silent and never load-bearing: the pixel is a third-party
+   * script that can be blocked, fail, or be absent entirely when this file is
+   * opened from somewhere that is not the real site. A measurement is never
+   * worth an exception.
+   */
+  function beacon(name, data) {
+    try {
+      if (typeof whop !== 'undefined' && whop && typeof whop.track === 'function') {
+        whop.track(name, data || {});
+      }
+    } catch (err) { /* never */ }
+  }
+
+  /*
+   * One "started" per game, not one per question. step() is called on every
+   * answer, and a funnel where the top is counted once per tap is a funnel
+   * that cannot be read.
+   */
+  var funnelStarted = false;
+
   /* ---------------------------------------------------------------- reveal */
   // `rankedItems` is fixed for the life of one result panel; `shownItem` is
   // whichever of those the player is currently looking at — the top pick at
@@ -3962,6 +4008,10 @@
     // The task is no longer interrupted — it has an answer on it. Anything
     // after this point is a different kind of unfinished.
     clearResume();
+    // The middle of the funnel: they got all the way to an answer. How many
+    // questions it took is the one number that says whether the flow is too
+    // long, so it rides along.
+    beacon('decide_revealed', { questions: game.answers.length });
     rankedItems = game.shortlist();
     var top = rankedItems[0];
 
@@ -4285,11 +4335,11 @@
      * something other than the real site. Nothing here is allowed to take the
      * game down over a metric.
      */
-    try {
-      if (typeof whop !== 'undefined' && whop && typeof whop.track === 'function') {
-        whop.track('decided', { dish: item.name });
-      }
-    } catch (err) { /* a measurement is never worth an exception */ }
+    beacon('decided', {
+      dish: item.name,
+      questions: game.answers.length,
+      rejections: rejections,
+    });
 
     $('done-icon').textContent = item.icon;
     $('done-name').textContent = item.name + '.';
@@ -4355,6 +4405,7 @@
     }
 
     renderRating(item);
+    paintWhy();
     paintPlan();
     setPanel('reward');
     paintStreak();
@@ -4363,6 +4414,70 @@
 
     if (outcome.leveledUp) setTimeout(function () { Sound.levelUp(); }, 700);
     queueToasts(outcome.badges);
+  }
+
+  /* ------------------------------------------------------------ asking why */
+  /*
+   * THE ONE THING A FUNNEL CANNOT TELL YOU.
+   *
+   * Counts say 513 people opened the app and 34 reached the Premium page.
+   * They do not say whether the other 479 did not want it, did not see it,
+   * or wanted something it does not do — and those three have completely
+   * different fixes. The only cheap way to tell them apart is to ask.
+   *
+   * FOUR OPTIONS AND A TAP. No free text: a text box at the end of deciding
+   * dinner is a text box nobody fills in, and the answers that do arrive
+   * come from the least representative people on the list. The options are
+   * written as things somebody might actually want rather than as features,
+   * and one of them is "nothing" — an option a survey leaves out is an
+   * answer it has decided not to hear.
+   *
+   * ASKED ONCE, AFTER IT IS EARNED. Five decisions in, so the person has
+   * something to judge. Answered or dismissed, it never appears again;
+   * nothing about it is stored beyond which option was tapped, and that goes
+   * to the same pixel as the funnel, with no dish, no profile and no id.
+   */
+  var WHY_AFTER = 5;
+
+  var WHY_OPTIONS = [
+    { id: 'remember', label: 'Remembering what I like' },
+    { id: 'cook',     label: 'Getting me from the answer to the table' },
+    { id: 'together', label: 'Settling it with somebody else' },
+    { id: 'nothing',  label: 'Nothing \u2014 I am not going to pay' }
+  ];
+
+  function whyDue() {
+    var st = progress.state;
+    if (st.whyAnswered) return false;
+    return (st.decisions || 0) >= WHY_AFTER;
+  }
+
+  function paintWhy() {
+    var wrap = $('why-strip');
+    if (!wrap) return;
+    if (!whyDue()) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var box = $('why-options');
+    box.innerHTML = '';
+    WHY_OPTIONS.forEach(function (option) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'plan-cue';
+      btn.textContent = option.label;
+      btn.addEventListener('click', function () {
+        progress.state.whyAnswered = option.id;
+        progress.save();
+        beacon('premium_why', { answer: option.id, decisions: progress.state.decisions || 0 });
+        Sound.tick();
+        $('why-title').textContent = 'Noted, and thank you';
+        $('why-note').textContent = option.id === 'nothing'
+          ? 'Fair enough. The deciding stays free either way, and you will not be asked again.'
+          : 'That is genuinely useful, and it is the whole of what was recorded. You will not be asked again.';
+        box.innerHTML = '';
+      });
+      box.appendChild(btn);
+    });
   }
 
   /* ----------------------------------------------------------- the plan */
@@ -5291,6 +5406,17 @@
       progress.save();
     }
 
+    /*
+     * A PREMIUM CARD REACHED SOMEBODY'S SCREEN.
+     *
+     * "Premium cards seen" against "checkout clicked" is the only way to tell
+     * a pitch nobody wants from a pitch nobody sees. `asked` separates the
+     * two kinds: a card somebody opened by tapping a lock is a different
+     * event from one we interrupted them with, and averaging them together
+     * would hide whichever is doing the work.
+     */
+    beacon('premium_seen', { card: ad.id, kind: ad.kind, asked: !!preview });
+
     adOpener = document.activeElement;
     var dlg = $('ad-sheet');
     if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
@@ -5303,6 +5429,24 @@
     if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
     focusQuietly(adOpener);
   }
+
+  // The bottom of the in-app funnel: they tapped through to pay. Whop's own
+  // membership data says whether it finished, so this is the last thing this
+  // side needs to report.
+  $('ad-go').addEventListener('click', function () {
+    beacon('premium_clicked', { card: adShowing ? adShowing.id : 'unknown', from: 'card' });
+  });
+
+  // The other way out of the app towards paying: the strip on the profile
+  // screen, which is somebody who went looking rather than being asked.
+  (function trackProfileBuy() {
+    var buy = $('buy-btn');
+    if (buy) buy.addEventListener('click', function () { beacon('premium_clicked', { from: 'profile' }); });
+    var strip = $('plus-toggle');
+    if (strip) strip.addEventListener('click', function () { beacon('premium_clicked', { from: 'profile-strip' }); });
+    var top = $('topbar-premium');
+    if (top) top.addEventListener('click', function () { beacon('premium_clicked', { from: 'topbar' }); });
+  })();
 
   $('ad-later').addEventListener('click', function () { Sound.tick(); closeAd(); });
   $('ad-close').addEventListener('click', closeAd);
@@ -8740,6 +8884,7 @@
     busy = false;
     shortcut = false;
     tunedTo = null;
+    funnelStarted = false;
     $('rate-wrap').hidden = true;
     $('reaction').textContent = '';
     $('q-text').textContent = 'What sounds better?';

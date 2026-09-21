@@ -54,6 +54,7 @@ import swJsRaw from '../../../public/decide/sw.js?raw'
  * exists to be different, not to be read.
  */
 import { BUILD } from 'virtual:build-id'
+import { CLARITY_ID, REPLAY_ON } from '#/lib/site'
 
 const VERSIONED = [
   'styles.css', 'js/app.js', 'js/confetti.js', 'js/config.js', 'js/data.js',
@@ -70,7 +71,38 @@ function stampUrls(text: string, quote: string): string {
   return out
 }
 
-const page = stampUrls(indexHtml, '"')
+/*
+ * SESSION REPLAY, AND A WARNING ABOUT THIS WHOLE FILE.
+ *
+ * IN PRODUCTION, THE PAGE THIS ROUTE BUILDS IS NEVER SERVED. The build
+ * writes a stamped copy of the shell to dist/client/decide/index.html and
+ * Cloudflare's asset handler answers from that before a request reaches the
+ * worker. Both copies carry identical ?v= stamps, so the served page looks
+ * exactly like this route's output and is not — which cost a couple of hours
+ * to establish, and is written down here so it costs nobody else any.
+ *
+ * Anything the page needs therefore has to be added in vite.config.ts, in
+ * stampServiceWorker, where that static copy is written. The replay snippet
+ * lives there and is the real one.
+ *
+ * It is kept here as well, deliberately: this route is still the fallback
+ * for any request the asset handler does not answer, and a fallback that
+ * quietly serves a page without the tag the privacy page promises is on
+ * would be worse than the duplication. Same constant governs both.
+ */
+function withReplay(html: string): string {
+  if (!REPLAY_ON) return html
+  const tag =
+    '<script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};' +
+    't=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;' +
+    'y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);' +
+    `})(window,document,"clarity","script",${JSON.stringify(CLARITY_ID)});</script>`
+  // Last thing in the head, after the pixel note and before anything the app
+  // needs, so a slow third party cannot hold up the first question.
+  return html.replace('</head>', `${tag}\n</head>`)
+}
+
+const page = withReplay(stampUrls(indexHtml, '"'))
 const swJs = stampUrls(swJsRaw, "'").replace('__BUILD__', BUILD)
 
 const FILES: Record<string, { body: string; type: string }> = {

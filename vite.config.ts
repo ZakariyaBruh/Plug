@@ -116,6 +116,24 @@ function buildId(): Plugin {
   }
 }
 
+/*
+ * The session-replay id, read out of lib/site.ts rather than imported.
+ *
+ * This file cannot import from src/ — it is the config that sets up the
+ * aliases — so the value is read the same way DISH_COUNT is checked further
+ * down: by looking at the source. One constant still governs the script on
+ * every page and both sentences on the privacy page, which is the whole
+ * point of it. See the long note over CLARITY_ID.
+ */
+function clarityId(): string {
+  try {
+    const site = readFileSync(join(process.cwd(), 'src', 'lib', 'site.ts'), 'utf8')
+    return /export const CLARITY_ID = '([^']*)'/.exec(site)?.[1] ?? ''
+  } catch {
+    return ''
+  }
+}
+
 function stampServiceWorker(): Plugin {
   return {
     name: 'morsels45-stamp-sw',
@@ -170,7 +188,32 @@ function stampServiceWorker(): Plugin {
        */
       const page = join(dir, 'index.html')
       try {
-        writeFileSync(page, stampUrls(readFileSync(page, 'utf8'), id, '"'))
+        /*
+         * SESSION REPLAY GOES IN HERE, NOT IN THE ROUTE.
+         *
+         * routes/decide/$.ts also builds a copy of this page and also
+         * injects the snippet — and in production nothing ever sees it,
+         * because the static file written right here is served by the asset
+         * handler before any request reaches the worker. Two hours went into
+         * finding that out: the route's stamps and this file's stamps are
+         * identical, so the served page looked like the route's output and
+         * was not.
+         *
+         * Whatever the page needs has to be written HERE, at build time.
+         * Same constant as everywhere else — empty id, nothing injected, and
+         * the privacy page says nothing about replay. See CLARITY_ID.
+         */
+        let html = stampUrls(readFileSync(page, 'utf8'), id, '"')
+        const replayId = clarityId()
+        if (replayId) {
+          const tag =
+            '<script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};' +
+            't=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;' +
+            'y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);' +
+            `})(window,document,"clarity","script",${JSON.stringify(replayId)});</script>`
+          html = html.replace('</head>', `${tag}\n</head>`)
+        }
+        writeFileSync(page, html)
       } catch {
         this.warn('stamp-sw: no index.html to version')
       }

@@ -241,6 +241,7 @@
       lastPlayed: null,       // YYYY-MM-DD
       plan: null,             // { id, hour, phrase, at } — see PLAN_CUES
       resume: null,           // { code, at } — half a decide game, see app.js
+      whyAnswered: null,      // which option was tapped on the one-question ask
       nightOwl: false,
       earlyBird: false,
       badges: [],

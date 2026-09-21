@@ -41,6 +41,35 @@ export const ANDROID_VERSION = '1.0.0'
 export const ANDROID_SIZE = '6.0 MB'
 
 /*
+ * MICROSOFT CLARITY — SESSION REPLAY, AND THE SWITCH THAT KEEPS THE PRIVACY
+ * PAGE HONEST ABOUT IT.
+ *
+ * Five days of ad traffic sent 513 people into the app and 34 on to the
+ * Premium page. Numbers say where they stopped; they do not say why, and the
+ * cheapest way to see why is to watch a few sessions. Clarity is free and
+ * does that.
+ *
+ * It is also a third party recording what people do, which is a bigger deal
+ * than a counter and is exactly the sort of thing /honesty promises not to
+ * do quietly. So ONE constant drives three things: whether the script loads,
+ * whether Clarity appears in the list of everyone this app talks to, and
+ * whether the privacy page says session replay is on. Leave it empty and all
+ * three are off and the page is silent about it; paste an id and all three
+ * turn on together.
+ *
+ * That coupling is the whole design. The failure it exists to prevent is the
+ * ordinary one: somebody pastes a tracking id, ships, and updates the
+ * privacy page next week.
+ *
+ * TO TURN IT ON: make a project at clarity.microsoft.com, take the id out of
+ * the install snippet, and put it here. Nothing else to wire.
+ */
+export const CLARITY_ID = ''
+
+/** Everything downstream reads this rather than testing the string itself. */
+export const REPLAY_ON = CLARITY_ID.length > 0
+
+/*
  * IndexNow — telling the search engines that take a push that a page changed.
  *
  * Google does not participate; it is left to find things through the sitemap

@@ -2,7 +2,7 @@ import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-rou
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
-import { SITE_DESCRIPTION, SITE_TITLE } from '#/lib/site'
+import { CLARITY_ID, REPLAY_ON, SITE_DESCRIPTION, SITE_TITLE } from '#/lib/site'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -105,6 +105,25 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           the note in public/decide/index.html. */}
       <head>
         <HeadContent />
+        {/*
+          SESSION REPLAY, ONLY WHILE IT IS SWITCHED ON.
+          One constant in lib/site.ts decides whether this script exists,
+          whether Clarity is listed on the privacy page, and whether that page
+          says replay is running. Empty id, no script, no claim. See the long
+          note over CLARITY_ID for why they are tied together.
+        */}
+        {REPLAY_ON ? (
+          <script
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{
+              __html:
+                `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};` +
+                `t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;` +
+                `y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);` +
+                `})(window,document,"clarity","script",${JSON.stringify(CLARITY_ID)});`,
+            }}
+          />
+        ) : null}
       </head>
       <body>
         {children}
