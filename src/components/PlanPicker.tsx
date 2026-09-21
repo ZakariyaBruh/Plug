@@ -2,33 +2,18 @@ import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 
 /*
- * Ids only, and from products.ts rather than from lib/household.ts — that
- * file talks to Whop with the app's API key and has no business anywhere near
- * a browser bundle.
+ * Ids only, and from products.ts rather than from anywhere that talks to
+ * Whop with the app's API key — none of that belongs in a browser bundle.
  */
-import {
-  HOUSEHOLD_ANNUAL_PLAN_ID,
-  HOUSEHOLD_MONTHLY_PLAN_ID,
-  PREMIUM_ANNUAL_PLAN_ID,
-  PREMIUM_PLAN_ID,
-} from '#/lib/products'
+import { PREMIUM_ANNUAL_PLAN_ID, PREMIUM_PLAN_ID } from '#/lib/products'
 import {
   ANNUAL_SAVED,
   ANNUAL_SAVING,
-  HOUSEHOLD_SAVED,
-  HOUSEHOLD_SEATS,
   HOW_TO_LEAVE,
   PRICE_ANNUAL,
   PRICE_ANNUAL_IF_MONTHLY,
   PRICE_ANNUAL_PER_MONTH,
   PRICE_ANNUAL_VALUE,
-  PRICE_HOUSEHOLD,
-  PRICE_HOUSEHOLD_ANNUAL,
-  PRICE_HOUSEHOLD_ANNUAL_VALUE,
-  PRICE_HOUSEHOLD_IF_MONTHLY,
-  PRICE_HOUSEHOLD_PER_MONTH,
-  PRICE_HOUSEHOLD_PER_SEAT,
-  PRICE_HOUSEHOLD_VALUE,
   PRICE_MONTHLY,
   PRICE_VALUE,
   TRIAL_DAYS,
@@ -36,65 +21,51 @@ import {
 } from '#/lib/site'
 
 /*
- * ONE BUTTON, TWO SWITCHES.
+ * ONE BUTTON, ONE SWITCH.
  *
- * There are four things to buy — solo or household, yearly or monthly — and
- * four buttons on a page about not having to decide things would be a joke at
- * our own expense. So the switches carry the choice and the button stays
- * singular, reading out whichever of the four is selected.
+ * There were two switches and four things to buy, because a household plan
+ * covering two people sat alongside the single one. Household is gone — see
+ * the note in products.ts — so there are two plans, the same Premium billed
+ * two ways, and one switch is the whole of the choice.
  *
- * THE DEFAULTS ARE JUST ME, YEARLY, and that is the loudest thing on this
- * page. Most people take whatever option requires no action — of every lever
- * a pricing page can pull, the default effect is the one with the strongest
+ * THE DEFAULT IS YEARLY, and that is the loudest thing on this page. Most
+ * people take whatever option requires no action; of every lever a pricing
+ * page can pull, the default effect is the one with the strongest
  * replication behind it, and it is worth more than any amount of copy.
  *
- * It is also the one easiest to abuse, so: both alternatives sit on the same
- * switch, at the same size, one tap away, each printing its own price in the
- * same words. A default you can see and change is a suggestion. A default
- * hidden behind a disclosure is a trick, and the difference is the whole of
- * the ethics here. See docs/persuasion.md.
+ * It is also the one easiest to abuse, so: monthly sits on the same switch,
+ * at the same size, one tap away, printing its own price in the same words.
+ * A default you can see and change is a suggestion. A default hidden behind
+ * a disclosure is a trick, and the difference is the whole of the ethics
+ * here. See /honesty.
  *
- * All four plans carry the same seven-day trial, which is why the button says
- * the same thing whatever is selected and only the line above it changes.
+ * Both plans carry the same seven-day trial, which is why the button says
+ * the same thing either way and only the line above it changes.
  */
 
 /*
- * WHAT EACH OF THE FOUR SAYS ABOUT ITSELF.
+ * WHAT EACH SAYS ABOUT ITSELF.
  *
- * Three fields rather than one sentence, because the yearly plans have an
- * anchor to print and the monthly ones do not, and a single string cannot be
- * struck through in the middle.
+ * Three fields rather than one sentence, because the yearly plan has an
+ * anchor to print and the monthly one does not, and a single string cannot
+ * be struck through in the middle.
  *
  * `anchor` is twelve payments at this product's own monthly price — the real
- * other way to buy the same thing, one tap away on the switch beside it. That
- * is the only kind of reference price allowed here; see docs/persuasion.md.
+ * other way to buy the same thing, one tap away on the switch beside it.
+ * That is the only kind of reference price allowed here; see /honesty.
  */
 const PLANS = {
-  'solo-yearly': {
+  yearly: {
     id: PREMIUM_ANNUAL_PLAN_ID,
     value: PRICE_ANNUAL_VALUE,
     price: `${PRICE_ANNUAL} a year`,
     anchor: `${PRICE_ANNUAL_IF_MONTHLY} if you paid monthly`,
     note: `${PRICE_ANNUAL_PER_MONTH} a month, billed once. You keep ${ANNUAL_SAVED}.`,
   },
-  'solo-monthly': {
+  monthly: {
     id: PREMIUM_PLAN_ID,
     value: PRICE_VALUE,
     price: `${PRICE_MONTHLY}`,
-    anchor: null,
-    note: 'Cancel any time.',
-  },
-  'household-yearly': {
-    id: HOUSEHOLD_ANNUAL_PLAN_ID,
-    value: PRICE_HOUSEHOLD_ANNUAL_VALUE,
-    price: `${PRICE_HOUSEHOLD_ANNUAL} a year for ${HOUSEHOLD_SEATS}`,
-    anchor: `${PRICE_HOUSEHOLD_IF_MONTHLY} if you paid monthly`,
-    note: `${PRICE_HOUSEHOLD_PER_MONTH} a month, billed once — ${PRICE_HOUSEHOLD_PER_SEAT} each. You keep ${HOUSEHOLD_SAVED}.`,
-  },
-  'household-monthly': {
-    id: HOUSEHOLD_MONTHLY_PLAN_ID,
-    value: PRICE_HOUSEHOLD_VALUE,
-    price: `${PRICE_HOUSEHOLD} a month for ${HOUSEHOLD_SEATS}`,
     anchor: null,
     note: 'Cancel any time.',
   },
@@ -150,49 +121,28 @@ function Switch({
 export function PlanPicker({
   size = 'lg',
   heading = true,
-  opensOn = 'solo',
 }: {
   size?: 'lg' | 'sm'
   heading?: boolean
-  /*
-   * Which side the "who it covers" switch starts on. Solo nearly everywhere,
-   * because most people are buying for themselves — and household at the foot
-   * of the section that has just spent four steps explaining the household
-   * plan, where opening on "Just me" made the reader undo the page's own
-   * argument before they could act on it.
-   */
-  opensOn?: 'solo' | 'household'
 }) {
-  const [who, setWho] = useState<'solo' | 'household'>(opensOn)
   const [when, setWhen] = useState<'yearly' | 'monthly'>('yearly')
 
-  const plan = PLANS[`${who}-${when}` as keyof typeof PLANS]
+  const plan = PLANS[when]
   const big = size === 'lg'
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3">
-        <Switch
-          label="Who it covers"
-          value={who}
-          onChange={(next) => setWho(next as 'solo' | 'household')}
-          options={[
-            ['solo', 'Just me'],
-            ['household', `${HOUSEHOLD_SEATS} of us`],
-          ]}
-        />
-        <Switch
-          label="How to pay"
-          value={when}
-          onChange={(next) => setWhen(next as 'yearly' | 'monthly')}
-          options={[
-            // The saving is computed from the prices in site.ts, so this badge
-            // cannot drift away from the numbers beside it.
-            ['yearly', 'Yearly', `−${ANNUAL_SAVING}%`],
-            ['monthly', 'Monthly'],
-          ]}
-        />
-      </div>
+      <Switch
+        label="How to pay"
+        value={when}
+        onChange={(next) => setWhen(next as 'yearly' | 'monthly')}
+        options={[
+          // The saving is computed from the prices in site.ts, so this badge
+          // cannot drift away from the numbers beside it.
+          ['yearly', 'Yearly', `−${ANNUAL_SAVING}%`],
+          ['monthly', 'Monthly'],
+        ]}
+      />
 
       <p className={`mt-4 ${heading ? `font-bold ${big ? 'text-3xl' : 'text-2xl'}` : ''}`}>
         {heading ? `${TRIAL_DAYS} days free` : null}
@@ -214,21 +164,10 @@ export function PlanPicker({
         <span className="block text-sm font-normal text-[var(--text-dim)]">{plan.note}</span>
       </p>
 
-      {who === 'household' ? (
-        <p className="mt-2 max-w-sm text-sm text-[var(--text-dim)]">
-          One subscription, {HOUSEHOLD_SEATS} accounts. You hand the second seat to whoever you
-          eat with and they get their own tastes, their own rules and their own saved dishes.{' '}
-          {/* Nobody should have to buy a thing to find out how it works. */}
-          <a href="/premium#household" className="text-[var(--amber)] underline underline-offset-4">
-            How the seat works
-          </a>
-        </p>
-      ) : null}
-
       <Link
         to="/checkout/$planId"
         params={{ planId: plan.id }}
-        onClick={() => track('add_to_cart', { value: plan.value, currency: 'USD', plan: `${who}-${when}` })}
+        onClick={() => track('add_to_cart', { value: plan.value, currency: 'USD', plan: when })}
         className={`mt-6 inline-block rounded-full bg-[var(--amber)] font-semibold text-black hover:opacity-90 ${
           big ? 'px-8 py-3' : 'px-6 py-3 text-sm'
         }`}

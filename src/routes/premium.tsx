@@ -6,14 +6,9 @@ import { PlanPicker } from '#/components/PlanPicker'
 import { loadViewer } from '#/lib/viewer'
 import {
   DIET_FREE,
-  HOUSEHOLD_FACTS,
-  HOUSEHOLD_SEATS,
-  HOUSEHOLD_STEPS,
   DIET_FREE_WHY,
   OFFER,
   OFFER_SHORT,
-  PRICE_HOUSEHOLD_MONTHLY,
-  PRICE_HOUSEHOLD_YEARLY,
   PRICE_MONTHLY,
   PRICE_VALUE,
   PREMIUM_HEADLINES,
@@ -36,7 +31,7 @@ export const Route = createFileRoute('/premium')({
         `Premium stops it repeating itself, gets you as far as the table with cook mode and a shopping list, and covers the person you eat with on one subscription. ${OFFER}. What you do not eat is free on every profile.`,
       ogTitle: `morsels45 Premium — ${OFFER_SHORT}`,
       ogDescription:
-        `It learns what you like and stops offering the same thing twice. Cook mode, a shopping list, and somewhere near you that serves it. Household covers two of you on one subscription, with a browser you both drive. ${OFFER}.`,
+        `It learns what you like and stops offering the same thing twice. Cook mode, a shopping list, and somewhere near you that serves it. Together settles it between two of you on one phone, and a browser you both drive orders it. ${OFFER}.`,
     }),
   component: PremiumPage,
 })
@@ -141,67 +136,6 @@ function PremiumPage() {
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* HOUSEHOLD, EXPLAINED, because it was buyable and nowhere
-            described. It sat behind one toggle on the plan picker with a
-            two-line blurb, so the only way to find out what you were buying
-            was to buy it. It has an id so the picker and the FAQ can point
-            straight at it. */}
-        <section className="border-t border-[var(--border)] py-14" id="household">
-          <div className="mx-auto max-w-3xl px-6">
-            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
-              For two
-            </p>
-            <h2 className="mt-2 text-3xl font-bold">
-              Household: {HOUSEHOLD_SEATS} people, one subscription.
-            </h2>
-            <p className="mt-4 text-[var(--text-dim)]">
-              {PRICE_HOUSEHOLD_MONTHLY} or {PRICE_HOUSEHOLD_YEARLY} — about three dollars a month
-              more than paying for yourself. The argument this whole thing is built to settle
-              happens between two people, so a subscription covering one of them answers half
-              of it.
-            </p>
-
-            <h3 className="mt-10 text-xl font-bold">How the second seat gets to them</h3>
-            <ol className="mt-6 space-y-6">
-              {HOUSEHOLD_STEPS.map((step, at) => (
-                <li key={step.name} className="flex gap-4">
-                  <span className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[var(--amber)] text-sm font-bold text-black">
-                    {at + 1}
-                  </span>
-                  <span>
-                    <b className="block">{step.name}</b>
-                    <span className="mt-1 block text-sm text-[var(--text-dim)]">{step.blurb}</span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-
-            <h3 className="mt-12 text-xl font-bold">What people ask before they buy it</h3>
-            <dl className="mt-6 grid gap-6 sm:grid-cols-2">
-              {HOUSEHOLD_FACTS.map((fact) => (
-                <div key={fact.name}>
-                  <dt className="font-semibold">{fact.name}</dt>
-                  <dd className="mt-1 text-sm text-[var(--text-dim)]">{fact.blurb}</dd>
-                </div>
-              ))}
-            </dl>
-
-            {viewer.hasPremium ? (
-              <p className="mt-10 text-sm text-[var(--text-dim)]">
-                Already subscribed? If you are on a Household plan, the invitation button is on{' '}
-                <Link to="/account" className="text-[var(--amber)] underline underline-offset-4">
-                  your account page
-                </Link>
-                .
-              </p>
-            ) : (
-              <div className="mt-10">
-                <PlanPicker opensOn="household" />
-              </div>
-            )}
           </div>
         </section>
 

@@ -39,9 +39,10 @@ notices.
 ### Default effect — the pricing picker
 Most people take whatever option requires no action, and of the pricing levers
 this is the one with the strongest replication support. Yearly is preselected
-and Just me is preselected; monthly and household sit beside them, same size,
-one tap, each printing its own price. Nobody is walked past the option they
-came for.
+with monthly beside it, same size, one tap, printing its own price in the same
+words. Nobody is walked past the option they came for. (There were two
+switches here while a two-person household plan existed; it was withdrawn
+having never had a member, and the second switch went with it.)
 → `src/components/PlanPicker.tsx`
 
 ### Anchoring against a real number
@@ -68,7 +69,7 @@ middle is deliberately plain.
 The Heaths' four families of defining moment, one each: elevation is the
 reveal; insight is the line that tells you something about yourself you had
 not said out loud; pride is the count of decisions you have actually made;
-connection is the household seat and Together. Insight is the one a piece of
+connection is Together and the shared browser. Insight is the one a piece of
 software can deliver cheaply, because it already holds the evidence: sixty
 decisions with timestamps, a count per dish, a yes/no tally per axis. Every
 sentence it produces is counted, never inferred, and it says nothing at all
@@ -160,10 +161,13 @@ A playable preview on the landing page is a fifteen-second yes before the ask.
 It is not a teaser: it uses the real questions, the real wording and real
 dishes, and hands over the real thing at the end.
 
-### Unity and connection — the household plan
+### Unity and connection — two people, one answer
 Shared identity is the strongest of Cialdini's principles and the hardest to
 fake. The honest version here is that this argument happens *between two
-people*, and a subscription covering one of them answers half of it.
+people*, and both of them are in the room. That was briefly sold as a
+two-person subscription; it never had a buyer, and the reason is probably that
+the thing people wanted was the feature — Together, and the shared browser —
+rather than a second seat on a bill. Both are in the one Premium plan.
 
 ### Cognitive fluency
 Easily processed claims are judged more likely to be true. Short sentences,

@@ -165,93 +165,23 @@ export const PRICE_ANNUAL_IF_MONTHLY = `$${(PRICE_VALUE * 12).toFixed(2)}`
 export const ANNUAL_SAVED = `$${(PRICE_VALUE * 12 - PRICE_ANNUAL_VALUE).toFixed(2)}`
 
 /*
- * HOUSEHOLD: the same thing, for two people.
+ * HOUSEHOLD IS GONE.
  *
- * The argument this app is sold against happens between two people, so a
- * subscription that only ever covers one of them answers half of it. Priced
- * at $3 a month over the solo plan rather than at double, because the second
- * seat costs almost nothing to run and a household that cancels together is
- * the churn worth avoiding.
+ * There was a two-person plan here: one subscription, two accounts, the
+ * second handed over as an invitation link. It had four explanatory steps,
+ * four pre-emptive answers, six price constants and a seat-granting service
+ * behind it, and in its whole life it had nought members. Withdrawing an
+ * offer nobody has taken costs nobody anything, and that window closes the
+ * day somebody buys.
  *
- * Same 50% shape on the yearly plan, so the one sentence — "half price, paid
- * yearly" — is true of both tiers and there is only one discount to explain.
+ * What is NOT gone is the part people actually wanted from it: two of you
+ * can still settle dinner together. Together does it on one phone, and the
+ * shared browser orders it with a cursor each. Those are features of the one
+ * Premium plan, and they always were — the second subscription seat was a
+ * billing arrangement wrapped round them.
+ *
+ * See lib/products.ts for the three Whop plan ids left to archive by hand.
  */
-export const HOUSEHOLD_SEATS = 2
-
-/*
- * HOW THE SECOND SEAT ACTUALLY WORKS, IN ORDER.
- *
- * Household was buyable and nowhere explained. It sat behind one toggle on
- * the plan picker with a two-line blurb, so the only way to find out what you
- * were buying was to buy it — and "two people, one subscription" raises
- * exactly the questions this answers: do we share a login, does it mix our
- * tastes together, what happens if we split up, what happens if I cancel.
- *
- * Written as steps because the seat is handed over rather than bought: the
- * buyer makes an invitation and sends it, and the person who opens it gets
- * their own account. Nobody can guess that from a price.
- */
-export const HOUSEHOLD_STEPS: { name: string; blurb: string }[] = [
-  {
-    name: 'One of you subscribes',
-    blurb:
-      'Whoever pays picks Household at checkout instead of Just me. Everything Premium switches on for them straight away, exactly as it would on the single plan.',
-  },
-  {
-    name: 'They make an invitation',
-    blurb:
-      'On their account page there is a Household panel with one button. It makes a link. That is the whole of it — no email to type in, no code to read out, nothing for the other person to set up in advance.',
-  },
-  {
-    name: 'They send the link to whoever they eat with',
-    blurb:
-      'However they like: a message, a shared note, read aloud across the kitchen. The link works once and only until the seat is taken, so a forwarded copy is refused rather than quietly handing Premium to a group chat.',
-  },
-  {
-    name: 'That person opens it and has Premium',
-    blurb:
-      'They sign in with a Whop account — free, and most people can make one in a few seconds — and it is on. No card, and nothing to cancel on their side.',
-  },
-]
-
-/*
- * The questions "two people, one subscription" always raises, answered before
- * anybody has to ask. Each of these is a real property of how the seat is
- * built, not a reassurance: see lib/household.ts.
- */
-export const HOUSEHOLD_FACTS: { name: string; blurb: string }[] = [
-  {
-    name: 'Two accounts, not a shared login',
-    blurb:
-      'They get their own tastes, their own rules, their own saved dishes and their own streak. Nothing of yours is visible to them and nothing of theirs is mixed into your picks. You are not passing a password around.',
-  },
-  {
-    name: 'Your rules stay yours',
-    blurb:
-      'If you are halal and they are not, or one of you cannot eat shellfish, neither setting touches the other. The only thing you share is the bill.',
-  },
-  {
-    name: 'You can take the seat back',
-    blurb:
-      'Same panel, one button. Their Premium goes off and the seat is free to give to somebody else. Useful when a flatmate moves out.',
-  },
-  {
-    name: 'It ends when your subscription does',
-    blurb:
-      'Cancel and both seats stop at the end of the period you already paid for. Theirs is not a separate subscription and they will never be charged for anything.',
-  },
-]
-export const PRICE_HOUSEHOLD_VALUE = 7.99
-export const PRICE_HOUSEHOLD = '$7.99'
-export const PRICE_HOUSEHOLD_MONTHLY = `${PRICE_HOUSEHOLD}/month`
-export const PRICE_HOUSEHOLD_ANNUAL_VALUE = 47.99
-export const PRICE_HOUSEHOLD_ANNUAL = '$47.99'
-export const PRICE_HOUSEHOLD_YEARLY = `${PRICE_HOUSEHOLD_ANNUAL}/year`
-export const PRICE_HOUSEHOLD_PER_MONTH = `$${(PRICE_HOUSEHOLD_ANNUAL_VALUE / 12).toFixed(2)}`
-export const PRICE_HOUSEHOLD_IF_MONTHLY = `$${(PRICE_HOUSEHOLD_VALUE * 12).toFixed(2)}`
-export const HOUSEHOLD_SAVED = `$${(PRICE_HOUSEHOLD_VALUE * 12 - PRICE_HOUSEHOLD_ANNUAL_VALUE).toFixed(2)}`
-/** Per person, per month, on the yearly household plan. The honest unit. */
-export const PRICE_HOUSEHOLD_PER_SEAT = `$${(PRICE_HOUSEHOLD_ANNUAL_VALUE / 12 / HOUSEHOLD_SEATS).toFixed(2)}`
 
 /*
  * THE GIFT, SAID OUT LOUD BEFORE THE ASK.
@@ -498,7 +428,7 @@ export const PREMIUM_HEADLINES: { name: string; blurb: string }[] = [
      */
     name: 'Two of you, one answer',
     blurb:
-      `The argument this whole thing exists to settle happens between two people, so a subscription covering one of them answers half of it. Household covers both, each with your own tastes and your own rules. Together settles it on one phone in about twenty seconds. The shared browser orders it from two, with a cursor each.`,
+      `The argument this whole thing exists to settle happens between two people, and both of them are sitting there. Together takes five either-ors from each of you on one phone and lands on the one dish you can both live with, in about twenty seconds. The shared browser then orders it from two, with a cursor each.`,
   },
 ]
 

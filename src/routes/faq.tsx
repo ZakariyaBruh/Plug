@@ -30,8 +30,8 @@ const FAQS: [string, string][] = [
     `${DIET_FREE} It holds for every decision, every mode and every list — Tonight’s pick, the shortlist, the week plan and the daily shelf included. ${DIET_FREE_WHY}`,
   ],
   [
-    'Can two of us share one subscription?',
-    'Yes — that is the Household plan. One of you pays, and on your account page there is a button that makes an invitation link. Send it to whoever you eat with; they open it, sign in, and Premium is on for them. They get their own account: their own tastes, their own dietary rules, their own saved dishes. Nothing of yours is visible to them and nothing of theirs changes your picks. You can take the seat back whenever you like, and it ends when your subscription does — they are never charged for anything. The full walkthrough is on the Premium page.',
+    'Can two of us decide together?',
+    'Yes, and it does not take two subscriptions. Together asks each of you five either-ors on the same phone and lands on the one dish you can both live with, in about twenty seconds; the shared browser then orders it with a cursor each. Both are part of the one Premium plan. There is no separate two-person subscription — there was one briefly, nobody bought it, and covering the person you eat with turned out to be a feature rather than a billing arrangement.',
   ],
   [
     'Do I need an account?',

@@ -67,8 +67,8 @@ export const HONESTY_LINE = [
 export const TECHNIQUES: Technique[] = [
   {
     name: 'The plan that is already selected',
-    what: 'Yearly and single-person are preselected, because they are what most people want and the cheaper of the two per month.',
-    here: 'Monthly and Household sit on the same switch, the same size, one tap away, each printing its own price. Nothing is preselected that is only in our interest.',
+    what: 'The yearly plan is preselected, because it is the cheaper of the two per month and the one most people want.',
+    here: 'Monthly sits on the same switch, the same size, one tap away, printing its own price in the same words. Nothing is preselected that is only in our interest.',
   },
   {
     name: 'The struck-through price',
