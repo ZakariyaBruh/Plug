@@ -359,14 +359,16 @@ function HomePage() {
                 >
                   Everything in it
                 </Link>
-                {/* At the moment of the ask, not buried in the footer.
-                    Somebody deciding whether to hand over a card is exactly
-                    the reader that page is for. */}
+                {/* At the moment of the ask, because somebody deciding
+                    whether to hand over a card is exactly who those promises
+                    are for. Worded as what they get, not as what we admit:
+                    "every trick on this page, listed" made a reader suspicious
+                    of things they had not noticed and would not have minded. */}
                 <p className="mt-4 text-xs text-[var(--text-dim)]">
+                  No countdowns, no invented numbers, no guilt for leaving.{' '}
                   <Link to="/honesty" className="underline underline-offset-4 hover:text-[var(--text)]">
-                    Every persuasive trick on this page, listed
-                  </Link>{' '}
-                  — including the four we will not use.
+                    What we won&rsquo;t do
+                  </Link>
                 </p>
                 {viewer.hasPremium ? (
                   <a

@@ -193,22 +193,42 @@ you it is about to die, and nothing is taken away for missing a night. A
 product for people who are tired and hungry should not add a thing to feel bad
 about at 7pm.
 
-## The public copy
+## The public copy, and what belongs in it
 
-`src/lib/honesty.ts` and `/honesty` are this document rewritten for the person
-the techniques are used on. It carries the same four refusals in plainer
-words, and `scripts/honesty-test.mjs` fails the build if any of them stops
-being named in both — the drift that actually happens is not a typo, it is
-somebody quietly dropping one on the way to shipping it.
+`src/lib/honesty.ts` and `/honesty` are the public half. They are NOT this
+document with the citations removed, and the first draft's mistake was
+treating them that way.
 
-Publishing it is partly a differentiator and partly a forcing function: a
-technique that cannot be described plainly to the person it is used on should
-not be in the product, and having to write that sentence is the fastest way to
-find out. Two were dropped on that test while the page was being written: a
-decoy price tier (already refused above on replication grounds, and refused
-twice over once it had to be described to a reader), and an artificial pause
-before the reveal — a labour illusion — which is indefensible in a product
-whose entire pitch is that this takes twenty seconds.
+That draft was headed "What this site does to you" and led with the
+techniques. It was rewritten after one note, which was right: honesty is a
+policy, oversharing is a commercial mistake, and the two are not the same
+thing. A page telling a hungry stranger how they are being persuaded hands
+them a job they did not come for, and makes them suspicious of things they had
+not noticed and would not have minded. The same page headed "What we won't do"
+gives them something to rely on, which is what anybody who goes looking for a
+page like that actually wants.
+
+So the split is by audience, not by detail level:
+
+- **Published**: the four refusals, in plain words, first. The three tests.
+  Then the design choices a reader could work out by looking anyway — a
+  preselected plan, a struck-through comparison price, a reminder they asked
+  for — said out loud so the promises have something to be checked against.
+- **Here only**: the effect names, the evidence, the replication arguments
+  and the reasoning about where the line sits. Useful to whoever is editing
+  this. Not useful to somebody deciding what to eat.
+
+`scripts/honesty-test.mjs` fails the build if any of the four refusals stops
+being named in both files — the drift that actually happens is not a typo, it
+is somebody quietly dropping one on the way to shipping it.
+
+Writing the page is still a forcing function: a choice that cannot be
+described plainly to the person it affects should not be in the product. Two
+were dropped on that test — a decoy price tier (already refused above on
+replication grounds, and refused twice over once it had to be described to a
+reader), and an artificial pause before the reveal, a labour illusion, which
+is indefensible in a product whose entire pitch is that this takes twenty
+seconds.
 
 ## How to add to this file
 

@@ -1,46 +1,51 @@
 /*
- * THE PUBLIC VERSION OF docs/persuasion.md.
+ * THE PUBLIC STANDARDS PAGE.
  *
- * That file is for whoever is editing this codebase: it carries the evidence,
- * the code pointers and the arguments. This one is for the person the
- * techniques are being used on, which is a different reader with a different
- * question — not "is this well sourced" but "what is being done to me, and can
- * I trust the answer".
+ * This started life as a confession — "what this site does to you", every
+ * persuasive technique named, leading with the ones we use. It was rewritten
+ * because that framing gets the order and the audience wrong, and the note
+ * that caused the rewrite is worth keeping: honesty is a policy, oversharing
+ * is a commercial mistake, and they are not the same thing.
  *
- * WHY PUBLISH IT AT ALL. Three reasons, in increasing order of how much they
- * actually matter.
+ * The distinction is who the page is for. A page headed "here is how we are
+ * persuading you" invites a reader to audit the product; nobody arrives at a
+ * food app wanting that job, and handing it to them makes a stranger
+ * suspicious of things they had not noticed and would not have minded. A page
+ * headed "here is what we will not do" gives the same reader something to
+ * rely on, which is what they actually came for.
  *
- * It is a differentiator, and a cheap one: every site in this category uses
- * most of this list and none of them will print it.
+ * The content underneath is largely the same and that is the point: the
+ * refusals are the valuable half, they were buried at the bottom, and the
+ * techniques they constrain are what makes them mean anything. A promise not
+ * to use fake scarcity is worth something precisely because the page admits
+ * there are levers here at all.
  *
- * It is a forcing function. A technique that cannot be described plainly to
- * the person it is used on is a technique that should not be in the product,
- * and having to write the sentence is the fastest way to find out. Two failed
- * that test while this page was being written: a decoy price tier, and an
- * artificial pause before the reveal to make the engine look busier than it
- * is. Both were on the plan; neither survived being written down.
+ * WHAT IS PUBLISHED AND WHAT IS NOT. The four refusals, the three tests, and
+ * a plain account of the choices a reader could work out for themselves by
+ * looking — a preselected plan, a struck-through comparison price, a reminder
+ * they asked for. What is NOT here is the reasoning, the citations and the
+ * arguments about where the line sits; that is developer material and it
+ * lives in docs/persuasion.md, where it is useful and where it is not asking
+ * a hungry stranger to think about behavioural science.
  *
- * And it is the only version of "trust us" that means anything. A site can
- * say it is honest, which costs nothing and is what a dishonest site says
- * too. Listing the specific ways it is trying to influence you is a claim
- * that can be checked against the pages it describes, and a reader who checks
- * one and finds it accurate has a reason to believe the next one.
- *
- * KEEP THIS AND docs/persuasion.md IN STEP. The refusals especially: a
- * promise made here and not kept there is the worst kind of thing this file
- * could become. scripts/honesty-test.mjs checks that the four refusals appear
- * in both, which catches the case that actually happens — somebody quietly
- * shipping one of them.
+ * KEEP THE REFUSALS IN STEP with that file. scripts/honesty-test.mjs fails
+ * the build if any of the four stops being named in both, which catches the
+ * case that actually happens: somebody quietly shipping one.
  */
 
 export type Technique = {
   name: string
-  /** What the effect is, said in one sentence to somebody who has not met it. */
+  /** The choice, in the reader's terms, not in the literature's. */
   what: string
-  /** What this product does with it, specifically enough to be checked. */
+  /** Why it is that way, specifically enough to be checked against the page. */
   here: string
 }
 
+/*
+ * The test each of the choices below has to pass. Stated first on the page,
+ * because a list of design decisions is only worth reading next to the
+ * standard they were held to.
+ */
 export const HONESTY_LINE = [
   {
     name: 'You can see it',
@@ -61,64 +66,64 @@ export const HONESTY_LINE = [
 
 export const TECHNIQUES: Technique[] = [
   {
-    name: 'Defaults',
-    what: 'Most people take whatever option needs no action. It is the single most powerful thing on any page that offers a choice.',
-    here: 'The yearly plan and the single-person plan are preselected on the pricing switch. Monthly and Household sit beside them, same size, one tap, each printing its own price.',
+    name: 'The plan that is already selected',
+    what: 'Yearly and single-person are preselected, because they are what most people want and the cheaper of the two per month.',
+    here: 'Monthly and Household sit on the same switch, the same size, one tap away, each printing its own price. Nothing is preselected that is only in our interest.',
   },
   {
-    name: 'Anchoring',
-    what: 'A price is judged against whatever number you saw first, so the number next to it does a lot of the arguing.',
-    here: 'The yearly price is shown against $59.88 — twelve payments at this product’s own monthly price, struck through. That is a real alternative you can take on the same screen, not an invented “was”. There is no third tier that exists only to flatter the second.',
+    name: 'The struck-through price',
+    what: 'The yearly plan is shown against $59.88, which is twelve payments at our own monthly price.',
+    here: 'It is a real alternative you can take on the same screen, not an invented “was”. Both numbers are computed from the two live prices, so the comparison cannot drift. There is no third tier that exists only to make another look better.',
   },
   {
-    name: 'Reciprocity',
-    what: 'Being given something first makes an ask afterwards much harder to refuse.',
-    here: 'The decide game, every dish, every recipe and every dietary rule are free and permanently free. We now say so immediately above the price, which is exactly where it works hardest.',
+    name: 'What is free is free permanently',
+    what: 'The decide game, every dish, every recipe and every dietary rule. No account, no card, no expiry.',
+    here: 'We say so directly above the price rather than three pages away, because a reader deciding whether to pay should know what they already have.',
   },
   {
-    name: 'The peak and the end',
-    what: 'You remember an experience by its most intense moment and its last moment, not by its average.',
-    here: 'Disproportionate care goes into the reveal and into the screen after you accept. The middle is deliberately plain.',
+    name: 'Where the effort went',
+    what: 'The moment the answer lands and the moment you accept it get most of the design attention. The middle is deliberately plain.',
+    here: 'People remember the best moment and the last one, so those are the two worth making good. Nothing is added to the middle to pad it out.',
   },
   {
-    name: 'The goal gradient',
-    what: 'Effort towards a goal rises as the goal gets closer, so a number falling is more motivating than a number rising.',
-    here: 'Every question prints how many dishes are still standing. It is the real shortlist the answer comes out of, not a progress bar dressed up as one.',
+    name: 'The count that falls',
+    what: 'Every question prints how many dishes are still standing.',
+    here: 'It is the real shortlist the answer comes out of, recomputed each time — not a progress bar dressed up as a number. Watching it fall is satisfying and it is also true.',
   },
   {
-    name: 'Implementation intentions',
-    what: 'Binding a thing you mean to do to a cue that already happens — “when I get in, I’ll sort dinner” — roughly doubles the chance you do it. It is the best-evidenced idea in this list by a distance.',
-    here: 'After a couple of decisions you can name the moment you usually need this. We then read it back to you on the front screen at that hour, and nowhere else. No notification, no email, no account. If you want a real reminder you can take a calendar file, which your phone owns and we never see.',
+    name: 'The plan you write yourself',
+    what: 'After a couple of decisions you can name the moment you usually need this — “when I get in”. Tying a thing to something that already happens is roughly twice as likely to stick as a time on a clock.',
+    here: 'We read it back on the front screen at that hour and nowhere else. No notification, no email, no account, and it never leaves your device. If you want a real reminder you can take a calendar file, which your phone owns and we never see.',
   },
   {
-    name: 'Psychological ownership',
-    what: 'People value what they have put effort into far beyond what the effort was worth.',
-    here: 'Your profile page counts what you have told it and says how many dishes that takes off the table. Both numbers are counted against the real catalogue with the same filter the game uses.',
+    name: 'What your profile is worth',
+    what: 'The profile page counts what you have told it and says how many dishes that takes off the table.',
+    here: 'Both numbers are counted against the real catalogue with the same filter the game uses, so the panel cannot claim a rule the app does not apply.',
   },
   {
-    name: 'Loss framing',
-    what: 'Losing something is felt about twice as strongly as gaining the same thing.',
-    here: 'Used only where something is genuinely yours and genuinely at stake — what you would stop being able to use if a subscription ended. Never as an invented deadline.',
+    name: 'What you would lose',
+    what: 'If a subscription is ending we will tell you plainly what stops working.',
+    here: 'Only where something is genuinely yours and genuinely at stake. Never as an invented deadline, and never as a reason to hurry.',
   },
   {
-    name: 'Offers at the moment you reach for something',
-    what: 'An offer made when you have just shown you want a thing lands far better than the same offer made at random.',
-    here: 'Tapping something marked Premium opens a card naming the thing you tapped, with the price, the trial and how to cancel on it — and a “not now” the same size as the yes. It used to send you straight to a payment page in the same gesture, which converted worse and was not a choice.',
+    name: 'When we mention the price',
+    what: 'Tapping something marked Premium opens a card naming the thing you tapped, with the price, the trial and how to cancel on it.',
+    here: 'And a “not now” the same size as the yes. It used to send you straight to a payment page in the same gesture, which was not a choice.',
   },
   {
-    name: 'Fewer choices',
-    what: 'Past a handful of options, people take longer and buy less. The famous version is a jam stall: twenty-four flavours drew the bigger crowd and six flavours sold ten times as much.',
-    here: 'Each screen offers one obvious next thing. Nothing has been removed to achieve that — every mode, every list and every setting is still here, just not all shouting at once.',
+    name: 'One obvious next thing',
+    what: 'Each screen offers one loud action and puts the rest quietly underneath.',
+    here: 'Nothing was removed to achieve it — every mode, every list and every setting is still here. Past a handful of equally loud options, people stop choosing at all.',
   },
   {
-    name: 'Unfinished business',
-    what: 'A task you were pulled away from nags at you, and people show a strong pull to go back and finish one.',
-    here: 'If you get four questions in and something interrupts you, the front screen offers to pick up where you left off instead of making you start again. It expires after six hours, because what you felt like at lunchtime is not what you feel like at eight and handing those answers back as though they still counted would be worse than losing them.',
+    name: 'Half a decision, kept',
+    what: 'If you get four questions in and something interrupts you, the front screen offers to pick up where you left off.',
+    here: 'It expires after six hours — what you felt like at lunchtime is not what you feel like at eight, and handing stale answers back as though they still counted would be worse than losing them.',
   },
   {
-    name: 'A small yes first',
-    what: 'Somebody who has already done a small version of a thing is far more likely to do the larger one.',
-    here: 'The playable preview on the front page. It is not a teaser: it uses the real questions, the real wording and real dishes, and hands you the real thing at the end.',
+    name: 'The preview is the real thing',
+    what: 'The playable version on the front page uses the real questions, the real wording and real dishes.',
+    here: 'It is a trailer rather than a mock-up, and the build fails if any dish in it stops matching the catalogue. Fifteen seconds is a fairer test of this than a paragraph about it.',
   },
 ]
 

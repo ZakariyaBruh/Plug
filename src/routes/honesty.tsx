@@ -6,24 +6,36 @@ import { pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
- * The page that lists what this site is doing to you.
+ * THE STANDARDS PAGE.
  *
- * See the long comment at the top of lib/honesty.ts for why it exists. The
- * short version: a site claiming to be honest is making the same claim a
- * dishonest one makes, and the only version of it that can be checked is a
- * specific list of the ways it is trying to influence you.
+ * It was written first as a confession — "What this site does to you",
+ * "nothing up our sleeve", every technique named, the promises at the bottom.
+ * That was the wrong way round and the note that said so was right: honesty
+ * is a policy, oversharing is a commercial mistake, and a page headed "here
+ * is how we are persuading you" hands a hungry stranger a job they did not
+ * come here to do. It makes them suspicious of things they had not noticed
+ * and would not have minded.
  *
- * Indexable, in the footer of every page, and written for somebody who
- * arrived here suspicious.
+ * What people actually want from a page like this is something to rely on.
+ * So the four refusals lead, because they are commitments rather than
+ * disclosures and they are the half a competitor cannot cheaply copy. The
+ * design choices follow, in the reader's own terms — a preselected plan, a
+ * struck-through comparison, a reminder you asked for — all of them things
+ * you could work out by looking. The behavioural-science reasoning behind
+ * them is not here; that is developer material and it lives in
+ * docs/persuasion.md.
+ *
+ * Still indexable and still linked from the footer, under a name that says
+ * what it is for.
  */
 export const Route = createFileRoute('/honesty')({
   loader: () => loadViewer(),
   head: () =>
     pageHead({
       path: '/honesty',
-      title: 'What this site does to you — morsels45',
+      title: 'What we won\u2019t do \u2014 morsels45',
       description:
-        'Every persuasive technique used on this site, named, plus the four we will not use. Written down so it can be checked rather than believed.',
+        'No fake countdowns, no invented user numbers, no rewards designed to keep you playing, and no guilt for leaving. Four promises, and the design choices behind them.',
     }),
   component: HonestyPage,
 })
@@ -36,31 +48,43 @@ function HonestyPage() {
       <main className="fade-in-up">
         <section className="mx-auto max-w-3xl px-6 pt-16 pb-10">
           <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
-            Nothing up our sleeve
+            Our standards
           </p>
-          <h1 className="mt-3 text-4xl font-bold sm:text-5xl">What this site does to you.</h1>
+          <h1 className="mt-3 text-4xl font-bold sm:text-5xl">What we won’t do.</h1>
           <p className="mt-5 text-lg text-[var(--text-dim)]">
-            This site is trying to persuade you. So is every other one, and most of them use
-            roughly the list below. The difference here is that the list is written down, in the
-            code and on this page, so you can check it against the pages it describes instead of
-            taking anybody’s word for anything.
-          </p>
-          <p className="mt-4 text-[var(--text-dim)]">
-            It is also a rule we have to live by: a technique that cannot be described plainly to
-            the person it is used on does not go in the product. Two failed that test while this
-            page was being written — a third price tier that would have existed only to make the
-            middle one look better, and a pause before the answer to make the work look harder
-            than it is. Neither would have been easy to write down here, which is how we knew.
+            Four promises about how this app treats you, written specifically enough that breaking
+            one would make this page false rather than merely optimistic. Then the design choices
+            behind them, so you can check the promises against the product instead of taking our
+            word for it.
           </p>
         </section>
 
-        {/* The test first, because everything under it is judged by it. */}
+        {/* First, because it is the half worth anything. Anybody can list
+            what they do; a promise is the part that can be broken. */}
         <section className="border-t border-[var(--border)] bg-[var(--bg-raised)] py-14">
+          <div className="mx-auto max-w-3xl px-6">
+            <h2 className="text-2xl font-bold">The four promises</h2>
+            <p className="mt-3 max-w-xl text-[var(--text-dim)]">
+              All four of these would probably sell more subscriptions. They are common enough
+              that you have met every one of them this week somewhere else.
+            </p>
+            <dl className="mt-8 space-y-8">
+              {REFUSALS.map((refusal) => (
+                <div key={refusal.name}>
+                  <dt className="text-lg font-semibold">{refusal.name}</dt>
+                  <dd className="mt-2 text-sm text-[var(--text-dim)]">{refusal.blurb}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </section>
+
+        <section className="border-t border-[var(--border)] py-14">
           <div className="mx-auto max-w-3xl px-6">
             <h2 className="text-2xl font-bold">The three tests</h2>
             <p className="mt-3 text-[var(--text-dim)]">
-              Persuasion and manipulation are not different techniques. They are the same
-              techniques used with or without these three properties.
+              Every design choice in this product has to pass these before it ships. They are the
+              difference between a shop arranging its shelves well and a shop moving the exit.
             </p>
             <ol className="mt-8 space-y-6">
               {HONESTY_LINE.map((test, at) => (
@@ -78,9 +102,13 @@ function HonestyPage() {
           </div>
         </section>
 
-        <section className="border-t border-[var(--border)] py-14">
+        <section className="border-t border-[var(--border)] bg-[var(--bg-raised)] py-14">
           <div className="mx-auto max-w-3xl px-6">
-            <h2 className="text-2xl font-bold">What we use</h2>
+            <h2 className="text-2xl font-bold">How the thing is built</h2>
+            <p className="mt-3 max-w-xl text-[var(--text-dim)]">
+              Choices a reader could work out by looking, said out loud so the promises above have
+              something to be checked against.
+            </p>
             <dl className="mt-8 space-y-8">
               {TECHNIQUES.map((technique) => (
                 <div key={technique.name}>
@@ -95,37 +123,16 @@ function HonestyPage() {
           </div>
         </section>
 
-        {/* The half of the page that is worth anything. Anybody can list
-            what they do; the promises are the part that can be broken. */}
-        <section className="border-t border-[var(--border)] bg-[var(--bg-raised)] py-14">
-          <div className="mx-auto max-w-3xl px-6">
-            <h2 className="text-2xl font-bold">What we will not use</h2>
-            <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              These four would probably work. They are worded precisely enough that doing any of
-              them would make this page false rather than merely optimistic, which is the point of
-              writing them down.
-            </p>
-            <dl className="mt-8 space-y-8">
-              {REFUSALS.map((refusal) => (
-                <div key={refusal.name}>
-                  <dt className="text-lg font-semibold">{refusal.name}</dt>
-                  <dd className="mt-2 text-sm text-[var(--text-dim)]">{refusal.blurb}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </section>
-
         <section className="mx-auto max-w-3xl px-6 py-16">
-          <h2 className="text-2xl font-bold">If you find one that is not on this page</h2>
+          <h2 className="text-2xl font-bold">If we break one of these</h2>
           <p className="mt-3 text-[var(--text-dim)]">
-            Then this page has a bug in it, which is worse than any of the techniques it lists.
-            The same list lives in the repository as{' '}
+            Then this page is wrong, which is worse than anything it describes. The four promises
+            are also written into the repository, in{' '}
             <code className="rounded bg-[var(--bg-raised)] px-1.5 py-0.5 text-sm">
               docs/persuasion.md
             </code>
-            , with the evidence and the code it points at, and a test that fails if the four
-            refusals stop matching.
+            , and a test fails the build if they stop matching what is published here. That is not
+            a guarantee. It is one more thing that would have to be deliberately switched off.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <a

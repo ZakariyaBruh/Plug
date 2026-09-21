@@ -34,11 +34,11 @@ export function SiteFooter() {
           <Link to="/privacy" className="hover:text-[var(--text)]">
             Privacy
           </Link>
-          {/* In the footer of every page on purpose. A page listing the ways
-              this site is trying to persuade you is worth nothing if it is
-              only reachable by somebody who already suspected. */}
+          {/* In the footer of every page, next to Privacy, where people look
+              for exactly this kind of promise. It is named for what it gives
+              the reader rather than for what it admits. */}
           <Link to="/honesty" className="hover:text-[var(--text)]">
-            What this does to you
+            What we won&rsquo;t do
           </Link>
           {/* The affiliate programme existed in exactly one place before this:
               a button inside a prompt in the game that comes up occasionally.
