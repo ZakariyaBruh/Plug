@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { ALL_DISHES } from '#/lib/dishes'
 
 /*
- * /api/menu — three courses that go together, argued for.
+ * /api/menu — five courses that go together, argued for.
  *
  * The app already builds a menu on its own, by scoring every dish against
  * each course and marking down whatever repeats the evening (see COURSES and
@@ -24,7 +24,13 @@ import { ALL_DISHES } from '#/lib/dishes'
 const MODEL = 'gemini-3.5-flash-lite'
 const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
 
-const COURSES = ['starter', 'main', 'pudding'] as const
+/*
+ * FIVE, IN EATING ORDER, and the same five ids the game uses in COURSES.
+ * A course named here that the game does not know would come back from the
+ * model, survive validation and then be dropped on the floor when the run
+ * sorted itself — so these two lists are one list in two files.
+ */
+const COURSES = ['nibble', 'starter', 'main', 'pudding', 'nightcap'] as const
 const MAX_LIKED = 20
 const MAX_PROMPT = 400
 const TIMEOUT_MS = 12000
@@ -50,7 +56,7 @@ type Ask = {
 /*
  * Courses the person has pinned, as {course: dish name}.
  *
- * Only names that are really in the catalogue survive, and only for the three
+ * Only names that are really in the catalogue survive, and only for the five
  * real courses — this arrives from a browser and a pinned dish is about to be
  * quoted into a prompt, so it is checked on the way in like everything else.
  */
@@ -98,7 +104,7 @@ function instruction(
   pinned: { course: string; name: string }[],
 ) {
   return [
-    'You write a three course menu from one fixed catalogue of dishes.',
+    'You write a five course menu from one fixed catalogue of dishes.',
     '',
     'Choose ONLY from this catalogue. Spell each name exactly as written here:',
     ALL_DISHES.map((d) => d.name).join(', '),
@@ -118,26 +124,31 @@ function instruction(
         '. Choose the other courses to go with them.'
       : '',
     '',
-    'Pick exactly three dishes — a starter, a main and a pudding — and they',
-    'have to work as one meal. Not three heavy things. Not three cold ones.',
-    'Not three of the same cuisine unless that is the point of it. The starter',
-    'should leave room for the main, and the pudding should suit what came',
-    'before it. Three different dishes; never the same one twice.',
+    'Pick exactly five dishes — something to pick at, a starter, a main, a',
+    'pudding and something to finish — and they have to work as one meal. Not',
+    'five heavy things. Not five cold ones. Not five of the same cuisine',
+    'unless that is the point of it. The nibble is something to hand round',
+    'before anybody sits down, so it should be small and not fill anybody up.',
+    'The starter should leave room for the main, the pudding should suit what',
+    'came before it, and the last one should be a drink — coffee, tea, or',
+    'something warm to end on. Five different dishes; never the same one',
+    'twice.',
     '',
     'If what they told you rules something out — a diet, an allergy, no oven,',
-    'no time, a fussy guest, the weather — that governs all three choices.',
+    'no time, a fussy guest, the weather — that governs all five choices.',
     '',
     'WHERE THEY ARE EATING CHANGES THE ANSWER. If they are going out or',
     'ordering in, choose dishes worth paying somebody else to make — the ones',
     'that are a faff at home, or better from a kitchen with the right kit —',
     'and ignore how long they said they have, because that is a waiting time',
     'and not a cooking time. If they are cooking, the time they gave is a hard',
-    'limit across all three courses together, and a starter or pudding that',
-    'needs no cooking is a good way to spend it on the main.',
+    'limit across all five courses together, and a nibble, a starter or a',
+    'pudding that needs no cooking is a good way to spend it on the main.',
     '',
     'Answer as JSON and nothing else, in this exact shape:',
-    '{"courses":[{"course":"starter","name":"<exact catalogue name>","why":"<one short sentence>"},',
-    '{"course":"main","name":"...","why":"..."},{"course":"pudding","name":"...","why":"..."}]}',
+    '{"courses":[{"course":"nibble","name":"<exact catalogue name>","why":"<one short sentence>"},',
+    '{"course":"starter","name":"...","why":"..."},{"course":"main","name":"...","why":"..."},',
+    '{"course":"pudding","name":"...","why":"..."},{"course":"nightcap","name":"...","why":"..."}]}',
     'Each why is one plain sentence, fifteen words at most, saying why that',
     'dish belongs in this particular meal. No markdown, no preamble.',
   ]

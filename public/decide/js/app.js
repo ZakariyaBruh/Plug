@@ -2879,7 +2879,30 @@
   // `word` is how the course is named when it is being agreed to, because
   // "That's it" three times running tells nobody which it they just agreed
   // to. The labels are the table's order; the words are the plate's name.
+  /*
+   * FIVE COURSES, IN THE ORDER THEY ARE EATEN.
+   *
+   * It was three — starter, main, pudding. The two added at the ends are the
+   * ones a real meal actually has and a three-course template leaves out: the
+   * thing people pick at before anybody sits down, and the thing that ends
+   * the evening after the plates are cleared.
+   *
+   * THE LIKES AND DISLIKES ARE THE FALLBACK'S SCORING, not the model's. When
+   * the model does not answer, pickCourse ranks the catalogue on these tags
+   * and the run carries on — so every course has to be describable in tags
+   * that really exist, or its fallback would be a random dish with a course
+   * label on it.
+   *
+   * THE LAST ONE IS A DRINK, which the catalogue supports properly: the
+   * drinks were an intake of their own and carry `drink`, `caffeine` and the
+   * rest. It also means the standing rules reach it — somebody who has ruled
+   * out caffeine or alcohol gets the course filtered like any other, rather
+   * than a coffee they told us they do not drink.
+   */
   var COURSES = [
+    { id: 'nibble', label: 'To pick at', word: 'the nibble',
+      likes: ['shareable', 'crunchy', 'handheld', 'cheap', 'fried'],
+      dislikes: ['filling', 'sweet', 'soupy'] },
     { id: 'starter', label: 'To start', word: 'the starter',
       likes: ['light', 'fresh', 'shareable', 'soupy', 'crunchy'],
       dislikes: ['filling', 'indulgent', 'carby'] },
@@ -2888,7 +2911,10 @@
       dislikes: ['light', 'breakfast'] },
     { id: 'pudding', label: 'And after', word: 'pudding',
       likes: ['sweet', 'indulgent', 'soft', 'fruity'],
-      dislikes: [] }
+      dislikes: [] },
+    { id: 'nightcap', label: 'To finish', word: 'something to finish',
+      likes: ['drink', 'hot', 'caffeine', 'sweet'],
+      dislikes: ['filling', 'meat', 'fried'] }
   ];
 
   // What a course must never be, whatever it scores.
@@ -3481,10 +3507,8 @@
     // use, which is the same lie in the other direction as a paywall over an
     // empty panel.
     $('menu-blurb').textContent = isPlus()
-      ? 'A starter, a main and a pudding that actually go together \u2014 not three heavy ' +
-        'things, and not three cold ones. As many as you like.'
-      : 'A starter, a main and a pudding that actually go together \u2014 not three heavy ' +
-        'things, and not three cold ones. One every couple of days on Standard.';
+      ? 'Five courses that actually go together \u2014 something to pick at, a starter, a main, a pudding and something to finish. Not five heavy things, and not five from the same kitchen unless that is the point of it. As many as you like.'
+      : 'Five courses that actually go together \u2014 something to pick at, a starter, a main, a pudding and something to finish. Not five heavy things, and not five from the same kitchen unless that is the point of it. One every couple of days on Standard.';
 
     /*
      * A RUN IN PROGRESS OUTRANKS EVERYTHING BELOW.

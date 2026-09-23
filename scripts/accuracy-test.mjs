@@ -209,5 +209,59 @@ check(
   thin.map((row) => `${row.label}: ${row.left}`).join(', '),
 )
 
+/*
+ * THE MENU'S FIVE COURSES, WHICH ARE ONE LIST KEPT IN TWO FILES.
+ *
+ * The game owns COURSES — the ids, the labels, and the tags the local
+ * fallback scores on. The server owns its own COURSES, which is what it will
+ * accept back from the model and what it names in the prompt. A course in one
+ * and not the other fails silently in the worst way: the model returns it, it
+ * survives validation, and then the run drops it on the floor when it sorts
+ * itself into eating order. Nobody sees an error; the menu is just short.
+ *
+ * And every course has to be fillable when the model does not answer, for
+ * everybody. The fallback ranks the catalogue on that course's like-tags, so
+ * a course whose tags match almost nothing under somebody's diet would hand
+ * them a dish picked for no reason with a course label on it.
+ */
+const appSrc = readFileSync(join(process.cwd(), 'public/decide/js/app.js'), 'utf8')
+const menuSrc = readFileSync(join(process.cwd(), 'src/routes/api/menu.ts'), 'utf8')
+
+const gameCourses = [...appSrc.slice(appSrc.indexOf('var COURSES = ['))
+  .slice(0, appSrc.slice(appSrc.indexOf('var COURSES = [')).indexOf('];'))
+  .matchAll(/\{ id: '([^']+)'/g)].map((m) => m[1])
+const serverCourses = (/const COURSES = \[([^\]]+)\]/.exec(menuSrc)?.[1] ?? '')
+  .split(',').map((part) => part.trim().replace(/^'|'$/g, '')).filter(Boolean)
+
+check('the menu has five courses', gameCourses.length === 5, gameCourses.join(', '))
+check(
+  'the game and the server agree on which five, in order',
+  gameCourses.join('|') === serverCourses.join('|'),
+  `game: ${gameCourses.join(', ')}\n        server: ${serverCourses.join(', ')}`,
+)
+
+const likesFor = {}
+for (const m of appSrc.slice(appSrc.indexOf('var COURSES = [')).matchAll(
+  /\{ id: '([^']+)',[\s\S]*?likes: \[([^\]]*)\]/g,
+)) {
+  if (!likesFor[m[1]]) likesFor[m[1]] = m[2].split(',').map((t) => t.trim().replace(/'/g, '')).filter(Boolean)
+  if (Object.keys(likesFor).length === gameCourses.length) break
+}
+
+const COURSE_FLOOR = 20
+const starved = []
+for (const diet of Progress.DIETS) {
+  const pool = ITEMS.filter((item) => (diet.tags || []).every((tag) => !item.tags[tag]))
+  for (const id of gameCourses) {
+    const n = pool.filter((item) => (likesFor[id] || []).some((tag) => item.tags[tag])).length
+    if (n < COURSE_FLOOR) starved.push(`${id} under ${diet.label}: ${n}`)
+  }
+}
+check(
+  `every course can still be filled on any diet (floor ${COURSE_FLOOR})`,
+  starved.length === 0,
+  starved.join('\n        '),
+)
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
