@@ -2133,24 +2133,6 @@
         <div class="knobs" id="guest-knobs" role="group" aria-label="Guest at the table"></div>
       </section>
 
-      <!-- The affiliate programme, somewhere it can be found on purpose.
-
-           Until now this existed in exactly one place in the whole app: a
-           button inside a prompt that comes up occasionally. That is not
-           advertising it, that is hiding it behind a coin flip — somebody who
-           closed the prompt once had no way back to it, and somebody who
-           went looking for it could not find it at all. It lives here as
-           well now, permanently, on the screen people already open to look
-           at their own numbers. -->
-      <section class="strip" id="earn-wrap">
-        <h2 class="strip-title">Earn from this</h2>
-        <p class="fine">morsels45 has an affiliate programme. Share your own link, and when
-        somebody signs up through it you take a cut &mdash; for as long as they stay. Free to
-        join, nothing to pay, and it costs the people you send nothing extra.</p>
-        <p class="fine" id="earn-wrap-line"></p>
-        <a class="link-btn" href="https://whop.com/morsels45/affiliates" target="_blank" rel="noopener noreferrer">Get my link</a>
-      </section>
-
       <section class="strip">
         <h2 class="strip-title">What you tend to pick</h2>
         <div class="axes" id="axes"></div>
@@ -2223,20 +2205,14 @@
   Two panes in one dialog: the question, and the offer that only the yes branch
   ever sees. A "not really" is a complete answer and gets no pitch at all.
 -->
-<!--
-  "Want to earn some money?" — the affiliate offer, on the same sheet as
-  everything else so it reads as the app asking rather than an advert that got
-  in. Same discipline as the enjoy prompt next to it: earned, once, and a
-  refusal that is the same size as the agreement.
--->
 <!-- ===========================================================================
      THE AD SHEET — one dialog, many prompts.
 
      The three prompts below it are each about one specific thing and each keep
      their own state, which is why they have their own markup. These are the
-     rotating ones: the Premium pitch and the affiliate offers. They differ
-     only in words and a link, so writing a dialog per angle would be four
-     copies of the same markup drifting apart. Everything here is filled in
+     rotating ones: the Premium pitch, in several wordings. They differ only in
+     words, so writing a dialog per angle would be several copies of the same
+     markup drifting apart. Everything here is filled in
      from the ADS roster in app.js, which is also the one place a new offer
      gets added.
 
@@ -2288,24 +2264,6 @@
     <div class="enjoy-actions">
       <button class="go go-sm" id="share-done-ok" type="button">Carry on</button>
     </div>
-  </div>
-</dialog>
-
-<dialog class="sheet enjoy-sheet" id="earn-sheet" aria-labelledby="earn-title">
-  <button class="sheet-x" id="earn-close" aria-label="Close">&times;</button>
-  <span class="sheet-art" aria-hidden="true">&#128176;</span>
-  <h2 class="sheet-name" id="earn-title">Want to earn some money?</h2>
-  <!-- Opens with what this person has actually done, filled in by app.js. A
-       pitch that starts by telling you something true about yourself is read;
-       one that starts "if you like morsels45" is skipped, because it opens by
-       admitting it does not know. -->
-  <p class="sheet-note" id="earn-lead"></p>
-  <p class="sheet-note">Share your link, and when somebody signs up through it you take a
-  cut &mdash; for as long as they stay.</p>
-  <p class="fine">Free to join, nothing to pay, and it costs the people you send nothing extra.</p>
-  <div class="enjoy-actions">
-    <a class="go go-sm" id="earn-go" href="https://whop.com/morsels45/affiliates" target="_blank" rel="noopener noreferrer">Show me how</a>
-    <button class="quiet" id="earn-no" type="button">Not for me</button>
   </div>
 </dialog>
 

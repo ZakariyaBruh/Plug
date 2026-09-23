@@ -697,6 +697,7 @@
    */
   var GAVE_UP_FLOOR = 0.25;
   var SHRUG_PATIENCE = 12;
+  var ALL_SHRUGS = 6;   // shrugs from the very first question before we believe it
 
   Game.prototype.hasGivenUp = function () {
     if (this.answers.length < SHRUGS) return false;
@@ -709,12 +710,24 @@
      * written for. They keep the short game: nothing below can narrow a field
      * that has been told nothing, so making them sit through twelve questions
      * would be the original complaint back again with extra steps.
+     *
+     * BUT NOT AT THE FIRST THREE, which is where this went wrong. The opening
+     * questions are drink, sweet and hot, in that order, and plenty of people
+     * do not mind about any of them — somebody who has decided only that they
+     * want to eat well shrugs at all three honestly. At SHRUGS alone this
+     * fired on them at question five and handed back fish and chips, having
+     * never asked whether they wanted something healthy. They had not refused
+     * to answer; they had not been asked anything they cared about yet.
+     *
+     * So the shortcut needs a real run of them. Six is two full rounds of
+     * shrugging, which nobody does by accident, and it still lets somebody
+     * who genuinely does not mind out in six questions rather than twelve.
      */
     var told = false;
     for (var j = 0; j < this.answers.length; j++) {
       if (this.answers[j].value !== 'either') { told = true; break; }
     }
-    if (!told) return true;
+    if (!told) return this.answers.length >= ALL_SHRUGS;
 
     if (this.best().score >= GAVE_UP_FLOOR) return true;
     return this.answers.length >= SHRUG_PATIENCE;

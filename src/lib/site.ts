@@ -26,14 +26,16 @@ export const SITE_CARD_ALT = 'morsels45 — an assistant for working out what to
 export const DISH_COUNT = 450
 
 /*
- * The affiliate programme.
+ * The Whop page for this business, which is where account, payment and refund
+ * questions actually get answered.
  *
- * One constant because it now appears in several places, and a money link
- * copy-pasted around a codebase is a money link that goes stale in three of
- * them. The game has its own copy of this in decide/js/app.js, which is a
- * separate static app and cannot import from here.
+ * This was AFFILIATES_URL, and everything that pointed at the affiliate
+ * programme has been taken out — the prompt in the game, the three cards in
+ * the rotation and the footer link. What is left is the one honest use it
+ * always had underneath: the privacy page telling somebody where to go about
+ * their own money.
  */
-export const AFFILIATES_URL = 'https://whop.com/morsels45/affiliates'
+export const WHOP_PAGE_URL = 'https://whop.com/morsels45'
 
 
 export const ANDROID_APK = '/morsels45.apk'

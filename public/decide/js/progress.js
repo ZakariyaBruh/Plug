@@ -310,10 +310,6 @@
        * question, and asking a second time is not a survey, it is nagging.
        * 'later' is a dismissal — it comes back, but not soon.
        */
-      earn: '',               // '' | 'no' — whether the affiliate offer was declined
-      earnAt: 0,              // decisions at the last showing
-      earnShown: 0,           // times it has been shown, ever
-
       enjoy: '',              // '' | 'yes' | 'no' | 'later'
       enjoyAt: 0,             // when it was last put to them
       enjoyShown: 0,          // how many times it has been shown, ever
@@ -323,19 +319,16 @@
       shareShown: 0,          // times it has been shown, ever
 
       /*
-       * The rotating offers (see ADS in app.js). `plusAd` and `earn` are the
-       * two final refusals — 'no' on either silences that whole kind of offer
-       * for good, not just the card that was on screen. `adAt` is where the
+       * The rotating offers (see ADS in app.js). `plusAd` is the final
+       * refusal — 'no' silences that whole kind of offer for good, not just
+       * the card that was on screen. It used to have a twin, `earn`, for the
+       * affiliate offers; those are gone and so is it. `adAt` is where the
        * rotation got to, saved so a new game opens on the next card rather
        * than the same one every time.
        */
       plusAd: '',             // '' | 'no' — whether the Premium pitch was ended
       adAt: 0,                // rotation cursor into ADS
       adShown: 0,             // offers shown, ever — for the record, not a cap
-
-      // Decisions at the last prompt shown to a paying member. They only ever
-      // see the affiliate one, and only once every PLUS_PROMPT_EVERY.
-      plusPromptAt: 0,
 
       /*
        * What a Standard profile has used up of the AI features.

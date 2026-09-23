@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { AFFILIATES_URL, REPLAY_ON, SITE_URL, pageHead } from '#/lib/site'
+import { REPLAY_ON, SITE_URL, WHOP_PAGE_URL, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
@@ -201,7 +201,7 @@ function PrivacyPage() {
               Questions about your account, a payment or a refund go to Whop, where that
               information is held — reach it from the{' '}
               <a
-                href={AFFILIATES_URL.replace('/affiliates', '')}
+                href={WHOP_PAGE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--amber)] hover:underline"

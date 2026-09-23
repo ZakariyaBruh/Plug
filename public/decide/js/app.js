@@ -5154,76 +5154,6 @@
     'Locked in. Enjoy the bit that comes next.'
   ];
 
-  /* --------------------------------------------------------- earn with it */
-  /*
-   * The affiliate offer, on the same terms as the enjoy prompt.
-   *
-   * Never in the same sitting as it: being asked whether you like something
-   * and then asked to go and sell it, one after the other, is two asks in a
-   * row and reads as a sales funnel rather than an app. So this only comes up
-   * when the other prompt is not what is due — which is the rule that still
-   * holds now the two are only a few decisions apart rather than twenty.
-   *
-   * "Not for me" is final. There is no later on this one — somebody who does
-   * not want to sell your app is not going to want to in a fortnight, and
-   * asking again would just be nagging with extra steps. That refusal is the
-   * ceiling on this prompt, not EARN_MAX_SHOWS.
-   */
-  var EARN_AFTER = 8;         // decisions before it is offered at all, and between showings
-  var EARN_MAX_SHOWS = 4;     // times it may ever appear
-
-  function earnDue() {
-    var st = progress.state;
-    if (st.earn === 'no') return false;
-    if ((st.earnShown || 0) >= EARN_MAX_SHOWS) return false;
-    // Never on top of the other prompt, and never in the same run as one.
-    if (enjoyDue()) return false;
-    var decisions = st.decisions || 0;
-    if (decisions < EARN_AFTER) return false;
-    // A second showing costs another full run of decisions.
-    if ((st.earnShown || 0) > 0 && decisions < (st.earnAt || 0) + EARN_AFTER) return false;
-    return true;
-  }
-
-  function openEarn(preview) {
-    var st = progress.state;
-    if (!preview) {
-      st.earnShown = (st.earnShown || 0) + 1;
-      st.earnAt = st.decisions || 0;
-      progress.save();
-    }
-
-    /*
-     * Open with what they have actually done here.
-     *
-     * The line was "if you like morsels45, you can get paid for telling
-     * people about it" — a pitch that begins by admitting it does not know
-     * whether you like it. Somebody twenty-five decisions deep has answered
-     * that question with their thumbs. The streak is only mentioned from
-     * three days, because two days is not a streak.
-     */
-    var decisions = st.decisions || 0;
-    var streak = st.streak || 0;
-    var lead = 'You have settled ' + decisions + ' ' +
-      (decisions === 1 ? 'dinner' : 'dinners') + ' in here';
-    if (streak >= 3) lead += ', ' + streak + ' days running';
-    lead += '. If it is worth that to you, it is worth something to whoever you tell.';
-    $('earn-lead').textContent = lead;
-
-    earnOpener = document.activeElement;
-    var dlg = $('earn-sheet');
-    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
-    focusQuietly($('earn-go'));
-  }
-
-  function closeEarn() {
-    var dlg = $('earn-sheet');
-    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
-    focusQuietly(earnOpener);
-  }
-
-  var earnOpener = null;
-
   /* ------------------------------------------------------- the prompt budget */
   /*
    * HOW MANY PROMPTS ONE GAME IS ALLOWED, and where they are allowed to land.
@@ -5232,8 +5162,7 @@
    * On Standard that game gets a budget of between two and five prompts,
    * drawn once when the game starts so the pace varies between games instead
    * of being the same every time. A Premium member gets one: they have
-   * already bought the thing two of these are selling, and the affiliate
-   * offer is worth making once.
+   * already bought the only thing this roster sells.
    *
    * WHERE THEY LAND, and why not mid-question. Three modal dialogs thrown
    * across the question flow would hit the budget and wreck the game: every
@@ -5244,7 +5173,7 @@
    * over, one prompt after the next, each waiting for the one before it to be
    * closed. Same count, and nothing interrupted.
    *
-   * WHAT FILLS A SLOT, in order. The three bespoke prompts first, when they
+   * WHAT FILLS A SLOT, in order. The two bespoke prompts first, when they
    * are due: they are about a specific thing, they keep their own state and
    * they are rare by design. Then the ads, which are what makes a budget of
    * five reachable at all — an offer with nothing behind it but "not now"
@@ -5254,29 +5183,22 @@
   var GAME_BUDGET_MAX = 5;
 
   /*
-   * A MEMBER GETS ONE KIND OF PROMPT, RARELY.
+   * A MEMBER GETS NO PROMPTS AT ALL.
    *
-   * One per game was already a tenth of what Standard sees, and it was still
-   * wrong: one every game is every game. Somebody paying has bought the thing
-   * two thirds of this roster is selling, and what they bought includes not
-   * being sold to. So the only prompt they are ever shown is the affiliate
-   * one — the only one that might pay them something back rather than ask
-   * them for something — and it waits a dozen decisions between showings.
+   * It was one per game, rarely, and the one they got was the affiliate
+   * offer — the only card on the roster that might pay them something back
+   * rather than ask them for something. That offer is gone, and there is
+   * nothing to put in its place: every other card on the roster sells
+   * Premium, which is the thing they have already bought.
    *
-   * Not asked at all until the first dozen, either. A prompt on the day
-   * somebody pays reads as the app having been waiting for the money to clear.
+   * So the budget is nought and this is not a gap waiting to be filled. What
+   * somebody paying bought includes not being sold to, and the honest number
+   * for how often to interrupt them is zero.
    */
-  var GAME_BUDGET_PLUS = 1;
-  var PLUS_PROMPT_EVERY = 12;  // decisions between money prompts for a member
+  var GAME_BUDGET_PLUS = 0;
 
   function plusPromptDue() {
-    var st = progress.state;
-    // The same refusal that ends the affiliate offers for everybody. A member
-    // who has said "not for me" is then done with prompts entirely, which is
-    // the quietest this app can be and is exactly right.
-    if (st.earn === 'no') return false;
-    var decisions = st.decisions || 0;
-    return decisions >= (st.plusPromptAt || 0) + PLUS_PROMPT_EVERY;
+    return false;
   }
 
   /*
@@ -5306,7 +5228,7 @@
   }
 
   function anySheetOpen() {
-    var ids = ['enjoy-sheet', 'earn-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet'];
+    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet'];
     for (var i = 0; i < ids.length; i++) {
       var dlg = document.getElementById(ids[i]);
       if (dlg && dlg.open) return true;
@@ -5342,17 +5264,11 @@
      */
     var shown = null;
     if (!plus && enjoyDue()) { openEnjoy(); shown = 'enjoy-sheet'; }
-    else if (earnDue()) { openEarn(); shown = 'earn-sheet'; }
     else if (!plus && shareDue()) { openShare(); shown = 'share-sheet'; }
     else if (openAd(nextAd(moment))) { shown = 'ad-sheet'; }
 
     if (!shown) return false;
     gameSpent += 1;
-
-    if (plus) {
-      progress.state.plusPromptAt = progress.state.decisions || 0;
-      progress.save();
-    }
 
     if (chain) {
       var dlg = $(shown);
@@ -5371,12 +5287,12 @@
   /*
    * The rotating prompts, and the one place a new offer is added.
    *
-   * ADD AN AFFILIATE HERE. One entry, and it joins the rotation: it will be
-   * shown, spaced, counted against the per-game budget and silenced by the
-   * same refusal as the rest, with nothing else to wire up. `kind` decides
-   * who sees it and which refusal ends it — 'plus' is the upgrade pitch and
-   * is never shown to somebody already paying; 'aff' is an affiliate offer
-   * and is ended for good by the same "not for me" that ends all of them.
+   * ADD ONE HERE. One entry, and it joins the rotation: it will be shown,
+   * spaced, counted against the per-game budget and silenced by the same
+   * refusal as the rest, with nothing else to wire up. `kind` decides who
+   * sees it — 'plus' is the upgrade pitch and is never shown to somebody
+   * already paying, which is every card on this roster now that the
+   * affiliate offers have been taken out.
    *
    * NO NUMBERS THAT ARE NOT KNOWN HERE. None of these name a commission rate
    * or an amount, because this file does not know them and a made-up figure
@@ -5384,7 +5300,6 @@
    * real. They say what the deal is and let the page at the other end say
    * what it pays.
    */
-  var AFFILIATES_URL = 'https://whop.com/morsels45/affiliates';
 
   var ADS = [
     /*
@@ -5439,69 +5354,6 @@
       fine: 'Seven days free, then $29.99 a year or $4.99 a month.',
       cta: 'Have a look'
     },
-    {
-      id: 'aff-tell',
-      kind: 'aff',
-      icon: '\u{1F4B8}',
-      title: 'Get paid for telling people',
-      body: 'morsels45 has an affiliate programme. Share your own link, and when ' +
-            'somebody signs up through it you take a cut — for as long as they stay.',
-      fine: 'Free to join, nothing to pay, and it costs the people you send nothing extra.',
-      cta: 'Show me how'
-    },
-    {
-      id: 'aff-already',
-      kind: 'aff',
-      icon: '\u{1F4E3}',
-      title: 'You are already recommending it',
-      body: 'Every time you settle an argument about dinner with this, somebody else ' +
-            'hears about it. With a link in your hand, that is worth something to you ' +
-            'as well as to them.',
-      fine: 'Takes a minute to set up and there is nothing to pay.',
-      cta: 'Get my link'
-    },
-    {
-      id: 'aff-recurring',
-      kind: 'aff',
-      icon: '\u{1F501}',
-      title: 'It pays for as long as they stay',
-      body: 'The cut is not a one-off finder’s fee. Sign somebody up and you keep ' +
-            'earning from them every month they keep using it.',
-      fine: 'Nothing to pay, nothing to ship, and no minimum.',
-      cta: 'See the terms'
-    },
-    {
-      id: 'aff-nothing-to-sell',
-      kind: 'aff',
-      icon: '\u{1F4E6}',
-      title: 'Nothing to buy, nothing to post',
-      body: 'This is not one of those where you have to buy a kit or put anything on ' +
-            'social media. It is a link. You send it to people who cannot decide what ' +
-            'to eat, which is everybody.',
-      fine: 'Free to join and you can stop at any point.',
-      cta: 'Get my link'
-    },
-    {
-      id: 'aff-group',
-      kind: 'aff',
-      icon: '\u{1F465}',
-      title: 'One link works for a whole group chat',
-      body: 'The same link does not run out and does not care how many people use it. ' +
-            'Put it somewhere a few people will see it once, rather than sending it ' +
-            'over and over.',
-      fine: 'Free to join, and it costs the people you send nothing extra.',
-      cta: 'Show me how'
-    },
-    {
-      id: 'aff-cancel',
-      kind: 'aff',
-      icon: '\u{1F513}',
-      title: 'You keep your link if you stop paying',
-      body: 'The affiliate programme is not part of Premium. Join it on the free ' +
-            'version, keep it if you cancel, and keep earning either way.',
-      fine: 'Nothing to pay, ever, to be an affiliate.',
-      cta: 'Join it'
-    }
   ];
 
   /*
@@ -5537,7 +5389,6 @@
   function adAllowed(ad) {
     var st = progress.state;
     if (ad.kind === 'plus') return !isPlus() && st.plusAd !== 'no';
-    if (ad.kind === 'aff') return st.earn !== 'no';
     return true;
   }
 
@@ -5587,7 +5438,7 @@
       if (!adAllowed(ad)) continue;
       // Never the same card twice in one game. With most of the roster
       // refused the cursor wraps inside a single game, and it did: a profile
-      // that had ended the affiliate offers got "six more games in here",
+      // that had refused the rest got "six more games in here",
       // then the takeaway line, then both again, in one sitting. The same pitch
       // twice in five minutes is the exact thing that makes somebody leave.
       // Nothing new to say means the slot goes unfilled and the budget simply
@@ -5614,11 +5465,10 @@
     $('ad-body').textContent = ad.body;
     $('ad-fine').textContent = ad.fine;
     $('ad-go').textContent = ad.cta;
-    $('ad-go').href = ad.kind === 'aff' ? AFFILIATES_URL : premiumApi.upgradeUrl();
-    // The final refusal is named after what it ends, not after this one card:
-    // "not for me" on an affiliate offer ends every affiliate offer, and it
-    // should not take somebody three refusals to discover that.
-    $('ad-never').textContent = ad.kind === 'aff' ? 'Not for me' : 'Not interested';
+    $('ad-go').href = premiumApi.upgradeUrl();
+    // The final refusal is named after what it ends, not after this one card,
+    // and every card left on the roster is the same pitch in different words.
+    $('ad-never').textContent = 'Not interested';
     // See goPremium: a card somebody opened themselves does not get to offer
     // them a switch that turns off future answers.
     $('ad-never').hidden = !!ad.noNever;
@@ -5678,7 +5528,6 @@
   // Final, and for the whole kind rather than this one card.
   $('ad-never').addEventListener('click', function () {
     var st = progress.state;
-    if (adShowing && adShowing.kind === 'aff') st.earn = 'no';
     if (adShowing && adShowing.kind === 'plus') st.plusAd = 'no';
     progress.save();
     Sound.tick();
@@ -5724,7 +5573,7 @@
     // This is the last real throttle on this prompt; the numbers are not.
     if (st.enjoy !== 'yes') return false;
     // Never on top of, or in the same run as, one of the other prompts.
-    if (enjoyDue() || earnDue()) return false;
+    if (enjoyDue()) return false;
     var decisions = st.decisions || 0;
     if (decisions < SHARE_AFTER) return false;
     if ((st.shareShown || 0) > 0 && decisions < (st.shareAt || 0) + SHARE_AFTER) return false;
@@ -5834,24 +5683,11 @@
   $('share-close').addEventListener('click', closeShare);
   $('share-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeShare(); });
 
-  $('earn-no').addEventListener('click', function () {
-    progress.state.earn = 'no';
-    progress.save();
-    Sound.tick();
-    closeEarn();
-  });
 
   // The link is a real anchor with a real href, so it works on a middle click,
   // a long press and with the keyboard — and still goes somewhere if the
   // JavaScript on this page ever fails. Closing behind it just tidies up.
-  $('earn-go').addEventListener('click', function () {
-    progress.state.earn = 'seen';
-    progress.save();
-    setTimeout(closeEarn, 0);
-  });
 
-  $('earn-close').addEventListener('click', closeEarn);
-  $('earn-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeEarn(); });
 
   /* ------------------------------------------------------------- steering */
 
@@ -8295,19 +8131,6 @@
     var level = progress.level();
     var state = progress.state;
 
-    /*
-     * The affiliate block's own line, grounded the same way the prompt's is.
-     *
-     * This screen already knows how much somebody has used the app, and that
-     * is the only honest argument for why they of all people should have a
-     * link. No rate and no amount: this file does not know them, and the page
-     * at the other end does.
-     */
-    var settled = state.decisions || 0;
-    $('earn-wrap-line').textContent = settled
-      ? 'You have settled ' + settled + ' ' + (settled === 1 ? 'dinner' : 'dinners') +
-        ' in here. Somebody you know has the same problem.'
-      : '';
 
     $('profile-name').textContent = level.name;
     $('profile-xp').textContent = state.xp;
@@ -12651,16 +12474,15 @@
     /*
      * ?prompt= — see a prompt now, instead of playing until one is due.
      *
-     * The three prompts are deliberately hard to trigger: the enjoy one is
-     * never put to a Premium member at all, the affiliate one wants
-     * twenty-five decisions behind it, and the share one only goes to
-     * somebody who has already said they like this. Good rules for a
-     * stranger, and useless if you are the person who has to check the thing
-     * works — the honest answer to "why do I never see it" was "because you
-     * are paying and you have not made twenty-five decisions", which is not
-     * something anybody should have to take on trust.
+     * Both prompts are deliberately hard to trigger: the enjoy one is never
+     * put to a Premium member at all, and the share one only goes to somebody
+     * who has already said they like this. Good rules for a stranger, and
+     * useless if you are the person who has to check the thing works — the
+     * honest answer to "why do I never see it" was "because you are paying
+     * and you have not said you like it", which is not something anybody
+     * should have to take on trust.
      *
-     * So: ?prompt=enjoy, ?prompt=earn, ?prompt=share, or ?prompt=all to walk
+     * So: ?prompt=enjoy, ?prompt=share, or ?prompt=all to walk
      * through all three. It spends nothing — no showing is counted and
      * nothing is saved — so previewing one does not use up a real one, and it
      * cannot be stumbled into, because nobody types a query string by
@@ -12668,7 +12490,7 @@
      */
     var wanted = (here.searchParams.get('prompt') || '').toLowerCase();
     if (wanted) {
-      var queue = wanted === 'all' ? ['enjoy', 'earn', 'share', 'ads']
+      var queue = wanted === 'all' ? ['enjoy', 'share', 'ads']
                 : wanted === 'ads' ? ['ads']
                 : [wanted];
       previewPrompts(queue);
@@ -12681,7 +12503,7 @@
    * timer, so a slow read does not stack two sheets on top of each other.
    */
   function previewPrompts(names) {
-    var openers = { enjoy: openEnjoy, earn: openEarn, share: openShare };
+    var openers = { enjoy: openEnjoy, share: openShare };
     // 'ads' expands to one preview of every card in the roster, in order, so
     // the whole rotation can be read in one go rather than played for.
     var queue = [];
