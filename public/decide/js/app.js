@@ -250,17 +250,24 @@
     'Shopping lists', 'Choosing a palette', 'A side with that',
     'Custom rules', 'Don\u2019t repeat this week', 'Guest at the table',
     'Heat dial', 'Meal slot', 'Mix it up', 'Shortlist', 'Swipe',
-    'Tuning what you like',
+    'Tuning what you like', 'Finding somewhere nearby',
   ];
 
   /*
    * And what it does not, with the reason. Each of these spends money every
-   * time somebody uses it — a model call or a third-party session — so they
-   * stay behind a real subscription however good the preview is.
+   * time somebody uses it — a model call — so it stays behind a real
+   * subscription however good the preview is.
+   *
+   * IT WAS THREE. "Finding somewhere nearby" was in here on the assumption
+   * that a places lookup is a metered API. It is not: that feature asks
+   * OpenStreetMap and Photon, which is what the privacy page has always said,
+   * and neither of them sends us a bill. Under the rule this list exists to
+   * apply, a feature that costs nothing per use belongs in the preview — so
+   * it is in the list above now. The rule decides the list; the list does not
+   * get to decide the rule.
    */
   var PREVIEW_MONEY = [
     'Something new',                // a model call per suggestion
-    'Finding somewhere nearby',     // a places lookup per search
     'Cooking from your cupboard',   // a model call per go
   ];
 

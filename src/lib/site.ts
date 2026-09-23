@@ -432,7 +432,6 @@ export const STANDARD = [
   'How many plates, and share a verdict',
   'Installs to your home screen, and opens straight into the game',
   'Playable entirely from the keyboard',
-  'Nearby — everywhere you could eat, sorted by what kind of place it is',
   'An Android app, if you would rather have one than a tab',
 ]
 

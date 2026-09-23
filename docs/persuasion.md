@@ -172,10 +172,14 @@ The constraints this is held to:
   free and nobody gets a second.
 - **Deciding never gated, before or after.** The free tier does not shrink
   when the preview ends; it returns to exactly what it was.
-- **Three features stay outside it** — new-dish suggestions, finding somewhere
-  nearby, cooking from your cupboard. Each costs money per call. Giving them
-  away to every first-time visitor is a bill, not a trial, and pretending
-  otherwise would show up as a decision to withdraw them later. The split is
+- **Two features stay outside it** — new-dish suggestions and cooking from your
+  cupboard. Each is a model call per use. Giving them away to every first-time
+  visitor is a bill, not a trial, and pretending otherwise would show up as a
+  decision to withdraw them later. It was three: finding somewhere nearby was
+  excluded on the assumption that a places lookup is metered, and it is not —
+  that feature asks OpenStreetMap and Photon, as the privacy page has always
+  said, and neither bills us. The rule is what is pinned, so the list moved to
+  match it rather than the other way round. The split is
   enforced by `scripts/preview-test.mjs`, which fails the build if a gated
   feature is in neither list, in both, or names something that no longer
   exists. A card refused during the preview says which kind it is and why,

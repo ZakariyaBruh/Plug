@@ -69,11 +69,20 @@ check('nothing is in both lists', both.length === 0, both.join(', '))
 const orphans = [...covers, ...money].filter((c) => !gated.includes(c))
 check('no list entry names a feature that is gone', orphans.length === 0, orphans.map((o) => `"${o}"`).join(', '))
 
-// The three that cost money must never be in the covered list, by name, even
-// if somebody rewrites the lists.
-for (const paid of ['Something new', 'Finding somewhere nearby', 'Cooking from your cupboard']) {
+/*
+ * The two that cost money must never be in the covered list, by name, even if
+ * somebody rewrites the lists. Both are Gemini calls, one per use.
+ *
+ * It was three. "Finding somewhere nearby" was in here on the assumption that
+ * a places lookup is metered; it asks OpenStreetMap and Photon and costs
+ * nothing, so it is checked from the other side now. The rule is what is
+ * pinned — a feature is out only if using it bills us — and this is the one
+ * place to change if that stops being true of one of them.
+ */
+for (const paid of ['Something new', 'Cooking from your cupboard']) {
   check(`"${paid}" stays outside the preview`, !covers.includes(paid))
 }
+check('"Finding somewhere nearby" is inside it — it costs nothing per use', covers.includes('Finding somewhere nearby'))
 
 // The preview must read the paid check, not the combined one, before spending.
 check(
