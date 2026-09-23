@@ -563,7 +563,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Somewhere that serves it', 'Find the dish near you, matched on what a place actually sells rather than on being open and close by.'],
       ['A side with that', 'A drink or a light plate that actually sits next to the answer.'],
       ['A planned week', 'Seven dishes, no two alike.'],
-      ['Write me a menu', 'A starter, a main and a pudding that belong on the same table — not three heavy things, and not three cold ones. Tell it the situation in your own words, or answer three quick questions, and it picks all three from the catalogue with a reason for each. Standard gets one every couple of days; Premium as many as you like.'],
+      ['Write me a menu', 'Five courses that belong on the same table — something to pick at, a starter, a main, a pudding and something to finish. Not five heavy things, and not five from the same kitchen unless that is the point of it. Tell it the situation in your own words, or answer three quick questions, and it picks all five from the catalogue with a reason for each. Standard gets one every couple of days; Premium as many as you like.'],
     ],
   },
   {

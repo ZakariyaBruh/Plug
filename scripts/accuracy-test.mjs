@@ -263,5 +263,26 @@ check(
   starved.join('\n        '),
 )
 
+/*
+ * AND THE COPY THAT SELLS IT, which is the third place the course count
+ * lives. The game and the server were caught by the check above; the Premium
+ * list on the site is a fourth file nobody would think to open, and it spent
+ * one deploy telling people the menu was three courses while the app served
+ * five. A published number that disagrees with the product is the one kind of
+ * staleness /honesty exists to rule out.
+ */
+const siteSrc = readFileSync(join(process.cwd(), 'src/lib/site.ts'), 'utf8')
+const gameHtml = readFileSync(join(process.cwd(), 'public/decide/index.html'), 'utf8')
+const stale = [
+  ['lib/site.ts', siteSrc],
+  ['decide/index.html', gameHtml],
+  ['decide/js/app.js', appSrc],
+].filter(([, text]) => /a starter, a main and a pudding/i.test(text))
+check(
+  'nothing still sells the menu as three courses',
+  stale.length === 0,
+  stale.map(([where]) => where).join(', '),
+)
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
