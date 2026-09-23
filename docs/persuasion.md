@@ -132,6 +132,75 @@ that switch silences unprompted pitches, and offering it to somebody who just
 asked a question would be offering to turn off the answer.
 → `public/decide/js/app.js` (`goPremium`, `openAd`)
 
+### Reverse trial — Premium on for the first five decisions
+The diagnosis this answers: people were plainly enjoying the app and then not
+seeing a reason to pay for it. That is not a pricing problem or a copy problem.
+Somebody who has never used a paid feature is being asked to buy a description
+of one, and a description loses to the free thing that already worked.
+
+So the gate is inverted. Five decisions run with Premium on — announced on the
+first screen, no card, no account, nothing to cancel — and the accept that
+spends the fifth one shows what was actually used and what stops.
+
+Three findings stack here and they stack in this order:
+
+1. **Endowment** (Thaler 1980; Kahneman, Knetsch & Thaler 1990). People value
+   a thing more once it is theirs than before. A feature that has already
+   saved you four dishes is not the same object as a bullet point about
+   saving dishes.
+2. **Loss aversion** (~2×). Once it is theirs, naming what stops is worth
+   roughly twice what naming what they would gain is worth — and it is the
+   same sentence, so the honest version is free.
+3. **IKEA effect.** The five decisions are not a demo running past them: the
+   profile they build during it is theirs and it is still there afterwards,
+   which is also why nothing done during the preview is taken away.
+
+The constraints this is held to:
+
+- **Announced at the start, not discovered at the end.** A trial somebody did
+  not know they were in is a bait, and the end screen would read as a bill.
+- **Counted, not argued.** The end screen reads the real profile. Somebody who
+  used none of it is told that, in those words, and is the person least worth
+  pressing. A pitch that has to be true of the reader stops working on the
+  people it would not suit, which is the correct behaviour and the only reason
+  this is allowed to use loss framing at all.
+- **Shown once.** "That was the last of your five" is true on exactly one
+  screen. Repeating it after its own deadline is what people mean by nagging,
+  so it is marked seen when it is shown, whether or not it was answered.
+- **Never retroactive, never repeated.** Granted only to a profile with no
+  decisions and no subscription, so an existing player does not get one for
+  free and nobody gets a second.
+- **Deciding never gated, before or after.** The free tier does not shrink
+  when the preview ends; it returns to exactly what it was.
+- **Three features stay outside it** — new-dish suggestions, finding somewhere
+  nearby, cooking from your cupboard. Each costs money per call. Giving them
+  away to every first-time visitor is a bill, not a trial, and pretending
+  otherwise would show up as a decision to withdraw them later. The split is
+  enforced by `scripts/preview-test.mjs`, which fails the build if a gated
+  feature is in neither list, in both, or names something that no longer
+  exists. A card refused during the preview says which kind it is and why,
+  because a reader who was just told Premium is on has no other way to tell
+  that from a lie.
+- **The metered ones stay metered.** The chat's three free questions, the
+  menu's one every couple of days and its three changes a course are counted
+  rather than locked, so they are allowed during the preview at exactly the
+  free-tier allowance rather than becoming unlimited. Those read `isPaid()`
+  too: an unlimited model bill for somebody who has not paid is the failure
+  mode this split exists to prevent.
+
+→ `public/decide/js/progress.js` (`startPreview`, `spendPreview`,
+`previewUsed`, `unlocked`), `public/decide/js/app.js` (`isPlus`/`isPaid`,
+`PREVIEW_COVERS`, `paintPreviewBanner`, `paintPreviewOver`)
+
+Two gates hold it up. `scripts/preview-test.mjs` runs with the rest of
+`bun run test` and enforces the split from the source. `bun run drive` plays
+the whole thing in a browser, five decisions from the first screen to the last,
+and is the one that found both bugs this shipped with: `saveLimit()` asking
+`isPlus()` instead of `unlocked()`, so the app unlocked "Save it" and the
+profile then refused it with "your saved list is full" over an empty list; and
+the ending screen quoting `FREE_SAVES`, which is 0, to tell people their saved
+list would "stop growing past 0". Neither is visible in the source.
+
 ### Loss aversion — framed on what is already yours
 Losing is felt about twice as strongly as gaining. Applied only where
 something is genuinely at stake and genuinely yours: at the end of a trial, a

@@ -203,7 +203,66 @@
   // Premium controls stay visible and legible when the tier is off. Pressing
   // one says what it is rather than doing nothing, which is the only way
   // anybody finds out the feature exists.
-  function isPlus() { return progress.isPlus(); }
+  /*
+   * "HAS PREMIUM RIGHT NOW" — which during the first five decisions is true
+   * of everybody.
+   *
+   * Everything that paints a lock, a badge or an unlocked panel asks this
+   * one, so a profile on its preview sees the app the way a subscriber sees
+   * it. That is the entire point: you cannot want back something you never
+   * had.
+   *
+   * isPaid() is the other question — "is somebody actually paying" — and it
+   * is what anything that costs real money per use asks instead. Two names
+   * because they are two different questions, and the day they were one
+   * function was the day a preview could spend somebody else's money.
+   *
+   * Two kinds of thing ask isPaid(), and they behave differently:
+   *
+   *  - The three in PREVIEW_MONEY are withheld outright, and say why.
+   *  - The metered ones — the chat's three free questions, the menu's one
+   *    every couple of days and its three changes a course — keep their free
+   *    allowance instead of becoming unlimited. Those are gated by a count
+   *    rather than by premium(), so an isPlus() here would not have unlocked
+   *    a feature, it would have removed the ceiling on a model bill for
+   *    somebody who has not paid and may never.
+   */
+  function isPlus() { return progress.isPlus() || progress.previewOn(); }
+  function isPaid() { return progress.isPlus(); }
+
+  /*
+   * WHAT THE PREVIEW COVERS, NAMED ONE BY ONE.
+   *
+   * An allow-list rather than a deny-list, so a feature added next year is
+   * outside the preview until somebody decides it belongs inside. The other
+   * way round, a new feature that calls an API per use would be handed to
+   * every visitor on the site the moment it shipped, and the bill would be
+   * the first anybody heard of it.
+   *
+   * scripts/preview-test.mjs reads every premium('...') call in this file and
+   * fails if one is in neither list, so the split cannot quietly go stale.
+   */
+  var PREVIEW_COVERS = [
+    'Mood shortcuts', 'Instant picks', 'This or that', 'Together',
+    'Knockout', 'Blitz', 'The week plan', 'Saving a dish',
+    'Striking a dish off for good', 'Putting a dish off for the day',
+    'Rating what you ate', 'Cook mode', 'Scaling a recipe',
+    'Shopping lists', 'Choosing a palette', 'A side with that',
+    'Custom rules', 'Don\u2019t repeat this week', 'Guest at the table',
+    'Heat dial', 'Meal slot', 'Mix it up', 'Shortlist', 'Swipe',
+    'Tuning what you like',
+  ];
+
+  /*
+   * And what it does not, with the reason. Each of these spends money every
+   * time somebody uses it — a model call or a third-party session — so they
+   * stay behind a real subscription however good the preview is.
+   */
+  var PREVIEW_MONEY = [
+    'Something new',                // a model call per suggestion
+    'Finding somewhere nearby',     // a places lookup per search
+    'Cooking from your cupboard',   // a model call per go
+  ];
 
   // How many picks of Endless a free profile gets in a day. Up here rather
   // than down with the rest of the mode's constants because the Premium list
@@ -220,7 +279,9 @@
   var ENDLESS_DAY = 200;
 
   function premium(what) {
-    if (isPlus()) return true;
+    if (isPaid()) return true;
+    // On the preview, and this is one of the things it covers.
+    if (progress.previewOn() && PREVIEW_COVERS.indexOf(what) !== -1) return true;
     Sound.reject();
     goPremium(what);
     return false;
@@ -307,14 +368,29 @@
    */
   function goPremium(what) {
     var named = what || 'This';
+    /*
+     * ON THE PREVIEW, THIS CARD HAS TO EXPLAIN ITSELF.
+     *
+     * Somebody told on the first screen that Premium is on, and then shown
+     * "X is part of Premium", has caught us in what looks like a lie. It is
+     * not one — these three ask a paid API every time they run — but "it is
+     * not a lie" is not good enough when the reader has no way to tell. So
+     * the card says which it is and why, in the same breath as the price.
+     */
+    var onPreview = progress.previewOn() && !isPaid();
     openAd({
       id: 'desire',
       kind: 'plus',
       icon: '\u2728',
-      title: named + ' is part of Premium',
-      body: 'Seven days free, and it switches on everything marked Premium — not just this ' +
-            'one thing. Nothing is charged until the week is up, and cancelling is one link ' +
-            'on your account page.',
+      title: onPreview ? named + ' is the one kind we cannot lend you' : named + ' is part of Premium',
+      body: onPreview
+        ? 'Your preview covers everything the app does on its own. This one asks another ' +
+          'company every time it runs and we get a bill for it, so it needs a real ' +
+          'subscription — seven days free, nothing charged until the week is up, and ' +
+          'cancelling is one link on your account page.'
+        : 'Seven days free, and it switches on everything marked Premium — not just this ' +
+          'one thing. Nothing is charged until the week is up, and cancelling is one link ' +
+          'on your account page.',
       fine: 'Deciding stays free. Every dish, every recipe and everything you do not eat are ' +
             'free permanently, whatever you do here.',
       cta: 'Seven days free',
@@ -752,6 +828,18 @@
     var state = progress.state;
     var played = state.decisions > 0;
     var favourites = state.favourites || [];
+
+    /*
+     * Granted here rather than at boot: this is the screen somebody actually
+     * arrives on, and startPreview refuses a profile that has already
+     * decided something or already paid, so calling it on every visit is
+     * safe and means a profile made before this shipped never gets one
+     * retroactively for free.
+     */
+    if (!isPaid() && !progress.state.preview && !(progress.state.decisions > 0)) {
+      if (progress.startPreview()) beacon('preview_started', {});
+    }
+    paintPreviewBanner();
 
     paintResume();
     $('intro-fav-wrap').hidden = favourites.length === 0;
@@ -3168,7 +3256,7 @@
      * How many switches are left, said plainly. A budget nobody can see is
      * indistinguishable from a button that randomly stops working.
      */
-    var left = isPlus() ? Infinity : Math.max(0, MENU_SWITCHES_PER_COURSE - menuRun.used);
+    var left = isPaid() ? Infinity : Math.max(0, MENU_SWITCHES_PER_COURSE - menuRun.used);
     var line = $('menu-switches');
     var swap = $('menu-switch');
     if (left === Infinity) {
@@ -3232,7 +3320,7 @@
     var entry = menuRun.menu[menuRun.step];
     if (!entry) return;
 
-    if (!isPlus() && menuRun.used >= MENU_SWITCHES_PER_COURSE) {
+    if (!isPaid() && menuRun.used >= MENU_SWITCHES_PER_COURSE) {
       Sound.reject();
       return toast('\u{1F504}', 'That is all three',
         'Three changes a course on the free version. Premium changes as many times ' +
@@ -3285,7 +3373,7 @@
    * button.
    */
   function paintMenuTail() {
-    var another = isPlus() || menuAllowed();
+    var another = isPaid() || menuAllowed();
     $('menu-again').hidden = !another;
     $('menu-after').hidden = another;
     if (!another) {
@@ -3381,7 +3469,7 @@
   }
 
   function menuAllowed() {
-    return isPlus() || Date.now() >= menuNextAt();
+    return isPaid() || Date.now() >= menuNextAt();
   }
 
   /* "in about five hours", "tomorrow" — a wait nobody has to do arithmetic on. */
@@ -3397,7 +3485,7 @@
 
   function paintMenuLeft() {
     var el = $('menu-left');
-    if (isPlus()) { el.hidden = true; return; }
+    if (isPaid()) { el.hidden = true; return; }
     el.hidden = false;
     el.textContent = 'One menu every couple of days on the free version. ' +
       'Premium writes as many as you like.';
@@ -3415,7 +3503,7 @@
     // heading used to carry a Premium badge over a feature a free profile can
     // use, which is the same lie in the other direction as a paywall over an
     // empty panel.
-    $('menu-blurb').textContent = isPlus()
+    $('menu-blurb').textContent = isPaid()
       ? 'A starter, a main and a pudding that actually go together \u2014 not three heavy ' +
         'things, and not three cold ones. As many as you like.'
       : 'A starter, a main and a pudding that actually go together \u2014 not three heavy ' +
@@ -3712,7 +3800,7 @@
         return COURSES.indexOf(a.course) - COURSES.indexOf(b.course);
       });
 
-      if (!isPlus()) {
+      if (!isPaid()) {
         progress.state.menuAt = Date.now();
         progress.save();
       }
@@ -4404,7 +4492,14 @@
       $('levelup-text').textContent = 'You’re now a ' + outcome.level.name;
     }
 
+    /*
+     * Spent on the accept, which is the unit the offer is described in.
+     * After recordDecision, so previewUsed() counts this decision too.
+     */
+    if (!isPaid()) progress.spendPreview();
+
     renderRating(item);
+    paintPreviewOver();
     paintWhy();
     paintPlan();
     setPanel('reward');
@@ -4415,6 +4510,127 @@
     if (outcome.leveledUp) setTimeout(function () { Sound.levelUp(); }, 700);
     queueToasts(outcome.badges);
   }
+
+  /* --------------------------------------------------------- the preview */
+  /*
+   * The screen side of the reverse trial. The state machine is in
+   * progress.js; this is what a person sees of it, and the rule for all of
+   * it is that nobody should ever be surprised — not when it starts, not
+   * while it runs, and not when it stops.
+   */
+  function paintPreviewBanner() {
+    var el = $('landing-preview');
+    if (!el) return;
+    var left = progress.previewLeft();
+    if (!progress.previewOn() || isPaid()) { el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = '';
+    var b = document.createElement('b');
+    b.textContent = left === 1
+      ? 'Premium is on for one more decision.'
+      : 'Premium is on for your first ' + left + ' decisions.';
+    var rest = document.createTextNode(
+      ' Everything is unlocked so you can see what it actually does. No card, ' +
+      'nothing to cancel, and the deciding stays free afterwards either way.');
+    el.appendChild(b);
+    el.appendChild(rest);
+  }
+
+  /*
+   * The end, shown once, on the decision that spends the last one.
+   *
+   * It counts rather than argues. Somebody who saved four dishes and struck
+   * two off is told that; somebody who used none of it is told that too, and
+   * is the person least worth pressing. A pitch that has to be true of the
+   * reader is a pitch that stops working on the people it would not suit,
+   * which is the correct behaviour and the reason this is allowed to use
+   * loss framing at all.
+   */
+  function paintPreviewOver() {
+    var wrap = $('preview-over');
+    if (!wrap) return;
+    if (!progress.previewJustEnded() || isPaid()) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var used = progress.previewUsed();
+    var rows = [];
+    if (used.decisions) rows.push([used.decisions, used.decisions === 1 ? 'decision made' : 'decisions made']);
+    if (used.dishes) rows.push([used.dishes, used.dishes === 1 ? 'different dish' : 'different dishes']);
+    if (used.saved) rows.push([used.saved, used.saved === 1 ? 'dish saved' : 'dishes saved']);
+    if (used.struck) rows.push([used.struck, used.struck === 1 ? 'dish struck off for good' : 'dishes struck off for good']);
+    if (used.snoozed) rows.push([used.snoozed, used.snoozed === 1 ? 'dish put off for a while' : 'dishes put off for a while']);
+    if (used.rated) rows.push([used.rated, used.rated === 1 ? 'verdict after eating' : 'verdicts after eating']);
+
+    $('preview-over-note').textContent = rows.length > 1
+      ? 'Premium has been on since you started. Here is what you did with it:'
+      : 'Premium has been on since you started, and you have barely touched it — which is worth knowing too.';
+
+    var list = $('preview-used');
+    list.innerHTML = '';
+    rows.forEach(function (row) {
+      var li = document.createElement('li');
+      var b = document.createElement('b');
+      b.textContent = row[0];
+      var span = document.createElement('span');
+      span.textContent = row[1];
+      li.appendChild(b); li.appendChild(span);
+      list.appendChild(li);
+    });
+
+    /*
+     * What actually stops, named. "You will lose Premium" is a category;
+     * "it will start offering you the things you struck off again" is a
+     * consequence, and only one of those is checkable.
+     */
+    var stops = [];
+    if (used.struck) stops.push('the ' + used.struck + ' you struck off can come back');
+    /*
+     * The saved ones are KEPT. Nothing done during the preview is taken away
+     * — that is the rule, and the reason saveLimit() asks unlocked() rather
+     * than isPlus(). What stops is adding another, which is the true and much
+     * less alarming sentence.
+     */
+    if (used.saved) {
+      stops.push(used.saved === 1
+        ? 'the dish you saved stays, but you cannot add another'
+        : 'the ' + used.saved + ' you saved stay, but you cannot add another');
+    }
+    stops.push('it stops keeping track of what you have already had this week');
+    stops.push('cook mode and the shopping list go back behind the lock');
+    $('preview-over-stops').textContent = 'From the next one: ' + stops.join(', ') + '. ' +
+      'Deciding, every dish, every recipe and everything you do not eat stay free, as they always were.';
+
+    beacon('preview_ended', {
+      decisions: used.decisions, saved: used.saved, struck: used.struck, rated: used.rated,
+    });
+
+    /*
+     * Marked seen as soon as it has been shown, not when a button is pressed.
+     *
+     * The copy is true exactly once: "that was the last of your five", and
+     * "from the next one, the dishes you struck off can come back". On the
+     * sixth decision both sentences are already false, and a screen that
+     * repeats a pitch after its own deadline has passed is the thing people
+     * mean by nagging. Shown, counted, gone — whether or not it was answered.
+     */
+    progress.markPreviewSeen();
+  }
+
+  (function wirePreviewOver() {
+    var go = $('preview-over-go');
+    var no = $('preview-over-no');
+    /*
+     * The link keeps its own href and its own tab: no preventDefault, so a
+     * tracker that throws or a beacon that never lands can't swallow the one
+     * click that was actually going somewhere.
+     */
+    if (go) go.addEventListener('click', function () { beacon('premium_clicked', { from: 'preview-over' }); });
+    if (no) no.addEventListener('click', function () {
+      Sound.tick();
+      beacon('preview_declined', {});
+      $('preview-over').hidden = true;
+    });
+  })();
 
   /* ------------------------------------------------------------ asking why */
   /*
@@ -6765,7 +6981,7 @@
   /* Said before the last one is spent, not after it. */
   function paintChatLeft() {
     var el = $('chat-left');
-    if (isPlus()) { el.hidden = true; return; }
+    if (isPaid()) { el.hidden = true; return; }
     var left = chatLeft();
     el.hidden = false;
     el.textContent = left > 0
@@ -6782,7 +6998,7 @@
 
     // Checked before the question is sent, so nothing is spent on a request
     // that is about to be refused.
-    if (!isPlus() && chatLeft() <= 0) {
+    if (!isPaid() && chatLeft() <= 0) {
       field.value = '';
       return goPremium('Asking anything');
     }
@@ -6810,7 +7026,7 @@
 
     chat.turns.push({ role: 'user', text: text });
 
-    if (!isPlus()) {
+    if (!isPaid()) {
       progress.state.chatAsks = (progress.state.chatAsks || 0) + 1;
       progress.save();
       paintChatLeft();

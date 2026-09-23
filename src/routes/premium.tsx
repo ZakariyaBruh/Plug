@@ -15,6 +15,7 @@ import {
   PREMIUM_SECTIONS,
   STANDARD,
   THE_GIFT,
+  THE_PREVIEW,
   TRIAL_DAYS,
   TAX_NOTE,
   pageHead,
@@ -104,6 +105,14 @@ function PremiumPage() {
                 <p className="mx-auto mt-10 max-w-xl rounded-2xl border border-[var(--border)] bg-[var(--bg-raised)] px-5 py-4 text-sm text-[var(--text-dim)]">
                   <b className="text-[var(--text)]">You already have the main thing. </b>
                   {THE_GIFT}
+                </p>
+                {/* And the second half of the same idea: a reader who reached
+                    the price before the app should know they can have the paid
+                    version first and decide afterwards. It sits here, above
+                    the picker, because it changes what the picker is for. */}
+                <p className="mx-auto mt-3 max-w-xl text-sm text-[var(--text-dim)]">
+                  <b className="text-[var(--text)]">And you can try the rest before any of this. </b>
+                  {THE_PREVIEW}
                 </p>
                 <div className="mt-8 flex justify-center">
                   {/* The h1 above is already "7 days free". */}

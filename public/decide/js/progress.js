@@ -242,6 +242,7 @@
       plan: null,             // { id, hour, phrase, at } — see PLAN_CUES
       resume: null,           // { code, at } — half a decide game, see app.js
       whyAnswered: null,      // which option was tapped on the one-question ask
+      preview: null,          // { left, startedAt, ended } — the reverse trial
       nightOwl: false,
       earlyBird: false,
       badges: [],
@@ -589,6 +590,22 @@
     return !this.device || this.device.holds(this.state.sub);
   };
 
+  /*
+   * "IS PREMIUM ON RIGHT NOW", INCLUDING A PREVIEW.
+   *
+   * isPlus() answers "is somebody paying", and that is the question the
+   * preview machinery itself has to ask — startPreview refuses a subscriber,
+   * spendPreview would be nonsense for one. Every *allowance* in this file
+   * asks this one instead, because a preview that unlocks the button and is
+   * then refused by the ceiling behind it is worse than no preview at all:
+   * the app says yes and the profile says no, and the person is told their
+   * saved list is full when it is empty. That was a real bug, found by
+   * driving five decisions in a browser.
+   */
+  Progress.prototype.unlocked = function () {
+    return this.isPlus() || this.previewOn();
+  };
+
   // Premium was paid for, but activated on a different device. Worth saying out
   // loud on the profile screen, because the alternative is a subscriber
   // watching their features vanish with no explanation.
@@ -635,7 +652,7 @@
   Progress.prototype.subscription = function () { return this.state.sub || null; };
 
   Progress.prototype.saveLimit = function () {
-    return this.isPlus() ? Infinity : FREE_SAVES;
+    return this.unlocked() ? Infinity : FREE_SAVES;
   };
 
   Progress.prototype.savesLeft = function () {
@@ -667,14 +684,14 @@
   };
 
   Progress.prototype.endlessLeft = function (allowance, now) {
-    if (this.isPlus()) return Infinity;
+    if (this.unlocked()) return Infinity;
     return Math.max(0, allowance - this.endlessUsedToday(now));
   };
 
   // One pick spent. Returns what is left afterwards, so a caller can stop on
   // zero without asking a second question.
   Progress.prototype.spendEndless = function (allowance, now) {
-    if (this.isPlus()) return Infinity;
+    if (this.unlocked()) return Infinity;
     var today = this.today(now);
     if (this.state.endlessDay !== today) {
       this.state.endlessDay = today;
@@ -899,6 +916,116 @@
     var side = value === 'yes' ? 'yes' : 'no';
     bucket[side] = Math.max(0, bucket[side] + (weight === undefined ? 1 : weight));
     return bucket;
+  };
+
+  /* --------------------------------------------------------- the preview */
+  /*
+   * PREMIUM, ON, FOR THE FIRST FIVE DECISIONS.
+   *
+   * The problem this exists to solve, stated plainly: the free product
+   * finishes the job. You ask it what to eat, it tells you, there is a recipe
+   * underneath, and you leave satisfied with nothing missing. Five days of ad
+   * traffic put 513 people into the app; 34 went on to look at Premium. That
+   * is not a weak pitch losing an argument, it is people having a good time
+   * and never encountering a reason to pay, because there is not one yet.
+   *
+   * You cannot fix that by describing Premium harder. The things it adds —
+   * it stops repeating itself, it remembers what you struck off, it gets you
+   * to the table — are all invisible until you have used it for a while. So
+   * the answer is to let people use it for a while.
+   *
+   * A REVERSE TRIAL. Every new profile gets the local Premium features for
+   * its first five decisions, said out loud from the first screen, and then
+   * they stop — with a screen that counts what was actually used rather than
+   * a pitch. That is loss framing, it is the one place this product allows
+   * it, and it is allowed precisely because the thing being lost was really
+   * theirs and really used. See /honesty.
+   *
+   * FIVE DECISIONS, NOT SEVEN DAYS. Most people decide dinner once a day, so
+   * five decisions is naturally about five visits — and a count tied to value
+   * delivered cannot expire unused while somebody is on holiday. It also
+   * means the memory features have something to have noticed by the end,
+   * which a two-decision preview would not.
+   *
+   * WHAT IT DOES NOT COVER is as important: anything that costs money per
+   * call. See PREVIEW_MONEY in app.js and the test that keeps the two lists
+   * exhaustive.
+   */
+  var PREVIEW_DECISIONS = 5;
+
+  /*
+   * Started once, on a profile that has never decided anything and has never
+   * paid. The `ended` flag is what stops it ever being granted twice: a
+   * cleared count and a finished preview look identical without it, and
+   * "clear your history for another five" is not an offer this makes.
+   */
+  Progress.prototype.startPreview = function (now) {
+    var s = this.state;
+    if (s.preview) return s.preview;
+    if (s.plus) return null;
+    if ((s.decisions || 0) > 0) return null;
+    s.preview = {
+      left: PREVIEW_DECISIONS,
+      startedAt: (now ? new Date(now) : new Date()).getTime(),
+      ended: false,
+    };
+    this.save();
+    return s.preview;
+  };
+
+  /** On, right now, with decisions still on it. */
+  Progress.prototype.previewOn = function () {
+    var p = this.state.preview;
+    return !!p && !p.ended && p.left > 0;
+  };
+
+  Progress.prototype.previewLeft = function () {
+    var p = this.state.preview;
+    return p && !p.ended ? Math.max(0, p.left) : 0;
+  };
+
+  /** Ran out and has not been acknowledged yet — the screen to show once. */
+  Progress.prototype.previewJustEnded = function () {
+    var p = this.state.preview;
+    return !!p && p.ended === true && !p.seen;
+  };
+
+  Progress.prototype.markPreviewSeen = function () {
+    if (this.state.preview) { this.state.preview.seen = true; this.save(); }
+  };
+
+  /*
+   * Spent on accepting a dish rather than on opening the app, because a
+   * decision is the unit of value here and it is the unit the offer is
+   * described in. Returns true on the spend that used the last one, so the
+   * caller knows this was the moment.
+   */
+  Progress.prototype.spendPreview = function () {
+    var p = this.state.preview;
+    if (!p || p.ended) return false;
+    p.left = Math.max(0, p.left - 1);
+    if (p.left === 0) p.ended = true;
+    this.save();
+    return p.ended;
+  };
+
+  /*
+   * What the preview was actually used FOR, counted from the profile itself
+   * rather than from a tally we keep alongside it. Two reasons: a separate
+   * tally can disagree with the thing it describes, and these numbers have to
+   * survive being read on the ending screen, which is the one screen where
+   * being wrong would be embarrassing and obvious.
+   */
+  Progress.prototype.previewUsed = function () {
+    var s = this.state;
+    return {
+      saved: (s.favourites || []).length,
+      struck: Object.keys(s.banned || {}).length,
+      snoozed: Object.keys(s.snoozed || {}).length,
+      rated: Object.keys(s.ratings || {}).length,
+      decisions: s.decisions || 0,
+      dishes: Object.keys(s.picks || {}).length,
+    };
   };
 
   /* ------------------------------------------------------------ the plan */
@@ -1292,6 +1419,7 @@
     FREE_SAVES: FREE_SAVES,
     LOVE_WEIGHT: LOVE_WEIGHT,
     PLAN_CUES: PLAN_CUES,
+    PREVIEW_DECISIONS: PREVIEW_DECISIONS,
     XP: XP,
     blank: blank,
     dayKey: dayKey,
