@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { WhopClient } from '@whop/sdk'
 
 import { type PromoState, scheduled } from '#/lib/promos'
 
@@ -22,9 +23,29 @@ import { type PromoState, scheduled } from '#/lib/promos'
  * endpoint is the same answer for every person who asks it, which is why it
  * can be cached at the edge at all.
  */
-const DEAD: PromoState = { live: false }
+/*
+ * Why it is not live, when it is not.
+ *
+ * A single `{live:false}` is the right answer for the browser and a useless
+ * one for whoever has to operate this: "no offer showing" has six causes and
+ * they need different fixes. The reason names which, and it is safe to say
+ * out loud — it reveals no key, no id and nothing about the person asking,
+ * only which branch was taken.
+ */
+type Dead = PromoState & { reason?: string }
 
-function json(body: PromoState, seconds: number) {
+function dead(reason: string): Dead {
+  return { live: false, reason }
+}
+
+function whopClient() {
+  return new WhopClient({
+    token: process.env.WHOP_API_KEY ?? '',
+    baseUrl: `${process.env.WHOP_API_ORIGIN ?? 'https://api.whop.com'}/api/v1`,
+  })
+}
+
+function json(body: Dead, seconds: number) {
   return new Response(JSON.stringify(body), {
     status: 200,
     headers: {
@@ -41,35 +62,31 @@ export const Route = createFileRoute('/api/promo')({
     handlers: {
       GET: async () => {
         const promo = scheduled()
-        if (!promo) return json(DEAD, 300)
+        if (!promo) return json(dead('none scheduled'), 300)
 
-        const key = process.env.WHOP_API_KEY
-        // No key, no claim. A banner that says "20 slots" without being able
-        // to count them is the fake scarcity this is built to avoid, so the
-        // honest failure is silence.
-        if (!key) return json(DEAD, 60)
-
+        /*
+         * The same client the checkout page builds, constructed the same way.
+         *
+         * A hand-rolled fetch with `Bearer ${process.env.WHOP_API_KEY}` came
+         * back unauthorised in production while the checkout page, two files
+         * away, resolved its plan fine — so the SDK is finding a credential
+         * that a bare env read does not. Rather than work out which, this uses
+         * the thing that demonstrably works here, which is also the thing that
+         * will keep working when the platform changes how it hands apps a key.
+         */
         try {
-          const origin = process.env.WHOP_API_ORIGIN ?? 'https://api.whop.com'
-          const response = await fetch(`${origin}/api/v1/promo_codes/${promo.promoId}`, {
-            headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' },
-          })
-          if (!response.ok) return json(DEAD, 30)
-
-          const record = (await response.json()) as {
-            status?: string
-            uses?: number
-            stock?: number
-            unlimited_stock?: boolean
-          }
+          const record = await whopClient()
+            .promoCodes.retrieve({ id: promo.promoId })
+            .catch(() => null)
+          if (!record) return json(dead('could not read the code'), 30)
 
           const total = Number(record.stock ?? 0)
           const taken = Number(record.uses ?? 0)
           const capped = !record.unlimited_stock && total > 0
-          if (record.status !== 'active') return json(DEAD, 30)
+          if (record.status !== 'active') return json(dead('code is ' + record.status), 30)
           // Out of stock is the whole point: it goes away by itself, on the
           // same number that stopped it working.
-          if (capped && taken >= total) return json(DEAD, 30)
+          if (capped && taken >= total) return json(dead('all ' + total + ' taken'), 30)
 
           /*
            * The code goes in the URL as well as on the screen. `foodie_30%`
@@ -94,8 +111,8 @@ export const Route = createFileRoute('/api/promo')({
             },
             30,
           )
-        } catch {
-          return json(DEAD, 30)
+        } catch (err) {
+          return json(dead('fetch failed'), 30)
         }
       },
     },

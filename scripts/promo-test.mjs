@@ -73,12 +73,23 @@ check(
   found.length ? `found ${found.join(', ')} in lib/promos.ts — the count belongs to Whop` : '',
 )
 
-// And the endpoint must read it, refuse without a key, and go quiet when spent.
-check('the endpoint reads the live record', /promo_codes\/\$\{promo\.promoId\}/.test(api))
-check('no key means no claim', /if \(!key\) return json\(DEAD/.test(api))
-check('out of stock means gone', /taken >= total\) return json\(DEAD/.test(api))
-check('an inactive code means gone', /status !== 'active'\) return json\(DEAD/.test(api))
+/*
+ * And the endpoint must read the live record, say nothing when it cannot, and
+ * go quiet when the stock is spent. These are matched against the source
+ * rather than run, because running them would mean holding a Whop key — and
+ * the point of the checks is the shape of the guards, which is exactly what
+ * goes wrong when somebody refactors this file in a hurry. It already caught
+ * one: the endpoint moved from a hand-rolled fetch to the SDK client and
+ * these four went red, which is the gate working rather than failing.
+ */
+check('the endpoint reads the live record', /promoCodes\.retrieve\(\{ id: promo\.promoId \}\)/.test(api))
+check('an unreadable record means no claim', /if \(!record\) return json\(dead\(/.test(api))
+check('out of stock means gone', /taken >= total\) return json\(dead\(/.test(api))
+check('an inactive code means gone', /status !== 'active'\) return json\(dead\(/.test(api))
 check('the code is encoded into the checkout link', /encodeURIComponent\(promo\.code\)/.test(api))
+// Nothing may be claimed live except off a record that was actually read.
+const liveBlock = api.slice(api.indexOf('live: true'))
+check('the live answer carries the read counts', /taken,\n\s+total:/.test(liveBlock))
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
