@@ -849,6 +849,21 @@
           itself, so it cannot overstate — somebody who saved nothing is told
           they saved nothing, and that is a fair outcome for a preview too.
         -->
+        <!-- ONE TAP AWAY TOMORROW.
+             The only return mechanism this app is allowed: the person puts it
+             on their own home screen, on purpose. No account, no email, no
+             notification. Filled in by app.js, which decides between the real
+             install prompt and the Share-sheet instructions depending on what
+             the browser will actually do. -->
+        <section class="strip" id="keep-strip" hidden>
+          <h2 class="strip-title" id="keep-title">Keep it one tap away</h2>
+          <p class="fine" id="keep-note"></p>
+          <div class="keep-actions">
+            <button class="plan-cue" type="button" id="keep-go"></button>
+            <button class="plain keep-no" type="button" id="keep-no">Not now</button>
+          </div>
+        </section>
+
         <section class="strip" id="why-strip" hidden>
           <h2 class="strip-title" id="why-title">One question, and then never again</h2>
           <p class="fine" id="why-note">What would make Premium worth paying for? Tap whichever is closest — it goes nowhere near your name.</p>

@@ -54,7 +54,7 @@ const SECTIONS: Section[] = [
     heading: 'What is stored in your browser',
     lede: 'One entry in your browser, which we cannot read and which is not tied to your name.',
     body: [
-      'One entry in your browser’s local storage, called whatShouldIEat.v1. It holds everything the game knows about you: which dishes you have picked and rated, how often, your level, XP, streak and badges, the diets and rules you have set — including any faith you picked one under — dishes you have saved or struck off, your settings, and today’s suggestions so a second visit does not have to fetch them again.',
+      'One entry in your browser’s local storage, called whatShouldIEat.v1. It holds everything the game knows about you: which dishes you have picked and rated, how often, your level, XP, streak and badges, the diets and rules you have set — including any faith you picked one under — dishes you have saved or struck off, your settings, the date you last opened it so it can say \u201cwelcome back\u201d, and today\u2019s suggestions so a second visit does not have to fetch them again.',
       'It never leaves your device. We cannot read it, it is not backed up anywhere, and it is not tied to a name. Clearing your browser data for this site deletes it permanently — there is no copy to restore from, which is the trade for not having to make an account.',
     ],
   },
@@ -116,7 +116,7 @@ const SECTIONS: Section[] = [
      */
     id: 'analytics',
     heading: 'Analytics, and what counts as one',
-    lede: 'Eight events, listed by name, and none of them carries anything about you.',
+    lede: 'Eleven events, listed by name, and none of them carries anything about you.',
     body: [
       'This app is hosted by Whop, which adds its own analytics to every page it serves — that is the platform’s, not ours, and it is covered by Whop’s privacy policy.',
       ...(GA4_ON
@@ -124,7 +124,7 @@ const SECTIONS: Section[] = [
             'Google Analytics 4 is also on. It counts page views and receives the same short list of events below — the same names and the same payloads, not a second, richer copy. It is set up without Google Signals, without advertising features, without a user id and without demographics, so what it knows is what happened on this site rather than who did it. Google’s own terms cover what they do with that.',
           ]
         : []),
-      'What this app tells them directly is a short list, and here is all of it: that a decision started, that it reached an answer, that an answer was accepted, that a Premium card was shown, that somebody tapped through to pay, and — if you answer the one-tap question that comes up after five decisions — which of the four options you tapped. Two more when an offer is running: that the offer was shown, and that somebody tapped it. Eight in total, and every one goes to both places or to neither. Along with those go the number of questions it took, how many dishes were turned down, which Premium card it was, and, on the accepted one only, the name of the dish.',
+      'What this app tells them directly is a short list, and here is all of it: that a decision started, that it reached an answer, that an answer was accepted, that a Premium card was shown, that somebody tapped through to pay, and — if you answer the one-tap question that comes up after five decisions — which of the four options you tapped. Two more when an offer is running: that the offer was shown, and that somebody tapped it. Three more about coming back: that somebody returned on a later day and how many days it had been, that the home-screen offer was shown, and that it was taken. Eleven in total, and every one goes to both places or to neither. Along with those go the number of questions it took, how many dishes were turned down, which Premium card it was, and, on the accepted one only, the name of the dish.',
       'The question has four buttons and no text box, so what is recorded is which button — there is nothing else for it to carry.',
       'What does not go: your dietary rules, your saved dishes, your ratings, your taste profile, anything you type, and anything that identifies you. The reason those are safe is not a promise, it is where they live — see the section above.',
       'There is no Google Analytics here, no advertising pixel of our own, and nothing that follows you to other sites.',
@@ -214,7 +214,7 @@ const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
      * and the note stops claiming something that would not be.
      */
     note: GA4_ON
-      ? 'No advertising pixel, and nothing that follows you to other sites. Google Analytics is here, counting pages and the eight events listed below — with none of its advertising features switched on.'
+      ? 'No advertising pixel, and nothing that follows you to other sites. Google Analytics is here, counting pages and the eleven events listed below — with none of its advertising features switched on.'
       : 'No Google Analytics, no advertising pixel of our own, and nothing that follows you to other sites.',
   },
 ]
@@ -234,7 +234,7 @@ const THIRD_PARTIES: [string, string][] = [
   // Driven by GA4_ID, the same way the Clarity row above is driven by
   // CLARITY_ID, so this list cannot fall out of step with what is loaded.
   ...(GA4_ON
-    ? ([['Google Analytics', 'Counts page views and the eight events named above. No advertising features.']] as [string, string][])
+    ? ([['Google Analytics', 'Counts page views and the eleven events named above. No advertising features.']] as [string, string][])
     : []),
   ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions.'],
   ['Hyperbeam', 'Runs the shared browser, when you open one.'],

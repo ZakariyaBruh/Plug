@@ -742,11 +742,75 @@
       return;
     }
 
+    /*
+     * PROOF THAT IT REMEMBERED THEM, WITHOUT AN ACCOUNT.
+     *
+     * "Last time: ramen." is one line and it does more work than anything
+     * else on this screen. It is the difference between a website somebody
+     * arrives at and something that knows them, and it costs nothing to say
+     * because it is true and already on their device — the honest version of
+     * what an account would have bought.
+     *
+     * Only on a later day than the last one. Said on the same evening it
+     * reads as the app having forgotten the last ten minutes, which is the
+     * opposite of the point.
+     */
+    var back = returningDay();
+    var last = (state.history || [])[0];
+    if (back && last && last.name) {
+      el.textContent = 'Welcome back. Last time: ' + last.name + '.';
+      return;
+    }
+
     // A streak is the one fact about somebody that is worth saying out loud
     // here: it is theirs, it took effort, and it is the reason they came back.
     var streak = state.streak || 0;
     el.textContent = streak > 1 ? line + ' ' + streak + ' days running, by the way.' : line;
   }
+
+  /*
+   * Is this a different day from the last time they were here?
+   *
+   * READ OFF A VARIABLE, NOT OFF THE PROFILE, and that is the whole of this
+   * function's history. `seen` is stamped to today the moment this file
+   * loads, which is long before the greeting paints — so asking the profile
+   * "is seen different from today" always answered no, and the welcome-back
+   * line never appeared for anybody. The stamp keeps the old value here
+   * instead, where it survives for the rest of the visit.
+   */
+  var cameBackFrom = null;
+
+  function returningDay() {
+    return !!cameBackFrom;
+  }
+
+  /*
+   * Stamp the visit, once, and report the gap.
+   *
+   * This is the whole of the retention measurement and the only new thing it
+   * writes: one date. Day-1-to-day-7 return rate is the number that says
+   * whether any of this works, and without accounts the only place it can be
+   * computed is here — so the event carries how many days it has been and
+   * how long the streak is, and nothing else.
+   */
+  (function stampVisit() {
+    var st = progress.state;
+    var today = ProgressLib.dayKey(new Date());
+    if (st.seen === today) return;
+    var previous = st.seen;
+    cameBackFrom = previous && previous !== today ? previous : null;
+    st.seen = today;
+    progress.save();
+    if (previous && (st.decisions || 0) > 0) {
+      var days = Math.round((Date.parse(today) - Date.parse(previous)) / 864e5);
+      // On the next tick: this runs while the file is still being read, and
+      // the pixels it reports to are script tags that may not have run yet.
+      setTimeout(function () {
+        beacon('returned', { days: days, decisions: st.decisions || 0, streak: st.streak || 0 });
+      }, 0);
+    }
+  })();
+
 
   function renderIntro() {
     var state = progress.state;
@@ -4418,6 +4482,7 @@
     }
 
     renderRating(item);
+    paintKeep();
     paintWhy();
     paintPlan();
     setPanel('reward');
@@ -4428,6 +4493,117 @@
     if (outcome.leveledUp) setTimeout(function () { Sound.levelUp(); }, 700);
     queueToasts(outcome.badges);
   }
+
+  /* ------------------------------------------------------- keep it to hand */
+  /*
+   * THE ONLY RETURN MECHANISM THIS APP IS ALLOWED.
+   *
+   * No account, no email, no notification — /honesty rules all three out, and
+   * they are the whole of the usual retention toolkit. What is left is an
+   * icon on a home screen, which works precisely because the person put it
+   * there themselves. It is the one thing that makes opening this tomorrow
+   * cost one tap instead of remembering a URL.
+   *
+   * TWO ROUTES, BECAUSE BROWSERS DIFFER, AND ONE OF THEM IS MOST OF THE
+   * AUDIENCE. Chromium fires beforeinstallprompt and hands over an event we
+   * can spend later; Safari on iOS never fires it and never will, so there is
+   * nothing to click and the honest thing is to say where the button is. The
+   * landing screen has offered the Chromium route for a while, which quietly
+   * meant the iPhone half of the traffic was offered nothing at all.
+   *
+   * AFTER A DECISION, NOT BEFORE ONE. Asking somebody to keep a thing they
+   * have not used yet is asking them to take it on trust; asking the moment
+   * it has just told them what to eat is asking while the answer is on the
+   * screen. It is earned, it is once, and "not now" is final.
+   */
+  var KEEP_AFTER = 1;   // decisions before it is worth asking at all
+
+  function standalone() {
+    try {
+      if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+      if (navigator.standalone) return true;   // iOS, added to the home screen
+    } catch (err) { /* never */ }
+    return false;
+  }
+
+  function iosSafari() {
+    var ua = navigator.userAgent || '';
+    var ios = /iPad|iPhone|iPod/.test(ua) ||
+      // iPadOS 13+ reports itself as a Mac; the touch points give it away.
+      (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    return ios && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+  }
+
+  function keepDue() {
+    var st = progress.state;
+    if (st.keep === 'no' || st.keep === 'done') return false;
+    if (standalone()) return false;
+    if ((st.decisions || 0) < KEEP_AFTER) return false;
+    // Something to offer: either a real prompt, or instructions worth giving.
+    return !!installPrompt || iosSafari();
+  }
+
+  function paintKeep() {
+    var wrap = $('keep-strip');
+    if (!wrap) return;
+    if (!keepDue()) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var note = $('keep-note');
+    var go = $('keep-go');
+    if (installPrompt) {
+      note.textContent = 'Put it on your home screen and it opens straight into a question ' +
+        'tomorrow \u2014 no address to remember, and it works with no signal.';
+      go.textContent = 'Add it to my home screen';
+      go.hidden = false;
+    } else {
+      // Nothing to click on iOS: the button lives in Safari, not in the page.
+      note.innerHTML = '';
+      note.appendChild(document.createTextNode('Tap '));
+      var icon = document.createElement('i');
+      icon.className = 'keep-icon';
+      icon.textContent = '\u2191';
+      icon.setAttribute('aria-label', 'Share');
+      note.appendChild(icon);
+      note.appendChild(document.createTextNode(
+        ' at the bottom of Safari, then \u201cAdd to Home Screen\u201d. It opens straight ' +
+        'into a question tomorrow \u2014 no address to remember, and it works with no signal.'));
+      go.hidden = true;
+    }
+
+    if (!keepShown) {
+      keepShown = true;
+      beacon('install_shown', { how: installPrompt ? 'prompt' : 'ios' });
+    }
+  }
+  var keepShown = false;
+
+  (function wireKeep() {
+    var go = $('keep-go');
+    var no = $('keep-no');
+    if (go) go.addEventListener('click', function () {
+      if (!installPrompt) return;
+      beacon('install_taken', { how: 'prompt' });
+      installPrompt.prompt();
+      installPrompt.userChoice.then(function (choice) {
+        installPrompt = null;
+        if (choice && choice.outcome === 'accepted') {
+          progress.state.keep = 'done';
+          progress.save();
+          toast('\u{1F4F1}', 'Added', 'It opens from your home screen now, signal or not.');
+        }
+        paintKeep();
+      });
+    });
+    if (no) no.addEventListener('click', function () {
+      // Final. Somebody who does not want an icon will not want one in a
+      // fortnight either, and asking again is the nagging this app refuses.
+      progress.state.keep = 'no';
+      progress.save();
+      Sound.tick();
+      $('keep-strip').hidden = true;
+    });
+  })();
 
   /* ------------------------------------------------------------- the promo */
   /*
@@ -12274,6 +12450,9 @@
     event.preventDefault();
     installPrompt = event;
     $('install-wrap').hidden = false;
+    // It can arrive after the reward screen has already painted, in which
+    // case the strip drew its Share-sheet wording or nothing at all.
+    paintKeep();
   });
 
   $('install-btn').addEventListener('click', function () {

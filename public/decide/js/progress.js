@@ -252,6 +252,8 @@
       rules: [],              // tags never to be served, e.g. ['meat']
       diets: [],              // DIETS ids picked on the way in, e.g. ['halal']
       onboarded: false,       // has the first-run walkthrough been seen through
+      keep: '',               // '' | 'no' | 'done' — the home-screen offer
+      seen: null,             // YYYY-MM-DD of the visit before this one
 
       // --- morsels45 Premium ---
       plus: false,            // is the paid tier switched on

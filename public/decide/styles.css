@@ -4899,3 +4899,15 @@ body.is-welcoming { overflow: hidden; }
   transition: width var(--mid) var(--ease);
 }
 .promo-go { margin-top: var(--s4); }
+
+/* ------------------------------------------------------ keep it to hand */
+.keep-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); margin-top: var(--s4); }
+.keep-no { font-size: var(--t-sm); color: var(--ink-3); }
+.keep-no:hover { color: var(--ink); }
+/* The Share-sheet route needs a glyph in the sentence, and an emoji in running
+   text at body size reads as a typo. Boxed, it reads as the button it is. */
+.keep-icon {
+  display: inline-block; padding: 0 .3em; border: 1px solid var(--hair-lit);
+  border-radius: 3px; font-style: normal;
+}
+

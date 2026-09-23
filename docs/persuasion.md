@@ -132,6 +132,38 @@ that switch silences unprompted pitches, and offering it to somebody who just
 asked a question would be offering to turn off the answer.
 → `public/decide/js/app.js` (`goPremium`, `openAd`)
 
+### Returning without being fetched
+The usual retention toolkit is accounts, email and push notifications, and
+/honesty rules out all three. What is left has to work through the browser
+itself or through something the person actively chooses, which turns out to be
+a short list.
+
+**The home-screen icon** is the whole of it. It is the closest thing to a
+notification that does not break the promise, because the person puts it there
+themselves — and afterwards opening this costs one tap instead of remembering
+a URL. Offered after a decision rather than before one: asking somebody to
+keep a thing they have not used yet is asking them to take it on trust.
+Earned, once, and "not now" is final.
+
+Two routes, because browsers differ and one of them is most of the audience.
+Chromium fires `beforeinstallprompt` and hands over an event to spend later.
+Safari on iOS never fires it and never will, so there is no button to offer
+and the honest move is to say where Apple's own button is. The landing screen
+had offered the Chromium route for a while, which quietly meant the iPhone
+half of the traffic was offered nothing at all.
+
+**"Welcome back. Last time: ramen."** One line, and it does more work than
+anything else on the front screen: it is the difference between a website
+somebody arrives at and something that knows them. It costs nothing to say
+because it is true and already on their device — the honest version of what
+an account would have bought. Only on a later day than the last visit; said
+the same evening it reads as the app having forgotten the last ten minutes.
+
+Neither of these fetches anybody. Nothing is sent, nothing arrives uninvited,
+and the only new thing written down is one date.
+→ `public/decide/js/app.js` (`paintKeep`, `returningDay`, `stampVisit`),
+`bun run retention`
+
 ### Loss aversion — framed on what is already yours
 Losing is felt about twice as strongly as gaining. Applied only where
 something is genuinely at stake and genuinely yours: at the end of a trial, a
