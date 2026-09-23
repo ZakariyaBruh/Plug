@@ -3981,7 +3981,7 @@
     setPanel('question');
     if (!funnelStarted) {
       funnelStarted = true;
-      beacon('decide_started', { mode: shortcut ? 'shortcut' : 'questions' });
+      beacon('decide_started', { mode: shortcut ? 'shortcut' : quickMode ? 'quick' : 'questions' });
     }
   }
 
@@ -8988,6 +8988,16 @@
 
   /* ------------------------------------------------------------- lifecycle */
   function resetGame() {
+    /*
+     * WHICH MENU THIS GAME IS PLAYED OVER.
+     *
+     * Set before the prior is built, because reset() sizes the weights from
+     * whatever is here. Everything downstream — the shrinking count, the
+     * shortlist, the alternates, the rules and the snoozes — reads
+     * game.items, so a mode that swaps this swaps all of them at once and
+     * there is no second list anywhere to keep in step.
+     */
+    game.items = quickMode ? Data.QUICK : Data.ITEMS;
     toastQueue = [];
     duel.live = false;
     // A new game, and a fresh prompt budget for it. Every mode in the app
@@ -9015,6 +9025,8 @@
   }
 
   function restart() {
+    // "Decide for me" is the full menu, whatever the last game was played on.
+    quickMode = false;
     hideLanding();
     // "Decide for me" is the ordinary game, whatever was half-played before it.
     // Left live, a together run would keep intercepting step() and cap this one
@@ -12339,6 +12351,35 @@
     if ('inert' in shell) shell.inert = false;
     shell.removeAttribute('aria-hidden');
   }
+
+  /*
+   * QUICK DECIDE — the same game over the hundred the catalogue started with.
+   *
+   * Free, and worth saying why it is not a Premium tease: this is a shorter
+   * route to the same answer, not a smaller version of the product. The long
+   * game exists for somebody who wants the whole menu; this exists for
+   * somebody who wants their dinner. Measured, it finds the dish in 7.8
+   * questions against 11.4, and finds it first every time.
+   */
+  function startQuick() {
+    quickMode = true;
+    hideLanding();
+    together.live = false;
+    together.sets = [];
+    together.sending = false;
+    clearResume();
+    resetGame();
+    // The heat, meal and mix dials are somebody's standing preferences, not a
+    // property of the long game — leaving them off here would make the quick
+    // route quietly ignore what they had already told the app.
+    applyKnobs();
+    setView('decide');
+    step();
+  }
+
+  var quickMode = false;
+
+  $('quick-btn').addEventListener('click', function () { Sound.tick(); startQuick(); });
 
   $('landing-start').addEventListener('click', function () {
     hideLanding();

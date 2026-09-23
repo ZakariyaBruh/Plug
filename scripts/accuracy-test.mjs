@@ -50,6 +50,7 @@ function load(file) {
 
 const Data = load('data.js')
 const Engine = load('engine.js')
+const Progress = load('progress.js')
 
 let pass = 0
 let fail = 0
@@ -82,8 +83,8 @@ check(
 )
 
 // A player who wants this dish, answering each question off the dish itself.
-function play(target) {
-  const game = new Engine.Game({ random: () => 0.5 })
+function play(target, items) {
+  const game = new Engine.Game({ random: () => 0.5, ...(items ? { items } : {}) })
   while (!game.shouldGuess()) {
     const next = game.nextQuestion()
     if (!next) break
@@ -163,6 +164,50 @@ check(
 )
 const bibimbap = rows.find((r) => r.name === 'Bibimbap')
 check('bibimbap, the dish that found the give-up bug, is found', bibimbap && bibimbap.at === 0)
+
+/*
+ * QUICK MODE'S HUNDRED, held to the same bar and one extra.
+ *
+ * It is the first hundred entries, which are the staples the catalogue
+ * started with, and it exists because a smaller menu is a faster game: fewer
+ * dishes are easier to tell apart, so a third of the questions stop being
+ * worth asking. That claim is the thing to keep true as the catalogue grows.
+ *
+ * THE EXTRA IS THE DIET FLOOR, and it is the way this feature would break
+ * without anybody noticing. A hundred dishes filtered by somebody's rules is
+ * a much smaller number — a vegan sees seventeen of them, somebody keeping
+ * Jain sees twenty — and a future reshuffle of the catalogue's opening could
+ * take either to nearly nothing while every other check stayed green. Twelve
+ * is the floor: below that a "quick" game is choosing between so few things
+ * that it would be offering repeats within a week.
+ */
+const QUICK = Data.QUICK
+check('quick mode has its hundred', QUICK.length === Data.QUICK_COUNT && QUICK.length === 100, `${QUICK.length}`)
+
+const quickRows = QUICK.map((item) => ({ name: item.name, ...play(item, QUICK) }))
+const quickFirst = quickRows.filter((r) => r.at === 0).length
+const quickAsked = quickRows.reduce((a, r) => a + r.asked, 0) / quickRows.length
+check(
+  `it finds the dish first every time (${((100 * quickFirst) / quickRows.length).toFixed(1)}%)`,
+  quickFirst === quickRows.length,
+  quickRows.filter((r) => r.at !== 0).map((r) => `${r.name} -> ${r.got}`).join('\n        '),
+)
+check(
+  `and it is quicker than the full menu (${quickAsked.toFixed(1)} vs ${asked.toFixed(1)} questions)`,
+  quickAsked < asked - 1,
+)
+
+const DIET_FLOOR = 12
+const survives = (item, tags) => tags.every((tag) => !item.tags[tag])
+const thin = Progress.DIETS.map((diet) => ({
+  label: diet.label,
+  left: QUICK.filter((item) => survives(item, diet.tags || [])).length,
+})).filter((row) => row.left < DIET_FLOOR)
+check(
+  `no diet is left with fewer than ${DIET_FLOOR} dishes in quick mode`,
+  thin.length === 0,
+  thin.map((row) => `${row.label}: ${row.left}`).join(', '),
+)
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

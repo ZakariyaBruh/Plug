@@ -178,6 +178,43 @@ ok('and saw the upsell', askedToPay && beacons.some((b) => b[0] === 'premium_see
 ok('the why survey appears once it is earned', await page.locator('#why-strip').isVisible())
 
 /*
+ * QUICK MODE STAYS INSIDE ITS HUNDRED.
+ *
+ * The engine confines itself to game.items, so the risk is not in the maths —
+ * it is in the wiring. resetGame swaps the catalogue before the prior is
+ * built, and anything that reorders that, or a mode that forgets to set the
+ * flag back, would quietly serve the full four hundred and fifty under a
+ * label that says a hundred. That is invisible in the source and obvious
+ * here, so it is checked here, several times, with different answers.
+ */
+{
+  const quick = await page.evaluate(() => window.FoodData.QUICK.map((d) => d.name))
+  ok('the quick hundred is a hundred', quick.length === 100, `${quick.length}`)
+  const landed = []
+  for (const reply of ['#choice-yes', '#choice-no', '#choice-yes']) {
+    await page.goto(URL_, { waitUntil: 'load' })
+    await page.waitForTimeout(900)
+    await page.locator('#quick-btn').click()
+    await page.waitForTimeout(400)
+    for (let i = 0; i < 30; i++) {
+      if (await page.locator('#accept-btn').isVisible()) break
+      const button = page.locator(reply)
+      if (!(await button.isVisible())) break
+      await button.click()
+      await page.waitForTimeout(200)
+    }
+    await page.waitForFunction(() => {
+      const el = document.getElementById('result-icon')
+      return el && el.classList.contains('is-landed')
+    }, null, { timeout: 15000 })
+    landed.push(((await page.locator('#result-name').textContent()) || '').trim())
+  }
+  const strays = landed.filter((name) => !quick.includes(name))
+  ok('quick mode only ever answers from the hundred', strays.length === 0,
+    `${landed.join(', ')} — outside: ${strays.join(', ')}`)
+}
+
+/*
  * A per-use feature stays behind the subscription, and says so. A separate
  * context because the played profile above shares this origin and writes
  * itself back over a cleared key.

@@ -451,6 +451,7 @@ export const DIET_FREE_WHY =
 
 export const STANDARD = [
   'The decide game — about eight questions, and never more than twenty',
+  'Quick decide — the same game over the 100 dishes everyone knows, and it gets there in about eight questions instead of eleven',
   'Endless — two dishes and a clock. Every pick buys time back, and buys back less each time. 200 picks a day',
   `All ${DISH_COUNT} dishes in the catalogue`,
   DIET_FREE_SHORT,
