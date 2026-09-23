@@ -64,7 +64,7 @@ export const ANDROID_SIZE = '6.0 MB'
  * TO TURN IT ON: make a project at clarity.microsoft.com, take the id out of
  * the install snippet, and put it here. Nothing else to wire.
  */
-export const CLARITY_ID = ''
+export const CLARITY_ID = 'ymncebz070'
 
 /** Everything downstream reads this rather than testing the string itself. */
 export const REPLAY_ON = CLARITY_ID.length > 0

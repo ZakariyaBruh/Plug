@@ -666,12 +666,58 @@
   // has — which is what the taste profile is for.
   var SHRUGS = 3;
 
+  /*
+   * ...BUT NOT WHILE THE ANSWER WOULD STILL BE A GUESS.
+   *
+   * The rule above reads three shrugs as "I have nothing to tell you". It is
+   * usually right and it was sometimes catastrophic, because a shrug is not
+   * only what somebody with no opinion says — it is also what a truthful
+   * person says about a dish that genuinely sits in the middle of an axis.
+   *
+   * Bibimbap is the case that found this. It is 0.5 on homemade, meat and
+   * spicy, all honestly: it is a bowl you can make at home or buy, with or
+   * without beef, hot or not depending on the gochujang. Somebody who wants
+   * bibimbap therefore shrugs at three questions in a row through no fault of
+   * their own — and the game stopped at question seven and said "pizza", with
+   * the leader holding 0.8% of the probability and bibimbap nineteenth.
+   *
+   * Every other way out of this game has a standard: twenty questions, or
+   * nothing left worth asking, or 85% confidence. This one had none, so it
+   * was the only door through which a wrong answer could leave.
+   *
+   * The floor is deliberately low. It is not "be sure" — CONFIDENT already
+   * means that. It is "do not answer at random", and below a quarter of the
+   * probability on the leader that is exactly what the answer is.
+   *
+   * SHRUG_PATIENCE keeps the original promise for the person the original
+   * rule was written for. Somebody who shrugs at everything never narrows
+   * anything, so the floor alone would march them to all twenty questions —
+   * which is the behaviour that was being fixed. Twelve is enough to be sure
+   * they mean it and well short of the wall.
+   */
+  var GAVE_UP_FLOOR = 0.25;
+  var SHRUG_PATIENCE = 12;
+
   Game.prototype.hasGivenUp = function () {
     if (this.answers.length < SHRUGS) return false;
     for (var i = this.answers.length - SHRUGS; i < this.answers.length; i++) {
       if (this.answers[i].value !== 'either') return false;
     }
-    return true;
+    /*
+     * Somebody who has shrugged at EVERYTHING is telling us about themselves
+     * rather than about this dish, and they are the person the rule was
+     * written for. They keep the short game: nothing below can narrow a field
+     * that has been told nothing, so making them sit through twelve questions
+     * would be the original complaint back again with extra steps.
+     */
+    var told = false;
+    for (var j = 0; j < this.answers.length; j++) {
+      if (this.answers[j].value !== 'either') { told = true; break; }
+    }
+    if (!told) return true;
+
+    if (this.best().score >= GAVE_UP_FLOOR) return true;
+    return this.answers.length >= SHRUG_PATIENCE;
   };
 
   // The answers that did most to single this dish out — used for "why this?".
