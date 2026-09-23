@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { REPLAY_ON, SITE_URL, WHOP_PAGE_URL, pageHead } from '#/lib/site'
+import { GA4_ON, REPLAY_ON, SITE_URL, WHOP_PAGE_URL, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
@@ -116,10 +116,15 @@ const SECTIONS: Section[] = [
      */
     id: 'analytics',
     heading: 'Analytics, and what counts as one',
-    lede: 'Five events, listed by name, and none of them carries anything about you.',
+    lede: 'Six events, listed by name, and none of them carries anything about you.',
     body: [
       'This app is hosted by Whop, which adds its own analytics to every page it serves — that is the platform’s, not ours, and it is covered by Whop’s privacy policy.',
-      'What this app tells it directly is a short list, and here is all of it: that a decision started, that it reached an answer, that an answer was accepted, that a Premium card was shown, that somebody tapped through to pay, and — if you answer the one-tap question that comes up after five decisions — which of the four options you tapped. Along with those go the number of questions it took, how many dishes were turned down, which Premium card it was, and, on the accepted one only, the name of the dish.',
+      ...(GA4_ON
+        ? [
+            'Google Analytics 4 is also on. It counts page views and receives the same short list of events below — the same names and the same payloads, not a second, richer copy. It is set up without Google Signals, without advertising features, without a user id and without demographics, so what it knows is what happened on this site rather than who did it. Google’s own terms cover what they do with that.',
+          ]
+        : []),
+      'What this app tells them directly is a short list, and here is all of it: that a decision started, that it reached an answer, that an answer was accepted, that a Premium card was shown, that somebody tapped through to pay, and — if you answer the one-tap question that comes up after five decisions — which of the four options you tapped. Six in total, and every one goes to both places or to neither. Along with those go the number of questions it took, how many dishes were turned down, which Premium card it was, and, on the accepted one only, the name of the dish.',
       'The question has four buttons and no text box, so what is recorded is which button — there is nothing else for it to carry.',
       'What does not go: your dietary rules, your saved dishes, your ratings, your taste profile, anything you type, and anything that identifies you. The reason those are safe is not a promise, it is where they live — see the section above.',
       'There is no Google Analytics here, no advertising pixel of our own, and nothing that follows you to other sites.',
@@ -200,7 +205,17 @@ const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
   {
     q: 'Is there advertising or cross-site tracking?',
     a: 'No',
-    note: 'No Google Analytics, no advertising pixel of our own, and nothing that follows you to other sites.',
+    /*
+     * The note changes with GA4_ON and the answer does not, which is a
+     * distinction worth defending rather than fudging. Advertising: none,
+     * either way. Cross-site: Google Analytics set up the way this one is —
+     * no Signals, no advertising features, no user id — counts what happens
+     * on this site and does not follow anybody off it. So "No" stays true
+     * and the note stops claiming something that would not be.
+     */
+    note: GA4_ON
+      ? 'No advertising pixel, and nothing that follows you to other sites. Google Analytics is here, counting pages and the six events listed below — with none of its advertising features switched on.'
+      : 'No Google Analytics, no advertising pixel of our own, and nothing that follows you to other sites.',
   },
 ]
 
@@ -215,6 +230,11 @@ const THIRD_PARTIES: [string, string][] = [
   // this list cannot fall out of step with what is actually loaded.
   ...(REPLAY_ON
     ? ([['Microsoft Clarity', 'Anonymised session replay, while we work out where people get stuck.']] as [string, string][])
+    : []),
+  // Driven by GA4_ID, the same way the Clarity row above is driven by
+  // CLARITY_ID, so this list cannot fall out of step with what is loaded.
+  ...(GA4_ON
+    ? ([['Google Analytics', 'Counts page views and the six events named above. No advertising features.']] as [string, string][])
     : []),
   ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions.'],
   ['Hyperbeam', 'Runs the shared browser, when you open one.'],

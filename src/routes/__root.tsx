@@ -2,7 +2,7 @@ import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-rou
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
-import { CLARITY_ID, REPLAY_ON, SITE_DESCRIPTION, SITE_TITLE } from '#/lib/site'
+import { CLARITY_ID, GA4_ID, GA4_ON, REPLAY_ON, SITE_DESCRIPTION, SITE_TITLE } from '#/lib/site'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -139,6 +139,33 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 `})(window,document,"clarity","script",${JSON.stringify(CLARITY_ID)});`,
             }}
           />
+        ) : null}
+        {/*
+          GOOGLE ANALYTICS 4, ONLY WHILE IT IS SWITCHED ON.
+          Same arrangement as the replay tag above and for the same reason:
+          one constant in lib/site.ts decides whether this exists, whether
+          the funnel events are mirrored to it, whether Google Analytics is
+          named on the privacy page, and what that page's tracking card says.
+          Empty id, no script, no claim. See the long note over GA4_ID.
+
+          `send_page_view` is left on, which is the whole of what GA gets for
+          free here; everything else it learns is an event this app decided
+          to send. See track() in lib/site.ts.
+        */}
+        {GA4_ON ? (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`} />
+            <script
+              // eslint-disable-next-line react/no-danger
+              dangerouslySetInnerHTML={{
+                __html:
+                  `window.dataLayer=window.dataLayer||[];` +
+                  `function gtag(){dataLayer.push(arguments);}` +
+                  `gtag('js',new Date());` +
+                  `gtag('config',${JSON.stringify(GA4_ID)},{anonymize_ip:true});`,
+              }}
+            />
+          </>
         ) : null}
       </head>
       <body>

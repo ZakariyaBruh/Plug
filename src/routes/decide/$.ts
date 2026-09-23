@@ -54,7 +54,7 @@ import swJsRaw from '../../../public/decide/sw.js?raw'
  * exists to be different, not to be read.
  */
 import { BUILD } from 'virtual:build-id'
-import { CLARITY_ID, REPLAY_ON } from '#/lib/site'
+import { CLARITY_ID, GA4_ID, GA4_ON, REPLAY_ON } from '#/lib/site'
 
 const VERSIONED = [
   'styles.css', 'js/app.js', 'js/confetti.js', 'js/config.js', 'js/data.js',
@@ -102,7 +102,23 @@ function withReplay(html: string): string {
   return html.replace('</head>', `${tag}\n</head>`)
 }
 
-const page = withReplay(stampUrls(indexHtml, '"'))
+/*
+ * And GA4, on the same terms as the replay tag above — including the same
+ * caveat: the copy that gets served is the one vite.config.ts stamps, and
+ * this is the fallback. Same constant governs both.
+ */
+function withGa4(html: string): string {
+  if (!GA4_ON) return html
+  const tag =
+    `<script async src="https://www.googletagmanager.com/gtag/js?id=${GA4_ID}"></script>` +
+    `<script>window.dataLayer=window.dataLayer||[];` +
+    `function gtag(){dataLayer.push(arguments);}` +
+    `gtag('js',new Date());` +
+    `gtag('config',${JSON.stringify(GA4_ID)},{anonymize_ip:true});</script>`
+  return html.replace('</head>', `${tag}\n</head>`)
+}
+
+const page = withGa4(withReplay(stampUrls(indexHtml, '"')))
 const swJs = stampUrls(swJsRaw, "'").replace('__BUILD__', BUILD)
 
 const FILES: Record<string, { body: string; type: string }> = {

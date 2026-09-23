@@ -68,6 +68,39 @@ export const ANDROID_SIZE = '6.0 MB'
  */
 export const CLARITY_ID = 'ymncebz070'
 
+/*
+ * GOOGLE ANALYTICS 4, ON THE SAME TERMS AS EVERYTHING ELSE HERE.
+ *
+ * One constant decides whether the gtag script exists on any page, whether
+ * the funnel events are mirrored to it, whether Google Analytics is listed
+ * among the third parties on the privacy page, and what that page's "is
+ * there advertising or cross-site tracking" card says. Empty, and all four
+ * are off and the page is silent about it; paste a measurement id and all
+ * four turn on together.
+ *
+ * THE COUPLING IS THE POINT, and it matters more here than it did for
+ * replay. The privacy page currently answers "no Google Analytics here" in
+ * the largest type on the page. Shipping a tag without that sentence
+ * changing in the same commit would not be an oversight, it would be the
+ * page lying — and a standards page that lies is worth less than no
+ * standards page at all.
+ *
+ * WHAT IT IS NOT SET UP TO DO. No Google Signals, no advertising features,
+ * no user-id, no demographics: this is here to count pages and the five
+ * funnel events that already exist, nothing more. Those are switches in the
+ * GA console rather than in this file, so the privacy copy says what this
+ * app sends and leaves the rest to Google's own policy — turn any of them on
+ * over there and the wording here stops being true.
+ *
+ * TO TURN IT ON: make a GA4 property at analytics.google.com, take the
+ * measurement id from Admin -> Data streams (it looks like G-XXXXXXXXXX),
+ * and put it here. Nothing else to wire.
+ */
+export const GA4_ID = ''
+
+/** Everything downstream reads this rather than testing the string itself. */
+export const GA4_ON = GA4_ID.length > 0
+
 /** Everything downstream reads this rather than testing the string itself. */
 export const REPLAY_ON = CLARITY_ID.length > 0
 
@@ -360,6 +393,20 @@ declare global {
 export function track(event: string, data?: Record<string, unknown>) {
   if (typeof window === 'undefined') return
   window.whop?.track(event, data)
+  /*
+   * And to GA4, when it is on, so the funnel is readable in a dashboard we
+   * control rather than only in Whop's aggregates. Same event names and the
+   * same payloads — there is no second, richer copy going anywhere, which is
+   * what lets the privacy page describe one list and mean it.
+   */
+  if (GA4_ON) {
+    const w = window as unknown as { gtag?: (...args: unknown[]) => void }
+    try {
+      w.gtag?.('event', event, data ?? {})
+    } catch {
+      /* analytics may never break the thing it is measuring */
+    }
+  }
 }
 
 /*

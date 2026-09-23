@@ -134,6 +134,22 @@ function clarityId(): string {
   }
 }
 
+/*
+ * The GA4 measurement id, read the same way and for the same reason.
+ *
+ * This file cannot import from src/, so the value is taken out of the source.
+ * One constant still governs the tag on every page, the events mirrored to
+ * it, and what the privacy page says about it. See the long note over GA4_ID.
+ */
+function ga4Id(): string {
+  try {
+    const site = readFileSync(join(process.cwd(), 'src', 'lib', 'site.ts'), 'utf8')
+    return /export const GA4_ID = '([^']*)'/.exec(site)?.[1] ?? ''
+  } catch {
+    return ''
+  }
+}
+
 function stampServiceWorker(): Plugin {
   return {
     name: 'morsels45-stamp-sw',
@@ -211,6 +227,18 @@ function stampServiceWorker(): Plugin {
             't=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;' +
             'y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);' +
             `})(window,document,"clarity","script",${JSON.stringify(replayId)});</script>`
+          html = html.replace('</head>', `${tag}\n</head>`)
+        }
+        // And GA4, on the same terms. Written here for the same reason the
+        // replay tag is: this file's output is the page that gets served.
+        const gaId = ga4Id()
+        if (gaId) {
+          const tag =
+            `<script async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>` +
+            `<script>window.dataLayer=window.dataLayer||[];` +
+            `function gtag(){dataLayer.push(arguments);}` +
+            `gtag('js',new Date());` +
+            `gtag('config',${JSON.stringify(gaId)},{anonymize_ip:true});</script>`
           html = html.replace('</head>', `${tag}\n</head>`)
         }
         writeFileSync(page, html)

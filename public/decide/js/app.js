@@ -3987,6 +3987,18 @@
         whop.track(name, data || {});
       }
     } catch (err) { /* never */ }
+    /*
+     * And to GA4, when the tag is on the page. There is no constant to read
+     * here — this is a static app that cannot import from lib/site.ts — so
+     * the presence of gtag IS the switch, which is the same switch by a
+     * shorter route: the tag is only ever injected when GA4_ID is set.
+     *
+     * Same names and same payloads as above. One list of events, described
+     * once on the privacy page, going to both places.
+     */
+    try {
+      if (typeof gtag === 'function') gtag('event', name, data || {});
+    } catch (err) { /* analytics never breaks the game */ }
   }
 
   /*
