@@ -4846,3 +4846,56 @@ body.is-welcoming { overflow: hidden; }
   width: 100%;
 }
 
+/* ------------------------------------------------------------ the promo */
+/* Announced, not disguised. This is the one thing on the front screen that is
+   selling, so it looks like an offer rather than like the app's own furniture:
+   the accent border, its own block, and a close button the same size as
+   everything else it offers. */
+.promo {
+  position: relative;
+  margin-top: var(--s5);
+  border: 1px solid var(--amber);
+  background: rgba(224, 163, 64, .07);
+  border-radius: 4px;
+  padding: var(--s5);
+  text-align: left;
+}
+.promo-x {
+  position: absolute; top: var(--s2); right: var(--s2);
+  width: var(--tap); height: var(--tap); line-height: 1;
+  border: 0; background: transparent;
+  color: var(--ink-3); font-size: var(--t-lg); cursor: pointer;
+}
+.promo-x:hover { color: var(--ink); }
+.promo-head {
+  margin: 0 var(--s6) 0 0;
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 700;
+  color: var(--ink);
+}
+.promo-body { margin: var(--s2) 0 0; color: var(--ink-2); font-size: var(--t-sm); }
+.promo-code-row {
+  margin: var(--s4) 0 0;
+  display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap;
+}
+.promo-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700; letter-spacing: .04em;
+  border: 1px dashed var(--amber); border-radius: 4px;
+  background: transparent; color: var(--ink);
+  padding: var(--s2) var(--s3); cursor: pointer;
+}
+.promo-code:hover { background: rgba(224, 163, 64, .12); }
+.promo-copied { font-size: var(--t-xs); color: var(--amber); }
+.promo-count { margin: var(--s4) 0 var(--s2); font-size: var(--t-sm); color: var(--ink-3); }
+.promo-bar {
+  display: block; height: 4px; border-radius: 999px;
+  background: var(--hair); overflow: hidden;
+}
+.promo-bar-fill {
+  display: block; height: 100%; width: 0;
+  background: var(--amber);
+  transition: width var(--mid) var(--ease);
+}
+.promo-go { margin-top: var(--s4); }

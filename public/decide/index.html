@@ -319,6 +319,25 @@
       what stopped. A free trial somebody did not know they were on is a
       thing being taken away; one they were told about is one they used.
     -->
+        <!-- THE PROMO ALERT.
+             Empty and hidden until /api/promo says there is an offer on and
+             how much of it is left. Everything in it is written by app.js from
+             that answer, so there is no wording here that could outlive the
+             offer it describes — and nothing at all is shown if the count
+             cannot be read. See lib/promos.ts. -->
+        <section class="promo" id="promo" hidden aria-live="polite">
+          <button class="promo-x" id="promo-close" type="button" aria-label="Close">&times;</button>
+          <p class="promo-head" id="promo-head"></p>
+          <p class="promo-body" id="promo-body"></p>
+          <p class="promo-code-row">
+            <button class="promo-code" id="promo-code" type="button" aria-label="Copy the code"></button>
+            <span class="promo-copied" id="promo-copied" hidden>Copied</span>
+          </p>
+          <p class="promo-count" id="promo-count"></p>
+          <div class="promo-bar" aria-hidden="true"><span class="promo-bar-fill" id="promo-bar"></span></div>
+          <a class="go go-sm promo-go" id="promo-go" href="/premium"></a>
+        </section>
+
         <p class="landing-resume" id="landing-resume" hidden>
       <button class="link-btn" id="resume-btn"></button>
       <span class="fine" id="resume-note"></span>

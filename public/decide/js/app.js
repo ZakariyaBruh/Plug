@@ -753,6 +753,7 @@
     var played = state.decisions > 0;
     var favourites = state.favourites || [];
 
+    paintPromo();
     paintResume();
     $('intro-fav-wrap').hidden = favourites.length === 0;
 
@@ -4427,6 +4428,118 @@
     if (outcome.leveledUp) setTimeout(function () { Sound.levelUp(); }, 700);
     queueToasts(outcome.badges);
   }
+
+  /* ------------------------------------------------------------- the promo */
+  /*
+   * THE OFFER ON THE FRONT SCREEN, AND WHY ITS NUMBER IS TRUSTWORTHY.
+   *
+   * Everything shown here comes from /api/promo, which reads the Whop promo
+   * code's own stock and uses — the same number Whop enforces when somebody
+   * pays. Nothing about the offer is written in this file: no headline, no
+   * count, no code. That is deliberate. A scarcity claim written into the
+   * client is a scarcity claim that keeps making itself after the offer is
+   * over, and docs/persuasion.md refuses fake scarcity in as many words. If
+   * the endpoint cannot count, it says so and nothing appears.
+   *
+   * SHOWN ON EVERY OPEN, by request, and closable. The close is for this page
+   * view only — nothing is written to the profile — so opening the app again
+   * shows it again while the offer is still on. That is what "every time" was
+   * asked for, and the limit on it is the offer itself: twenty uses and it is
+   * gone for everybody, permanently, without anybody editing anything.
+   */
+  var promoSeen = false;
+  var promoFetched = false;
+
+  function paintPromo() {
+    var wrap = $('promo');
+    if (!wrap || promoFetched) return;
+    promoFetched = true;
+    fetch('/api/promo', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (offer) {
+        if (!offer || !offer.live) return;
+        showPromo(offer);
+      })
+      .catch(function () { /* an offer nobody can count is an offer nobody sees */ });
+  }
+
+  function showPromo(offer) {
+    var wrap = $('promo');
+    $('promo-head').textContent = offer.headline;
+    $('promo-body').textContent = offer.body;
+    $('promo-code').textContent = offer.code;
+
+    /*
+     * The count, in the words a person would use, and only when there is a
+     * limit to count. An unlimited code says nothing here rather than
+     * inventing a denominator.
+     */
+    var count = $('promo-count');
+    var bar = $('promo-bar');
+    if (offer.total > 0) {
+      count.textContent = offer.taken === 0
+        ? 'All ' + offer.total + ' still going. Be the first.'
+        : offer.taken + ' of ' + offer.total + ' taken \u2014 ' + offer.left +
+          (offer.left === 1 ? ' left' : ' left');
+      bar.style.width = Math.round((offer.taken / offer.total) * 100) + '%';
+      bar.parentNode.hidden = false;
+    } else {
+      count.textContent = '';
+      bar.parentNode.hidden = true;
+    }
+
+    var go = $('promo-go');
+    go.textContent = offer.cta;
+    go.href = offer.href;
+
+    // Kept on the element so the click handler, which is bound once at load,
+    // can name which offer was tapped without closing over this one.
+    wrap.dataset.id = offer.id;
+
+    wrap.hidden = false;
+    if (!promoSeen) {
+      promoSeen = true;
+      beacon('promo_seen', { promo: offer.id, taken: offer.taken, total: offer.total });
+    }
+  }
+
+  (function wirePromo() {
+    var close = $('promo-close');
+    var code = $('promo-code');
+    var go = $('promo-go');
+    if (close) close.addEventListener('click', function () {
+      Sound.tick();
+      $('promo').hidden = true;
+    });
+    if (code) code.addEventListener('click', function () {
+      var text = code.textContent;
+      var done = function () {
+        var flag = $('promo-copied');
+        flag.hidden = false;
+        Sound.tick();
+        setTimeout(function () { flag.hidden = true; }, 1600);
+      };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done, function () {});
+          return;
+        }
+      } catch (err) { /* falls through to the old way */ }
+      // Older WebKit, and anything with the clipboard API behind a permission
+      // it has not been given: select it so a long-press can copy by hand.
+      try {
+        var range = document.createRange();
+        range.selectNodeContents(code);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        done();
+      } catch (err) { /* never */ }
+    });
+    if (go) go.addEventListener('click', function () {
+      beacon('promo_clicked', { promo: $('promo').dataset.id || '' });
+    });
+  })();
 
   /* ------------------------------------------------------------ asking why */
   /*

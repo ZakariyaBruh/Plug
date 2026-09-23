@@ -66,6 +66,13 @@ export const HONESTY_LINE = [
 
 export const TECHNIQUES: Technique[] = [
   {
+    name: 'A limited offer, with a real limit',
+    what:
+      'When a discount code is running, the app says how many of its places are left \u2014 "7 of 20 taken" \u2014 and stops showing it the moment they are gone.',
+    here:
+      'That number is not ours to write. It is the promo code\u2019s own stock, read live from the payment processor, which is the same count that refuses the twenty-first person at the till. We cannot inflate it, reset it, or keep the offer up after it has run out, because the thing that draws the banner is the thing that takes the money. Scarcity is the easiest claim in commerce to fake, and the only version of it worth showing is one the seller could not fake if they wanted to.',
+  },
+  {
     name: 'The plan that is already selected',
     what: 'The yearly plan is preselected, because it is the cheaper of the two per month and the one most people want.',
     here: 'Monthly sits on the same switch, the same size, one tap away, printing its own price in the same words. Nothing is preselected that is only in our interest.',

@@ -27,6 +27,7 @@ import { Route as ApiMenuRouteImport } from './routes/api/menu'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
 import { Route as ApiOrderTogetherRouteImport } from './routes/api/order-together'
 import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-status'
+import { Route as ApiPromoRouteImport } from './routes/api/promo'
 import { Route as ApiSuggestRouteImport } from './routes/api/suggest'
 import { Route as ApiWhopEventsRouteImport } from './routes/api/whop-events'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
@@ -130,6 +131,11 @@ const ApiPremiumStatusRoute = ApiPremiumStatusRouteImport.update({
   path: '/api/premium-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPromoRoute = ApiPromoRouteImport.update({
+  id: '/api/promo',
+  path: '/api/promo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSuggestRoute = ApiSuggestRouteImport.update({
   id: '/api/suggest',
   path: '/api/suggest',
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/promo': typeof ApiPromoRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
@@ -242,6 +249,7 @@ export interface FileRoutesByTo {
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/promo': typeof ApiPromoRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/promo': typeof ApiPromoRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
+    | '/api/promo'
     | '/api/suggest'
     | '/api/whop-events'
     | '/checkout/$planId'
@@ -341,6 +351,7 @@ export interface FileRouteTypes {
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
+    | '/api/promo'
     | '/api/suggest'
     | '/api/whop-events'
     | '/checkout/$planId'
@@ -373,6 +384,7 @@ export interface FileRouteTypes {
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
+    | '/api/promo'
     | '/api/suggest'
     | '/api/whop-events'
     | '/checkout/$planId'
@@ -406,6 +418,7 @@ export interface RootRouteChildren {
   ApiNewsRoute: typeof ApiNewsRoute
   ApiOrderTogetherRoute: typeof ApiOrderTogetherRoute
   ApiPremiumStatusRoute: typeof ApiPremiumStatusRoute
+  ApiPromoRoute: typeof ApiPromoRoute
   ApiSuggestRoute: typeof ApiSuggestRoute
   ApiWhopEventsRoute: typeof ApiWhopEventsRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
@@ -547,6 +560,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPremiumStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/promo': {
+      id: '/api/promo'
+      path: '/api/promo'
+      fullPath: '/api/promo'
+      preLoaderRoute: typeof ApiPromoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/suggest': {
       id: '/api/suggest'
       path: '/api/suggest'
@@ -664,6 +684,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiNewsRoute: ApiNewsRoute,
   ApiOrderTogetherRoute: ApiOrderTogetherRoute,
   ApiPremiumStatusRoute: ApiPremiumStatusRoute,
+  ApiPromoRoute: ApiPromoRoute,
   ApiSuggestRoute: ApiSuggestRoute,
   ApiWhopEventsRoute: ApiWhopEventsRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
