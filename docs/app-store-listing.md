@@ -35,7 +35,7 @@ do. 118 characters.
 
 This is the text set on the live `app_store_description` field. Every number in it is
 produced by the build or read off `lib/site.ts`: 450 dishes and 780 recipes are what
-`recipeBook` prints, 200 picks a day is `ENDLESS_DAY`, three questions is `CHAT_FREE`, the
+`recipeBook` prints, 200 picks a day is `ENDLESS_DAY`, three questions a day is `CHAT_PER_DAY` in lib/allowance.ts, the
 prices and the seven days are `PRICE`, `PRICE_ANNUAL` and `TRIAL_DAYS`, and the free/paid
 split is `STANDARD` and `PREMIUM_SECTIONS`.
 
@@ -69,7 +69,7 @@ each claim comes from:
 > • Rules that stick — vegetarian, vegan or pescatarian; halal, kosher, Hindu, Jain, Sattvic, Buddhist, Sikh, Adventist, Word of Wisdom or Ital; or one ingredient at a time. Answered once on the way in, then never asked again on any screen in the app
 > • Endless — two dishes and a clock, every pick buying back a little less time. 200 picks a day
 > • Tonight's pick — one dish, no questions
-> • Ask it anything — three questions, then it is Premium
+> • Ask it anything — three free questions a day, unlimited on Premium
 > • Food news — six headlines a day with the publishers' own summaries
 > • XP, levels, streaks and badges
 > • No account, no card. Works with no signal, installs to the home screen, plays entirely from the keyboard, and there is an Android app if a tab is not enough

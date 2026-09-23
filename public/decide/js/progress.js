@@ -334,9 +334,9 @@
       /*
        * What a Standard profile has used up of the AI features.
        *
-       * chatAsks is a lifetime count of questions put to the assistant, not a
-       * daily one: the free three are a trial of the thing, and a trial that
-       * refills every morning is not a trial, it is the product.
+       * chatAsks is a lifetime count of questions the assistant answered,
+       * kept for the record only. The free allowance is three a day and is
+       * counted by the server, not here — see lib/allowance.ts.
        *
        * menuAt is a timestamp rather than a count, because the meal creator
        * is one go every couple of days and the only thing worth storing is

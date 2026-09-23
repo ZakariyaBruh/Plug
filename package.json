@@ -13,7 +13,7 @@
     "deploy": "whop apps deploy",
     "typecheck": "tsc --noEmit",
     "indexnow": "node scripts/indexnow.mjs",
-    "test": "bun run scripts/whop-token-test.mjs && bun run scripts/diet-test.mjs && bun run scripts/honesty-test.mjs && bun run scripts/nav-test.mjs && bun run scripts/accuracy-test.mjs && bun run scripts/mood-test.mjs && bun run scripts/promo-test.mjs",
+    "test": "bun run scripts/whop-token-test.mjs && bun run scripts/diet-test.mjs && bun run scripts/honesty-test.mjs && bun run scripts/nav-test.mjs && bun run scripts/accuracy-test.mjs && bun run scripts/mood-test.mjs && bun run scripts/promo-test.mjs && bun run scripts/allowance-test.mjs && bun run scripts/hooks-test.mjs",
     "drive": "node scripts/play-drive.mjs",
     "retention": "node scripts/retention-drive.mjs"
   },

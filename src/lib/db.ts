@@ -15,18 +15,15 @@ import { type Client, createClient } from '@libsql/client/web'
  * endpoint, and for the same reason: a feature that cannot reach its store
  * should go quiet, not break the page around it.
  *
- * WHAT IS ALREADY IN IT. Three tables were there before this file was
- * written, from another codebase, all empty: credit_accounts, credit_ledger
- * and feature_usage. Nothing here reads or writes them yet, and nothing here
- * should drop them — they are not this app's to delete. feature_usage
- * (user_id, feature, day, used) is shaped exactly like the daily allowance
- * ledger the metered features need, and is the likely first use.
+ * WHAT IS IN IT. Three tables were there before this file was written, from
+ * another codebase: credit_accounts, credit_ledger and feature_usage. They are
+ * not this app's to drop. feature_usage (user_id, feature, day, used) is used
+ * as the daily AI allowance ledger — see lib/allowance.ts — with user_id set
+ * to a day-keyed hash of the visitor's address, prefixed "ip:" so the rows
+ * this app writes, and sweeps, are never confused with anybody else's.
  *
- * WHAT MUST CHANGE BEFORE THE FIRST ROW IS WRITTEN. The privacy page promises
- * that the IP address the AI features rate-limit on is "kept in memory only…
- * never written to a database". Anything stored here about a person — even a
- * hash — makes that sentence false, so the page changes in the same commit as
- * the first write, the way GA4 and Clarity did.
+ * Anything stored here about a person has to be on the privacy page, in the
+ * same commit that starts storing it. The allowance is, under "Server logs".
  */
 let client: Client | null | undefined
 

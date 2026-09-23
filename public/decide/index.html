@@ -215,7 +215,7 @@
           Everywhere around you that you could eat, sorted by the kind of place it is.</span></li>
         <li><span class="welcome-point-icon" aria-hidden="true">&#128172;</span>
           <span class="welcome-point-body"><b>Ask what to eat.</b>
-          Describe the situation in your own words &mdash; three questions free.</span></li>
+          Describe the situation in your own words &mdash; three free questions a day.</span></li>
         <li><span class="welcome-point-icon" aria-hidden="true">&#127859;</span>
           <span class="welcome-point-body"><b>Five to try today.</b>
           Five dishes the app does not already know, written fresh each morning.</span></li>
@@ -819,6 +819,18 @@
 
         <p class="xp-line"><span id="xp-total">+0</span> <span>XP</span></p>
         <ul class="awards" id="awards"></ul>
+
+        <!-- WHAT ELSE IS HERE, SAID AT THE MOMENT SOMEBODY WOULD LEAVE.
+             Most people get their answer and close the tab, having seen one
+             screen of an app with seven. Three free things, chosen by what
+             this profile has not done yet, and one line saying what is new
+             tomorrow - only things that really do refill each day. Painted
+             by app.js (paintNext). No counter, no guilt, nothing locked. -->
+        <section class="strip" id="next-strip" hidden>
+          <h2 class="strip-title">Free, while you&rsquo;re here</h2>
+          <div class="plan-cues" id="next-row"></div>
+          <p class="fine" id="next-tomorrow"></p>
+        </section>
 
         <section class="strip" id="rate-wrap" hidden>
           <h2 class="strip-title">How was it? <span class="tag-premium">Premium</span></h2>

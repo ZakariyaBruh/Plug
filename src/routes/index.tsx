@@ -131,8 +131,21 @@ function HomePage() {
                 'radial-gradient(ellipse 70% 50% at 50% -10%, #e0a34014, transparent 60%)',
             }}
           />
-          <div className="relative mx-auto max-w-5xl px-6 pt-16 pb-20 text-center fade-in-up sm:pt-24">
-            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
+          <div className="relative mx-auto max-w-5xl px-6 pt-8 pb-20 text-center fade-in-up sm:pt-12">
+            {/* THE WAY OUT, FIRST. Most people who land here want dinner, not
+                a page about dinner — four in five are on a phone, where the
+                headline below fills the screen. So the first thing on it is
+                the fastest free route to an answer: tonight's pick, one tap,
+                no questions. Everything underneath is for the ones who stay. */}
+            <a
+              href="/decide/?go=tonight"
+              onClick={() => track('skip_to_answer', { from: 'home' })}
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--amber)] bg-[var(--amber-soft)] px-4 py-2 text-sm font-semibold hover:opacity-90"
+            >
+              <span aria-hidden="true">⚡</span> Just want an answer? Pick for me — no questions
+              <span aria-hidden="true">→</span>
+            </a>
+            <p className="mt-10 text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
               morsels45
             </p>
             <h1 className="mt-4 text-4xl font-bold leading-[1.1] sm:text-6xl">
@@ -184,6 +197,9 @@ function HomePage() {
               </Link>
             </div>
             <p className="mt-6 text-sm text-[var(--text-dim)]">No account. No email. Free to play. Premium is extra.</p>
+            <a href="#try-it" className="mt-3 inline-block text-sm text-[var(--amber)] underline underline-offset-4">
+              Or try five questions right here ↓
+            </a>
 
             {/* Android or iOS only, decided in the browser — see InstallApp. */}
             <InstallApp />

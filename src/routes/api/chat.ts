@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
+import { CHAT_PER_DAY, isPremium, spend, today, usedToday, visitorKey } from '#/lib/allowance'
 
 /*
  * /api/chat — the food assistant.
@@ -249,9 +250,28 @@ function json(body: unknown, status = 200) {
   })
 }
 
+/*
+ * Where this visitor stands today. `left` is null when the ledger could not be
+ * read, which the page treats as "not counting" rather than as zero.
+ */
+async function standing(request: Request) {
+  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown'
+  const day = today()
+  const key = await visitorKey(ip, day)
+  const used = key ? await usedToday(key, 'chat', day) : null
+  return { key, day, used, left: used === null ? null : Math.max(0, CHAT_PER_DAY - used) }
+}
+
 export const Route = createFileRoute('/api/chat')({
   server: {
     handlers: {
+      // What the page asks when the chat opens, so the number it shows is
+      // the server's and not a guess kept in the browser.
+      GET: async ({ request }) => {
+        const { left } = await standing(request)
+        return json({ left, limit: CHAT_PER_DAY })
+      },
+
       POST: async ({ request }) => {
         const key = process.env.GEMINI_API_KEY
         if (!key) {
@@ -263,6 +283,14 @@ export const Route = createFileRoute('/api/chat')({
         // no worse than the fallback, which is to treat everyone as one bucket.
         const who = request.headers.get('cf-connecting-ip') ?? 'unknown'
         if (overLimit(who)) return json({ error: 'too_fast' }, 429)
+
+        // The daily allowance. Premium is only looked up once somebody is out,
+        // so the ordinary free question never waits on a call to Whop.
+        const mine = await standing(request)
+        const metered = !(mine.used !== null && mine.used >= CHAT_PER_DAY && (await isPremium(request)))
+        if (metered && mine.left === 0) {
+          return json({ error: 'limit', left: 0, limit: CHAT_PER_DAY }, 402)
+        }
 
         let turns: Turn[] = []
         try {
@@ -322,7 +350,14 @@ export const Route = createFileRoute('/api/chat')({
           return json({ error: 'no_answer' }, 502)
         }
 
-        return json({ reply })
+        // Counted only now that there is an answer to give: a question the
+        // model never answered is not one the visitor got.
+        let left: number | null = null
+        if (metered && mine.key) {
+          const used = await spend(mine.key, 'chat', mine.day)
+          if (used !== null) left = Math.max(0, CHAT_PER_DAY - used)
+        }
+        return json({ reply, left, limit: CHAT_PER_DAY })
       },
     },
   },

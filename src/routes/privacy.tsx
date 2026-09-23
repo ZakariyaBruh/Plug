@@ -116,7 +116,7 @@ const SECTIONS: Section[] = [
      */
     id: 'analytics',
     heading: 'Analytics, and what counts as one',
-    lede: 'Eleven events, listed by name, and none of them carries anything about you.',
+    lede: 'Eighteen events, listed by name, and none of them carries anything about you.',
     body: [
       'This app is hosted by Whop, which adds its own analytics to every page it serves — that is the platform’s, not ours, and it is covered by Whop’s privacy policy.',
       ...(GA4_ON
@@ -124,7 +124,7 @@ const SECTIONS: Section[] = [
             'Google Analytics 4 is also on. It counts page views and receives the same short list of events below — the same names and the same payloads, not a second, richer copy. It is set up without Google Signals, without advertising features, without a user id and without demographics, so what it knows is what happened on this site rather than who did it. Google’s own terms cover what they do with that.',
           ]
         : []),
-      'What this app tells them directly is a short list, and here is all of it: that a decision started, that it reached an answer, that an answer was accepted, that a Premium card was shown, that somebody tapped through to pay, and — if you answer the one-tap question that comes up after five decisions — which of the four options you tapped. Two more when an offer is running: that the offer was shown, and that somebody tapped it. Three more about coming back: that somebody returned on a later day and how many days it had been, that the home-screen offer was shown, and that it was taken. Eleven in total, and every one goes to both places or to neither. Along with those go the number of questions it took, how many dishes were turned down, which Premium card it was, and, on the accepted one only, the name of the dish.',
+      'What this app tells them directly is a short list, and here is all of it: that a decision started, that it reached an answer, that an answer was accepted, that a Premium card was shown, that somebody tapped through to pay, and — if you answer the one-tap question that comes up after five decisions — which of the four options you tapped. Two more when an offer is running: that the offer was shown, and that somebody tapped it. Three more about coming back: that somebody returned on a later day and how many days it had been, that the home-screen offer was shown, and that it was taken. One more after an answer: which of the free things on the “while you’re here” row was tapped. The site’s own pages around the game add six: that a page was viewed, that a checkout button was pressed, that somebody tapped “pick for me” on the homepage, and — on the homepage’s five-question preview — that it reached an answer, that the answer was pointed somewhere, and that somebody went through to the app. Eighteen in total, and every one goes to both places or to neither. Along with those go the number of questions it took, how many dishes were turned down, which Premium card it was, and, on the accepted one only, the name of the dish.',
       'The question has four buttons and no text box, so what is recorded is which button — there is nothing else for it to carry.',
       'What does not go: your dietary rules, your saved dishes, your ratings, your taste profile, anything you type, and anything that identifies you. The reason those are safe is not a promise, it is where they live — see the section above.',
       'There is no Google Analytics here, no advertising pixel of our own, and nothing that follows you to other sites.',
@@ -143,9 +143,11 @@ const SECTIONS: Section[] = [
   {
     id: 'logs',
     heading: 'Server logs',
-    lede: 'Your IP is held in memory long enough to rate-limit the AI, and is never written down.',
+    lede: 'Your IP is never stored. A scrambled, one-day version of it counts your free AI questions, and is deleted the next day.',
     body: [
-      'The AI features limit how often one person can call them, which means the server briefly holds the IP address your request arrived from. It is kept in memory only, for as long as the limit window lasts, and is never written to a database or attached to anything else about you.',
+      'The AI features limit how often one person can call them. For the burst limit — no more than a dozen questions a minute — the server holds the IP address your request arrived from in memory only, for that minute, and never writes it down.',
+      'The free allowance — three assistant questions a day — has to survive a server restart, so it is counted in a database (Turso). What is stored is not your IP address: it is a keyed hash of it, made with a secret that changes every day, next to a number from 0 to 3 and the date. Tomorrow the same address makes a different hash, so days cannot be joined into a history, and the hash cannot be turned back into an address without our secret. Rows from earlier days are deleted as soon as the next question is counted. Nothing else about you is attached to it.',
+      'If you are a Premium member you are not counted against it. A household sharing one internet connection shares one allowance — the price of not asking anybody to sign in.',
       'Ordinary request logs are handled by Cloudflare, which serves this site.',
     ],
   },
@@ -214,7 +216,7 @@ const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
      * and the note stops claiming something that would not be.
      */
     note: GA4_ON
-      ? 'No advertising pixel, and nothing that follows you to other sites. Google Analytics is here, counting pages and the eleven events listed below — with none of its advertising features switched on.'
+      ? 'No advertising pixel, and nothing that follows you to other sites. Google Analytics is here, counting pages and the eighteen events listed below — with none of its advertising features switched on.'
       : 'No Google Analytics, no advertising pixel of our own, and nothing that follows you to other sites.',
   },
 ]
@@ -234,11 +236,12 @@ const THIRD_PARTIES: [string, string][] = [
   // Driven by GA4_ID, the same way the Clarity row above is driven by
   // CLARITY_ID, so this list cannot fall out of step with what is loaded.
   ...(GA4_ON
-    ? ([['Google Analytics', 'Counts page views and the eleven events named above. No advertising features.']] as [string, string][])
+    ? ([['Google Analytics', 'Counts page views and the eighteen events named above. No advertising features.']] as [string, string][])
     : []),
   ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions.'],
   ['Hyperbeam', 'Runs the shared browser, when you open one.'],
   ['OpenStreetMap and Photon', 'Look up places near you, when you use Nearby and allow location.'],
+  ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day. Nothing else.'],
   ['Cloudflare', 'Serves this site.'],
 ]
 

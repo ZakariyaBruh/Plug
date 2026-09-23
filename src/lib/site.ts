@@ -455,7 +455,7 @@ export const STANDARD = [
   'Endless — two dishes and a clock. Every pick buys time back, and buys back less each time. 200 picks a day',
   `All ${DISH_COUNT} dishes in the catalogue`,
   DIET_FREE_SHORT,
-  'Ask anything — three free questions, then it is Premium',
+  'Ask anything — three free questions a day, unlimited on Premium',
   'Food news — the latest six headlines a day, with the publishers’ own summaries. Opening the pieces themselves is Premium',
   'Write me a menu — one every couple of days',
   'Browse, search, and filter the menu',

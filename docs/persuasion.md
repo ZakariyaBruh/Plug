@@ -159,10 +159,29 @@ because it is true and already on their device — the honest version of what
 an account would have bought. Only on a later day than the last visit; said
 the same evening it reads as the app having forgotten the last ten minutes.
 
+**"Free, while you're here."** The funnel's plainest finding is that people
+get an answer, say yes, and close the tab having seen one screen of an app
+with seven. The reward screen now names three free things this profile has not
+tried yet (Endless, the assistant, the catalogue, the news), and one line
+saying what is new tomorrow. That line lists only what genuinely refills each
+day — five new dishes on the shelf, fresh headlines, three more questions, the
+Endless allowance — so it is information about a real schedule rather than a
+reward on an unpredictable one, which /honesty refuses. Nothing counts down
+and nothing is withheld to be returned for.
+
+**The homepage skip, and the yes that goes somewhere.** The first thing on
+the homepage is "Just want an answer? Pick for me" — tonight's pick, no
+questions — because most arrivals want dinner rather than a page about it
+(Fogg: ability, not motivation, is the thing to move). And the preview's
+answer now has "That's the one", which opens that dish in the real app with
+its recipe. Before, the only button asked somebody who had just been answered
+to start again.
+
 Neither of these fetches anybody. Nothing is sent, nothing arrives uninvited,
 and the only new thing written down is one date.
-→ `public/decide/js/app.js` (`paintKeep`, `returningDay`, `stampVisit`),
-`bun run retention`
+→ `public/decide/js/app.js` (`paintKeep`, `returningDay`, `stampVisit`,
+`paintNext`, `openWhereAsked`), `src/components/GamePreview.tsx`,
+`bun run retention`, `scripts/hooks-test.mjs`
 
 ### Loss aversion — framed on what is already yours
 Losing is felt about twice as strongly as gaining. Applied only where

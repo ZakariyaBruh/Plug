@@ -304,11 +304,29 @@ export function GamePreview() {
                 </p>
               )}
 
-              {/* The point of the whole section. It says what the real thing
-                  has that this does not, in numbers, and then gets out of the
-                  way — one loud button, one quiet one. */}
+              {/*
+                  THE HOOK, AND WHY IT IS A YES RATHER THAN A "PLAY MORE".
+                  Most people who got an answer here left with it: the only
+                  button said "play the real one", which asks somebody who
+                  has just been answered to start again. Saying yes to the
+                  dish should take them to the dish — its recipe, what goes
+                  in it, somewhere nearby that does it — in the real app, so
+                  the tap that agrees is also the one that shows them what
+                  else is there. Free, and it says so.
+              */}
               <div className="mt-8 border-t border-[var(--border)] pt-8">
-                <p className="mx-auto max-w-md text-[var(--text-dim)]">
+                <a
+                  href={`/decide/?dish=${encodeURIComponent(verdict.dish.name)}`}
+                  onClick={() => track('preview_to_app', { dish: verdict.dish.name, via: 'the_one' })}
+                  className="inline-flex items-center gap-2 rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
+                >
+                  That&rsquo;s the one <span aria-hidden="true">→</span>
+                </a>
+                <p className="mx-auto mt-3 max-w-md text-sm text-[var(--text-dim)]">
+                  Opens the recipe for {verdict.dish.name.toLowerCase()} and a search for it near
+                  you. Free — no account.
+                </p>
+                <p className="mx-auto mt-6 max-w-md text-[var(--text-dim)]">
                   That was five of {REAL_QUESTIONS} questions over a fifth of the menu. The real one
                   has <b className="text-[var(--text)]">{DISH_COUNT} dishes</b>, a recipe behind
                   every one of them, more directions to push in, and it remembers what you picked.
@@ -316,10 +334,10 @@ export function GamePreview() {
                 <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                   <a
                     href="/decide/"
-                    onClick={() => track('preview_to_app', { dish: verdict.dish.name })}
-                    className="inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
+                    onClick={() => track('preview_to_app', { dish: verdict.dish.name, via: 'play' })}
+                    className="inline-block rounded-full border border-[var(--border)] px-6 py-3 text-sm font-semibold hover:border-[var(--amber)]"
                   >
-                    Play the real one — free
+                    Play the real one
                   </a>
                   <button
                     type="button"

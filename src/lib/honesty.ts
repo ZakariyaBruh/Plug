@@ -128,6 +128,11 @@ export const TECHNIQUES: Technique[] = [
     here: 'It expires after six hours — what you felt like at lunchtime is not what you feel like at eight, and handing stale answers back as though they still counted would be worse than losing them.',
   },
   {
+    name: 'What else is free, and what is new tomorrow',
+    what: 'After you say yes to a dish, three free things you have not tried yet are offered, with one line about what is new tomorrow.',
+    here: 'Only things that really do refill each day are in that line — five new dishes, fresh headlines, three more questions. It is a schedule you can check, not a surprise dangled to bring you back, and nothing counts down.',
+  },
+  {
     name: 'The preview is the real thing',
     what: 'The playable version on the front page uses the real questions, the real wording and real dishes.',
     here: 'It is a trailer rather than a mock-up, and the build fails if any dish in it stops matching the catalogue. Fifteen seconds is a fairer test of this than a paragraph about it.',

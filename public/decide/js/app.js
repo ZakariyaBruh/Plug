@@ -4507,6 +4507,7 @@
 
     renderRating(item);
     paintKeep();
+    paintNext();
     paintWhy();
     paintPlan();
     setPanel('reward');
@@ -4628,6 +4629,82 @@
       $('keep-strip').hidden = true;
     });
   })();
+
+  /* ------------------------------------------------------- what else is here */
+  /*
+   * THE REWARD SCREEN WAS A DEAD END, AND MOST PEOPLE LEFT FROM IT.
+   *
+   * The funnel is clear about it: somebody gets an answer, says yes, and
+   * closes the tab — having seen the decide game and nothing else in an app
+   * with Endless, an assistant, a news page and 450 dishes to browse. They
+   * are not choosing against those things; they never learn they exist.
+   *
+   * So three of them, all free, picked by what this profile has not tried
+   * yet — the unfamiliar first, because a suggestion to do the thing you
+   * already do is noise. And one line about tomorrow that lists only what
+   * genuinely refills each day. That is the whole hook: real reasons to come
+   * back, stated once, with nothing counting down and nothing withheld.
+   */
+  function nextChoices() {
+    var st = progress.state;
+    var out = [];
+    var runs = st.endlessRuns || 0;
+    out.push({
+      to: 'endless',
+      fresh: runs === 0,
+      label: runs === 0
+        ? '\u{267E}\u{FE0F} Endless — two dishes and a clock'
+        : '\u{267E}\u{FE0F} Endless — beat your ' + (st.endlessBest || 0)
+    });
+    var left = chatLeft();
+    out.push({
+      to: 'ask',
+      fresh: !(st.chatAsks > 0),
+      label: isPlus() || left === null
+        ? '\u{1F4AC} Ask it anything'
+        : left > 0
+          ? '\u{1F4AC} Ask it anything — ' + left + ' free today'
+          : null
+    });
+    out.push({ to: 'browse', fresh: true, label: '\u{1F4D6} Browse all ' + Data.ITEMS.length + ' dishes' });
+    out.push({ to: 'news', fresh: true, label: '\u{1F4F0} Today’s food news' });
+    // Untried first, then the rest, each group in the order above.
+    var usable = out.filter(function (c) { return c.label; });
+    return usable.filter(function (c) { return c.fresh; })
+      .concat(usable.filter(function (c) { return !c.fresh; }))
+      .slice(0, 3);
+  }
+
+  function paintNext() {
+    var wrap = $('next-strip');
+    if (!wrap) return;
+    var row = $('next-row');
+    row.innerHTML = '';
+    nextChoices().forEach(function (choice) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'plan-cue';
+      btn.textContent = choice.label;
+      btn.addEventListener('click', function () {
+        Sound.tick();
+        beacon('explored', { to: choice.to });
+        goNext(choice.to);
+      });
+      row.appendChild(btn);
+    });
+    $('next-tomorrow').textContent = isPlus()
+      ? 'Tomorrow: five new dishes on the shelf and fresh headlines. It is all here next time you are hungry.'
+      : 'Tomorrow: five new dishes on the shelf, fresh headlines, three more free questions and ' +
+        ENDLESS_DAY + ' Endless picks. It is all here next time you are hungry.';
+    wrap.hidden = !row.childNodes.length;
+  }
+
+  function goNext(to) {
+    if (to === 'endless') { setView('decide'); return startEndless(); }
+    if (to === 'ask') return setView('chat');
+    if (to === 'browse') return setView('dishes');
+    if (to === 'news') return setView('news');
+  }
 
   /* ------------------------------------------------------------- the promo */
   /*
@@ -6809,7 +6886,7 @@
     'Give me a tip for today'
   ];
 
-  var chat = { turns: [], busy: false, typing: null };
+  var chat = { turns: [], busy: false, typing: null, left: null };
 
   /*
    * The answer arriving as it is written, rather than all at once.
@@ -6868,6 +6945,7 @@
   function renderChat() {
     paintChatSeeds();
     paintChatLeft();
+    fetchChatLeft();
     // Deliberately not focused: on a phone, focus throws the keyboard up over
     // half the screen, including the chips that mean you need not type at all.
   }
@@ -6906,33 +6984,46 @@
   }
 
   /*
-   * THE FREE THREE.
+   * THE FREE THREE, EVERY DAY.
    *
-   * The assistant costs money per question — a real model behind a real API
-   * — and it was the one thing in here a Standard profile could use without
-   * limit. Three is a trial: enough to find out whether it answers anything
-   * useful, not enough to be the product.
+   * The assistant costs money per question — a real model behind a real API.
+   * Three a day free, counted by the server (routes/api/chat.ts and
+   * lib/allowance.ts), so clearing this browser does not refill it and the
+   * number here is the true one rather than a guess kept locally.
    *
-   * Counted for life rather than per day, deliberately. Three a day is not a
-   * trial, it is a free tier, and somebody who wants this every day is
-   * somebody the paid version is for.
+   * chat.left is null until the server has said, and stays null if it cannot
+   * — in which case nothing is shown and nothing is refused here; the server
+   * is the one that decides.
    */
   var CHAT_FREE = 3;
 
   function chatLeft() {
-    return Math.max(0, CHAT_FREE - (progress.state.chatAsks || 0));
+    return chat.left;
+  }
+
+  function fetchChatLeft() {
+    if (isPlus()) return;
+    fetch('/api/chat', { headers: { Accept: 'application/json' } })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (body) {
+        if (body && typeof body.left === 'number') {
+          chat.left = body.left;
+          paintChatLeft();
+        }
+      })
+      .catch(function () {});
   }
 
   /* Said before the last one is spent, not after it. */
   function paintChatLeft() {
     var el = $('chat-left');
-    if (isPlus()) { el.hidden = true; return; }
     var left = chatLeft();
+    if (isPlus() || left === null) { el.hidden = true; return; }
     el.hidden = false;
     el.textContent = left > 0
-      ? left + (left === 1 ? ' free question left' : ' of ' + CHAT_FREE + ' free questions left') +
+      ? left + (left === 1 ? ' free question left today' : ' of ' + CHAT_FREE + ' free questions left today') +
         '. Premium asks as many as you like.'
-      : 'That is the three free questions used. Premium asks as many as you like.';
+      : 'That is today\u2019s three free questions used \u2014 three more tomorrow. Premium asks as many as you like.';
   }
 
   function askChat() {
@@ -6942,8 +7033,8 @@
     if (!text) return;
 
     // Checked before the question is sent, so nothing is spent on a request
-    // that is about to be refused.
-    if (!isPlus() && chatLeft() <= 0) {
+    // that is about to be refused. Only when the server has already said zero.
+    if (!isPlus() && chatLeft() === 0) {
       field.value = '';
       return goPremium('Asking anything');
     }
@@ -6971,11 +7062,6 @@
 
     chat.turns.push({ role: 'user', text: text });
 
-    if (!isPlus()) {
-      progress.state.chatAsks = (progress.state.chatAsks || 0) + 1;
-      progress.save();
-      paintChatLeft();
-    }
 
     fetch('/api/chat', {
       method: 'POST',
@@ -6993,7 +7079,14 @@
       chat.busy = false;
       $('chat-send').disabled = false;
 
+      if (answer.body && typeof answer.body.left === 'number') {
+        chat.left = answer.body.left;
+        paintChatLeft();
+      }
+
       if (answer.ok && answer.body && answer.body.reply) {
+        progress.state.chatAsks = (progress.state.chatAsks || 0) + 1;
+        progress.save();
         var reply = String(answer.body.reply);
         chat.turns.push({ role: 'model', text: reply });
         // Built empty, then written into. The dish buttons wait for the last
@@ -7012,6 +7105,11 @@
       // history either — leaving it there would send it again with the next one.
       chat.turns.pop();
       var why = (answer.body && answer.body.error) || '';
+      if (why === 'limit') {
+        waiting.replaceWith(chatRow('bot',
+          'That is today\u2019s three free questions. Three more tomorrow \u2014 or Premium asks as many as you like.', false));
+        return goPremium('Asking anything');
+      }
       var said = why === 'too_fast'
         ? 'That was a lot of questions at once'
         : why === 'busy'
@@ -12595,7 +12693,11 @@
    * work. After the landing has painted, so the first thing behind the card is
    * the app rather than an empty page.
    */
-  if (!progress.state.onboarded && !(progress.state.decisions > 0)) openWelcome();
+  // Not when the link already says where to go: somebody who tapped "pick for
+  // me" or "that's the one" on the homepage asked for an answer, not a tour.
+  // They get the walkthrough next time, if they come back without deciding.
+  var deepLinked = /[?&](go|dish|with)=/.test(window.location.search || '');
+  if (!deepLinked && !progress.state.onboarded && !(progress.state.decisions > 0)) openWelcome();
 
   // The home-screen shortcuts in the manifest promise to land somewhere
   // specific. Honour them, or they are three taps to the same screen as the
@@ -12611,8 +12713,28 @@
     var first = unpackAnswers(here.searchParams.get('with'));
     if (first) return joinTogether(first);
 
+    /*
+     * ?dish= — "that's the one" from the homepage preview. The dish they just
+     * landed on there, opened here with its recipe and a Maps search, so the
+     * tap that says yes arrives at the thing rather than at a fresh game.
+     * Matched against the catalogue by name; anything else is an ordinary
+     * visit.
+     */
+    var named = (here.searchParams.get('dish') || '').trim().toLowerCase();
+    if (named) {
+      var found = Data.ITEMS.filter(function (d) { return d.name.toLowerCase() === named; })[0];
+      if (found) {
+        hideLanding();
+        setView('dishes');
+        openSheet(found);
+        return;
+      }
+    }
+
     var go = here.searchParams.get('go');
     if (go === 'decide') restart();
+    else if (go === 'tonight') showTonight();
+    else if (go === 'quick') startQuick();
     else if (go === 'dishes') { hideLanding(); setView('dishes'); }
     else if (go === 'news') { hideLanding(); setView('news'); }
     else if (go === 'ask') { hideLanding(); setView('chat'); }
