@@ -20,7 +20,6 @@ import {
   SITE_URL,
   STANDARD,
   THE_GIFT,
-  THE_PREVIEW,
   THE_INSIGHT,
   THE_JOBS,
   WHAT_IT_IS,
@@ -330,16 +329,6 @@ function HomePage() {
             <p className="mt-3 max-w-xl text-[var(--text-dim)]">
               {THE_GIFT} It learns what you like, stops offering it twice, gets you as far as the
               table, and covers the person you eat with.
-            </p>
-            {/* AND YOU DO NOT HAVE TO TAKE OUR WORD FOR ANY OF IT.
-                The column on the right is a list of claims about a thing the
-                reader has not used. This is the sentence that turns the list
-                into something they can check tonight, for nothing, and it
-                belongs directly under the claims rather than further down the
-                page where the deciding has already been done. */}
-            <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              <b className="text-[var(--text)]">You do not have to take our word for it. </b>
-              {THE_PREVIEW}
             </p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
               <div className="rounded-2xl border border-[var(--border)] p-8">

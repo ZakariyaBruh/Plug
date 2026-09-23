@@ -52,9 +52,9 @@ the people the free dietary rules were meant to serve.
 **2. It contradicts what the site currently promises, in writing, everywhere.**
 `THE_GIFT` — on the homepage and directly above the price — says "every dish,
 every recipe, and everything you do not eat — free, permanently". The same
-claim is on /premium, /faq, the app store listing, the reverse trial's ending
-screen, and /honesty, whose entire standard is that nothing in the product
-contradicts what the product publishes. Withdrawing 350 dishes would be the
+claim is on /premium, /faq, the app store listing, and /honesty, whose entire
+standard is that nothing in the product contradicts what the product
+publishes. Withdrawing 350 dishes would be the
 most visible broken promise available, and it would be the second withdrawal
 in a month after the household plan. For a product whose differentiator is a
 published standards page, that is the expensive kind of cheap.
@@ -65,11 +65,14 @@ opened the app, 34 reached the price page, 0 bought. Nobody is bouncing off
 did said no to a price, not to a catalogue. Gating dishes moves neither
 number. It only makes the product worse for the 479 who never asked to pay.
 
-**4. It would confound the reverse trial before it has produced a week of
-data.** Premium-on-for-five-decisions shipped days ago and is the freemium
-mechanism, deliberately chosen over a wall. Changing the free/paid line now
-means never knowing which change did what — and the trial is the one that can
-be measured, because `preview_ended` carries what each person actually used.
+**4. There is nothing else in flight to measure it against.** The reverse
+trial — Premium on for the first five decisions — was built as the freemium
+mechanism and then withdrawn before it had produced a week of data, so nobody
+knows whether it worked. Making the free tier worse is the opposite experiment
+and it would run against the same silence. Whatever is tried next, only one
+thing should be tried at a time, and the instrumentation that exists
+(`premium_why`, `premium_seen`, `premium_clicked`, and the Clarity recordings)
+should be allowed to say something first.
 
 ## The version worth having
 
@@ -88,7 +91,8 @@ later.
 
 ## What to do first, either way
 
-Wait for the reverse trial's numbers. `preview_ended` reports what each person
-did with their five decisions, `premium_why` reports what they say they want,
-and Clarity now records the sessions. Two weeks of that will say more about
-where the money is than any argument in this file — including this one.
+Give the funnel a fortnight to say something. `premium_why` reports what
+people say they want when they are asked at the moment of value,
+`premium_seen` and `premium_clicked` report who got as far as the price, and
+Clarity now records the sessions. Two weeks of that will say more about where
+the money is than any argument in this file — including this one.

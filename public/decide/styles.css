@@ -4846,32 +4846,3 @@ body.is-welcoming { overflow: hidden; }
   width: 100%;
 }
 
-
-/* ------------------------------------------------------ the preview */
-/*
- * The line on the front door saying Premium is on. Amber rule, like the
- * resume offer above it — this is news about your own account, which is a
- * different kind of thing from the quiet row of actions below.
- */
-.landing-preview {
-  margin: 0 0 var(--s4);
-  padding-left: .9rem;
-  border-left: 2px solid var(--amber);
-  color: var(--ink-2);
-  font-size: var(--t-sm);
-}
-
-.landing-preview b { color: var(--ink); }
-
-/* The ending. Slightly louder than an ordinary strip, because it is the one
-   screen in the app that is asking for something. */
-.preview-over { border-left: 2px solid var(--amber); padding-left: var(--s4); }
-
-.plan-cue.is-go {
-  background: var(--amber);
-  border-color: var(--amber);
-  color: var(--paper-ink);
-  text-decoration: none;
-}
-
-.plan-cue.is-go:hover { opacity: .9; color: var(--paper-ink); }

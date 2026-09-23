@@ -66,13 +66,6 @@ export const HONESTY_LINE = [
 
 export const TECHNIQUES: Technique[] = [
   {
-    name: 'Premium is already on when you arrive',
-    what:
-      'Your first five decisions run with everything unlocked \u2014 no card, no account, nothing to cancel \u2014 and when the fifth one lands we count up what you did with it and name what stops.',
-    here:
-      'It is the plainest thing we do and it is still a technique, so: people value what they have used more than what they have read about, and a loss is felt harder than the same thing offered. The count is taken off your own device, so it is true of you specifically and says nothing when you used none of it. The offer appears once, because by the sixth decision \u201cthat was your last one\u201d is no longer true. Two things stay outside it \u2014 new-dish suggestions and cooking from your cupboard \u2014 because each one asks a paid model every time it runs, and giving those away by default would be a bill rather than a trial. Anything else with a counted allowance keeps that allowance during the five rather than becoming unlimited. If you tap one of the three, the card says so and says why.',
-  },
-  {
     name: 'The plan that is already selected',
     what: 'The yearly plan is preselected, because it is the cheaper of the two per month and the one most people want.',
     here: 'Monthly sits on the same switch, the same size, one tap away, printing its own price in the same words. Nothing is preselected that is only in our interest.',

@@ -231,23 +231,6 @@ export const THE_GIFT =
   'permanently, with no account and no card. Premium is the part that keeps up with you.'
 
 /*
- * THE PREVIEW, SAID ON THE SITE AS WELL AS IN THE APP.
- *
- * The app announces it on its own first screen, which covers everybody who
- * opens it. This is for the reader deciding whether to open it at all, and for
- * the one who arrived at the price first: "try it" is a weaker sentence than
- * "it is already on".
- *
- * Kept to what is checkable. Five is PREVIEW_DECISIONS in progress.js; "no
- * card, no account" is true because the whole thing is a field in localStorage;
- * and the counted ending is paintPreviewOver. If any of those changes, this
- * sentence is wrong and /honesty is wrong with it.
- */
-export const THE_PREVIEW =
-  'Your first five decisions run with Premium switched on — no card, no account, nothing to ' +
-  'cancel. When the fifth one lands, it counts up what you actually used and tells you what stops.'
-
-/*
  * HOW TO LEAVE, NEXT TO THE ASK RATHER THAN IN THE SMALL PRINT.
  *
  * Partly because an easy exit is the single most load-bearing trust signal on

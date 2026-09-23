@@ -1,22 +1,19 @@
 /*
- * The reverse trial, driven in a real browser from the first screen to the
- * last of the five.
+ * Five decisions in a real browser, played the way a free profile plays them.
  *
- *   bun run build && node scripts/preview-drive.mjs
+ *   bun run build && bun run drive
  *
  * WHY THIS IS NOT IN `bun run test`. It needs a build on disk, a server and a
  * Chromium, so it is a driver you run rather than a gate that runs itself.
- * scripts/preview-test.mjs is the gate: it reads the source and enforces the
- * money split. This one answers the other question — whether the thing works
- * when somebody actually plays it — and it has already earned its keep twice:
+ * The unit tests read the source; this one asks whether the thing works when
+ * somebody actually plays it, and that is a different question. It has caught
+ * two bugs no unit test could see:
  *
- *  - saveLimit() asked isPlus() rather than unlocked(), so the app unlocked
- *    "Save it" during the preview and the profile then refused it with "your
- *    saved list is full" over an empty list.
- *  - the ending screen quoted FREE_SAVES, which is 0, and told people their
- *    saved list would "stop growing past 0".
- *
- * Neither is visible in the source and neither would fail a unit test.
+ *  - a tier check that unlocked a button in the app and was then refused by
+ *    the ceiling behind it in the profile, so "Save it" opened and then said
+ *    the saved list was full over an empty list;
+ *  - a screen quoting a constant that was zero, telling people their list
+ *    would "stop growing past 0".
  *
  * IT SERVES dist/client, not the dev server. The page Cloudflare answers with
  * is the stamped copy vite writes to dist/client/decide/index.html — see the
@@ -108,19 +105,21 @@ await page.waitForTimeout(1400)
 ok('the first run can be got past', await pastWelcome(page))
 await page.waitForTimeout(600)
 
-const banner = page.locator('#landing-preview')
-ok('the landing says the preview is on', await banner.isVisible())
-let bt = (await banner.textContent()) || ''
-ok('it names five decisions', /first 5 decisions/.test(bt), bt.slice(0, 140))
-ok('it says no card', /No card/.test(bt))
-ok('preview_started fired', beacons.some((b) => b[0] === 'preview_started'))
-let st = await state()
-ok('the profile holds five', st.preview && st.preview.left === 5, JSON.stringify(st.preview))
-const locked = await page.locator('#duel-btn.is-locked, #knockout-btn.is-locked, #swipe-btn.is-locked, #mood-wrap.is-locked').count()
-ok('nothing local is locked during it', locked === 0, `${locked} still locked`)
+// A free profile arrives with the Premium modes marked as Premium. They are
+// visible and pressable on purpose — that is how anybody learns they exist.
+const locked = await page.locator('#duel-btn.is-locked, #knockout-btn.is-locked, #swipe-btn.is-locked').count()
+ok('the Premium modes are marked as locked', locked === 3, `${locked} of 3`)
 
-let saveOnVerdict = false
-async function oneDecision() {
+let askedToPay = false
+async function oneDecision(trySaving) {
+  /*
+   * Back to the front screen between decisions, the way somebody opening the
+   * app again gets there. Accepting leaves you on the reward panel, and the
+   * landing is hidden from that point on — driving five in a row without
+   * coming back means clicking a button nobody can see.
+   */
+  await page.goto(URL_, { waitUntil: 'load' })
+  await page.waitForTimeout(900)
   await page.locator('#landing-start').click()
   await page.waitForTimeout(400)
   for (let i = 0; i < 30; i++) {
@@ -136,20 +135,28 @@ async function oneDecision() {
    * about does not exist until it has: is-landed comes off at the start of
    * every reveal and goes back on when it stops. Clicking anything on the
    * panel before then acts on nothing, silently — which is how this driver
-   * spent an hour "finding" a save bug that was its own impatience.
+   * once spent an hour "finding" a save bug that was its own impatience.
    */
   await page.waitForFunction(() => {
     const el = document.getElementById('result-icon')
     return el && el.classList.contains('is-landed')
   }, null, { timeout: 15000 })
   await page.waitForTimeout(300)
-  if (saveOnVerdict) {
-    saveOnVerdict = false
+  if (trySaving) {
     const fav = page.locator('#fav-btn')
-    if (await fav.isVisible()) { await fav.click(); await page.waitForTimeout(400) }
-    const s = await state()
-    ok('a dish can be saved during the preview', (s.favourites || []).length === 1,
-      'favourites=' + JSON.stringify(s.favourites || []))
+    if (await fav.isVisible()) { await fav.click(); await page.waitForTimeout(500) }
+    const card = await page.evaluate(() => {
+      const sheet = document.getElementById('ad-sheet')
+      const title = document.getElementById('ad-title')
+      return { open: !!(sheet && sheet.open), title: title ? title.textContent : '' }
+    })
+    askedToPay = card.open
+    ok('saving a dish asks for a subscription', card.open, JSON.stringify(card))
+    ok('and the card names the thing that was tapped', /Saving a dish/.test(card.title || ''), card.title)
+    const s2 = await state()
+    ok('and nothing was saved behind the card', (s2.favourites || []).length === 0)
+    await page.evaluate(() => { const b = document.getElementById('ad-close'); if (b) b.click() })
+    await page.waitForTimeout(400)
   }
   await accept.click()
   await page.waitForTimeout(700)
@@ -157,54 +164,23 @@ async function oneDecision() {
 }
 
 for (let n = 1; n <= 5; n++) {
-  if (n === 2) saveOnVerdict = true   // so the ending has something real to count
-  ok(`decision ${n} reaches an answer and is accepted`, await oneDecision())
-  st = await state()
-  const left = st.preview ? st.preview.left : null
-  ok(`${5 - n} left after decision ${n}`, left === 5 - n, `left=${left}`)
-
-  const over = page.locator('#preview-over')
-  const shown = await over.isVisible()
-  if (n < 5) {
-    ok(`the ending stays away on decision ${n}`, !shown)
-    await page.goto(URL_, { waitUntil: 'load' })
-    await page.waitForTimeout(900)
-    bt = (await page.locator('#landing-preview').textContent()) || ''
-    const want = 5 - n
-    ok(`the banner counts down to ${want}`,
-      want === 1 ? /one more decision/.test(bt) : new RegExp('first ' + want + ' decisions').test(bt),
-      bt.slice(0, 120))
-  } else {
-    ok('the ending shows on the fifth', shown)
-    const text = (await over.textContent()) || ''
-    ok('it says that was the last of the five', /last of your five/.test(text), text.slice(0, 90))
-    ok('it counts the decisions', /5\s*decisions made/.test(text), text.slice(0, 400))
-    ok('it counts the saved dish', /1\s*dish saved/.test(text), text.slice(0, 400))
-    ok('it says the saved one is kept', /the dish you saved stays, but you cannot add another/.test(text), text.slice(0, 500))
-    ok('it names what stops', /cook mode and the shopping list/.test(text))
-    ok('preview_ended fired', beacons.some((b) => b[0] === 'preview_ended'))
-    const pe = beacons.find((b) => b[0] === 'preview_ended')
-    ok('preview_ended carries the counts', pe && pe[1].decisions === 5 && pe[1].saved === 1, JSON.stringify(pe && pe[1]))
-    ok('the keep-it link goes to /premium', (await page.locator('#preview-over-go').getAttribute('href')) === '/premium')
-  }
+  ok(`decision ${n} reaches an answer and is accepted`, await oneDecision(n === 2))
+  const st = await state()
+  ok(`the profile counts ${n} decision${n === 1 ? '' : 's'}`, st.decisions === n, `decisions=${st.decisions}`)
 }
 
-st = await state()
-ok('the ending is marked seen as soon as it is shown', st.preview && st.preview.seen === true, JSON.stringify(st.preview))
+ok('the funnel saw the decisions', beacons.filter((b) => b[0] === 'decided').length === 5,
+  beacons.map((b) => b[0]).join(' '))
+ok('and saw the upsell', askedToPay && beacons.some((b) => b[0] === 'premium_seen'),
+  beacons.map((b) => b[0]).join(' '))
 
-await page.goto(URL_, { waitUntil: 'load' })
-await page.waitForTimeout(900)
-ok('the banner is gone afterwards', !(await page.locator('#landing-preview').isVisible()))
-ok('the locks come back', (await page.locator('#duel-btn.is-locked').count()) === 1)
-beacons = []
-await oneDecision()
-ok('the ending never shows twice', !(await page.locator('#preview-over').isVisible()))
-ok('and does not fire its beacon twice', !beacons.some((b) => b[0] === 'preview_ended'))
+// Five decisions in, the one-tap survey is due on the reward screen.
+ok('the why survey appears once it is earned', await page.locator('#why-strip').isVisible())
 
 /*
- * A separate context, because the played profile above shares this origin and
- * writes itself back over a cleared key — which looked exactly like "a fresh
- * profile gets no preview" for one confusing run.
+ * A per-use feature stays behind the subscription, and says so. A separate
+ * context because the played profile above shares this origin and writes
+ * itself back over a cleared key.
  */
 await page.close()
 const ctx2 = await browser.newContext({ viewport: { width: 420, height: 900 } })
@@ -213,8 +189,6 @@ await fresh.goto(URL_, { waitUntil: 'load' })
 await fresh.waitForTimeout(1400)
 await pastWelcome(fresh)
 await fresh.waitForTimeout(500)
-const s3 = await fresh.evaluate((k) => JSON.parse(localStorage.getItem(k) || '{}'), KEY)
-ok('a fresh profile gets its own preview', !!s3.preview && s3.preview.left === 5, JSON.stringify(s3.preview))
 await fresh.evaluate(() => { const b = document.getElementById('landing-start'); if (b) b.click() })
 await fresh.waitForTimeout(400)
 const card = await fresh.evaluate(() => {
@@ -224,8 +198,8 @@ const card = await fresh.evaluate(() => {
   const title = document.getElementById('ad-title')
   return { open: !!(sheet && sheet.open), title: title ? title.textContent : '' }
 })
-ok('a per-use feature still asks for a subscription', card.open, JSON.stringify(card))
-ok('and the card says why it is the exception', /cannot lend you/.test(card.title || ''), card.title)
+ok('cooking from your cupboard asks for a subscription', card.open, JSON.stringify(card))
+ok('and names it', /Cooking from your cupboard/.test(card.title || ''), card.title)
 
 console.log(`\n${fails === 0 ? 'ALL PASS' : fails + ' FAILED'}`)
 await browser.close()
