@@ -114,12 +114,22 @@ function HomePage() {
       <JsonLd data={APP_SCHEMA} />
       <main>
         <section className="relative overflow-hidden">
+          {/*
+              THE ALPHA IS IN THE COLOUR, NOT IN AN OPACITY.
+
+              This was `opacity-40` over `#e0a34033`. An opacity below 1 on a
+              full-bleed absolutely positioned box makes a stacking context and
+              hands WebKit a viewport-sized layer to composite for a gradient
+              that is barely there. 0x33 (20%) at 40% is 0x14, so the colour
+              below is the same pixels with one layer fewer — and one fewer
+              thing for a phone short on memory to get wrong.
+          */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 opacity-40"
+            className="pointer-events-none absolute inset-0"
             style={{
               background:
-                'radial-gradient(ellipse 70% 50% at 50% -10%, #e0a34033, transparent 60%)',
+                'radial-gradient(ellipse 70% 50% at 50% -10%, #e0a34014, transparent 60%)',
             }}
           />
           <div className="relative mx-auto max-w-5xl px-6 pt-16 pb-20 text-center fade-in-up sm:pt-24">

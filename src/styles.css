@@ -1,4 +1,14 @@
-@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&display=swap");
+/*
+ * THE FONT IS FETCHED FROM THE DOCUMENT HEAD, NOT FROM HERE.
+ *
+ * It used to be an `@import` on this line. An @import is the slowest way a
+ * page can ask for anything: the browser has to fetch this stylesheet, parse
+ * it, find the rule, fetch Google's stylesheet, parse that, and only then ask
+ * for the font file — four serial round trips before a word is drawn in the
+ * right typeface, on connections where round trips are the whole cost. The
+ * link and the two preconnects in routes/__root.tsx start that chain in
+ * parallel with this file instead.
+ */
 @import "tailwindcss";
 
 :root {

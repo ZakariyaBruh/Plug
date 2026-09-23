@@ -42,6 +42,22 @@ export const Route = createRootRoute({
       },
     ],
     links: [
+      /*
+       * The font, asked for from here rather than through an @import at the
+       * top of styles.css — see the comment there. The preconnects matter more
+       * than they look: Google serves the stylesheet from one host and the
+       * font file from another, and opening both connections while this
+       * document is still arriving takes a DNS lookup, a TCP handshake and a
+       * TLS handshake off the front of the first paint. crossOrigin is
+       * required on the gstatic one, and it is what makes the preconnect
+       * actually get reused rather than thrown away.
+       */
+      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+      { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&display=swap',
+      },
       {
         rel: 'stylesheet',
         href: appCss,
