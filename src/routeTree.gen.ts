@@ -22,6 +22,7 @@ import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiDailyRouteImport } from './routes/api/daily'
+import { Route as ApiDbHealthRouteImport } from './routes/api/db-health'
 import { Route as ApiHouseholdRouteImport } from './routes/api/household'
 import { Route as ApiMenuRouteImport } from './routes/api/menu'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
@@ -104,6 +105,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
 const ApiDailyRoute = ApiDailyRouteImport.update({
   id: '/api/daily',
   path: '/api/daily',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDbHealthRoute = ApiDbHealthRouteImport.update({
+  id: '/api/db-health',
+  path: '/api/db-health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHouseholdRoute = ApiHouseholdRouteImport.update({
@@ -211,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/db-health': typeof ApiDbHealthRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/db-health': typeof ApiDbHealthRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
@@ -278,6 +286,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/db-health': typeof ApiDbHealthRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
@@ -313,6 +322,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/daily'
+    | '/api/db-health'
     | '/api/household'
     | '/api/menu'
     | '/api/news'
@@ -346,6 +356,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/daily'
+    | '/api/db-health'
     | '/api/household'
     | '/api/menu'
     | '/api/news'
@@ -379,6 +390,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/daily'
+    | '/api/db-health'
     | '/api/household'
     | '/api/menu'
     | '/api/news'
@@ -413,6 +425,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiDailyRoute: typeof ApiDailyRoute
+  ApiDbHealthRoute: typeof ApiDbHealthRoute
   ApiHouseholdRoute: typeof ApiHouseholdRoute
   ApiMenuRoute: typeof ApiMenuRoute
   ApiNewsRoute: typeof ApiNewsRoute
@@ -523,6 +536,13 @@ declare module '@tanstack/react-router' {
       path: '/api/daily'
       fullPath: '/api/daily'
       preLoaderRoute: typeof ApiDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/db-health': {
+      id: '/api/db-health'
+      path: '/api/db-health'
+      fullPath: '/api/db-health'
+      preLoaderRoute: typeof ApiDbHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/household': {
@@ -679,6 +699,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
   ApiDailyRoute: ApiDailyRoute,
+  ApiDbHealthRoute: ApiDbHealthRoute,
   ApiHouseholdRoute: ApiHouseholdRoute,
   ApiMenuRoute: ApiMenuRoute,
   ApiNewsRoute: ApiNewsRoute,
