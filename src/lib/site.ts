@@ -96,7 +96,7 @@ export const CLARITY_ID = 'ymncebz070'
  * measurement id from Admin -> Data streams (it looks like G-XXXXXXXXXX),
  * and put it here. Nothing else to wire.
  */
-export const GA4_ID = ''
+export const GA4_ID = 'G-M5PMRS475E'
 
 /** Everything downstream reads this rather than testing the string itself. */
 export const GA4_ON = GA4_ID.length > 0
