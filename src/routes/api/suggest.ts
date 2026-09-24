@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
+import { askGemini } from '#/lib/gemini'
 
 /*
  * /api/suggest — what to eat next, argued from what you already liked.
@@ -21,12 +22,8 @@ import { ALL_DISHES } from '#/lib/dishes'
  * leaves the worker.
  */
 
-const MODEL = 'gemini-3.5-flash-lite'
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
-
 const MAX_LIKED = 24 // how much history is worth sending
 const WANT = 4 // dishes asked for
-const TIMEOUT_MS = 12000
 const MAX_OUTPUT_TOKENS = 700
 
 type Ask = { liked?: unknown; avoid?: unknown; answers?: unknown }
@@ -108,39 +105,33 @@ export const Route = createFileRoute('/api/suggest')({
         const avoid = names(ask.avoid, MAX_LIKED)
         const answers = answerLines(ask.answers)
 
-        const control = new AbortController()
-        const timer = setTimeout(() => control.abort(), TIMEOUT_MS)
         type Answer = { candidates?: { content?: { parts?: { text?: string }[] } }[] }
         let payload: Answer | null = null
+        const { res, lastStatus } = await askGemini(
+          key,
+          JSON.stringify({
+            systemInstruction: { parts: [{ text: instruction(liked, avoid, answers) }] },
+            contents: [{ role: 'user', parts: [{ text: 'What should I eat?' }] }],
+            generationConfig: {
+              maxOutputTokens: MAX_OUTPUT_TOKENS,
+              temperature: 0.9,
+              // Asking for JSON and being given prose is the commonest way
+              // this fails; the model can be told to answer in JSON properly
+              // rather than asked nicely in the prompt.
+              responseMimeType: 'application/json',
+              thinkingConfig: { thinkingLevel: 'low' },
+            },
+          }),
+          'suggest',
+        )
+        if (!res) {
+          return json({ error: lastStatus === 429 ? 'busy' : 'unavailable' }, 502)
+        }
         try {
-          const res = await fetch(ENDPOINT, {
-            method: 'POST',
-            signal: control.signal,
-            headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: instruction(liked, avoid, answers) }] },
-              contents: [{ role: 'user', parts: [{ text: 'What should I eat?' }] }],
-              generationConfig: {
-                maxOutputTokens: MAX_OUTPUT_TOKENS,
-                temperature: 0.9,
-                // Asking for JSON and being given prose is the commonest way
-                // this fails; the model can be told to answer in JSON properly
-                // rather than asked nicely in the prompt.
-                responseMimeType: 'application/json',
-                thinkingConfig: { thinkingLevel: 'low' },
-              },
-            }),
-          })
-          if (!res.ok) {
-            console.error('suggest: gemini answered', res.status)
-            return json({ error: res.status === 429 ? 'busy' : 'unavailable' }, 502)
-          }
           payload = (await res.json()) as Answer
         } catch (err) {
-          console.error('suggest: no answer', err)
+          console.error('suggest: unreadable answer', err)
           return json({ error: 'unavailable' }, 502)
-        } finally {
-          clearTimeout(timer)
         }
 
         const text = (payload?.candidates?.[0]?.content?.parts ?? [])

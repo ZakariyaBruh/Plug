@@ -4039,7 +4039,7 @@
      * or three prompts they all go at the end, where nothing is waiting.
      */
     if (asked === 4 && gameBudget >= 4 && panel === 'question') {
-      setTimeout(function () { if (panel === 'question') fillSlot(false); }, 900);
+      setTimeout(function () { if (panel === 'question') fillSlot(); }, 900);
     }
   }
 
@@ -4155,7 +4155,7 @@
         // been written yet, so the answer is about the servings BEFORE this
         // one.
         var moment = momentFor(top && top.name);
-        setTimeout(function () { if (panel === 'result') fillSlot(false, moment); }, 2200);
+        setTimeout(function () { if (panel === 'result') fillSlot(moment); }, 2200);
       }
     }
 
@@ -4484,7 +4484,7 @@
      * the first commit. The ids inside the panel are done-icon and done-name,
      * which is where the wrong word came from and why it never looked wrong.
      */
-    setTimeout(function () { if (panel === 'reward') fillSlot(true); }, 1400);
+    setTimeout(function () { if (panel === 'reward') fillSlot(); }, 1400);
     $('xp-total').textContent = '+' + outcome.total;
 
     var list = $('awards');
@@ -5338,7 +5338,7 @@
    * HOW MANY PROMPTS ONE GAME IS ALLOWED, and where they are allowed to land.
    *
    * A game is one play-through: from starting a decision to accepting one.
-   * On Standard that game gets a budget of between two and five prompts,
+   * On Standard that game gets a budget of two or three prompts,
    * drawn once when the game starts so the pace varies between games instead
    * of being the same every time. A Premium member gets one: they have
    * already bought the only thing this roster sells.
@@ -5348,18 +5348,24 @@
    * one of them steals focus in the middle of a train of thought that takes
    * about a minute to finish. So the slots are the two places the game has
    * already stopped — the verdict and the reward screen — plus one quiet
-   * point in the middle, and the reward screen then spends whatever is left
-   * over, one prompt after the next, each waiting for the one before it to be
-   * closed. Same count, and nothing interrupted.
+   * point in the middle — one prompt at most in each.
+   *
+   * THE REWARD SCREEN USED TO SPEND WHATEVER WAS LEFT, one prompt after the
+   * next, each waiting for the last to be closed. On a first decision that
+   * meant two Premium cards back to back over the screen that says what else
+   * is free — "Not now" on the first one produced the second. That is the
+   * moment most people leave, and the thing covering the way further in was
+   * a second ask. So it is one there too, and with three places to stop the
+   * budget tops out at three — it was drawn up to five.
    *
    * WHAT FILLS A SLOT, in order. The two bespoke prompts first, when they
    * are due: they are about a specific thing, they keep their own state and
    * they are rare by design. Then the ads, which are what makes a budget of
-   * five reachable at all — an offer with nothing behind it but "not now"
+   * three reachable at all — an offer with nothing behind it but "not now"
    * comes back, where a survey answered is answered forever.
    */
   var GAME_BUDGET_MIN = 2;
-  var GAME_BUDGET_MAX = 5;
+  var GAME_BUDGET_MAX = 3;
 
   /*
    * A MEMBER GETS NO PROMPTS AT ALL.
@@ -5418,12 +5424,11 @@
   /*
    * Spend one prompt, if there is budget and something worth showing.
    *
-   * `chain` keeps going after each one is closed until the budget is gone —
-   * only used on the reward screen, where nothing is waiting. Returns whether
-   * anything was shown, so a caller can tell a spent budget from an empty
-   * roster.
+   * One per call, never chained — see the note over GAME_BUDGET_MIN. Returns
+   * whether anything was shown, so a caller can tell a spent budget from an
+   * empty roster.
    */
-  function fillSlot(chain, moment) {
+  function fillSlot(moment) {
     // Capped live rather than trusting the number drawn at the start of the
     // game: Premium is settled by a request to the server, so the very first
     // game of a session can begin before the answer is back. Reading isPlus()
@@ -5449,16 +5454,6 @@
     if (!shown) return false;
     gameSpent += 1;
 
-    if (chain) {
-      var dlg = $(shown);
-      // The dialog's own close event, so the next one waits for this one to be
-      // dealt with however it was dealt with. Two prompts on screen at once is
-      // not two chances, it is one person closing two things.
-      dlg.addEventListener('close', function once() {
-        dlg.removeEventListener('close', once);
-        setTimeout(function () { if (panel === 'reward') fillSlot(true); }, 500);
-      });
-    }
     return true;
   }
 

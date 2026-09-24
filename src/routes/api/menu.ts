@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
+import { askGemini } from '#/lib/gemini'
 
 /*
  * /api/menu — five courses that go together, argued for.
@@ -21,9 +22,6 @@ import { ALL_DISHES } from '#/lib/dishes'
  * end wearing the app's own styling.
  */
 
-const MODEL = 'gemini-3.5-flash-lite'
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
-
 /*
  * FIVE, IN EATING ORDER, and the same five ids the game uses in COURSES.
  * A course named here that the game does not know would come back from the
@@ -33,7 +31,6 @@ const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODE
 const COURSES = ['nibble', 'starter', 'main', 'pudding', 'nightcap'] as const
 const MAX_LIKED = 20
 const MAX_PROMPT = 400
-const TIMEOUT_MS = 12000
 const MAX_OUTPUT_TOKENS = 700
 
 type Ask = {
@@ -195,36 +192,30 @@ export const Route = createFileRoute('/api/menu')({
         const avoid = names(ask.avoid, MAX_LIKED)
         const pinned = kept(ask.keep)
 
-        const control = new AbortController()
-        const timer = setTimeout(() => control.abort(), TIMEOUT_MS)
         type Answer = { candidates?: { content?: { parts?: { text?: string }[] } }[] }
         let payload: Answer | null = null
+        const { res, lastStatus } = await askGemini(
+          key,
+          JSON.stringify({
+            systemInstruction: { parts: [{ text: instruction(said, liked, avoid, pinned) }] },
+            contents: [{ role: 'user', parts: [{ text: 'Write me the menu.' }] }],
+            generationConfig: {
+              maxOutputTokens: MAX_OUTPUT_TOKENS,
+              temperature: 0.85,
+              responseMimeType: 'application/json',
+              thinkingConfig: { thinkingLevel: 'low' },
+            },
+          }),
+          'menu',
+        )
+        if (!res) {
+          return json({ error: lastStatus === 429 ? 'busy' : 'unavailable' }, 502)
+        }
         try {
-          const res = await fetch(ENDPOINT, {
-            method: 'POST',
-            signal: control.signal,
-            headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: instruction(said, liked, avoid, pinned) }] },
-              contents: [{ role: 'user', parts: [{ text: 'Write me the menu.' }] }],
-              generationConfig: {
-                maxOutputTokens: MAX_OUTPUT_TOKENS,
-                temperature: 0.85,
-                responseMimeType: 'application/json',
-                thinkingConfig: { thinkingLevel: 'low' },
-              },
-            }),
-          })
-          if (!res.ok) {
-            console.error('menu: gemini answered', res.status)
-            return json({ error: res.status === 429 ? 'busy' : 'unavailable' }, 502)
-          }
           payload = (await res.json()) as Answer
         } catch (err) {
-          console.error('menu: no answer', err)
+          console.error('menu: unreadable answer', err)
           return json({ error: 'unavailable' }, 502)
-        } finally {
-          clearTimeout(timer)
         }
 
         const text = (payload?.candidates?.[0]?.content?.parts ?? [])

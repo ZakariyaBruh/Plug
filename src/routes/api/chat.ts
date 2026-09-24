@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
+import { askGemini } from '#/lib/gemini'
 import { CHAT_PER_DAY, isPremium, spend, today, usedToday, visitorKey } from '#/lib/allowance'
 
 /*
@@ -25,9 +26,6 @@ import { CHAT_PER_DAY, isPremium, spend, today, usedToday, visitorKey } from '#/
  * textContent at the other end.
  */
 
-const MODEL = 'gemini-3.5-flash-lite'
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
-
 const MAX_MESSAGE = 500 // characters in one question
 const MAX_TURNS = 12 // how far back the conversation is carried
 /*
@@ -39,37 +37,7 @@ const MAX_TURNS = 12 // how far back the conversation is carried
  * comfortably clear of what low-effort thinking costs.
  */
 const MAX_OUTPUT_TOKENS = 900
-/*
- * HOW THIS THING IS MADE TO ANSWER.
- *
- * The wait was never generation. Against the streaming endpoint the first
- * token and the last are about a hundred milliseconds apart, so the model
- * writes the whole answer almost instantly. What varies is whether it starts
- * at all: asked four different models in a row, three answered 503 "currently
- * experiencing high demand" after seventeen to twenty-one seconds. The free
- * tier is oversubscribed, and a request that loses that draw is slow and then
- * useless.
- *
- * Two things follow. A refusal has to be retried rather than reported — the
- * old code hedged against slowness only, so a fast 503 came straight back as
- * an error when trying again would very likely have worked. And attempts
- * should overlap rather than queue, because waiting out one bad draw before
- * taking the next costs the reader the sum of both.
- *
- * So: a second attempt, started once the first has failed or has been quiet
- * for STAGGER_MS, and the first real answer wins — a 503, a 429 or a timeout
- * just loses its go.
- *
- * TWO, NOT MORE, AND THIS IS THE INTERESTING PART. Retrying costs quota, and
- * quota is the thing actually running out: firing three attempts each for
- * twelve questions in under a minute got every single one refused with 429,
- * where the same test at two attempts answered every time. Past a point the
- * cure is the disease, and on a free key that point is low.
- */
-const STAGGER_MS = 2500
-const MAX_ATTEMPTS = 2
-const ATTEMPT_MS = 10000
-const TIMEOUT_MS = 12000
+// How it is asked — two overlapping attempts on two models — is lib/gemini.ts.
 
 /*
  * Abuse control, and an honest note about what it is.
@@ -168,81 +136,6 @@ function instruction() {
   ].join('\n')
 }
 
-/*
- * Overlapping attempts, first real answer wins.
- *
- * Every attempt carries its own controller so the losers are cancelled as
- * soon as one succeeds — a request nobody is waiting for still costs money
- * and still counts against a quota that is evidently already strained.
- */
-async function askGemini(key: string, body: string): Promise<Response | null> {
-  const running: AbortController[] = []
-  let winnerControl: AbortController | null = null
-  let settled = false
-  let lastStatus = 0
-
-  // NEVER the winner's own controller. Aborting that cancels the response
-  // whose body is about to be read, which looks exactly like the model
-  // answering with nothing — a fast, repeatable "no_answer" that has nothing
-  // to do with the model at all.
-  const stopOthers = (keep?: AbortController) => {
-    for (const c of running) if (c !== keep) c.abort()
-  }
-
-  const attempt = async (): Promise<Response> => {
-    const control = new AbortController()
-    running.push(control)
-    const timer = setTimeout(() => control.abort(), ATTEMPT_MS)
-    try {
-      const res = await fetch(ENDPOINT, {
-        method: 'POST',
-        signal: control.signal,
-        headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
-        body,
-      })
-      // A refusal is not an answer. Throwing here keeps it out of the race so
-      // another attempt can still win, instead of this one "finishing" first
-      // with a 503 and taking the whole request down with it.
-      if (!res.ok) {
-        lastStatus = res.status
-        throw new Error('gemini ' + res.status)
-      }
-      settled = true
-      winnerControl = control
-      stopOthers(control)
-      return res
-    } finally {
-      clearTimeout(timer)
-    }
-  }
-
-  const tries: Promise<Response>[] = [attempt()]
-  const winner = Promise.any(
-    // Promise.any needs every entry up front, so the later attempts are
-    // promises that wait their turn and then only bother if nobody has won.
-    [
-      tries[0],
-      ...Array.from({ length: MAX_ATTEMPTS - 1 }, (_, i) =>
-        new Promise<void>((r) => setTimeout(r, STAGGER_MS * (i + 1))).then(() => {
-          if (settled) throw new Error('already answered')
-          return attempt()
-        }),
-      ),
-    ],
-  )
-
-  const capped = new Promise<null>((r) => setTimeout(() => r(null), TIMEOUT_MS))
-  const result = await Promise.race([winner.catch(() => null), capped])
-  // Same rule on the way out: tidy up the losers, leave the winner's body
-  // alone so the caller can actually read it.
-  stopOthers(winnerControl ?? undefined)
-  if (!result) {
-    console.error('chat: no attempt answered', lastStatus ? 'last status ' + lastStatus : 'timed out')
-    return null
-  }
-  return result
-}
-
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -324,14 +217,10 @@ export const Route = createFileRoute('/api/chat')({
             },
         })
 
-        const answer = await askGemini(key, body)
-        if (!answer) return json({ error: 'unavailable' }, 502)
-        if (!answer.ok) {
-          console.error('chat: gemini answered', answer.status)
-          // 429 from Gemini is the account's own quota, not this visitor's —
-          // told apart so the page can say which it was.
-          return json({ error: answer.status === 429 ? 'busy' : 'unavailable' }, 502)
-        }
+        const { res: answer, lastStatus } = await askGemini(key, body, 'chat')
+        // 429 from Gemini is the account's own quota, not this visitor's —
+        // told apart so the page can say which it was.
+        if (!answer) return json({ error: lastStatus === 429 ? 'busy' : 'unavailable' }, 502)
 
         const payload = (await answer.json().catch(() => null)) as {
           candidates?: { content?: { parts?: { text?: string }[] }; finishReason?: string }[]

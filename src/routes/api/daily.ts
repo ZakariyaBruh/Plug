@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
+import { askGemini } from '#/lib/gemini'
 
 /*
  * /api/daily — five dishes to try, written fresh each day.
@@ -25,10 +26,7 @@ import { ALL_DISHES } from '#/lib/dishes'
  * worldwide rather than once a visit.
  */
 
-const MODEL = 'gemini-3.5-flash-lite'
-const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
 const WANTED = 5
-const TIMEOUT_MS = 12000
 const MAX_OUTPUT_TOKENS = 1400
 
 /*
@@ -190,38 +188,32 @@ export const Route = createFileRoute('/api/daily')({
         const known = ALL_DISHES.map((d) => d.name)
         const taken = new Set(known.map((n) => n.toLowerCase()))
 
-        const control = new AbortController()
-        const timer = setTimeout(() => control.abort(), TIMEOUT_MS)
         type Answer = { candidates?: { content?: { parts?: { text?: string }[] } }[] }
         let payload: Answer | null = null
+        const { res } = await askGemini(
+          key,
+          JSON.stringify({
+            systemInstruction: { parts: [{ text: instruction(known) }] },
+            // The date is in the prompt so a given day reads the same way
+            // wherever it is generated, and so two days running differ.
+            contents: [{ role: 'user', parts: [{ text: `Five to try on ${day}.` }] }],
+            generationConfig: {
+              maxOutputTokens: MAX_OUTPUT_TOKENS,
+              temperature: 1,
+              responseMimeType: 'application/json',
+              thinkingConfig: { thinkingLevel: 'low' },
+            },
+          }),
+          'daily',
+        )
+        if (!res) {
+          return json({ dishes: [], day }, 200, 300)
+        }
         try {
-          const res = await fetch(ENDPOINT, {
-            method: 'POST',
-            signal: control.signal,
-            headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: instruction(known) }] },
-              // The date is in the prompt so a given day reads the same way
-              // wherever it is generated, and so two days running differ.
-              contents: [{ role: 'user', parts: [{ text: `Five to try on ${day}.` }] }],
-              generationConfig: {
-                maxOutputTokens: MAX_OUTPUT_TOKENS,
-                temperature: 1,
-                responseMimeType: 'application/json',
-                thinkingConfig: { thinkingLevel: 'low' },
-              },
-            }),
-          })
-          if (!res.ok) {
-            console.error('daily: gemini answered', res.status)
-            return json({ dishes: [], day }, 200, 300)
-          }
           payload = (await res.json()) as Answer
         } catch (err) {
-          console.error('daily: no answer', err)
+          console.error('daily: unreadable answer', err)
           return json({ dishes: [], day }, 200, 300)
-        } finally {
-          clearTimeout(timer)
         }
 
         const text = (payload?.candidates?.[0]?.content?.parts ?? [])
