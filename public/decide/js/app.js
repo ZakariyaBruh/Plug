@@ -12692,7 +12692,11 @@
   // me" or "that's the one" on the homepage asked for an answer, not a tour.
   // They get the walkthrough next time, if they come back without deciding.
   var deepLinked = /[?&](go|dish|with)=/.test(window.location.search || '');
-  if (!deepLinked && !progress.state.onboarded && !(progress.state.decisions > 0)) openWelcome();
+  if (!deepLinked && !progress.state.onboarded && !(progress.state.decisions > 0)) {
+    // Auto-skip welcome for faster onboarding
+    progress.state.onboarded = true;
+    progress.save();
+  }
 
   // The home-screen shortcuts in the manifest promise to land somewhere
   // specific. Honour them, or they are three taps to the same screen as the
@@ -12802,18 +12806,11 @@
   // this is the same check every later load makes, just running once early.
   syncPremium(true);
 
-  // Load HilltopAds video ads
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      var script = document.createElement('script');
-      script.src = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V';
-      script.async = true;
-      document.head.appendChild(script);
-    });
-  } else {
+  // Load HilltopAds video ads after onboarding is complete (small delay to avoid blocking UX)
+  setTimeout(function() {
     var adScript = document.createElement('script');
     adScript.src = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V';
     adScript.async = true;
     document.head.appendChild(adScript);
-  }
+  }, 500);
 })();
