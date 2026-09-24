@@ -180,7 +180,8 @@ export const Route = createFileRoute('/api/chat')({
         // The daily allowance. Premium is only looked up once somebody is out,
         // so the ordinary free question never waits on a call to Whop.
         const mine = await standing(request)
-        const metered = !(mine.used !== null && mine.used >= CHAT_PER_DAY && (await isPremium(request)))
+        const isPrem = mine.used !== null && mine.used >= CHAT_PER_DAY ? await isPremium(request) : false
+        const metered = !(mine.used !== null && mine.used >= CHAT_PER_DAY && isPrem)
         if (metered && mine.left === 0) {
           return json({ error: 'limit', left: 0, limit: CHAT_PER_DAY }, 402)
         }
