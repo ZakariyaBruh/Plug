@@ -2276,6 +2276,18 @@
   </div>
 </dialog>
 
+<!-- A sponsor's video, for the free tier only, filled from a VAST tag in
+     js/app.js. It takes a slot from the same per-game budget as the cards. -->
+<dialog class="sheet enjoy-sheet video-sheet" id="video-sheet" aria-label="Sponsored video">
+  <p class="fine video-label">Sponsored &middot; keeps morsels45 free</p>
+  <video id="video-ad" playsinline muted preload="auto"></video>
+  <div class="enjoy-actions">
+    <button class="quiet" id="video-sound" type="button">Sound on</button>
+    <a class="quiet" id="video-more" target="_blank" rel="noopener noreferrer sponsored" hidden>Learn more</a>
+    <button class="go go-sm" id="video-skip" type="button" disabled>Skip in 5</button>
+  </div>
+</dialog>
+
 <!-- The third prompt, and the only one that asks for nothing. It is never
      shown to somebody who has not already said they like this. -->
 <dialog class="sheet enjoy-sheet" id="share-sheet" aria-labelledby="share-title">

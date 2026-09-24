@@ -5410,10 +5410,11 @@
     gameBudget = isPlus()
       ? GAME_BUDGET_PLUS
       : GAME_BUDGET_MIN + Math.floor(Math.random() * (GAME_BUDGET_MAX - GAME_BUDGET_MIN + 1));
+    if (!isPlus()) loadVideoAd();
   }
 
   function anySheetOpen() {
-    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet'];
+    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'video-sheet', 'dish-sheet'];
     for (var i = 0; i < ids.length; i++) {
       var dlg = document.getElementById(ids[i]);
       if (dlg && dlg.open) return true;
@@ -5449,6 +5450,10 @@
     var shown = null;
     if (!plus && enjoyDue()) { openEnjoy(); shown = 'enjoy-sheet'; }
     else if (!plus && shareDue()) { openShare(); shown = 'share-sheet'; }
+    else if (!plus && !moment && gameAds.indexOf('video') === -1 && openVideoAd()) {
+      gameAds.push('video');
+      shown = 'video-sheet';
+    }
     else if (openAd(nextAd(moment))) { shown = 'ad-sheet'; }
 
     if (!shown) return false;
@@ -5694,6 +5699,154 @@
     var top = $('topbar-premium');
     if (top) top.addEventListener('click', function () { beacon('premium_clicked', { from: 'topbar' }); });
   })();
+
+  /* ------------------------------------------------------- the video ad */
+  /*
+   * HilltopAds zone #7456985. A VAST tag is an XML document for a video
+   * player, not a script: loading it with a <script> tag can never show
+   * anything. So it is fetched, read, and played in a sheet of our own.
+   * Fetched ahead at the start of a free game so the slot never waits on it;
+   * if nothing usable comes back the slot falls through to a card.
+   */
+  var VAST_URL = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V';
+  var VIDEO_SKIP_AFTER = 5;
+  var videoAd = null;
+  var videoLoading = null;
+  var videoTimer = null;
+  var videoOpener = null;
+  var adShowingVideo = null;
+
+  function vastText(node) { return node ? (node.textContent || '').trim() : ''; }
+
+  function pingAll(urls) {
+    urls.forEach(function (u) { if (u) { var img = new Image(); img.src = u; } });
+  }
+
+  function readVast(url, depth, carried) {
+    return fetch(url, { credentials: 'omit', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('VAST ' + r.status); return r.text(); })
+      .then(function (xml) {
+        var doc = new DOMParser().parseFromString(xml, 'text/xml');
+        var ad = doc.querySelector('Ad');
+        if (!ad) throw new Error('VAST came back empty');
+        var impressions = carried.impressions.concat(
+          Array.prototype.map.call(ad.querySelectorAll('Impression'), vastText));
+        var tracking = carried.tracking.slice();
+        Array.prototype.forEach.call(ad.querySelectorAll('Tracking'), function (t) {
+          tracking.push({ event: t.getAttribute('event'), url: vastText(t) });
+        });
+        var wrapped = ad.querySelector('Wrapper VASTAdTagURI');
+        if (wrapped) {
+          if (depth >= 4) throw new Error('VAST wrappers nested too deep');
+          return readVast(vastText(wrapped), depth + 1, { impressions: impressions, tracking: tracking });
+        }
+        var probe = document.createElement('video');
+        var files = Array.prototype.filter.call(ad.querySelectorAll('Linear MediaFile'), function (m) {
+          var type = m.getAttribute('type') || '';
+          return vastText(m) && (!type || probe.canPlayType(type));
+        });
+        if (!files.length) throw new Error('VAST has no playable video');
+        files.sort(function (a, b) {
+          return Math.abs((+a.getAttribute('width') || 640) - 640) - Math.abs((+b.getAttribute('width') || 640) - 640);
+        });
+        return {
+          src: vastText(files[0]),
+          click: vastText(ad.querySelector('Linear VideoClicks ClickThrough')),
+          clicks: Array.prototype.map.call(ad.querySelectorAll('Linear VideoClicks ClickTracking'), vastText),
+          impressions: impressions,
+          tracking: tracking
+        };
+      });
+  }
+
+  function loadVideoAd() {
+    if (videoAd) return Promise.resolve(videoAd);
+    if (!videoLoading) {
+      videoLoading = readVast(VAST_URL, 0, { impressions: [], tracking: [] })
+        .then(function (ad) { videoAd = ad; return ad; })
+        .catch(function (err) { console.warn('Video ad unavailable:', err.message); return null; })
+        .then(function (ad) { videoLoading = null; return ad; });
+    }
+    return videoLoading;
+  }
+
+  function videoTrack(event) {
+    if (!adShowingVideo) return;
+    pingAll(adShowingVideo.tracking.filter(function (t) { return t.event === event; })
+      .map(function (t) { return t.url; }));
+  }
+
+  function openVideoAd(preview) {
+    var ad = videoAd;
+    if (!ad) return false;
+    videoAd = null;
+    adShowingVideo = ad;
+    var video = $('video-ad');
+    video.muted = true;
+    video.src = ad.src;
+    $('video-sound').hidden = false;
+    $('video-more').hidden = !ad.click;
+    if (ad.click) $('video-more').href = ad.click;
+
+    var left = VIDEO_SKIP_AFTER;
+    var skip = $('video-skip');
+    skip.disabled = true;
+    skip.textContent = 'Skip in ' + left;
+    clearInterval(videoTimer);
+    videoTimer = setInterval(function () {
+      left -= 1;
+      if (left > 0) { skip.textContent = 'Skip in ' + left; return; }
+      clearInterval(videoTimer);
+      skip.disabled = false;
+      skip.textContent = 'Skip';
+    }, 1000);
+
+    if (!preview) pingAll(ad.impressions);
+
+    videoOpener = document.activeElement;
+    var dlg = $('video-sheet');
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    var played = video.play();
+    if (played && played.catch) played.catch(function () {});
+    videoTrack('start');
+    return true;
+  }
+
+  function closeVideoAd() {
+    clearInterval(videoTimer);
+    var video = $('video-ad');
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
+    adShowingVideo = null;
+    var dlg = $('video-sheet');
+    if (dlg.open && dlg.close) dlg.close(); else dlg.removeAttribute('open');
+    focusQuietly(videoOpener);
+    // Ready the next one for the next slot.
+    if (!isPlus()) loadVideoAd();
+  }
+
+  $('video-skip').addEventListener('click', function () { videoTrack('skip'); Sound.tick(); closeVideoAd(); });
+  $('video-ad').addEventListener('ended', function () {
+    videoTrack('complete');
+    var skip = $('video-skip');
+    clearInterval(videoTimer);
+    skip.disabled = false;
+    skip.textContent = 'Close';
+  });
+  $('video-sound').addEventListener('click', function () {
+    $('video-ad').muted = false;
+    videoTrack('unmute');
+    this.hidden = true;
+  });
+  $('video-more').addEventListener('click', function () {
+    if (adShowingVideo) pingAll(adShowingVideo.clicks);
+  });
+  // Escape closes it only once skipping is allowed.
+  $('video-sheet').addEventListener('cancel', function (e) {
+    e.preventDefault();
+    if (!$('video-skip').disabled) closeVideoAd();
+  });
 
   $('ad-later').addEventListener('click', function () { Sound.tick(); closeAd(); });
   $('ad-close').addEventListener('click', closeAd);
@@ -12757,7 +12910,7 @@
      */
     var wanted = (here.searchParams.get('prompt') || '').toLowerCase();
     if (wanted) {
-      var queue = wanted === 'all' ? ['enjoy', 'share', 'ads']
+      var queue = wanted === 'all' ? ['enjoy', 'share', 'video', 'ads']
                 : wanted === 'ads' ? ['ads']
                 : [wanted];
       previewPrompts(queue);
@@ -12770,7 +12923,16 @@
    * timer, so a slow read does not stack two sheets on top of each other.
    */
   function previewPrompts(names) {
-    var openers = { enjoy: openEnjoy, share: openShare };
+    var openers = {
+      enjoy: openEnjoy,
+      share: openShare,
+      video: function () {
+        loadVideoAd().then(function (ad) {
+          if (ad) openVideoAd(true);
+          else toast('\u{1F4FA}', 'No video ad came back', 'The ad network returned nothing for this visit.');
+        });
+      }
+    };
     // 'ads' expands to one preview of every card in the roster, in order, so
     // the whole rotation can be read in one go rather than played for.
     var queue = [];
@@ -12805,17 +12967,4 @@
   // checkout at /premium already attached access to the account directly, so
   // this is the same check every later load makes, just running once early.
   syncPremium(true);
-
-  // Load HilltopAds video ads after onboarding is complete
-  window.addEventListener('load', function() {
-    setTimeout(function() {
-      var adScript = document.createElement('script');
-      adScript.src = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V';
-      adScript.async = true;
-      adScript.crossOrigin = 'anonymous';
-      adScript.onerror = function() { console.log('Ad script failed to load'); };
-      adScript.onload = function() { console.log('Ad script loaded'); };
-      document.body.appendChild(adScript);
-    }, 1000);
-  });
 })();

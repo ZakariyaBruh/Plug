@@ -205,19 +205,17 @@ const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
       ]
     : []),
   {
-    q: 'Is there advertising or cross-site tracking?',
-    a: 'No',
+    q: 'Is there advertising?',
+    a: 'Free tier only',
     /*
-     * The note changes with GA4_ON and the answer does not, which is a
-     * distinction worth defending rather than fudging. Advertising: none,
-     * either way. Cross-site: Google Analytics set up the way this one is —
-     * no Signals, no advertising features, no user id — counts what happens
-     * on this site and does not follow anybody off it. So "No" stays true
-     * and the note stops claiming something that would not be.
+     * The free game shows the odd sponsored video from HilltopAds, fetched
+     * straight from their servers, so they see the request like any ad
+     * network would. Premium shows none. This app adds no advertising pixel
+     * of its own, and Google Analytics runs with its advertising features off.
      */
     note: GA4_ON
-      ? 'No advertising pixel, and nothing that follows you to other sites. Google Analytics is here, counting pages and the eighteen events listed below — with none of its advertising features switched on.'
-      : 'No Google Analytics, no advertising pixel of our own, and nothing that follows you to other sites.',
+      ? 'Free players see the occasional sponsored video from HilltopAds, which receives the request for it (your IP address and browser) the way any ad network does. Premium has none. No advertising pixel of our own, and Google Analytics is counting pages and the eighteen events listed below with its advertising features off.'
+      : 'Free players see the occasional sponsored video from HilltopAds, which receives the request for it (your IP address and browser) the way any ad network does. Premium has none. No Google Analytics and no advertising pixel of our own.',
   },
 ]
 
@@ -238,6 +236,7 @@ const THIRD_PARTIES: [string, string][] = [
   ...(GA4_ON
     ? ([['Google Analytics', 'Counts page views and the eighteen events named above. No advertising features.']] as [string, string][])
     : []),
+  ['HilltopAds', 'Serves the occasional sponsored video in the free game. Not shown to Premium members.'],
   ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions.'],
   ['Hyperbeam', 'Runs the shared browser, when you open one.'],
   ['OpenStreetMap and Photon', 'Look up places near you, when you use Nearby and allow location.'],
