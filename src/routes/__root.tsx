@@ -129,32 +129,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
     initializeAdvisor()
 
-    // Load ad scripts for free users
-    const loadAdScripts = () => {
-      // UnfoldedTrade ad network
-      const unfoldedScript = document.createElement('script')
-      unfoldedScript.innerHTML = `
-(function(xdfkd){
-var d = document,
-    s = d.createElement('script'),
-    l = d.currentScript || d.scripts[d.scripts.length - 1];
-s.settings = xdfkd || {};
-s.src = "\\/\\/unfoldedtrade.com\\/b\\/XwVBsMd.GNlQ0\\/YCW_cK\\/eewms9Wu\\/ZcUYlZkKPCT-cC0rNYTOY\\/5\\/NrjMkFtJN\\/zdQb1KNRjOke3xMdwZ";
-s.async = true;
-s.referrerPolicy = 'no-referrer-when-downgrade';
-l.parentNode.insertBefore(s, l);
-})({})
-      `.trim()
-      document.head.appendChild(unfoldedScript)
-
-      // HilltopAds VAST tag for static and video ads
+    // Load HilltopAds VAST tag for video ads
+    const loadVideoAds = () => {
       const hilltopScript = document.createElement('script')
       hilltopScript.src = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V'
       hilltopScript.async = true
       document.head.appendChild(hilltopScript)
     }
 
-    loadAdScripts()
+    loadVideoAds()
   }, [])
 
   return (
