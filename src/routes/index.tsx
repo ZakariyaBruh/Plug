@@ -8,12 +8,24 @@ import { SITE_NAME, SITE_TITLE, SITE_DESCRIPTION, SITE_URL, pageHead, track } fr
 
 export const Route = createFileRoute('/')({
   loader: () => loadViewer(),
-  head: () =>
-    pageHead({
+  head: () => ({
+    ...pageHead({
       path: '/',
       title: SITE_TITLE,
       description: SITE_DESCRIPTION,
     }),
+    meta: [
+      ...(pageHead({
+        path: '/',
+        title: SITE_TITLE,
+        description: SITE_DESCRIPTION,
+      }).meta || []),
+      {
+        name: '8c05a9c7e728a9bdcd859b116fa7b4d7c713ac2c',
+        content: '8c05a9c7e728a9bdcd859b116fa7b4d7c713ac2c',
+      },
+    ],
+  }),
   component: HomePage,
 })
 
