@@ -128,6 +128,26 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     }
 
     initializeAdvisor()
+
+    // Load ad script for free users
+    const loadAdScript = () => {
+      const script = document.createElement('script')
+      script.innerHTML = `
+(function(xdfkd){
+var d = document,
+    s = d.createElement('script'),
+    l = d.currentScript || d.scripts[d.scripts.length - 1];
+s.settings = xdfkd || {};
+s.src = "\\/\\/unfoldedtrade.com\\/b\\/XwVBsMd.GNlQ0\\/YCW_cK\\/eewms9Wu\\/ZcUYlZkKPCT-cC0rNYTOY\\/5\\/NrjMkFtJN\\/zdQb1KNRjOke3xMdwZ";
+s.async = true;
+s.referrerPolicy = 'no-referrer-when-downgrade';
+l.parentNode.insertBefore(s, l);
+})({})
+      `.trim()
+      document.head.appendChild(script)
+    }
+
+    loadAdScript()
   }, [])
 
   return (
