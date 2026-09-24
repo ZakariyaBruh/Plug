@@ -15,6 +15,7 @@ import { Route as DecideRouteImport } from './routes/decide'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as HonestyRouteImport } from './routes/honesty'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as InfoRouteImport } from './routes/info'
 import { Route as OrderCompleteRouteImport } from './routes/order-complete'
 import { Route as PremiumRouteImport } from './routes/premium'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -70,6 +71,11 @@ const HonestyRoute = HonestyRouteImport.update({
 const HowItWorksRoute = HowItWorksRouteImport.update({
   id: '/how-it-works',
   path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InfoRoute = InfoRouteImport.update({
+  id: '/info',
+  path: '/info',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrderCompleteRoute = OrderCompleteRouteImport.update({
@@ -210,6 +216,7 @@ export interface FileRoutesByFullPath {
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/info': typeof InfoRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
   '/privacy': typeof PrivacyRoute
@@ -244,6 +251,7 @@ export interface FileRoutesByTo {
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/info': typeof InfoRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
   '/privacy': typeof PrivacyRoute
@@ -279,6 +287,7 @@ export interface FileRoutesById {
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/info': typeof InfoRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
   '/privacy': typeof PrivacyRoute
@@ -315,6 +324,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/honesty'
     | '/how-it-works'
+    | '/info'
     | '/order-complete'
     | '/premium'
     | '/privacy'
@@ -349,6 +359,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/honesty'
     | '/how-it-works'
+    | '/info'
     | '/order-complete'
     | '/premium'
     | '/privacy'
@@ -383,6 +394,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/honesty'
     | '/how-it-works'
+    | '/info'
     | '/order-complete'
     | '/premium'
     | '/privacy'
@@ -418,6 +430,7 @@ export interface RootRouteChildren {
   FaqRoute: typeof FaqRoute
   HonestyRoute: typeof HonestyRoute
   HowItWorksRoute: typeof HowItWorksRoute
+  InfoRoute: typeof InfoRoute
   OrderCompleteRoute: typeof OrderCompleteRoute
   PremiumRoute: typeof PremiumRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -487,6 +500,13 @@ declare module '@tanstack/react-router' {
       path: '/how-it-works'
       fullPath: '/how-it-works'
       preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/info': {
+      id: '/info'
+      path: '/info'
+      fullPath: '/info'
+      preLoaderRoute: typeof InfoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/order-complete': {
@@ -692,6 +712,7 @@ const rootRouteChildren: RootRouteChildren = {
   FaqRoute: FaqRoute,
   HonestyRoute: HonestyRoute,
   HowItWorksRoute: HowItWorksRoute,
+  InfoRoute: InfoRoute,
   OrderCompleteRoute: OrderCompleteRoute,
   PremiumRoute: PremiumRoute,
   PrivacyRoute: PrivacyRoute,
