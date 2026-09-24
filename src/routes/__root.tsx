@@ -128,16 +128,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     }
 
     initializeAdvisor()
-
-    // Load HilltopAds VAST tag for video ads
-    const loadVideoAds = () => {
-      const hilltopScript = document.createElement('script')
-      hilltopScript.src = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V'
-      hilltopScript.async = true
-      document.head.appendChild(hilltopScript)
-    }
-
-    loadVideoAds()
   }, [])
 
   return (
