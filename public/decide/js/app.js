@@ -5450,11 +5450,7 @@
     var shown = null;
     if (!plus && enjoyDue()) { openEnjoy(); shown = 'enjoy-sheet'; }
     else if (!plus && shareDue()) { openShare(); shown = 'share-sheet'; }
-    else if (!plus && !moment && gameAds.indexOf('video') === -1 && openVideoAd()) {
-      gameAds.push('video');
-      shown = 'video-sheet';
-    }
-    else if (openAd(nextAd(moment))) { shown = 'ad-sheet'; }
+    else { shown = pickAdSlot(moment); }
 
     if (!shown) return false;
     gameSpent += 1;
@@ -5710,6 +5706,10 @@
    */
   var VAST_URL = 'https://subtle-injury.com/dCmxFVz/d.GON/vgZrGMUY/Fevmg9aueZIUSlZkCPFTVct0CNITEYs5aOlDDUutRNdzoQm1xN/j/k/4ZO-Qj';
   var VIDEO_SKIP_AFTER = 5;
+  // Of the four ad types (video, plus three Premium cards), video is the one
+  // that is meant to win most often. 0.7 means roughly seven plays in ten
+  // pick the video when one is loaded, with the cards splitting the rest.
+  var VIDEO_WEIGHT = 0.7;
   var videoAd = null;
   var videoLoading = null;
   var videoTimer = null;
@@ -5849,6 +5849,72 @@
     e.preventDefault();
     if (!$('video-skip').disabled) closeVideoAd();
   });
+
+  /*
+   * WHICH AD TYPE FILLS A SLOT, shared by fillSlot() (the in-game moments)
+   * and the ambient timer below (everywhere else in the app). Video is
+   * weighted to win most of the draws — see VIDEO_WEIGHT — and the rotating
+   * cards take the rest, or all of it once the video has already played
+   * this game or none has loaded. `moment` cards (e.g. "you have had this
+   * one recently") always go through nextAd() rather than competing with
+   * video, since they only make sense at the instant they are about.
+   */
+  function pickAdSlot(moment) {
+    var videoTurn = !moment && videoAd && gameAds.indexOf('video') === -1 && Math.random() < VIDEO_WEIGHT;
+    if (videoTurn && openVideoAd()) { gameAds.push('video'); return 'video-sheet'; }
+    var card = nextAd(moment);
+    if (card) { openAd(card); return 'ad-sheet'; }
+    if (!moment && videoAd && gameAds.indexOf('video') === -1 && openVideoAd()) {
+      gameAds.push('video');
+      return 'video-sheet';
+    }
+    return null;
+  }
+
+  /*
+   * THE AMBIENT SLOT — everywhere in the app that is not one of the three
+   * moments fillSlot() already covers (mid-question, the verdict, the
+   * reward screen). A free visitor reading Dishes, the Menu, Nearby, News,
+   * Ask or their own Profile sees the same rotation on a loose timer
+   * instead, so ad revenue is not limited to people who are mid-decision.
+   *
+   * Capped per day rather than per game, since there is no game to spend a
+   * budget on out here. Skipped whenever a sheet is already open, the tab
+   * is in the background, or a question is actively being answered — that
+   * moment already has its own slot, and a modal over an in-progress tap is
+   * the one place this should never land.
+   */
+  var AMBIENT_MIN_DELAY = 40e3;   // 40s
+  var AMBIENT_MAX_DELAY = 90e3;   // 90s
+  var AMBIENT_MAX_PER_DAY = 6;
+  var ambientTimer = null;
+
+  function ambientBudgetLeft() {
+    var st = progress.state;
+    var today = todayKey();
+    if (st.ambientDay !== today) { st.ambientDay = today; st.ambientShown = 0; }
+    return AMBIENT_MAX_PER_DAY - (st.ambientShown || 0);
+  }
+
+  function scheduleAmbientAd() {
+    clearTimeout(ambientTimer);
+    if (isPlus()) return;
+    var delay = AMBIENT_MIN_DELAY + Math.random() * (AMBIENT_MAX_DELAY - AMBIENT_MIN_DELAY);
+    ambientTimer = setTimeout(tryAmbientAd, delay);
+  }
+
+  function tryAmbientAd() {
+    if (isPlus()) return; // a member going Premium mid-session gets no more of these
+    if (document.hidden || anySheetOpen() || (view === 'decide' && panel === 'question') ||
+        ambientBudgetLeft() <= 0) {
+      return scheduleAmbientAd();
+    }
+    if (pickAdSlot(null)) {
+      progress.state.ambientShown = (progress.state.ambientShown || 0) + 1;
+      progress.save();
+    }
+    scheduleAmbientAd();
+  }
 
   $('ad-later').addEventListener('click', function () { Sound.tick(); closeAd(); });
   $('ad-close').addEventListener('click', closeAd);
@@ -12972,5 +13038,11 @@
   // account that owns Premium. No key to paste, no purchase to "claim" — the
   // checkout at /premium already attached access to the account directly, so
   // this is the same check every later load makes, just running once early.
-  syncPremium(true);
+  //
+  // The ambient ad timer waits on this rather than starting immediately,
+  // so a Premium member on a fresh device is never shown one while the
+  // network is still confirming what they already paid for.
+  syncPremium(true).then(function (status) {
+    if (!status.hasPremium) { loadVideoAd(); scheduleAmbientAd(); }
+  });
 })();
