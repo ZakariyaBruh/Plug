@@ -120,7 +120,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       try {
         const advisorConfig = await fetch('/advisor.txt').then((res) => res.text())
         if (advisorConfig) {
-          window.__ADVISOR_TOKEN__ = advisorConfig.trim()
+          ;(window as any).__ADVISOR_TOKEN__ = advisorConfig.trim()
         }
       } catch (error) {
         console.warn('Advisor configuration not loaded')
