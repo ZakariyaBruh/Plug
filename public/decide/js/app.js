@@ -12806,11 +12806,16 @@
   // this is the same check every later load makes, just running once early.
   syncPremium(true);
 
-  // Load HilltopAds video ads after onboarding is complete (small delay to avoid blocking UX)
-  setTimeout(function() {
-    var adScript = document.createElement('script');
-    adScript.src = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V';
-    adScript.async = true;
-    document.head.appendChild(adScript);
-  }, 500);
+  // Load HilltopAds video ads after onboarding is complete
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      var adScript = document.createElement('script');
+      adScript.src = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V';
+      adScript.async = true;
+      adScript.crossOrigin = 'anonymous';
+      adScript.onerror = function() { console.log('Ad script failed to load'); };
+      adScript.onload = function() { console.log('Ad script loaded'); };
+      document.body.appendChild(adScript);
+    }, 1000);
+  });
 })();
