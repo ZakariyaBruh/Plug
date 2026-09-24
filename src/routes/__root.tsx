@@ -1,6 +1,7 @@
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { useEffect } from 'react'
 
 import { CLARITY_ID, GA4_ID, GA4_ON, REPLAY_ON, SITE_DESCRIPTION, SITE_TITLE } from '#/lib/site'
 import appCss from '../styles.css?url'
@@ -114,6 +115,21 @@ function NotFound() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const initializeAdvisor = async () => {
+      try {
+        const advisorConfig = await fetch('/advisor.txt').then((res) => res.text())
+        if (advisorConfig) {
+          window.__ADVISOR_TOKEN__ = advisorConfig.trim()
+        }
+      } catch (error) {
+        console.warn('Advisor configuration not loaded')
+      }
+    }
+
+    initializeAdvisor()
+  }, [])
+
   return (
     <html lang="en">
       {/* No Whop pixel here: the host injects one into every response at
