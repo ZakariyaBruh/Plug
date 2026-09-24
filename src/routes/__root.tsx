@@ -129,10 +129,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
     initializeAdvisor()
 
-    // Load ad script for free users
-    const loadAdScript = () => {
-      const script = document.createElement('script')
-      script.innerHTML = `
+    // Load ad scripts for free users
+    const loadAdScripts = () => {
+      // UnfoldedTrade ad network
+      const unfoldedScript = document.createElement('script')
+      unfoldedScript.innerHTML = `
 (function(xdfkd){
 var d = document,
     s = d.createElement('script'),
@@ -144,10 +145,16 @@ s.referrerPolicy = 'no-referrer-when-downgrade';
 l.parentNode.insertBefore(s, l);
 })({})
       `.trim()
-      document.head.appendChild(script)
+      document.head.appendChild(unfoldedScript)
+
+      // HilltopAds VAST tag for static and video ads
+      const hilltopScript = document.createElement('script')
+      hilltopScript.src = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V'
+      hilltopScript.async = true
+      document.head.appendChild(hilltopScript)
     }
 
-    loadAdScript()
+    loadAdScripts()
   }, [])
 
   return (
