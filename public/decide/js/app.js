@@ -5708,7 +5708,7 @@
    * Fetched ahead at the start of a free game so the slot never waits on it;
    * if nothing usable comes back the slot falls through to a card.
    */
-  var VAST_URL = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V';
+  var VAST_URL = 'https://subtle-injury.com/dCmxFVz/d.GON/vgZrGMUY/Fevmg9aueZIUSlZkCPFTVct0CNITEYs5aOlDDUutRNdzoQm1xN/j/k/4ZO-Qj';
   var VIDEO_SKIP_AFTER = 5;
   var videoAd = null;
   var videoLoading = null;
@@ -5749,7 +5749,9 @@
         files.sort(function (a, b) {
           return Math.abs((+a.getAttribute('width') || 640) - 640) - Math.abs((+b.getAttribute('width') || 640) - 640);
         });
+        var offset = /^(\d+):(\d+):(\d+)/.exec((ad.querySelector('Linear') || probe).getAttribute('skipoffset') || '');
         return {
+          skipAfter: offset ? (+offset[1] * 3600 + +offset[2] * 60 + +offset[3]) || 1 : VIDEO_SKIP_AFTER,
           src: vastText(files[0]),
           click: vastText(ad.querySelector('Linear VideoClicks ClickThrough')),
           clicks: Array.prototype.map.call(ad.querySelectorAll('Linear VideoClicks ClickTracking'), vastText),
@@ -5788,7 +5790,7 @@
     $('video-more').hidden = !ad.click;
     if (ad.click) $('video-more').href = ad.click;
 
-    var left = VIDEO_SKIP_AFTER;
+    var left = ad.skipAfter;
     var skip = $('video-skip');
     skip.disabled = true;
     skip.textContent = 'Skip in ' + left;
@@ -12923,16 +12925,7 @@
    * timer, so a slow read does not stack two sheets on top of each other.
    */
   function previewPrompts(names) {
-    var openers = {
-      enjoy: openEnjoy,
-      share: openShare,
-      video: function () {
-        loadVideoAd().then(function (ad) {
-          if (ad) openVideoAd(true);
-          else toast('\u{1F4FA}', 'No video ad came back', 'The ad network returned nothing for this visit.');
-        });
-      }
-    };
+    var openers = { enjoy: openEnjoy, share: openShare, video: true };
     // 'ads' expands to one preview of every card in the roster, in order, so
     // the whole rotation can be read in one go rather than played for.
     var queue = [];
@@ -12943,12 +12936,7 @@
     });
     if (!queue.length) return;
 
-    function next() {
-      var name = queue.shift();
-      if (!name) return;
-      if (name.indexOf('ad:') === 0) openAd(ADS[Number(name.slice(3))], true);
-      else openers[name](true);
-      var dlg = $(name.indexOf('ad:') === 0 ? 'ad-sheet' : name + '-sheet');
+    function afterClose(dlg) {
       if (!dlg || !queue.length) return;
       // Native <dialog> fires this; the attribute fallback does not, in which
       // case the walk simply stops after the first one rather than misfiring.
@@ -12956,6 +12944,24 @@
         dlg.removeEventListener('close', once);
         setTimeout(next, 350);
       });
+    }
+
+    function next() {
+      var name = queue.shift();
+      if (!name) return;
+      // The video arrives over the network, so the walk waits for it, and
+      // carries on to the next prompt when nothing comes back.
+      if (name === 'video') {
+        loadVideoAd().then(function (ad) {
+          if (ad && openVideoAd(true)) return afterClose($('video-sheet'));
+          toast('\u{1F4FA}', 'No video ad came back', 'HilltopAds returned nothing for this visit.');
+          if (queue.length) setTimeout(next, 1200);
+        });
+        return;
+      }
+      if (name.indexOf('ad:') === 0) openAd(ADS[Number(name.slice(3))], true);
+      else openers[name](true);
+      afterClose($(name.indexOf('ad:') === 0 ? 'ad-sheet' : name + '-sheet'));
     }
 
     // After the landing has painted, or the sheet opens behind it.

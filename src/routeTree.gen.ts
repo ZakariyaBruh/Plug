@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
-import { Route as AdvisorRouteImport } from './routes/advisor'
 import { Route as DecideRouteImport } from './routes/decide'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as HonestyRouteImport } from './routes/honesty'
@@ -52,11 +51,6 @@ const IndexRoute = IndexRouteImport.update({
 const AccountRoute = AccountRouteImport.update({
   id: '/account',
   path: '/account',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdvisorRoute = AdvisorRouteImport.update({
-  id: '/advisor',
-  path: '/advisor',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DecideRoute = DecideRouteImport.update({
@@ -218,7 +212,6 @@ const ApiOauthLogoutRoute = ApiOauthLogoutRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/advisor': typeof AdvisorRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
@@ -254,7 +247,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/advisor': typeof AdvisorRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
@@ -291,7 +283,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
-  '/advisor': typeof AdvisorRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
@@ -329,7 +320,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/account'
-    | '/advisor'
     | '/decide'
     | '/faq'
     | '/honesty'
@@ -365,7 +355,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/account'
-    | '/advisor'
     | '/decide'
     | '/faq'
     | '/honesty'
@@ -401,7 +390,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/account'
-    | '/advisor'
     | '/decide'
     | '/faq'
     | '/honesty'
@@ -438,7 +426,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
-  AdvisorRoute: typeof AdvisorRoute
   DecideRoute: typeof DecideRouteWithChildren
   FaqRoute: typeof FaqRoute
   HonestyRoute: typeof HonestyRoute
@@ -485,13 +472,6 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AccountRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/advisor': {
-      id: '/advisor'
-      path: '/advisor'
-      fullPath: '/advisor'
-      preLoaderRoute: typeof AdvisorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/decide': {
@@ -728,7 +708,6 @@ const DecideRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
-  AdvisorRoute: AdvisorRoute,
   DecideRoute: DecideRouteWithChildren,
   FaqRoute: FaqRoute,
   HonestyRoute: HonestyRoute,
