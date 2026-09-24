@@ -4041,6 +4041,21 @@
     if (asked === 4 && gameBudget >= 4 && panel === 'question') {
       setTimeout(function () { if (panel === 'question') fillSlot(); }, 900);
     }
+
+    /*
+     * THE GUARANTEED VIDEO, DURING THE GAME RATHER THAN AFTER IT — see
+     * guaranteeVideoAd. Fixed to the third answer rather than drawn at
+     * random: every game asks at least five questions (Engine.MIN_QUESTIONS),
+     * so the third always happens, and a fixed point is what a fixed report
+     * of "one ad, once a game" can be built on. Outside the prompt budget
+     * above on purpose — the two are unrelated: that budget limits how often
+     * somebody is nudged toward Premium, and this is the sponsor slot that
+     * pays for the free tier existing at all, so it runs whether the budget
+     * this game drew is big or small.
+     */
+    if (asked === 2 && panel === 'question') {
+      setTimeout(function () { if (panel === 'question') guaranteeVideoAd(); }, 900);
+    }
   }
 
   /* ---------------------------------------------------------- the funnel */
@@ -5876,18 +5891,23 @@
   }
 
   /*
-   * THE GUARANTEE. pickAdSlot() above already hands video every ad slot it
-   * can, but "every slot it can" is not "one a game": the network can still
-   * be mid-fetch when the first slot fires, and the two bespoke prompts
-   * (enjoyDue/shareDue) or a two-prompt budget can spend a whole game
-   * without an ad ever getting a turn. This is the backstop, run once at the
-   * reward screen — the one moment every finished game reaches — after that
-   * screen's own fillSlot() call. It is deliberately outside the prompt
-   * budget: the budget limits how often somebody is interrupted with an ask,
-   * and by the time this runs nobody is being asked anything, only shown the
-   * same sponsor slot the game already promised for the run. If HilltopAds
-   * genuinely has nothing to serve, there is nothing to guarantee — this
-   * silently gives up rather than manufacturing an ad that does not exist.
+   * THE GUARANTEE — one video ad, every free game, and during it rather than
+   * after: the call at the third answer, below, is the one meant to land it.
+   * This is also called a second time, as a backstop, once the reward screen
+   * shows — the one moment every finished game reaches regardless of how it
+   * got there — for whatever the first call missed: the network still
+   * mid-fetch at question three, or a sheet already open right then (an
+   * enjoy/share prompt, say) that this waits out instead of stacking on top
+   * of.
+   *
+   * Deliberately outside the prompt budget in fillSlot(): that budget limits
+   * how often somebody is interrupted with an ask, and this is not an ask —
+   * it is the sponsor slot that pays for the free tier existing at all, so
+   * it runs whether the budget this game drew was big or small. If
+   * HilltopAds genuinely has nothing to serve, there is nothing to guarantee
+   * — this silently gives up rather than manufacturing an ad that does not
+   * exist, and the game's other ads (the rotating cards, still handled by
+   * pickAdSlot at every normal slot) are unaffected either way.
    */
   function guaranteeVideoAd() {
     if (isPlus() || gameAds.indexOf('video') !== -1) return;
@@ -5908,9 +5928,9 @@
       : Promise.resolve();
 
     waitForClear.then(loadVideoAd).then(function (ad) {
-      // A new game may have started (or this one ended) while that was in
-      // flight — the token and the panel both have to still say "here".
-      if (!ad || mine !== guaranteeToken || isPlus() || panel !== 'reward') return;
+      // A new game may have started while that was in flight — the token is
+      // what says whether this is still the game it was called for.
+      if (!ad || mine !== guaranteeToken || isPlus()) return;
       if (gameAds.indexOf('video') === -1 && openVideoAd()) gameAds.push('video');
     });
   }
