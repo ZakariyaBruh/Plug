@@ -25,6 +25,9 @@ export function SiteHeader({
           <a href="/decide/" className="hover:text-[var(--text)]">
             Play
           </a>
+          <Link to="/info" className="hover:text-[var(--text)]">
+            Info
+          </Link>
           {/* "All dishes" was reachable only from the footer, which is an
               odd place to hide four hundred and fifty pages. */}
           <Link to="/eat" className="hover:text-[var(--text)]">
