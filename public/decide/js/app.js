@@ -12801,4 +12801,19 @@
   // checkout at /premium already attached access to the account directly, so
   // this is the same check every later load makes, just running once early.
   syncPremium(true);
+
+  // Load HilltopAds video ads
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      var script = document.createElement('script');
+      script.src = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V';
+      script.async = true;
+      document.head.appendChild(script);
+    });
+  } else {
+    var adScript = document.createElement('script');
+    adScript.src = 'https://subtle-injury.com/dkm/FLz.dcGeNUv/ZBG/Up/Ye/mC91uDZ-UMl/kvPTTvcU0bNJTfY/5u0HDWUat-NTz-Qe1SNMjKky4/0z0V';
+    adScript.async = true;
+    document.head.appendChild(adScript);
+  }
 })();
