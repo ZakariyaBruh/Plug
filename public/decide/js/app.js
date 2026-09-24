@@ -5884,8 +5884,7 @@
    * moment already has its own slot, and a modal over an in-progress tap is
    * the one place this should never land.
    */
-  var AMBIENT_MIN_DELAY = 40e3;   // 40s
-  var AMBIENT_MAX_DELAY = 90e3;   // 90s
+  var AMBIENT_DELAY = 60e3;   // a slot opens once a minute, on the dot
   var AMBIENT_MAX_PER_DAY = 6;
   var ambientTimer = null;
 
@@ -5899,8 +5898,7 @@
   function scheduleAmbientAd() {
     clearTimeout(ambientTimer);
     if (isPlus()) return;
-    var delay = AMBIENT_MIN_DELAY + Math.random() * (AMBIENT_MAX_DELAY - AMBIENT_MIN_DELAY);
-    ambientTimer = setTimeout(tryAmbientAd, delay);
+    ambientTimer = setTimeout(tryAmbientAd, AMBIENT_DELAY);
   }
 
   function tryAmbientAd() {
@@ -7516,6 +7514,12 @@
     $('news-error').hidden = true;
     $('news-wrap').hidden = false;
 
+    // A filter set while Premium and lost mid-session (or restored from an
+    // older save) does not survive the downgrade — see the note above
+    // paintNewsSources. Without this, only the chip is locked; the feed
+    // behind it would still be narrowed.
+    if (!isPlus() && news.filter) news.filter = '';
+
     var shown = news.stories.filter(function (story) {
       return !news.filter || story.source === news.filter;
     });
@@ -7631,6 +7635,12 @@
 
   // One chip per publisher, with how many they filed. Tapping the one that is
   // already on clears it, so there is always a way back to everything.
+  //
+  // STANDARD READS "EVERYTHING" ONLY. The per-publisher chips still show —
+  // hiding them would hide what Premium adds — but they are locked: the
+  // count is real, the tap is not a filter, it is the pitch. "Everything"
+  // itself is never locked, on either tier, because it is the one view a
+  // free profile is promised in full.
   function paintNewsSources() {
     var counts = {};
     var order = [];
@@ -7649,12 +7659,22 @@
 
   function newsChip(label, count, value) {
     var on = news.filter === value;
+    // Everything (value === '') is open to both tiers. Any one publisher is
+    // Premium — see the note above paintNewsSources.
+    var locked = value !== '' && !isPlus();
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'filter' + (on ? ' is-on' : '');
-    btn.textContent = label + ' ' + count;
+    btn.className = 'filter' + (on ? ' is-on' : '') + (locked ? ' is-locked' : '');
+    btn.appendChild(document.createTextNode(label + ' ' + count + ' '));
+    if (locked) {
+      var tag = document.createElement('span');
+      tag.className = 'tag-premium';
+      tag.textContent = 'Premium';
+      btn.appendChild(tag);
+    }
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     btn.addEventListener('click', function () {
+      if (locked) { Sound.reject(); return goPremium('Reading one source at a time'); }
       news.filter = on ? '' : value;
       // Back to the newest of whatever was just picked. Landing on batch three
       // of a publisher because that is where you were in the merged feed is
