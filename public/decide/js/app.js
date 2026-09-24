@@ -5870,12 +5870,14 @@
   });
 
   /*
-   * WHICH AD TYPE FILLS A SLOT, shared by fillSlot() (the in-game moments)
-   * and the ambient timer below (everywhere else in the app). Video wins
-   * outright, every time one is loaded and this game has not already shown
-   * one — that is what makes it the most frequent type and most of the way
-   * to guaranteeVideoAd's promise of one a game on its own. The rotating
-   * cards only get a turn once video has played or none was ready in time.
+   * WHICH AD TYPE FILLS A SLOT, for fillSlot()'s three in-game moments
+   * (mid-question, the verdict, the reward screen) — the ambient timer
+   * further down has its own picker, pickAmbientAdSlot, with its own 70/30
+   * split; the two are deliberately different functions because they answer
+   * different questions. In here, video wins outright whenever one is loaded
+   * and this game has not already shown one, which is most of the way to
+   * guaranteeVideoAd's promise of one a game on its own; the rotating cards
+   * only get a turn once video has played or none was ready in time.
    * `moment` cards (e.g. "you have had this one recently") always go through
    * nextAd() rather than competing with video, since they only make sense at
    * the instant they are about.
@@ -5948,8 +5950,12 @@
    * moment already has its own slot, and a modal over an in-progress tap is
    * the one place this should never land.
    */
-  var AMBIENT_DELAY = 60e3;   // a slot opens once a minute, on the dot
+  var AMBIENT_MIN_DELAY = 45e3;   // once a minute, randomly — not on the dot
+  var AMBIENT_MAX_DELAY = 75e3;
   var AMBIENT_MAX_PER_DAY = 6;
+  // Of the two things an ambient slot can show, HilltopAds' video is meant to
+  // win seven draws in ten — see pickAmbientAdSlot.
+  var AMBIENT_VIDEO_SHARE = 0.7;
   var ambientTimer = null;
 
   function ambientBudgetLeft() {
@@ -5962,7 +5968,50 @@
   function scheduleAmbientAd() {
     clearTimeout(ambientTimer);
     if (isPlus()) return;
-    ambientTimer = setTimeout(tryAmbientAd, AMBIENT_DELAY);
+    var delay = AMBIENT_MIN_DELAY + Math.random() * (AMBIENT_MAX_DELAY - AMBIENT_MIN_DELAY);
+    ambientTimer = setTimeout(tryAmbientAd, delay);
+  }
+
+  /*
+   * WHICH OF THE TWO THINGS AN AMBIENT SLOT SHOWS — a fresh 70/30 draw every
+   * time, unlike pickAdSlot() above: that one is for inside a game, where
+   * video is guaranteed once and the cards fill whatever is left. Out here
+   * there is no "once a game" to guarantee — a long-idling visitor gets many
+   * of these — so this is a straight weighted coin flip each time, video
+   * seven draws in ten, a Premium card the other three, with either side
+   * falling back to the other rather than skipping the slot outright when
+   * its own pick is not available right now (nothing loaded, or every card
+   * already shown and refused).
+   */
+  /*
+   * The same rotation nextAd() draws from, minus its "never twice in one
+   * game" rule — right for a single twenty-question run, wrong for an
+   * ambient timer that can tick for as long as somebody sits on Dishes or
+   * News. Without this, the three cards would each show once, ever, and
+   * every ambient slot after that would fall through to video regardless of
+   * the 70/30 split. Still shares st.adAt with nextAd(), so the two rotations
+   * are one rotation, not two independent ones drifting apart.
+   */
+  function nextAmbientCard() {
+    var st = progress.state;
+    var start = st.adAt || 0;
+    for (var i = 0; i < ADS.length; i++) {
+      var ad = ADS[(start + i) % ADS.length];
+      if (ad.moment || !adAllowed(ad)) continue;
+      st.adAt = (start + i + 1) % ADS.length;
+      progress.save();
+      return ad;
+    }
+    return null;
+  }
+
+  function pickAmbientAdSlot() {
+    var wantVideo = Math.random() < AMBIENT_VIDEO_SHARE;
+    if (wantVideo && videoAd && openVideoAd()) { gameAds.push('video'); return 'video-sheet'; }
+    var card = nextAmbientCard();
+    if (card) { openAd(card); return 'ad-sheet'; }
+    if (!wantVideo && videoAd && openVideoAd()) { gameAds.push('video'); return 'video-sheet'; }
+    return null;
   }
 
   function tryAmbientAd() {
@@ -5971,7 +6020,7 @@
         ambientBudgetLeft() <= 0) {
       return scheduleAmbientAd();
     }
-    if (pickAdSlot(null)) {
+    if (pickAmbientAdSlot()) {
       progress.state.ambientShown = (progress.state.ambientShown || 0) + 1;
       progress.save();
     }
