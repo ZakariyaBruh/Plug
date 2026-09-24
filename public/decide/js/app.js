@@ -4484,7 +4484,11 @@
      * the first commit. The ids inside the panel are done-icon and done-name,
      * which is where the wrong word came from and why it never looked wrong.
      */
-    setTimeout(function () { if (panel === 'reward') fillSlot(); }, 1400);
+    setTimeout(function () {
+      if (panel !== 'reward') return;
+      fillSlot();
+      guaranteeVideoAd();
+    }, 1400);
     $('xp-total').textContent = '+' + outcome.total;
 
     var list = $('awards');
@@ -5403,10 +5407,14 @@
   var gameBudget = 0;
   var gameSpent = 0;
   var gameAds = [];   // ad ids already used this game, so none repeats in it
+  // Bumped every time a game starts; see guaranteeVideoAd — a promise left
+  // over from the game before this one checks it before acting.
+  var guaranteeToken = 0;
 
   function startGameBudget() {
     gameSpent = 0;
     gameAds = [];
+    guaranteeToken += 1;
     gameBudget = isPlus()
       ? GAME_BUDGET_PLUS
       : GAME_BUDGET_MIN + Math.floor(Math.random() * (GAME_BUDGET_MAX - GAME_BUDGET_MIN + 1));
@@ -5706,10 +5714,6 @@
    */
   var VAST_URL = 'https://subtle-injury.com/dCmxFVz/d.GON/vgZrGMUY/Fevmg9aueZIUSlZkCPFTVct0CNITEYs5aOlDDUutRNdzoQm1xN/j/k/4ZO-Qj';
   var VIDEO_SKIP_AFTER = 5;
-  // Of the four ad types (video, plus three Premium cards), video is the one
-  // that is meant to win most often. 0.7 means roughly seven plays in ten
-  // pick the video when one is loaded, with the cards splitting the rest.
-  var VIDEO_WEIGHT = 0.7;
   var videoAd = null;
   var videoLoading = null;
   var videoTimer = null;
@@ -5852,23 +5856,63 @@
 
   /*
    * WHICH AD TYPE FILLS A SLOT, shared by fillSlot() (the in-game moments)
-   * and the ambient timer below (everywhere else in the app). Video is
-   * weighted to win most of the draws — see VIDEO_WEIGHT — and the rotating
-   * cards take the rest, or all of it once the video has already played
-   * this game or none has loaded. `moment` cards (e.g. "you have had this
-   * one recently") always go through nextAd() rather than competing with
-   * video, since they only make sense at the instant they are about.
+   * and the ambient timer below (everywhere else in the app). Video wins
+   * outright, every time one is loaded and this game has not already shown
+   * one — that is what makes it the most frequent type and most of the way
+   * to guaranteeVideoAd's promise of one a game on its own. The rotating
+   * cards only get a turn once video has played or none was ready in time.
+   * `moment` cards (e.g. "you have had this one recently") always go through
+   * nextAd() rather than competing with video, since they only make sense at
+   * the instant they are about.
    */
   function pickAdSlot(moment) {
-    var videoTurn = !moment && videoAd && gameAds.indexOf('video') === -1 && Math.random() < VIDEO_WEIGHT;
-    if (videoTurn && openVideoAd()) { gameAds.push('video'); return 'video-sheet'; }
-    var card = nextAd(moment);
-    if (card) { openAd(card); return 'ad-sheet'; }
     if (!moment && videoAd && gameAds.indexOf('video') === -1 && openVideoAd()) {
       gameAds.push('video');
       return 'video-sheet';
     }
+    var card = nextAd(moment);
+    if (card) { openAd(card); return 'ad-sheet'; }
     return null;
+  }
+
+  /*
+   * THE GUARANTEE. pickAdSlot() above already hands video every ad slot it
+   * can, but "every slot it can" is not "one a game": the network can still
+   * be mid-fetch when the first slot fires, and the two bespoke prompts
+   * (enjoyDue/shareDue) or a two-prompt budget can spend a whole game
+   * without an ad ever getting a turn. This is the backstop, run once at the
+   * reward screen — the one moment every finished game reaches — after that
+   * screen's own fillSlot() call. It is deliberately outside the prompt
+   * budget: the budget limits how often somebody is interrupted with an ask,
+   * and by the time this runs nobody is being asked anything, only shown the
+   * same sponsor slot the game already promised for the run. If HilltopAds
+   * genuinely has nothing to serve, there is nothing to guarantee — this
+   * silently gives up rather than manufacturing an ad that does not exist.
+   */
+  function guaranteeVideoAd() {
+    if (isPlus() || gameAds.indexOf('video') !== -1) return;
+    var mine = guaranteeToken;
+
+    var waitForClear = anySheetOpen()
+      ? new Promise(function (resolve) {
+          var open = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'video-sheet']
+            .map($).filter(function (d) { return d && d.open; });
+          var left = open.length;
+          open.forEach(function (dlg) {
+            dlg.addEventListener('close', function once() {
+              dlg.removeEventListener('close', once);
+              if (--left <= 0) resolve();
+            });
+          });
+        })
+      : Promise.resolve();
+
+    waitForClear.then(loadVideoAd).then(function (ad) {
+      // A new game may have started (or this one ended) while that was in
+      // flight — the token and the panel both have to still say "here".
+      if (!ad || mine !== guaranteeToken || isPlus() || panel !== 'reward') return;
+      if (gameAds.indexOf('video') === -1 && openVideoAd()) gameAds.push('video');
+    });
   }
 
   /*
