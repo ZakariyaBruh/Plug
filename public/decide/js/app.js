@@ -4924,18 +4924,19 @@
 
     if (plan) {
       $('plan-title').textContent = 'Your plan';
-      $('plan-note').textContent = 'You said you would sort this out ' + plan.phrase +
-        '. I will be on that screen when you get there — nothing is sent anywhere, ' +
-        'and it never leaves this device.';
+      $('plan-note').textContent = 'You said you would work out what to eat ' + plan.phrase +
+        '. Open the home screen around then and I will say so there — nothing is sent to ' +
+        'you, and if you do not come back on your own, nothing happens either.';
       cues.hidden = true;
       done.hidden = false;
       return;
     }
 
-    $('plan-title').textContent = 'Want this to be automatic?';
-    $('plan-note').textContent = 'Name the moment you usually need this and I will have it ' +
-      'ready then. Tying a thing to something that already happens is the only reliable way ' +
-      'anybody makes a habit out of anything.';
+    $('plan-title').textContent = 'When do you usually need this?';
+    $('plan-note').textContent = 'Pick the moment — after work, before dinner, whenever you ' +
+      'usually end up stuck. Open the home screen again around then and it will greet you ' +
+      'with that instead of a plain "hungry?" No notification, no email — it only changes ' +
+      'what is on the screen when you come back yourself.';
     cues.hidden = false;
     done.hidden = true;
 
@@ -4949,7 +4950,7 @@
         progress.setPlan(cue.id);
         Sound.tick();
         paintPlan();
-        toast('\u{1F553}', 'Noted', 'I will be ready ' + cue.phrase + '.');
+        toast('\u{1F553}', 'Noted', 'The home screen will greet you with it ' + cue.phrase + '.');
       });
       cues.appendChild(btn);
     });
