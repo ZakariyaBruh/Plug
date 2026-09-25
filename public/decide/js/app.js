@@ -5863,8 +5863,8 @@
    * moment already has its own slot, and a modal over an in-progress tap is
    * the one place this should never land.
    */
-  var AMBIENT_MIN_DELAY = 45e3;   // once a minute, randomly — not on the dot
-  var AMBIENT_MAX_DELAY = 75e3;
+  var AMBIENT_MIN_DELAY = 22.5e3; // once every 30s, randomly — not on the dot
+  var AMBIENT_MAX_DELAY = 37.5e3;
   var AMBIENT_MAX_PER_DAY = 6;
   var ambientTimer = null;
 
