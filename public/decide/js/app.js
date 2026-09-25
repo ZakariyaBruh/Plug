@@ -5360,17 +5360,20 @@
    * meant two Premium cards back to back over the screen that says what else
    * is free — "Not now" on the first one produced the second. That is the
    * moment most people leave, and the thing covering the way further in was
-   * a second ask. So it is one there too, and with three places to stop the
-   * budget tops out at three — it was drawn up to five.
+   * a second ask. So it is still one there at a time, never chained — see
+   * fillSlot — with the mid-question slot doing the rest of the work of a
+   * bigger number: raised back to three-to-five (from two-to-three) so that
+   * slot, gated at budget >= 4, is actually reachable most games instead of
+   * dead code sitting under a cap that could never clear it.
    *
    * WHAT FILLS A SLOT, in order. The two bespoke prompts first, when they
    * are due: they are about a specific thing, they keep their own state and
-   * they are rare by design. Then the ads, which are what makes a budget of
-   * three reachable at all — an offer with nothing behind it but "not now"
+   * they are rare by design. Then the ads, which are what makes a bigger
+   * budget reachable at all — an offer with nothing behind it but "not now"
    * comes back, where a survey answered is answered forever.
    */
-  var GAME_BUDGET_MIN = 2;
-  var GAME_BUDGET_MAX = 3;
+  var GAME_BUDGET_MIN = 3;
+  var GAME_BUDGET_MAX = 5;
 
   /*
    * A MEMBER GETS NO PROMPTS AT ALL.
@@ -5865,7 +5868,10 @@
    */
   var AMBIENT_MIN_DELAY = 22.5e3; // once every 30s, randomly — not on the dot
   var AMBIENT_MAX_DELAY = 37.5e3;
-  var AMBIENT_MAX_PER_DAY = 6;
+  // Was 6 — at a 30s cadence that emptied in three minutes and then went
+  // quiet for the rest of the day. Raised so it keeps going through an
+  // actual browsing session instead of firing itself out almost immediately.
+  var AMBIENT_MAX_PER_DAY = 30;
   var ambientTimer = null;
 
   function ambientBudgetLeft() {

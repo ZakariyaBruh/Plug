@@ -223,14 +223,26 @@ h1, h2, h3 { margin: 0; font-family: var(--display); line-height: 1.08; }
   background: color-mix(in srgb, var(--amber) 15%, transparent);
   color: var(--amber);
   font-weight: 600;
+  animation: topbar-premium-pulse 2.2s var(--ease) infinite;
 }
-.topbar-premium:hover { background: var(--amber); color: #000; }
+.topbar-premium:hover { background: var(--amber); color: #000; animation: none; }
 body.is-premium .topbar-premium {
   border-color: transparent;
   background: none;
   color: var(--ink-2);
   font-weight: 400;
+  animation: none;
 }
+
+/* A static badge sits in the same row as five other nav links and reads as
+   one more of them. This is the one thing on the bar meant to be noticed
+   rather than merely available, so it keeps a slow, steady pulse going
+   whenever there is something to sell. */
+@keyframes topbar-premium-pulse {
+  0%, 100% { transform: none; box-shadow: none; }
+  50% { transform: scale(1.06); box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 18%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .topbar-premium { animation: none; } }
 body.is-premium .topbar-premium:hover { color: var(--ink); background: var(--raise); }
 p { margin: 0; }
 button { font-family: inherit; }
