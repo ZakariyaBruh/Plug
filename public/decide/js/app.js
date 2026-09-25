@@ -4041,21 +4041,6 @@
     if (asked === 4 && gameBudget >= 4 && panel === 'question') {
       setTimeout(function () { if (panel === 'question') fillSlot(); }, 900);
     }
-
-    /*
-     * THE GUARANTEED VIDEO, DURING THE GAME RATHER THAN AFTER IT — see
-     * guaranteeVideoAd. Fixed to the third answer rather than drawn at
-     * random: every game asks at least five questions (Engine.MIN_QUESTIONS),
-     * so the third always happens, and a fixed point is what a fixed report
-     * of "one ad, once a game" can be built on. Outside the prompt budget
-     * above on purpose — the two are unrelated: that budget limits how often
-     * somebody is nudged toward Premium, and this is the sponsor slot that
-     * pays for the free tier existing at all, so it runs whether the budget
-     * this game drew is big or small.
-     */
-    if (asked === 2 && panel === 'question') {
-      setTimeout(function () { if (panel === 'question') guaranteeVideoAd(); }, 900);
-    }
   }
 
   /* ---------------------------------------------------------- the funnel */
@@ -4499,11 +4484,7 @@
      * the first commit. The ids inside the panel are done-icon and done-name,
      * which is where the wrong word came from and why it never looked wrong.
      */
-    setTimeout(function () {
-      if (panel !== 'reward') return;
-      fillSlot();
-      guaranteeVideoAd();
-    }, 1400);
+    setTimeout(function () { if (panel === 'reward') fillSlot(); }, 1400);
     $('xp-total').textContent = '+' + outcome.total;
 
     var list = $('awards');
@@ -5422,22 +5403,17 @@
   var gameBudget = 0;
   var gameSpent = 0;
   var gameAds = [];   // ad ids already used this game, so none repeats in it
-  // Bumped every time a game starts; see guaranteeVideoAd — a promise left
-  // over from the game before this one checks it before acting.
-  var guaranteeToken = 0;
 
   function startGameBudget() {
     gameSpent = 0;
     gameAds = [];
-    guaranteeToken += 1;
     gameBudget = isPlus()
       ? GAME_BUDGET_PLUS
       : GAME_BUDGET_MIN + Math.floor(Math.random() * (GAME_BUDGET_MAX - GAME_BUDGET_MIN + 1));
-    if (!isPlus()) loadVideoAd();
   }
 
   function anySheetOpen() {
-    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'video-sheet', 'dish-sheet'];
+    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet'];
     for (var i = 0; i < ids.length; i++) {
       var dlg = document.getElementById(ids[i]);
       if (dlg && dlg.open) return true;
@@ -5473,7 +5449,7 @@
     var shown = null;
     if (!plus && enjoyDue()) { openEnjoy(); shown = 'enjoy-sheet'; }
     else if (!plus && shareDue()) { openShare(); shown = 'share-sheet'; }
-    else { shown = pickAdSlot(moment); }
+    else if (openAd(nextAd(moment))) { shown = 'ad-sheet'; }
 
     if (!shown) return false;
     gameSpent += 1;
@@ -5719,230 +5695,20 @@
     if (top) top.addEventListener('click', function () { beacon('premium_clicked', { from: 'topbar' }); });
   })();
 
-  /* ------------------------------------------------------- the video ad */
   /*
-   * HilltopAds zone #7456985. A VAST tag is an XML document for a video
-   * player, not a script: loading it with a <script> tag can never show
-   * anything. So it is fetched, read, and played in a sheet of our own.
-   * Fetched ahead at the start of a free game so the slot never waits on it;
-   * if nothing usable comes back the slot falls through to a card.
+   * There used to be a HilltopAds video slot here, alongside the Premium
+   * cards. It is gone — not paused, not swapped for another network, gone —
+   * because a third-party ad exchange serves whatever wins its auction and
+   * that roster is not vetted for what this app or its players find
+   * acceptable. The cards below are the only prompt a free profile sees now.
    */
-  var VAST_URL = 'https://subtle-injury.com/dCmxFVz/d.GON/vgZrGMUY/Fevmg9aueZIUSlZkCPFTVct0CNITEYs5aOlDDUutRNdzoQm1xN/j/k/4ZO-Qj';
-  var VIDEO_SKIP_AFTER = 5;
-  var videoAd = null;
-  var videoLoading = null;
-  var videoTimer = null;
-  var videoOpener = null;
-  var adShowingVideo = null;
-
-  function vastText(node) { return node ? (node.textContent || '').trim() : ''; }
-
-  function pingAll(urls) {
-    urls.forEach(function (u) { if (u) { var img = new Image(); img.src = u; } });
-  }
-
-  function readVast(url, depth, carried) {
-    return fetch(url, { credentials: 'omit', cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error('VAST ' + r.status); return r.text(); })
-      .then(function (xml) {
-        var doc = new DOMParser().parseFromString(xml, 'text/xml');
-        var ad = doc.querySelector('Ad');
-        if (!ad) throw new Error('VAST came back empty');
-        var impressions = carried.impressions.concat(
-          Array.prototype.map.call(ad.querySelectorAll('Impression'), vastText));
-        var tracking = carried.tracking.slice();
-        Array.prototype.forEach.call(ad.querySelectorAll('Tracking'), function (t) {
-          tracking.push({ event: t.getAttribute('event'), url: vastText(t) });
-        });
-        var wrapped = ad.querySelector('Wrapper VASTAdTagURI');
-        if (wrapped) {
-          if (depth >= 4) throw new Error('VAST wrappers nested too deep');
-          return readVast(vastText(wrapped), depth + 1, { impressions: impressions, tracking: tracking });
-        }
-        var probe = document.createElement('video');
-        var files = Array.prototype.filter.call(ad.querySelectorAll('Linear MediaFile'), function (m) {
-          var type = m.getAttribute('type') || '';
-          return vastText(m) && (!type || probe.canPlayType(type));
-        });
-        if (!files.length) throw new Error('VAST has no playable video');
-        files.sort(function (a, b) {
-          return Math.abs((+a.getAttribute('width') || 640) - 640) - Math.abs((+b.getAttribute('width') || 640) - 640);
-        });
-        var offset = /^(\d+):(\d+):(\d+)/.exec((ad.querySelector('Linear') || probe).getAttribute('skipoffset') || '');
-        return {
-          skipAfter: offset ? (+offset[1] * 3600 + +offset[2] * 60 + +offset[3]) || 1 : VIDEO_SKIP_AFTER,
-          src: vastText(files[0]),
-          click: vastText(ad.querySelector('Linear VideoClicks ClickThrough')),
-          clicks: Array.prototype.map.call(ad.querySelectorAll('Linear VideoClicks ClickTracking'), vastText),
-          impressions: impressions,
-          tracking: tracking
-        };
-      });
-  }
-
-  function loadVideoAd() {
-    if (videoAd) return Promise.resolve(videoAd);
-    if (!videoLoading) {
-      videoLoading = readVast(VAST_URL, 0, { impressions: [], tracking: [] })
-        .then(function (ad) { videoAd = ad; return ad; })
-        .catch(function (err) { console.warn('Video ad unavailable:', err.message); return null; })
-        .then(function (ad) { videoLoading = null; return ad; });
-    }
-    return videoLoading;
-  }
-
-  function videoTrack(event) {
-    if (!adShowingVideo) return;
-    pingAll(adShowingVideo.tracking.filter(function (t) { return t.event === event; })
-      .map(function (t) { return t.url; }));
-  }
-
-  function openVideoAd(preview) {
-    var ad = videoAd;
-    if (!ad) return false;
-    videoAd = null;
-    adShowingVideo = ad;
-    var video = $('video-ad');
-    video.muted = true;
-    video.src = ad.src;
-    $('video-sound').hidden = false;
-    $('video-more').hidden = !ad.click;
-    if (ad.click) $('video-more').href = ad.click;
-
-    var left = ad.skipAfter;
-    var skip = $('video-skip');
-    skip.disabled = true;
-    skip.textContent = 'Skip in ' + left;
-    clearInterval(videoTimer);
-    videoTimer = setInterval(function () {
-      left -= 1;
-      if (left > 0) { skip.textContent = 'Skip in ' + left; return; }
-      clearInterval(videoTimer);
-      skip.disabled = false;
-      skip.textContent = 'Skip';
-    }, 1000);
-
-    if (!preview) pingAll(ad.impressions);
-
-    videoOpener = document.activeElement;
-    var dlg = $('video-sheet');
-    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
-    var played = video.play();
-    if (played && played.catch) played.catch(function () {});
-    videoTrack('start');
-    return true;
-  }
-
-  function closeVideoAd() {
-    clearInterval(videoTimer);
-    var video = $('video-ad');
-    video.pause();
-    video.removeAttribute('src');
-    video.load();
-    adShowingVideo = null;
-    var dlg = $('video-sheet');
-    if (dlg.open && dlg.close) dlg.close(); else dlg.removeAttribute('open');
-    focusQuietly(videoOpener);
-    // Ready the next one for the next slot.
-    if (!isPlus()) loadVideoAd();
-  }
-
-  $('video-skip').addEventListener('click', function () { videoTrack('skip'); Sound.tick(); closeVideoAd(); });
-  $('video-ad').addEventListener('ended', function () {
-    videoTrack('complete');
-    var skip = $('video-skip');
-    clearInterval(videoTimer);
-    skip.disabled = false;
-    skip.textContent = 'Close';
-  });
-  $('video-sound').addEventListener('click', function () {
-    $('video-ad').muted = false;
-    videoTrack('unmute');
-    this.hidden = true;
-  });
-  $('video-more').addEventListener('click', function () {
-    if (adShowingVideo) pingAll(adShowingVideo.clicks);
-  });
-  // Escape closes it only once skipping is allowed.
-  $('video-sheet').addEventListener('cancel', function (e) {
-    e.preventDefault();
-    if (!$('video-skip').disabled) closeVideoAd();
-  });
-
-  /*
-   * WHICH AD TYPE FILLS A SLOT, for fillSlot()'s three in-game moments
-   * (mid-question, the verdict, the reward screen) — the ambient timer
-   * further down has its own picker, pickAmbientAdSlot, with its own 70/30
-   * split; the two are deliberately different functions because they answer
-   * different questions. In here, video wins outright whenever one is loaded
-   * and this game has not already shown one, which is most of the way to
-   * guaranteeVideoAd's promise of one a game on its own; the rotating cards
-   * only get a turn once video has played or none was ready in time.
-   * `moment` cards (e.g. "you have had this one recently") always go through
-   * nextAd() rather than competing with video, since they only make sense at
-   * the instant they are about.
-   */
-  function pickAdSlot(moment) {
-    if (!moment && videoAd && gameAds.indexOf('video') === -1 && openVideoAd()) {
-      gameAds.push('video');
-      return 'video-sheet';
-    }
-    var card = nextAd(moment);
-    if (card) { openAd(card); return 'ad-sheet'; }
-    return null;
-  }
-
-  /*
-   * THE GUARANTEE — one video ad, every free game, and during it rather than
-   * after: the call at the third answer, below, is the one meant to land it.
-   * This is also called a second time, as a backstop, once the reward screen
-   * shows — the one moment every finished game reaches regardless of how it
-   * got there — for whatever the first call missed: the network still
-   * mid-fetch at question three, or a sheet already open right then (an
-   * enjoy/share prompt, say) that this waits out instead of stacking on top
-   * of.
-   *
-   * Deliberately outside the prompt budget in fillSlot(): that budget limits
-   * how often somebody is interrupted with an ask, and this is not an ask —
-   * it is the sponsor slot that pays for the free tier existing at all, so
-   * it runs whether the budget this game drew was big or small. If
-   * HilltopAds genuinely has nothing to serve, there is nothing to guarantee
-   * — this silently gives up rather than manufacturing an ad that does not
-   * exist, and the game's other ads (the rotating cards, still handled by
-   * pickAdSlot at every normal slot) are unaffected either way.
-   */
-  function guaranteeVideoAd() {
-    if (isPlus() || gameAds.indexOf('video') !== -1) return;
-    var mine = guaranteeToken;
-
-    var waitForClear = anySheetOpen()
-      ? new Promise(function (resolve) {
-          var open = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'video-sheet']
-            .map($).filter(function (d) { return d && d.open; });
-          var left = open.length;
-          open.forEach(function (dlg) {
-            dlg.addEventListener('close', function once() {
-              dlg.removeEventListener('close', once);
-              if (--left <= 0) resolve();
-            });
-          });
-        })
-      : Promise.resolve();
-
-    waitForClear.then(loadVideoAd).then(function (ad) {
-      // A new game may have started while that was in flight — the token is
-      // what says whether this is still the game it was called for.
-      if (!ad || mine !== guaranteeToken || isPlus()) return;
-      if (gameAds.indexOf('video') === -1 && openVideoAd()) gameAds.push('video');
-    });
-  }
 
   /*
    * THE AMBIENT SLOT — everywhere in the app that is not one of the three
    * moments fillSlot() already covers (mid-question, the verdict, the
    * reward screen). A free visitor reading Dishes, the Menu, Nearby, News,
    * Ask or their own Profile sees the same rotation on a loose timer
-   * instead, so ad revenue is not limited to people who are mid-decision.
+   * instead, so the Premium pitch is not limited to people mid-decision.
    *
    * Capped per day rather than per game, since there is no game to spend a
    * budget on out here. Skipped whenever a sheet is already open, the tab
@@ -5953,9 +5719,6 @@
   var AMBIENT_MIN_DELAY = 45e3;   // once a minute, randomly — not on the dot
   var AMBIENT_MAX_DELAY = 75e3;
   var AMBIENT_MAX_PER_DAY = 6;
-  // Of the two things an ambient slot can show, HilltopAds' video is meant to
-  // win seven draws in ten — see pickAmbientAdSlot.
-  var AMBIENT_VIDEO_SHARE = 0.7;
   var ambientTimer = null;
 
   function ambientBudgetLeft() {
@@ -5973,24 +5736,13 @@
   }
 
   /*
-   * WHICH OF THE TWO THINGS AN AMBIENT SLOT SHOWS — a fresh 70/30 draw every
-   * time, unlike pickAdSlot() above: that one is for inside a game, where
-   * video is guaranteed once and the cards fill whatever is left. Out here
-   * there is no "once a game" to guarantee — a long-idling visitor gets many
-   * of these — so this is a straight weighted coin flip each time, video
-   * seven draws in ten, a Premium card the other three, with either side
-   * falling back to the other rather than skipping the slot outright when
-   * its own pick is not available right now (nothing loaded, or every card
-   * already shown and refused).
-   */
-  /*
    * The same rotation nextAd() draws from, minus its "never twice in one
    * game" rule — right for a single twenty-question run, wrong for an
    * ambient timer that can tick for as long as somebody sits on Dishes or
    * News. Without this, the three cards would each show once, ever, and
-   * every ambient slot after that would fall through to video regardless of
-   * the 70/30 split. Still shares st.adAt with nextAd(), so the two rotations
-   * are one rotation, not two independent ones drifting apart.
+   * every ambient slot after that would come up empty. Still shares st.adAt
+   * with nextAd(), so the two rotations are one rotation, not two
+   * independent ones drifting apart.
    */
   function nextAmbientCard() {
     var st = progress.state;
@@ -6005,22 +5757,13 @@
     return null;
   }
 
-  function pickAmbientAdSlot() {
-    var wantVideo = Math.random() < AMBIENT_VIDEO_SHARE;
-    if (wantVideo && videoAd && openVideoAd()) { gameAds.push('video'); return 'video-sheet'; }
-    var card = nextAmbientCard();
-    if (card) { openAd(card); return 'ad-sheet'; }
-    if (!wantVideo && videoAd && openVideoAd()) { gameAds.push('video'); return 'video-sheet'; }
-    return null;
-  }
-
   function tryAmbientAd() {
     if (isPlus()) return; // a member going Premium mid-session gets no more of these
     if (document.hidden || anySheetOpen() || (view === 'decide' && panel === 'question') ||
         ambientBudgetLeft() <= 0) {
       return scheduleAmbientAd();
     }
-    if (pickAmbientAdSlot()) {
+    if (openAd(nextAmbientCard())) {
       progress.state.ambientShown = (progress.state.ambientShown || 0) + 1;
       progress.save();
     }
@@ -13111,7 +12854,7 @@
      */
     var wanted = (here.searchParams.get('prompt') || '').toLowerCase();
     if (wanted) {
-      var queue = wanted === 'all' ? ['enjoy', 'share', 'video', 'ads']
+      var queue = wanted === 'all' ? ['enjoy', 'share', 'ads']
                 : wanted === 'ads' ? ['ads']
                 : [wanted];
       previewPrompts(queue);
@@ -13124,7 +12867,7 @@
    * timer, so a slow read does not stack two sheets on top of each other.
    */
   function previewPrompts(names) {
-    var openers = { enjoy: openEnjoy, share: openShare, video: true };
+    var openers = { enjoy: openEnjoy, share: openShare };
     // 'ads' expands to one preview of every card in the roster, in order, so
     // the whole rotation can be read in one go rather than played for.
     var queue = [];
@@ -13148,16 +12891,6 @@
     function next() {
       var name = queue.shift();
       if (!name) return;
-      // The video arrives over the network, so the walk waits for it, and
-      // carries on to the next prompt when nothing comes back.
-      if (name === 'video') {
-        loadVideoAd().then(function (ad) {
-          if (ad && openVideoAd(true)) return afterClose($('video-sheet'));
-          toast('\u{1F4FA}', 'No video ad came back', 'HilltopAds returned nothing for this visit.');
-          if (queue.length) setTimeout(next, 1200);
-        });
-        return;
-      }
       if (name.indexOf('ad:') === 0) openAd(ADS[Number(name.slice(3))], true);
       else openers[name](true);
       afterClose($(name.indexOf('ad:') === 0 ? 'ad-sheet' : name + '-sheet'));
@@ -13176,6 +12909,6 @@
   // so a Premium member on a fresh device is never shown one while the
   // network is still confirming what they already paid for.
   syncPremium(true).then(function (status) {
-    if (!status.hasPremium) { loadVideoAd(); scheduleAmbientAd(); }
+    if (!status.hasPremium) scheduleAmbientAd();
   });
 })();

@@ -4208,8 +4208,6 @@ body.is-beaming { overflow: hidden; }
 .enjoy-sheet .go    { min-width: 9rem; }
 
 .enjoy-sheet .fine { margin-top: var(--s2); }
-.video-sheet .video-label { margin: 0 0 var(--s3); }
-.video-sheet video { display: block; width: 100%; max-height: 60vh; border-radius: 12px; background: #000; }
 
 /* A word for somebody who has been here before, above the pitch they have
    already read. Quiet on purpose — it is a greeting, not a headline. */
