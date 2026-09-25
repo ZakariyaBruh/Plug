@@ -420,6 +420,33 @@
     </ul>
 
     <!-- ===================================================================
+         FIVE TO TRY TODAY.
+
+         Free, and deliberately so: it is the reason to open the app on a day
+         you are not deciding anything, which is the only way a food app gets
+         opened twice. Written fresh each morning, and kept OUT of the deciding
+         engine — these are somewhere to read and go and cook, not answers the
+         questions can land on. See routes/api/daily.ts for why that line
+         matters.
+
+         Moved up here, right after the hero, from below the entire Premium
+         mode grid — which is where a section whose whole point is "open the
+         app on an ordinary day" cannot afford to sit if anybody is meant to
+         actually find it.
+
+         Hidden until it has something. A shelf that says "nothing today" is
+         worse than no shelf.
+         =================================================================== -->
+    <section class="strip" id="daily-wrap" hidden>
+      <h2 class="strip-title" id="daily-title">Five to try today</h2>
+      <p class="fine" id="daily-note">Dishes the app does not already know,
+      written this morning. Tap one to read about it.</p>
+      <ul class="daily-list" id="daily-list"></ul>
+      <p class="fine daily-made">Suggested by AI, so check anything you are not sure about
+      &mdash; especially if you are cooking for someone with an allergy.</p>
+    </section>
+
+    <!-- ===================================================================
          ENDLESS, and why it is out here on its own rather than in the grid
          below it.
 
@@ -506,28 +533,6 @@
     <div class="opening-more">
       <button class="plain" id="surprise-btn" hidden>Surprise me <span class="tag-premium">Premium</span></button>
     </div>
-
-    <!-- ===================================================================
-         FIVE TO TRY TODAY.
-
-         Free, and deliberately so: it is the reason to open the app on a day
-         you are not deciding anything, which is the only way a food app gets
-         opened twice. Written fresh each morning, and kept OUT of the deciding
-         engine — these are somewhere to read and go and cook, not answers the
-         questions can land on. See routes/api/daily.ts for why that line
-         matters.
-
-         Hidden until it has something. A shelf that says "nothing today" is
-         worse than no shelf.
-         =================================================================== -->
-    <section class="strip" id="daily-wrap" hidden>
-      <h2 class="strip-title" id="daily-title">Five to try today</h2>
-      <p class="fine" id="daily-note">Dishes the app does not already know,
-      written this morning. Tap one to read about it.</p>
-      <ul class="daily-list" id="daily-list"></ul>
-      <p class="fine daily-made">Suggested by AI, so check anything you are not sure about
-      &mdash; especially if you are cooking for someone with an allergy.</p>
-    </section>
 
     <section class="strip" id="picks-wrap">
       <h2 class="strip-title">Something new <span class="tag-premium">Premium</span></h2>
