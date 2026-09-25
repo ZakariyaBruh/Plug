@@ -22,6 +22,9 @@ export function SiteFooter() {
           <a href="/decide/" className="hover:text-[var(--text)]">
             Play
           </a>
+          <Link to="/info" className="hover:text-[var(--text)]">
+            More about morsels45
+          </Link>
           <Link to="/eat" className="hover:text-[var(--text)]">
             All dishes
           </Link>

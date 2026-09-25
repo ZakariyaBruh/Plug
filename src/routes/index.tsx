@@ -83,6 +83,18 @@ function HomePage() {
                 Learn more
               </Link>
             </div>
+            {/*
+              One line, not a features section — the homepage still leads with
+              a single outcome (see docs/persuasion.md, "choice architecture").
+              But a page with nothing under the fold reads as though the
+              either-ors are all there is, and they are not: this names three
+              things that are not obvious from one screen and lets "Learn
+              more" carry the rest, same as it already did.
+            */}
+            <p className="mt-6 text-sm text-[var(--text-dim)]">
+              Six other ways to play it. A recipe and a shopping list behind every answer.
+              Deciding with somebody else, on one phone.
+            </p>
           </div>
         </section>
       </main>
