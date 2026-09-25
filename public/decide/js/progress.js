@@ -331,6 +331,20 @@
       adAt: 0,                // rotation cursor into ADS
       adShown: 0,             // offers shown, ever — for the record, not a cap
 
+      // The ambient timer's own daily cap (see app.js) — both undeclared here
+      // before, so neither survived a reload: ambientDay always read back as
+      // undefined, which the cap check reads as "a new day", so the six-a-day
+      // limit only ever held for as long as one tab stayed open.
+      ambientDay: null,       // YYYY-MM-DD the count below belongs to
+      ambientShown: 0,        // ambient slots shown today
+
+      // The one Premium pitch shown unconditionally, on the very first
+      // decision anybody ever finishes — see firstDecisionPremiumPitch.
+      firstPitchShown: false,
+      // Distinct-dish-count milestones (see MILESTONES) already celebrated,
+      // so each one is shown once ever rather than once a game.
+      milestonesSeen: [],
+
       /*
        * What a Standard profile has used up of the AI features.
        *

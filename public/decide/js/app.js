@@ -4484,7 +4484,11 @@
      * the first commit. The ids inside the panel are done-icon and done-name,
      * which is where the wrong word came from and why it never looked wrong.
      */
-    setTimeout(function () { if (panel === 'reward') fillSlot(); }, 1400);
+    setTimeout(function () {
+      if (panel !== 'reward') return;
+      fillSlot(milestoneMoment() || (progress.state.decisions === 1 ? 'first' : null));
+      firstDecisionPremiumPitch();
+    }, 1400);
     $('xp-total').textContent = '+' + outcome.total;
 
     var list = $('awards');
@@ -5528,7 +5532,139 @@
       fine: 'Seven days free, then $29.99 a year or $4.99 a month.',
       cta: 'Have a look'
     },
+    /*
+     * THE FIRST ONE. Shown exactly once, on the very first decision anybody
+     * ever finishes — see firstDecisionPremiumPitch. Every other card here is
+     * about something a returning player has noticed; this one is about
+     * nothing yet, because there is nothing yet. It says so, and points at
+     * the number instead of the person.
+     */
+    {
+      id: 'plus-first',
+      kind: 'plus',
+      moment: 'first',
+      icon: '\u{1F44B}',
+      title: 'That’s one. There are 450.',
+      body: 'Premium is what changes once you have played a few of these: it ' +
+            'remembers what you actually liked, stops offering the same thing twice, ' +
+            'and opens six other ways to argue with the same catalogue.',
+      fine: 'Seven days free. The game you are playing stays free either way.',
+      cta: 'See what changes'
+    },
+    /*
+     * THE COLLECTION MILESTONES — see MILESTONES and milestoneMoment(). Each
+     * one is real: the number is Object.keys(picks).length, a count of
+     * dishes actually landed on and accepted, not a made-up streak. Shown
+     * once ever per threshold, on the reward screen right after it is
+     * crossed, which is the one moment a number like this means anything.
+     */
+    {
+      id: 'plus-tried-10',
+      kind: 'plus',
+      moment: 'tried-10',
+      icon: '\u{1F37D}\u{FE0F}',
+      title: 'Ten dishes in',
+      body: 'Ten different answers, actually eaten. Premium starts from here: it ' +
+            'remembers which ones you liked, so the next ten are a better guess than ' +
+            'the first ten were.',
+      fine: 'Seven days free. The game you are playing stays free either way.',
+      cta: 'See what it remembers'
+    },
+    {
+      id: 'plus-tried-25',
+      kind: 'plus',
+      moment: 'tried-25',
+      icon: '\u{1F37D}\u{FE0F}',
+      title: 'Twenty-five dishes, and counting',
+      body: 'That is a real taste profile now, and a free one does nothing with it. ' +
+            'Premium reads it back to you, leans the catalogue towards it, and stops ' +
+            'repeating what you have already had this week.',
+      fine: 'Seven days free. The game you are playing stays free either way.',
+      cta: 'Put it to use'
+    },
+    {
+      id: 'plus-tried-50',
+      kind: 'plus',
+      moment: 'tried-50',
+      icon: '\u{1F3C6}',
+      title: 'Fifty dishes',
+      body: 'More than one in ten of the whole menu. Premium is the six other games ' +
+            'that argue with the same catalogue, cook mode for whichever one wins, ' +
+            'and a shared browser for deciding with somebody else.',
+      fine: 'Seven days free, then $29.99 a year or $4.99 a month.',
+      cta: 'Have a look'
+    },
+    {
+      id: 'plus-tried-100',
+      kind: 'plus',
+      moment: 'tried-100',
+      icon: '\u{1F31F}',
+      title: 'A hundred dishes',
+      body: 'Most people who ask this question once do not ask it a hundred times. ' +
+            'Premium is for the ones who do: it stops the catalogue repeating itself ' +
+            'and gets you all the way to a recipe and a shopping list.',
+      fine: 'Seven days free. The game you are playing stays free either way.',
+      cta: 'See Premium'
+    },
+    {
+      id: 'plus-tried-250',
+      kind: 'plus',
+      moment: 'tried-250',
+      icon: '\u{1F31F}',
+      title: 'More than half the menu',
+      body: 'Two hundred and fifty of four hundred and fifty. There is not much of ' +
+            'this catalogue left for you to meet for the first time — Premium is ' +
+            'what makes the rest of it, and the repeats, worth revisiting.',
+      fine: 'Seven days free. The game you are playing stays free either way.',
+      cta: 'See Premium'
+    },
+    {
+      id: 'plus-tried-450',
+      kind: 'plus',
+      moment: 'tried-450',
+      icon: '\u{1F3C1}',
+      title: 'Every dish on the menu',
+      body: 'All four hundred and fifty, actually served and accepted. Premium is ' +
+            'the only thing left to try: cook mode, the extra games, and a profile ' +
+            'that finally remembers all of this.',
+      fine: 'Seven days free, then $29.99 a year or $4.99 a month.',
+      cta: 'See Premium'
+    },
   ];
+
+  // Ascending, and read as "next uncelebrated threshold this profile has
+  // already reached" — see milestoneMoment(). Add a number here and an ADS
+  // entry with a matching 'tried-<n>' moment, and it joins on its own.
+  var MILESTONES = [10, 25, 50, 100, 250, 450];
+
+  function milestoneMoment() {
+    var distinct = Object.keys(progress.state.picks || {}).length;
+    var seen = progress.state.milestonesSeen || [];
+    for (var i = 0; i < MILESTONES.length; i++) {
+      var n = MILESTONES[i];
+      if (distinct >= n && seen.indexOf(n) === -1) return 'tried-' + n;
+    }
+    return null;
+  }
+
+  /*
+   * THE BACKSTOP FOR THE FIRST ONE. The reward-screen fillSlot() call above
+   * already asks for the 'first' moment on a first decision, which is enough
+   * on its own the great majority of the time — nothing else is due that
+   * early, so the budget check is the only thing that could ever get in the
+   * way, and only when the same game's verdict screen already spent it on
+   * an ordinary card. This is what catches that case: it waits out anything
+   * already open rather than stacking on top of it, then shows the card
+   * directly, outside the prompt budget — the budget limits how often
+   * somebody already playing is nudged again, and a first-time visitor
+   * seeing the pitch at all is the more urgent problem it is not built for.
+   */
+  function firstDecisionPremiumPitch() {
+    if (isPlus() || progress.state.decisions !== 1 || progress.state.firstPitchShown) return;
+    if (anySheetOpen()) { setTimeout(firstDecisionPremiumPitch, 600); return; }
+    var card = ADS.filter(function (a) { return a.moment === 'first'; })[0];
+    if (card) openAd(card);
+  }
 
   /*
    * Which ads this profile is allowed to see at all.
@@ -5650,6 +5786,16 @@
     if (!preview) {
       var st = progress.state;
       st.adShown = (st.adShown || 0) + 1;
+      // The one-time cards mark themselves off here, and only here — the
+      // instant they actually reach a screen, not when they are merely
+      // picked — so a preview never spends the once-ever showing, and a
+      // card pre-empted by something else this reward screen (an enjoy or
+      // share prompt, say) is still owed its turn next time.
+      if (ad.moment === 'first') st.firstPitchShown = true;
+      else if (ad.moment && ad.moment.indexOf('tried-') === 0) {
+        var n = Number(ad.moment.slice(6));
+        st.milestonesSeen = (st.milestonesSeen || []).concat(n);
+      }
       progress.save();
     }
 
@@ -8094,6 +8240,7 @@
     buildFilters();
     var filter = FILTERS.filter(function (f) { return f.id === activeFilter; })[0];
     var needle = query.trim().toLowerCase();
+    var tried = progress.state.picks || {};
 
     var matches = Data.ITEMS.filter(function (dish) {
       return filter.test(dish) && (!needle || haystack(dish).indexOf(needle) !== -1);
@@ -8107,12 +8254,14 @@
       row.type = 'button';
       row.className = 'dish';
       row.innerHTML = '<span class="dish-art" aria-hidden="true"></span>' +
-        '<span class="dish-name"></span><span class="dish-note"></span>';
+        '<span class="dish-name"></span><span class="dish-tried" aria-hidden="true">✓</span>' +
+        '<span class="dish-note"></span>';
       row.querySelector('.dish-art').textContent = dish.icon;
       row.querySelector('.dish-name').textContent = dish.name;
       // Still browsable when struck off — you have to be able to find one to
       // bring it back — but plainly marked.
       row.classList.toggle('is-struck', progress.isBanned(dish.name));
+      row.classList.toggle('is-tried', !!tried[dish.name]);
       row.querySelector('.dish-note').textContent = progress.isBanned(dish.name)
         ? 'Struck off' : dish.blurb;
       row.addEventListener('click', function () { openSheet(dish); });
@@ -8124,6 +8273,10 @@
     $('dish-count-label').textContent = matches.length === Data.ITEMS.length
       ? Data.ITEMS.length + ' dishes'
       : matches.length + ' of ' + Data.ITEMS.length + ' dishes';
+
+    var distinct = Object.keys(tried).length;
+    $('collection-count').textContent = distinct + ' of ' + Data.ITEMS.length + ' tried';
+    $('collection-fill').style.width = Math.round((distinct / Data.ITEMS.length) * 100) + '%';
   }
 
   // Describe a dish in the same words the questions use.

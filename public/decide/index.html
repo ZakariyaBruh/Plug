@@ -100,7 +100,7 @@
     <span class="mark-word">morsels45</span>
   </a>
   <nav class="topbar-nav" aria-label="Account">
-    <a class="topbar-link" id="topbar-premium" href="/premium">Premium</a>
+    <a class="topbar-link topbar-premium" id="topbar-premium" href="/premium">Premium</a>
     <a class="topbar-link topbar-account" id="topbar-account" href="/api/oauth/login?redirect_to=%2Fdecide%2F">Sign in</a>
   </nav>
 </header>
@@ -1965,6 +1965,13 @@
         <p class="mechanic">The list</p>
         <h1 class="head-title">Dishes</h1>
       </header>
+
+      <!-- A real count, off progress.state.picks — a dish name that has
+           actually been landed on and accepted, not a made-up streak. Marks
+           every tried dish below the same way, so this is something to fill
+           in by playing rather than a number nobody can act on. -->
+      <p class="head-sub" id="collection-count"></p>
+      <i class="thread thread-wide"><span id="collection-fill"></span></i>
 
       <div class="find">
         <svg class="find-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">

@@ -213,6 +213,25 @@ h1, h2, h3 { margin: 0; font-family: var(--display); line-height: 1.08; }
 .topbar-account:hover { border-color: var(--amber); background: var(--raise); }
 .topbar-account:active { transform: scale(.96); }
 .topbar-account.is-premium { border-color: var(--amber); color: var(--amber); }
+
+/* On every screen of the app, not just the ones that already ask — a text
+   link nobody notices is not "in front of" anybody. Once bought, it steps
+   back to a plain account-status line: nobody needs to keep being pitched
+   the thing they already have. */
+.topbar-premium {
+  border: 1px solid var(--amber);
+  background: color-mix(in srgb, var(--amber) 15%, transparent);
+  color: var(--amber);
+  font-weight: 600;
+}
+.topbar-premium:hover { background: var(--amber); color: #000; }
+body.is-premium .topbar-premium {
+  border-color: transparent;
+  background: none;
+  color: var(--ink-2);
+  font-weight: 400;
+}
+body.is-premium .topbar-premium:hover { color: var(--ink); background: var(--raise); }
 p { margin: 0; }
 button { font-family: inherit; }
 
@@ -1589,6 +1608,8 @@ kbd {
 .dish:hover .dish-name { color: var(--amber); }
 .dish-art { font-size: 1.15rem; line-height: 1; }
 .dish-name { font-family: var(--display); font-size: var(--t-md); font-weight: 500; letter-spacing: -.015em; flex: 0 0 14rem; transition: color var(--fast) var(--ease); }
+.dish-tried { display: none; color: var(--amber); font-size: var(--t-sm); }
+.dish.is-tried .dish-tried { display: inline; }
 .dish-note { flex: 1; min-width: 0; font-size: var(--t-sm); color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ==========================================================================
