@@ -2062,6 +2062,31 @@
         </div>
       </section>
 
+      <!-- INVITE A FRIEND, EARN A DAY OF PREMIUM.
+           Three states, one strip: signed out (with or without somebody
+           else's link already remembered), signed in and still earning a
+           friend's ten minutes, and signed in with an invite link of your
+           own. See the referral section in app.js and lib/referrals.ts. -->
+      <section class="strip" id="invite-wrap">
+        <h2 class="strip-title">Invite a friend, earn a day of Premium</h2>
+
+        <div id="invite-signedout">
+          <p class="fine" id="invite-note">Sign in free to get your own invite link.</p>
+          <a class="quiet" id="invite-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F">Sign in with Whop</a>
+        </div>
+
+        <div id="invite-mine" hidden>
+          <p class="fine">Send this to a friend. Once they sign in and play for ten minutes, you get a day of Premium — no limit on how many friends.</p>
+          <p class="invite-code-row">
+            <button class="invite-code" id="invite-link" type="button" aria-label="Copy your invite link"></button>
+            <span class="invite-copied" id="invite-copied" hidden>Copied</span>
+          </p>
+          <p class="fine" id="invite-progress" hidden></p>
+          <p class="fine" id="invite-stats"></p>
+          <p class="fine" id="invite-bonus" hidden></p>
+        </div>
+      </section>
+
       <section class="strip" id="insight-wrap">
         <h2 class="strip-title">What your history says <span class="tag-premium">Premium</span></h2>
         <ul class="insights" id="insights"></ul>

@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { checkProductAccess, checkProductAccessFor, usernameFor } from '#/lib/session'
 import { whopUserId } from '#/lib/whop-token'
 import { PREMIUM_PRODUCT_ID } from '#/lib/products'
+import { bonusActive, referralStats } from '#/lib/referrals'
 
 // What the game at /decide asks instead of a pasted licence key: is the
 // Whop account signed into this browser one that owns morsels45 Premium?
@@ -32,22 +33,38 @@ export const Route = createFileRoute('/api/premium-status')({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const answer = (signedIn: boolean, hasPremium: boolean, username: string) =>
-          new Response(JSON.stringify({ signedIn, hasPremium, username }), {
+        // userId, invited, qualified and bonusUntil are included so the
+        // game's own "invite a friend" card (see lib/referrals.ts) never
+        // needs a second round trip — userId is the same opaque Whop id
+        // /account already shows a signed-in visitor.
+        const answer = (
+          signedIn: boolean,
+          hasPremium: boolean,
+          username: string,
+          userId: string | null,
+          referral: { invited: number; qualified: number; bonusUntil: string | null },
+        ) =>
+          new Response(JSON.stringify({ signedIn, hasPremium, username, userId, ...referral }), {
             headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
           })
+        const noReferral = { invited: 0, qualified: 0, bonusUntil: null }
 
         const session = await checkProductAccess(PREMIUM_PRODUCT_ID)
         if (session.signedIn) {
           const { user } = session
-          return answer(true, session.hasAccess, user?.preferred_username ?? user?.name ?? '')
+          const [bonus, referral] = await Promise.all([bonusActive(user.sub), referralStats(user.sub)])
+          return answer(true, session.hasAccess || bonus, user?.preferred_username ?? user?.name ?? '', user.sub, referral)
         }
 
         const userId = await whopUserId(request)
-        if (!userId) return answer(false, false, '')
+        if (!userId) return answer(false, false, '', null, noReferral)
 
-        const viaToken = await checkProductAccessFor(userId, PREMIUM_PRODUCT_ID)
-        return answer(true, viaToken.hasAccess, await usernameFor(userId))
+        const [viaToken, bonus, referral] = await Promise.all([
+          checkProductAccessFor(userId, PREMIUM_PRODUCT_ID),
+          bonusActive(userId),
+          referralStats(userId),
+        ])
+        return answer(true, viaToken.hasAccess || bonus, await usernameFor(userId), userId, referral)
       },
     },
   },

@@ -1,12 +1,31 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
+import { useState } from 'react'
 
 import { PageShell } from '#/components/PageShell'
 import { loadViewer } from '#/lib/viewer'
-import { PREMIUM_PLAN_ID } from '#/lib/products'
-import { pageHead } from '#/lib/site'
+import { checkProductAccess } from '#/lib/session'
+import { PREMIUM_PLAN_ID, PREMIUM_PRODUCT_ID } from '#/lib/products'
+import { referralStats } from '#/lib/referrals'
+import { SITE_URL, pageHead } from '#/lib/site'
+
+/*
+ * Its own server function rather than folded into loadViewer: loadViewer
+ * runs on every page on the site, and a referral lookup is only ever useful
+ * on this one. See lib/referrals.ts for what it actually means.
+ */
+const loadReferral = createServerFn({ method: 'GET' }).handler(async () => {
+  const { signedIn, user } = await checkProductAccess(PREMIUM_PRODUCT_ID)
+  if (!signedIn || !user) return null
+  const stats = await referralStats(user.sub)
+  return { link: `${SITE_URL}/decide/?ref=${user.sub}`, ...stats }
+})
 
 export const Route = createFileRoute('/account')({
-  loader: () => loadViewer(),
+  loader: async () => {
+    const [viewer, referral] = await Promise.all([loadViewer(), loadReferral()])
+    return { viewer, referral }
+  },
   head: () =>
     pageHead({
       path: '/account',
@@ -16,8 +35,45 @@ export const Route = createFileRoute('/account')({
   component: AccountPage,
 })
 
+function InviteCard({ referral }: { referral: { link: string; invited: number; qualified: number; bonusUntil: string | null } }) {
+  const [copied, setCopied] = useState(false)
+
+  return (
+    <div className="rounded-2xl border border-[var(--border)] p-6">
+      <p className="text-sm text-[var(--text-dim)]">Invite a friend, earn a day of Premium</p>
+      <p className="mt-2 text-sm text-[var(--text-dim)]">
+        Send this link. Once they sign in and play for ten minutes, you get a day of Premium — no
+        limit on how many friends.
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          navigator.clipboard?.writeText(referral.link).then(() => {
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1600)
+          })
+        }}
+        className="mt-4 block w-full break-words rounded-lg border border-dashed border-[var(--amber)] px-4 py-2 text-left font-mono text-xs hover:bg-[var(--amber-soft)]"
+      >
+        {referral.link}
+      </button>
+      {copied ? <p className="mt-1 text-xs text-[var(--amber)]">Copied</p> : null}
+      <p className="mt-4 text-sm text-[var(--text-dim)]">
+        {referral.invited === 0
+          ? 'Nobody has used your link yet.'
+          : `${referral.qualified} of ${referral.invited} invited friend${referral.invited === 1 ? '' : 's'} have played long enough to earn you a day.`}
+      </p>
+      {referral.bonusUntil ? (
+        <p className="mt-2 text-sm font-semibold text-[var(--amber)]">
+          Free Premium active until {new Date(referral.bonusUntil).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}.
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
 function AccountPage() {
-  const viewer = Route.useLoaderData()
+  const { viewer, referral } = Route.useLoaderData()
 
   return (
     <PageShell user={viewer.user}>
@@ -46,7 +102,7 @@ function AccountPage() {
 
               <div className="rounded-2xl border border-[var(--border)] p-6">
                 <p className="text-sm text-[var(--text-dim)]">Premium</p>
-                {viewer.hasPremium ? (
+                {viewer.isMember ? (
                   <>
                     <p className="mt-1 text-lg font-semibold text-[var(--amber)]">Active</p>
                     <p className="mt-2 text-sm text-[var(--text-dim)]">
@@ -69,6 +125,22 @@ function AccountPage() {
                       </a>
                     </div>
                   </>
+                ) : viewer.hasPremium ? (
+                  <>
+                    <p className="mt-1 text-lg font-semibold text-[var(--amber)]">
+                      Active — free, from referrals
+                    </p>
+                    <p className="mt-2 text-sm text-[var(--text-dim)]">
+                      Not a subscription, so there is nothing to manage or cancel. It runs out on its
+                      own unless more friends qualify.
+                    </p>
+                    <a
+                      href="/decide/"
+                      className="mt-4 inline-block text-sm font-semibold text-[var(--amber)] underline"
+                    >
+                      Play now
+                    </a>
+                  </>
                 ) : (
                   <>
                     <p className="mt-1 text-lg font-semibold">Not active</p>
@@ -82,6 +154,8 @@ function AccountPage() {
                   </>
                 )}
               </div>
+
+              {referral ? <InviteCard referral={referral} /> : null}
 
               <a
                 href="/api/oauth/logout"

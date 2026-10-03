@@ -345,6 +345,17 @@
       // so each one is shown once ever rather than once a game.
       milestonesSeen: [],
 
+      // Whoever's invite link this profile arrived on — see the referral
+      // section in app.js. Set at most once, from the first ?ref= this
+      // profile ever saw, and never overwritten by a later one: it decides
+      // who a friend's ten minutes of play is worth a day of Premium to.
+      referredBy: null,
+      // The server's own running total for this profile's referral, in
+      // seconds — mirrored here only so the invite card has something to
+      // show between heartbeats. The ten-minute threshold is decided
+      // server-side; this number never counts anything on its own.
+      referralSeconds: 0,
+
       /*
        * What a Standard profile has used up of the AI features.
        *

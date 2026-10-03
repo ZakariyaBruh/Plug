@@ -8489,6 +8489,7 @@
 
     renderKnown();
     renderPlus();
+    renderInvite();
     renderFavourites();
     renderDietGroups('diet-groups', 'diet-caveats');
     renderCustomRules();
@@ -8718,6 +8719,155 @@
   }
 
   window.addEventListener('focus', function () { syncPremium(true); });
+
+  /* --------------------------------------------------------- invite a friend */
+  /*
+   * EARN A DAY OF PREMIUM BY GETTING A FRIEND PLAYING.
+   *
+   * The code in the link is simply the referrer's own Whop user id (see
+   * lib/referrals.ts) — there is nothing to decode here and nothing this
+   * file invents. Captured at most once, from the first ?ref= this profile
+   * ever saw: a later link from somebody else never overwrites it, matching
+   * the server's own rule that whoever's row was created first is who a
+   * friend's play time counts for.
+   *
+   * THE HEARTBEAT only runs for someone who is both referred and signed in.
+   * Signing in is the "make an account" step this depends on, and it is what
+   * turns an anonymous visit into a play time worth paying a real day out
+   * on — an anonymous profile can be reset and replayed for free in a way a
+   * Whop account cannot. It stops once ten minutes are in, by the server's
+   * own reply, and there is nothing left to gain by continuing to ping.
+   */
+  var QUALIFY_SECONDS = 600;
+  var HEARTBEAT_MS = 20e3;
+
+  (function captureReferral() {
+    var params = new URLSearchParams(window.location.search);
+    var ref = params.get('ref');
+    if (ref && !progress.state.referredBy) {
+      progress.state.referredBy = ref;
+      progress.save();
+    }
+    if (params.has('ref')) {
+      params.delete('ref');
+      var rest = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''));
+    }
+  })();
+
+  function inviteLink(userId) {
+    return window.location.origin + '/decide/?ref=' + encodeURIComponent(userId);
+  }
+
+  function renderInvite() {
+    var wrap = $('invite-wrap');
+    if (!wrap) return;
+    var status = premiumApi.status;
+    var signedOutWrap = $('invite-signedout');
+    var mineWrap = $('invite-mine');
+
+    if (!status.signedIn) {
+      signedOutWrap.hidden = false;
+      mineWrap.hidden = true;
+      $('invite-note').textContent = progress.state.referredBy
+        ? 'A friend invited you — sign in free and play for ten minutes to get them a day of Premium.'
+        : 'Sign in free to get your own invite link.';
+      return;
+    }
+
+    signedOutWrap.hidden = true;
+    mineWrap.hidden = false;
+    $('invite-link').textContent = status.userId ? inviteLink(status.userId) : '…';
+
+    var referredBy = progress.state.referredBy;
+    var progressLine = $('invite-progress');
+    if (referredBy && referredBy !== status.userId && (progress.state.referralSeconds || 0) < QUALIFY_SECONDS) {
+      var minutes = Math.min(10, Math.floor((progress.state.referralSeconds || 0) / 60));
+      progressLine.hidden = false;
+      progressLine.textContent = minutes + ' of 10 minutes played for whoever invited you.';
+    } else {
+      progressLine.hidden = true;
+    }
+
+    $('invite-stats').textContent = status.invited === 0
+      ? 'Nobody has used your link yet.'
+      : status.qualified + ' of ' + status.invited + ' invited friend' +
+        (status.invited === 1 ? '' : 's') + ' have played long enough to earn you a day.';
+
+    var bonus = $('invite-bonus');
+    if (status.bonusUntil) {
+      bonus.hidden = false;
+      bonus.textContent = 'Free Premium is active until ' +
+        new Date(status.bonusUntil).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) + '.';
+    } else {
+      bonus.hidden = true;
+    }
+  }
+
+  (function wireInvite() {
+    var link = $('invite-link');
+    if (link) link.addEventListener('click', function () {
+      var text = link.textContent;
+      var flash = function () {
+        var flag = $('invite-copied');
+        flag.hidden = false;
+        Sound.tick();
+        setTimeout(function () { flag.hidden = true; }, 1600);
+      };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(flash, function () {});
+          return;
+        }
+      } catch (err) { /* falls through to the old way */ }
+      try {
+        var range = document.createRange();
+        range.selectNodeContents(link);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        flash();
+      } catch (err) { /* never */ }
+    });
+  })();
+
+  var referralTimer = null;
+
+  function stopReferralHeartbeat() {
+    clearTimeout(referralTimer);
+    referralTimer = null;
+  }
+
+  function referralHeartbeat() {
+    var status = premiumApi.status;
+    var code = progress.state.referredBy;
+    var done = !code || !status.signedIn || code === status.userId ||
+      (progress.state.referralSeconds || 0) >= QUALIFY_SECONDS;
+    if (done) return stopReferralHeartbeat();
+
+    if (document.hidden) {
+      referralTimer = setTimeout(referralHeartbeat, HEARTBEAT_MS);
+      return;
+    }
+
+    fetch('/api/referral/ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, seconds: HEARTBEAT_MS / 1000 })
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (result) {
+        if (!result || typeof result.secondsPlayed !== 'number') return;
+        progress.state.referralSeconds = result.secondsPlayed;
+        progress.save();
+        renderInvite();
+        if (result.justQualified) {
+          toast('\u{1F389}', 'A day of Premium, sent', 'The friend who invited you just earned it — thanks for playing.');
+        }
+      })
+      .catch(function () { /* missed this heartbeat; the next one tries again */ })
+      .then(function () { referralTimer = setTimeout(referralHeartbeat, HEARTBEAT_MS); });
+  }
 
   // Tag -> the words the questions actually use, so the profile reads back in
   // the app's own language: "Actual food", not "drink".
@@ -12962,5 +13112,6 @@
   // network is still confirming what they already paid for.
   syncPremium(true).then(function (status) {
     if (!status.hasPremium) scheduleAmbientAd();
+    referralHeartbeat();
   });
 })();

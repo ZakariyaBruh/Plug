@@ -39,17 +39,25 @@
 
   function readStatus(payload) {
     if (!payload || typeof payload !== 'object') {
-      return { signedIn: false, hasPremium: false, username: '' };
+      return { signedIn: false, hasPremium: false, username: '', userId: null, invited: 0, qualified: 0, bonusUntil: null };
     }
     return {
       signedIn: !!payload.signedIn,
       hasPremium: !!payload.hasPremium,
-      username: typeof payload.username === 'string' ? payload.username : ''
+      username: typeof payload.username === 'string' ? payload.username : '',
+      // This visitor's own opaque Whop id, when signed in — used to build
+      // their own invite link. See lib/referrals.ts on the server.
+      userId: typeof payload.userId === 'string' ? payload.userId : null,
+      // How that invite link has done, and whether a free Premium day earned
+      // from it is active right now. See the "invite a friend" card in app.js.
+      invited: typeof payload.invited === 'number' ? payload.invited : 0,
+      qualified: typeof payload.qualified === 'number' ? payload.qualified : 0,
+      bonusUntil: typeof payload.bonusUntil === 'string' ? payload.bonusUntil : null
     };
   }
 
   function Premium() {
-    this.status = { signedIn: false, hasPremium: false, username: '' };
+    this.status = { signedIn: false, hasPremium: false, username: '', userId: null, invited: 0, qualified: 0, bonusUntil: null };
   }
 
   // Ask the site, not the browser's own memory of the last answer — a

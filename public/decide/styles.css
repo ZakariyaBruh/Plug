@@ -2620,6 +2620,23 @@ body.is-premium .tag-premium { display: none; }
 .setting b { font-family: var(--display); font-size: var(--t-base); font-weight: 500; }
 .setting small { font-size: var(--t-xs); color: var(--ink-3); }
 
+/* ------------------------------------------------------- invite a friend */
+.invite-code-row {
+  margin: var(--s4) 0 0;
+  display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap;
+}
+.invite-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--t-xs);
+  font-weight: 700; letter-spacing: .02em;
+  border: 1px dashed var(--amber); border-radius: 4px;
+  background: transparent; color: var(--ink);
+  padding: var(--s2) var(--s3); cursor: pointer;
+  max-width: 100%; overflow-wrap: anywhere; text-align: left;
+}
+.invite-code:hover { background: rgba(224, 163, 64, .12); }
+.invite-copied { font-size: var(--t-xs); color: var(--amber); }
+
 /* ==========================================================================
    Overlays
    ========================================================================== */

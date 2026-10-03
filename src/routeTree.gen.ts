@@ -41,6 +41,7 @@ import { Route as TogetherCodeRouteImport } from './routes/together.$code'
 import { Route as ApiOauthCallbackRouteImport } from './routes/api/oauth/callback'
 import { Route as ApiOauthLoginRouteImport } from './routes/api/oauth/login'
 import { Route as ApiOauthLogoutRouteImport } from './routes/api/oauth/logout'
+import { Route as ApiReferralPingRouteImport } from './routes/api/referral/ping'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -202,6 +203,11 @@ const ApiOauthLogoutRoute = ApiOauthLogoutRouteImport.update({
   path: '/api/oauth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReferralPingRoute = ApiReferralPingRouteImport.update({
+  id: '/api/referral/ping',
+  path: '/api/referral/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
+  '/api/referral/ping': typeof ApiReferralPingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -270,6 +277,7 @@ export interface FileRoutesByTo {
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
+  '/api/referral/ping': typeof ApiReferralPingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -305,6 +313,7 @@ export interface FileRoutesById {
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
+  '/api/referral/ping': typeof ApiReferralPingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -341,6 +350,7 @@ export interface FileRouteTypes {
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
+    | '/api/referral/ping'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -375,6 +385,7 @@ export interface FileRouteTypes {
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
+    | '/api/referral/ping'
   id:
     | '__root__'
     | '/'
@@ -409,6 +420,7 @@ export interface FileRouteTypes {
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
+    | '/api/referral/ping'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -443,6 +455,7 @@ export interface RootRouteChildren {
   ApiOauthCallbackRoute: typeof ApiOauthCallbackRoute
   ApiOauthLoginRoute: typeof ApiOauthLoginRoute
   ApiOauthLogoutRoute: typeof ApiOauthLogoutRoute
+  ApiReferralPingRoute: typeof ApiReferralPingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -671,6 +684,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOauthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/referral/ping': {
+      id: '/api/referral/ping'
+      path: '/api/referral/ping'
+      fullPath: '/api/referral/ping'
+      preLoaderRoute: typeof ApiReferralPingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -717,6 +737,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOauthCallbackRoute: ApiOauthCallbackRoute,
   ApiOauthLoginRoute: ApiOauthLoginRoute,
   ApiOauthLogoutRoute: ApiOauthLogoutRoute,
+  ApiReferralPingRoute: ApiReferralPingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
