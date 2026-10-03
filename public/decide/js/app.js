@@ -5753,11 +5753,17 @@
    * moment already has its own slot, and a modal over an in-progress tap is
    * the one place this should never land.
    */
-  var AMBIENT_MIN_DELAY = 22.5e3; // once every 30s, randomly — not on the dot
-  var AMBIENT_MAX_DELAY = 37.5e3;
-  // Was 6 — at a 30s cadence that emptied in three minutes and then went
-  // quiet for the rest of the day. Raised so it keeps going through an
-  // actual browsing session instead of firing itself out almost immediately.
+  // Once every two minutes, randomly — not on the dot. Slower than this slot
+  // used to run, and the slower cadence does double duty: the first ad can
+  // never land before about ninety seconds in, so nobody is pitched Premium
+  // before they have actually spent a minute on the site doing something
+  // else first.
+  var AMBIENT_MIN_DELAY = 90e3;
+  var AMBIENT_MAX_DELAY = 150e3;
+  // Was 6 — at the old 30s cadence that emptied in three minutes and then
+  // went quiet for the rest of the day. Left high even at the slower cadence
+  // above so a long browsing session still gets the slot throughout, not
+  // just at the start of it.
   var AMBIENT_MAX_PER_DAY = 30;
   var ambientTimer = null;
 
