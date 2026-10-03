@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { LocalPrice } from '#/components/LocalPrice'
 /*
  * Ids only, and from products.ts rather than from anywhere that talks to
  * Whop with the app's API key — none of that belongs in a browser bundle.
@@ -162,6 +163,7 @@ export function PlanPicker({
           ) : null}
         </span>
         <span className="block text-sm font-normal text-[var(--text-dim)]">{plan.note}</span>
+        <LocalPrice usd={plan.value} />
       </p>
 
       <Link

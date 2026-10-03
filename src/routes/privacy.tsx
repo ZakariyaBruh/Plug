@@ -27,7 +27,7 @@ export const Route = createFileRoute('/privacy')({
 })
 
 /** Last time the wording was reviewed against the code. */
-const REVIEWED = '23 September 2026'
+const REVIEWED = '3 October 2026'
 
 /*
  * `lede` is the section's answer, in one sentence, at full brightness. `body`
@@ -84,6 +84,16 @@ const SECTIONS: Section[] = [
     body: [
       'Nearby asks your browser for your location, and your browser asks you first. Say no and the feature simply does not run; nothing else in the app is affected.',
       'If you say yes, your coordinates are sent to the map services that can answer the question — OpenStreetMap’s Overpass and Nominatim, and Photon — to look up places around you. They are not sent to us, and they are not stored anywhere by this app.',
+    ],
+  },
+  {
+    id: 'local-price',
+    heading: 'The price, in your currency',
+    lede: 'Two lookups by your IP, with no prompt first, because that is all an IP address is good for here.',
+    body: [
+      'The Premium price is quoted in US dollars, because that is the currency the plan is actually priced in. On the pricing page, your browser separately asks two public services what that comes to where you are: freeipapi.com, for which currency your country uses, and open.er-api.com, for today’s exchange rate. Neither is told anything beyond the request itself, and neither is us — this app’s own server is not involved and stores nothing from either answer.',
+      'Unlike Nearby, this runs without asking first, the same way any website knows roughly where to send a page before you click anything on it. If either service cannot answer, or answers with a currency this browser does not know how to print, nothing is shown — there is no second, guessed version of the number.',
+      'It is also only ever an estimate. What you are actually charged is set at checkout, by Whop, which handles tax and currency itself — see the note above the price on that page.',
     ],
   },
   {
@@ -245,6 +255,8 @@ const THIRD_PARTIES: [string, string][] = [
   ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions.'],
   ['Hyperbeam', 'Runs the shared browser, when you open one.'],
   ['OpenStreetMap and Photon', 'Look up places near you, when you use Nearby and allow location.'],
+  ['freeipapi.com', 'Looks up which currency your country uses, by your IP, on the Premium page.'],
+  ['open.er-api.com', 'Today’s exchange rate, to show the Premium price in that currency.'],
   ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day. Nothing else.'],
   ['Cloudflare', 'Serves this site.'],
 ]
