@@ -39,7 +39,6 @@ async function open(ua) {
   await page.addInitScript(() => { window.whop = { track: (n, d) => { try { window.__b(n, d) } catch (e) {} } } })
   await page.route('**://www.googletagmanager.com/**', r => r.abort())
   await page.route('**://www.clarity.ms/**', r => r.abort())
-  await page.route('**/api/promo', r => r.fulfill({ status: 200, contentType: 'application/json', body: '{"live":false}' }))
   page.on('pageerror', e => { console.log('PAGEERROR ' + e.message.slice(0, 160)); fails += 1 })
   return { browser, ctx, page, beacons }
 }
