@@ -85,7 +85,7 @@ each claim comes from:
 > • The shared browser — a real browser somewhere else that two people drive at once with a cursor each, opened on the dish you landed on. Order it together, shop the list together, or cook along to the same video in step
 > • A planned week, a written menu whenever you like, and the dials: meal slot, heat, how adventurous, a guest at the table
 >
-> Premium is $4.99 a month or $29.99 a year, with seven days free and one link to cancel.
+> Premium is $3.45 a month or $19.99 a year, with seven days free and one link to cancel.
 
 ---
 

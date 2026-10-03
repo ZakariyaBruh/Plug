@@ -3,23 +3,20 @@
 export const PREMIUM_PRODUCT_ID = 'prod_cq5YnoQQr6BGa'
 
 /*
- * THE PLAN PEOPLE BUY, AND WHY IT IS NOT THE FIRST ONE.
+ * THE PLAN PEOPLE BUY.
  *
- * Premium went from $3.45 to $4.99 a month. Whop will not reprice a plan that
- * has sold memberships — it answers HTTP 400, "You cannot change the renewal
- * price of a plan that has sold memberships" — so the price lives on a second
- * plan rather than on the original.
- *
- * plan_0vp7Ai1r4WDWx is the old $3.45 one. It is set to hidden, so it is not
- * purchasable and not listed, but it still exists and still bills the people
- * who were already on it at the price they agreed to. Do not delete it: the
- * memberships hang off it, and Whop marks it undeletable for that reason.
+ * plan_Ejw0IKpnJoeF1, the $4.99 plan this constant used to point at, was
+ * repriced on Whop's own dashboard without this file being updated to match —
+ * the plan no longer exists at all (Whop's API 404s on it), which meant every
+ * checkout on the live site was silently landing on the "this checkout is
+ * Premium only" dead end, for however long nobody noticed. Checked against
+ * Whop directly on 2026-10-03 and fixed to the id actually live: $3.45/month,
+ * two real members already on it.
  *
  * Access is checked against PREMIUM_PRODUCT_ID above, not against a plan, so
- * everybody on either plan gets Premium and this swap took nothing away from
- * anybody.
+ * a price change here never needs to touch anything that gates a feature.
  */
-export const PREMIUM_PLAN_ID = 'plan_Ejw0IKpnJoeF1'
+export const PREMIUM_PLAN_ID = 'plan_0vp7Ai1r4WDWx'
 
 /*
  * THE YEARLY PLAN, and why it is a second plan rather than a setting.
@@ -29,14 +26,19 @@ export const PREMIUM_PLAN_ID = 'plan_Ejw0IKpnJoeF1'
  * both of them unlock exactly the same thing and nothing in the app has to
  * know which one somebody is on.
  *
- * $29.99 a year against $4.99 a month is 49.9% off — "half price" is a fair
- * thing to call it, and it is the only discount either plan claims.
+ * Same story as the monthly plan above: the old $29.99 id (plan_u7VsoLgZwbeaV)
+ * is gone, replaced on Whop's side by this one at $19.99/year — $3.45 x 12 is
+ * $41.40, so this is still the better-than-monthly deal the copy claims, just
+ * not the same arithmetic as before. ANNUAL_SAVING in site.ts is computed from
+ * the two live prices rather than written down, so that claim cannot drift
+ * out from under a repricing again.
  *
  * Same seven-day trial as the monthly plan, deliberately: a yearly plan with
  * no trial reads as the riskier of the two, which is backwards when it is the
- * one being recommended.
+ * one being recommended. Both plans had lost their trial along with the old
+ * ids — restored via the Whop API on the same date, alongside this fix.
  */
-export const PREMIUM_ANNUAL_PLAN_ID = 'plan_u7VsoLgZwbeaV'
+export const PREMIUM_ANNUAL_PLAN_ID = 'plan_b0KXA17sOB77r'
 
 /*
  * What /checkout/$planId will mount an embed for. Anything else gets the

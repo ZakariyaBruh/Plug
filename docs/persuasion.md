@@ -46,11 +46,11 @@ having never had a member, and the second switch went with it.)
 → `src/components/PlanPicker.tsx`
 
 ### Anchoring against a real number
-The reference price beside the yearly plan is $59.88 — what twelve monthly
-payments actually cost on this product. It is not an invented "was" price; it
-is the other thing on the same page. Precise numbers also read as calculated
-rather than rounded-up, which is why the price is $29.99 and the anchor is
-$59.88 and neither is softened.
+The reference price beside the yearly plan is twelve monthly payments on this
+product — not an invented "was" price, the other thing on the same page.
+Computed from the live prices rather than written down, since those prices
+have already moved once (see `products.ts`) and the anchor has to move with
+them or it stops being real.
 → `src/lib/site.ts` (`PRICE_ANNUAL_IF_MONTHLY`), `src/components/PlanPicker.tsx`
 
 ### NOT the decoy effect

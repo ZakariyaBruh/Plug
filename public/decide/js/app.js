@@ -5161,11 +5161,11 @@
      * A number on its own is an abstraction; a takeaway is not. The comparison
      * is only worth making because it is TRUE, so it changed when the price
      * did: at $3.45 this said "less than one cup of coffee", which was fair
-     * then and is not at $4.99 — a coffee is about five dollars, so that claim
-     * would now ride on a penny, and a pitch that needs rounding in its favour
-     * is not one to make. A single takeaway is fifteen to twenty-five, so a
-     * month of this is under one by a wide margin, and it is the spend this app
-     * is actually about.
+     * then, became a penny-thin claim when the price briefly moved to $4.99,
+     * and the price is back at $3.45 now — but the comparison was already
+     * moved to takeaway and there is no reason to move it back. A single
+     * takeaway is fifteen to twenty-five, so a month of this is under one by a
+     * wide margin either way, and it is the spend this app is actually about.
      *
      * Written as "a whole month of it" rather than a bare price so it cannot
      * be read as a one-off charge.
@@ -5373,12 +5373,11 @@
   var ADS = [
     /*
      * This used to be titled "Cheaper than a cup of coffee", which was true at
-     * $3.45 and is not worth saying at $4.99 — a coffee is about five dollars,
-     * so the claim would hang on a single penny. A pitch that needs rounding in
-     * its own favour is the kind of wrong worth being careful about, so the
-     * comparison moved to a takeaway: fifteen to twenty-five dollars, which a
-     * month of this is comfortably under, and it is the spend this app is
-     * actually competing with.
+     * $3.45, stopped being worth saying when the price briefly moved to
+     * $4.99 — a coffee is about five dollars, so the claim would have hung on
+     * a single penny — and was moved to a takeaway instead: fifteen to
+     * twenty-five dollars, which a month of this is comfortably under at
+     * either price, and it is the spend this app is actually competing with.
      */
     {
       id: 'plus-takeaway',
@@ -5420,7 +5419,7 @@
       body: 'Knockout, Blitz, This or that, Shortlist, Swipe and Together are all ' +
             'sitting behind one switch. Same catalogue, six different ways to argue ' +
             'with it.',
-      fine: 'Seven days free, then $29.99 a year or $4.99 a month.',
+      fine: 'Seven days free, then $19.99 a year or $3.45 a month.',
       cta: 'Have a look'
     },
     /*
@@ -5482,7 +5481,7 @@
       body: 'More than one in ten of the whole menu. Premium is the six other games ' +
             'that argue with the same catalogue, cook mode for whichever one wins, ' +
             'and a shared browser for deciding with somebody else.',
-      fine: 'Seven days free, then $29.99 a year or $4.99 a month.',
+      fine: 'Seven days free, then $19.99 a year or $3.45 a month.',
       cta: 'Have a look'
     },
     {
@@ -5518,7 +5517,7 @@
       body: 'All four hundred and fifty, actually served and accepted. Premium is ' +
             'the only thing left to try: cook mode, the extra games, and a profile ' +
             'that finally remembers all of this.',
-      fine: 'Seven days free, then $29.99 a year or $4.99 a month.',
+      fine: 'Seven days free, then $19.99 a year or $3.45 a month.',
       cta: 'See Premium'
     },
   ];
@@ -8630,7 +8629,7 @@
       // one the site recommends, and a note that only ever mentioned the
       // monthly price would have been the app quietly disagreeing with the
       // page it sends people to.
-      : 'Free for seven days, then $29.99/year or $4.99/month — cancel before it ' +
+      : 'Free for seven days, then $19.99/year or $3.45/month — cancel before it ' +
         'ends and you are not charged. Tax may be added depending on where you are, ' +
         'so the total can come to a little over that; checkout shows it before you pay. ' +
         'Sign in on any device and Premium is already on.';

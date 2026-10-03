@@ -186,24 +186,23 @@ export function pageHead(page: PageHead) {
  * want. A trial shorter than the habit it is trying to start proves nothing.
  */
 export const TRIAL_DAYS = 7
-export const PRICE_VALUE = 4.99
-export const PRICE = '$4.99'
+export const PRICE_VALUE = 3.45
+export const PRICE = '$3.45'
 export const PRICE_MONTHLY = `${PRICE}/month`
 
 /*
  * THE YEARLY PRICE.
  *
- * $29.99 against $59.88 of monthly payments is 49.9% off, which is why the
- * copy is allowed to say "half price" — and PRICE_ANNUAL_PER_MONTH is that
- * number divided by twelve and rounded, for the line that makes it comparable
- * to the monthly one at a glance.
+ * $19.99 against $41.40 of monthly payments (PRICE_VALUE x 12) is the real
+ * discount this plan carries — computed below, not written as "half price" or
+ * any other fixed claim, because the two prices it is computed from have
+ * already drifted once (see products.ts) and will again.
  *
- * ANNUAL_SAVING is computed rather than written down, because a discount
- * claim that drifts from the two prices next to it is the one number on a
- * pricing page nobody forgives.
+ * PRICE_ANNUAL_PER_MONTH is the yearly price divided by twelve and rounded,
+ * for the line that makes it comparable to the monthly one at a glance.
  */
-export const PRICE_ANNUAL_VALUE = 29.99
-export const PRICE_ANNUAL = '$29.99'
+export const PRICE_ANNUAL_VALUE = 19.99
+export const PRICE_ANNUAL = '$19.99'
 export const PRICE_YEARLY = `${PRICE_ANNUAL}/year`
 export const PRICE_ANNUAL_PER_MONTH = `$${(PRICE_ANNUAL_VALUE / 12).toFixed(2)}`
 export const ANNUAL_SAVING = Math.round((1 - PRICE_ANNUAL_VALUE / (PRICE_VALUE * 12)) * 100)
@@ -212,8 +211,8 @@ export const ANNUAL_SAVING = Math.round((1 - PRICE_ANNUAL_VALUE / (PRICE_VALUE *
  * THE ANCHOR, AND WHY IT IS ALLOWED TO BE ONE.
  *
  * People judge a price against whatever number they saw first, so a pricing
- * page that shows $29.99 alone is being read against nothing. The number put
- * beside it here is $59.88 — twelve payments at the monthly price, on this
+ * page that shows the yearly price alone is being read against nothing. The
+ * number put beside it here is twelve payments at the monthly price, on this
  * product, which is the actual other way to buy the same thing and is sitting
  * one tap away on the same switch.
  *
