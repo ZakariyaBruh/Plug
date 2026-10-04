@@ -2294,9 +2294,16 @@
      that says "we built something new," and it is said once in a profile's
      whole lifetime so it never curdles into an ad.
 
-     No corner "x". The only way out is the button, and it is disabled with
-     a count printed on it for the first five seconds — long enough to
-     actually read two sentences, short enough that nobody is trapped.
+     No corner "x". The only way out is the button, and it is disabled for
+     the first five seconds — long enough to actually read two sentences,
+     short enough that nobody is trapped. The hold is shown two ways at
+     once, not left to a digit nobody is watching: a solid bar under the
+     button that visibly drains over the same five seconds, driven by a
+     single CSS transition rather than a redraw every tick, so the motion
+     reads as continuous rather than as a clock ticking down. A bar of its
+     own, not a tint behind the label, because a tint behind text has to
+     fight that text for contrast and a thing meant to be unmissable should
+     not be the thing most likely to end up unreadable.
      =========================================================================== -->
 <dialog class="sheet enjoy-sheet" id="comeback-sheet" aria-labelledby="comeback-title">
   <span class="sheet-art" aria-hidden="true">🎉</span>
@@ -2304,7 +2311,10 @@
   <p class="sheet-note" id="comeback-body"></p>
   <div class="enjoy-actions">
     <button class="go go-sm" id="comeback-go" type="button"></button>
-    <button class="quiet" id="comeback-skip" type="button" disabled></button>
+    <span class="skip-timer-wrap">
+      <button class="quiet" id="comeback-skip" type="button" disabled></button>
+      <span class="skip-timer-track" aria-hidden="true"><span class="skip-timer-fill" id="comeback-skip-fill"></span></span>
+    </span>
   </div>
 </dialog>
 

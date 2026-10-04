@@ -814,8 +814,12 @@
    * FIVE SECONDS BEFORE THE WAY OUT, not an instant close. Not a dark
    * pattern — the delay is short and the reason is the opposite of one: a
    * message said exactly once in somebody's whole time here is worth the
-   * length of two sentences, and the count is printed on the only button
-   * there is, so nobody is left guessing whether it is stuck.
+   * length of two sentences, and the hold is shown two ways at once rather
+   * than left to a digit nobody is watching: a solid bar under the button
+   * that visibly drains over the same five seconds, as one CSS transition
+   * set going below rather than a width recomputed on every tick, so the
+   * motion reads as continuous — and the count, printed on the button
+   * itself, alongside it.
    */
   var COMEBACK_HOLD = 5;
   var comebackTimer = null;
@@ -833,9 +837,25 @@
     $('comeback-go').textContent = 'Take a look';
 
     var skip = $('comeback-skip');
+    var fill = $('comeback-skip-fill');
     var left = COMEBACK_HOLD;
     skip.disabled = true;
     skip.textContent = 'Skip (' + left + ')';
+
+    // The fill: snapped to full with no transition, then — after the browser
+    // has actually painted that frame — eased down to empty over the whole
+    // hold in one go. Setting the end state in the same tick as the start
+    // state is the classic way this silently does nothing: the browser
+    // coalesces both and there is no transition to see, only the final value.
+    fill.style.transition = 'none';
+    fill.style.transform = 'scaleX(1)';
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        fill.style.transition = 'transform ' + COMEBACK_HOLD + 's linear';
+        fill.style.transform = 'scaleX(0)';
+      });
+    });
+
     clearInterval(comebackTimer);
     comebackTimer = setInterval(function () {
       left -= 1;

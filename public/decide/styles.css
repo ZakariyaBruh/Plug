@@ -4257,6 +4257,35 @@ body.is-beaming { overflow: hidden; }
 .enjoy-sheet .quiet { min-width: 9rem; }
 .enjoy-sheet .go    { min-width: 9rem; }
 
+/* ----------------------------------------------- the comeback skip timer */
+/*
+ * MADE OBVIOUS, not just stated. A number that changes once a second is easy
+ * not to notice until it already says "Skip" — this also drains a solid bar
+ * under the button over the same five seconds, as one continuous CSS
+ * transition rather than a width recomputed on every tick, so the motion
+ * itself reads as a countdown rather than as a series of jumps. A bar of its
+ * own rather than a tint behind the label: full amber, not a wash fighting
+ * the text for contrast, because the one thing worse than a countdown nobody
+ * notices is one nobody can read. See app.js for what starts it.
+ */
+.skip-timer-wrap { display: inline-flex; flex-direction: column; align-items: stretch; gap: var(--s2); }
+#comeback-skip { min-width: 9rem; }
+.skip-timer-track {
+  display: block;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--hair);
+  overflow: hidden;
+}
+.skip-timer-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--amber);
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
 .enjoy-sheet .fine { margin-top: var(--s2); }
 
 /* A word for somebody who has been here before, above the pitch they have
