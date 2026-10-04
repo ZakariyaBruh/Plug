@@ -832,9 +832,12 @@
 
     $('comeback-title').textContent = 'Something new, since you were last here';
     $('comeback-body').textContent =
-      'You can now invite a friend and earn a free day of Premium once they sign in ' +
-      'and play for ten minutes — you would be one of the first to try it.';
+      'You can now invite a friend and earn a free day of Premium once they sign in and ' +
+      'play for ten minutes — no limit on how many friends. Invite three and you get two ' +
+      'extra days on top; invite ten and you get five more. It is tied to your account, ' +
+      'not this browser, so it is already on wherever you sign in next.';
     $('comeback-go').textContent = 'Take a look';
+    $('comeback-play').textContent = 'Play the game';
 
     var skip = $('comeback-skip');
     var fill = $('comeback-skip-fill');
@@ -883,7 +886,23 @@
 
   $('comeback-go').addEventListener('click', function () {
     closeComeback();
-    setView('profile');
+    // Signed in already: the link is a tap away, no need to leave. Not
+    // signed in: there is no link to show yet, so this goes to the one
+    // place that can make one — real sign-in, not the profile view, which
+    // would only show the same "sign in for your own link" note again.
+    if (premiumApi.status.signedIn) {
+      setView('profile');
+      highlightInvite();
+    } else {
+      window.location.href = '/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile';
+    }
+  });
+
+  $('comeback-play').addEventListener('click', function () {
+    closeComeback();
+    hideLanding();
+    setView('decide');
+    restart();
   });
 
   // ESC is refused while the countdown still holds the button — the one
@@ -8324,7 +8343,7 @@
 
     signedOutWrap.hidden = true;
     mineWrap.hidden = false;
-    $('invite-link').textContent = status.userId ? inviteLink(status.userId) : '…';
+    $('referral-link').textContent = status.userId ? inviteLink(status.userId) : '…';
 
     var referredBy = progress.state.referredBy;
     var progressLine = $('invite-progress');
@@ -8351,8 +8370,34 @@
     }
   }
 
+  /*
+   * THE LINK, HANDED OVER RATHER THAN LEFT TO BE FOUND.
+   *
+   * Called once, right after a sign-in that was specifically for this —
+   * see ?go=profile above. Scrolling to the card and giving it a moment's
+   * glow is the honest version of "automatically give you a link": the
+   * actual link still has to come from the server once signed in, so this
+   * cannot hand over text that is not real yet, but it can make sure
+   * nobody has to go looking for where it landed.
+   */
+  function highlightInvite() {
+    var wrap = $('invite-wrap');
+    if (!wrap) return;
+    setTimeout(function () {
+      wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      wrap.classList.add('is-highlighted');
+      setTimeout(function () { wrap.classList.remove('is-highlighted'); }, 2600);
+    }, 300);
+  }
+
   (function wireInvite() {
-    var link = $('invite-link');
+    // Named referral-link rather than invite-link: that id already belonged
+    // to the Together feature's own share-link input (line ~1396), and
+    // getElementById silently returns whichever comes first in the
+    // document — which was never this one. A collision on an id does not
+    // throw; it just means two different features were quietly fighting
+    // over the same element, and this half of that fight always lost.
+    var link = $('referral-link');
     if (link) link.addEventListener('click', function () {
       var text = link.textContent;
       var flash = function () {
@@ -12579,6 +12624,12 @@
     else if (go === 'dishes') { hideLanding(); setView('dishes'); }
     else if (go === 'news') { hideLanding(); setView('news'); }
     else if (go === 'ask') { hideLanding(); setView('chat'); }
+    // Where the sign-in redirect sends somebody back to: straight onto the
+    // Profile view, with the invite card drawing the eye to itself rather
+    // than left for them to go find — see highlightInvite(). The only two
+    // links that ever point here are #invite-signin and the comeback
+    // dialog's "Take a look", both below.
+    else if (go === 'profile') { hideLanding(); setView('profile'); highlightInvite(); }
 
     /*
      * ?prompt= — see a prompt now, instead of playing until one is due.

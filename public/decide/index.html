@@ -2072,13 +2072,18 @@
 
         <div id="invite-signedout">
           <p class="fine" id="invite-note">Sign in free to get your own invite link.</p>
-          <a class="quiet" id="invite-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F">Sign in with Whop</a>
+          <ul class="invite-perks">
+            <li>Invite friends, earn free Premium days</li>
+            <li>Bonus days at 3 and 10 friends</li>
+            <li>Works on any device you sign into</li>
+          </ul>
+          <a class="quiet" id="invite-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile">Sign in with Whop</a>
         </div>
 
         <div id="invite-mine" hidden>
           <p class="fine">Send this to a friend. Once they sign in and play for ten minutes, you get a day of Premium — no limit on how many friends.</p>
           <p class="invite-code-row">
-            <button class="invite-code" id="invite-link" type="button" aria-label="Copy your invite link"></button>
+            <button class="invite-code" id="referral-link" type="button" aria-label="Copy your invite link"></button>
             <span class="invite-copied" id="invite-copied" hidden>Copied</span>
           </p>
           <p class="fine" id="invite-progress" hidden></p>
@@ -2294,8 +2299,12 @@
      that says "we built something new," and it is said once in a profile's
      whole lifetime so it never curdles into an ad.
 
-     No corner "x". The only way out is the button, and it is disabled for
-     the first five seconds — long enough to actually read two sentences,
+     No corner "x". Three ways out, not one: "Take a look" goes to the
+     invite card (through sign-in first if that is not done yet — see
+     app.js, which is also why there is no link to show someone who has
+     not signed in), "Play the game" goes straight back to a decision, and
+     "Skip" is the pure dismissal — the only one of the three disabled for
+     the first five seconds, long enough to actually read three sentences,
      short enough that nobody is trapped. The hold is shown two ways at
      once, not left to a digit nobody is watching: a solid bar under the
      button that visibly drains over the same five seconds, driven by a
@@ -2311,6 +2320,7 @@
   <p class="sheet-note" id="comeback-body"></p>
   <div class="enjoy-actions">
     <button class="go go-sm" id="comeback-go" type="button"></button>
+    <button class="quiet" id="comeback-play" type="button"></button>
     <span class="skip-timer-wrap">
       <button class="quiet" id="comeback-skip" type="button" disabled></button>
       <span class="skip-timer-track" aria-hidden="true"><span class="skip-timer-fill" id="comeback-skip-fill"></span></span>

@@ -2637,6 +2637,30 @@ body.is-premium .tag-premium { display: none; }
 .invite-code:hover { background: rgba(224, 163, 64, .12); }
 .invite-copied { font-size: var(--t-xs); color: var(--amber); }
 
+.invite-perks {
+  margin: var(--s3) 0 var(--s4);
+  padding-left: 1.1em;
+  list-style: disc;
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}
+.invite-perks li { margin-top: var(--s1); }
+
+/* Drawn to, not left to be found — see highlightInvite() in app.js. A ring
+   rather than a background fill: the card's own content (the link, the
+   stats) has to stay just as readable while this is running as before it. */
+#invite-wrap.is-highlighted {
+  animation: invite-pulse 1.3s var(--ease) 2;
+  border-radius: 8px;
+}
+@keyframes invite-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 163, 64, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(224, 163, 64, .35); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #invite-wrap.is-highlighted { animation: none; outline: 2px solid var(--amber); outline-offset: 4px; }
+}
+
 /* ==========================================================================
    Overlays
    ========================================================================== */

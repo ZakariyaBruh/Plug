@@ -23,10 +23,28 @@ import { db } from '#/lib/db'
  * id. Two different free accounts belonging to the same person is not
  * something this can detect, and is the same limitation every referral
  * program has.
+ *
+ * MILESTONES: a real count, read back as a bigger reward. Three qualified
+ * friends is worth two extra days on top of the one each already gave, ten
+ * is worth five more — stated this way deliberately, as a bonus on top of
+ * the per-friend day, rather than replacing it, so the arithmetic in the
+ * copy that advertises this stays checkable against what the code actually
+ * does. `referral_milestones` exists only so each threshold pays out once:
+ * without it, a referrer parked at eleven qualified friends would re-earn
+ * the ten-friend bonus on every heartbeat from friend twelve onward.
  */
 
 const QUALIFY_SECONDS = 600 // ten minutes
-const BONUS_MS = 24 * 60 * 60 * 1000 // one day, stacked onto whichever is later: now or an existing bonus
+const BONUS_DAY_MS = 24 * 60 * 60 * 1000 // one day, stacked onto whichever is later: now or an existing bonus
+
+// Ascending, and read as "every threshold this referrer has reached" — see
+// grantMilestones(). Add a row here and it is picked up on its own; nothing
+// else names these numbers, the dialog copy included, which only ever quotes
+// them, not computes with them.
+const MILESTONES = [
+  { count: 3, bonusDays: 2 },
+  { count: 10, bonusDays: 5 },
+]
 
 let ready: Promise<void> | null = null
 
@@ -50,6 +68,12 @@ function ensureSchema(client: NonNullable<ReturnType<typeof db>>) {
           `create table if not exists premium_bonus (
             user_id text primary key,
             until text not null
+          )`,
+          `create table if not exists referral_milestones (
+            user_id text not null,
+            milestone integer not null,
+            granted_at text not null,
+            primary key (user_id, milestone)
           )`,
         ],
         'write',
@@ -81,7 +105,7 @@ export async function bonusActive(userId: string): Promise<boolean> {
   }
 }
 
-async function extendBonus(client: NonNullable<ReturnType<typeof db>>, userId: string): Promise<void> {
+async function extendBonus(client: NonNullable<ReturnType<typeof db>>, userId: string, days: number): Promise<void> {
   const current = await client.execute({
     sql: 'select until from premium_bonus where user_id = ?',
     args: [userId],
@@ -91,8 +115,36 @@ async function extendBonus(client: NonNullable<ReturnType<typeof db>>, userId: s
   await client.execute({
     sql: `insert into premium_bonus (user_id, until) values (?, ?)
           on conflict (user_id) do update set until = excluded.until`,
-    args: [userId, new Date(base + BONUS_MS).toISOString()],
+    args: [userId, new Date(base + days * BONUS_DAY_MS).toISOString()],
   })
+}
+
+/**
+ * Checked after a credit, never before: reads the referrer's real qualified
+ * count and grants whichever thresholds it has reached for the first time.
+ * Returns the bonus days just granted this call, 0 if none — purely for the
+ * caller to say something about it; the bonus itself is already applied.
+ */
+async function grantMilestones(client: NonNullable<ReturnType<typeof db>>, referrerId: string): Promise<number> {
+  const counts = await client.execute({
+    sql: 'select coalesce(sum(credited), 0) as qualified from referrals where referrer_id = ?',
+    args: [referrerId],
+  })
+  const qualified = Number(counts.rows[0]?.qualified ?? 0)
+  let granted = 0
+  for (const milestone of MILESTONES) {
+    if (qualified < milestone.count) continue
+    const claim = await client.execute({
+      sql: `insert into referral_milestones (user_id, milestone, granted_at) values (?, ?, ?)
+            on conflict (user_id, milestone) do nothing
+            returning milestone`,
+      args: [referrerId, milestone.count, new Date().toISOString()],
+    })
+    if (!claim.rows.length) continue // already granted on an earlier call
+    await extendBonus(client, referrerId, milestone.bonusDays)
+    granted += milestone.bonusDays
+  }
+  return granted
 }
 
 /**
@@ -104,8 +156,8 @@ export async function recordPlay(
   referredId: string,
   code: string,
   seconds: number,
-): Promise<{ secondsPlayed: number; qualified: boolean; justQualified: boolean }> {
-  const idle = { secondsPlayed: 0, qualified: false, justQualified: false }
+): Promise<{ secondsPlayed: number; qualified: boolean; justQualified: boolean; milestoneDays: number }> {
+  const idle = { secondsPlayed: 0, qualified: false, justQualified: false, milestoneDays: 0 }
   const client = db()
   if (!client || !referredId || !code || referredId === code) return idle
 
@@ -135,17 +187,19 @@ export async function recordPlay(
     const referrerId = String(row.referrer_id)
     const qualified = secondsPlayed >= QUALIFY_SECONDS
     let justQualified = false
+    let milestoneDays = 0
 
     if (qualified && Number(row.credited) !== 1 && referrerId !== referredId) {
       await client.execute({
         sql: 'update referrals set credited = 1 where referred_id = ?',
         args: [referredId],
       })
-      await extendBonus(client, referrerId)
+      await extendBonus(client, referrerId, 1)
       justQualified = true
+      milestoneDays = await grantMilestones(client, referrerId)
     }
 
-    return { secondsPlayed, qualified, justQualified }
+    return { secondsPlayed, qualified, justQualified, milestoneDays }
   } catch (err) {
     console.error('referrals: play record failed', err)
     return idle

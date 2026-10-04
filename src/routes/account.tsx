@@ -82,14 +82,59 @@ function AccountPage() {
           <h1 className="text-3xl font-bold">Account</h1>
 
           {!viewer.signedIn ? (
-            <div className="mt-8 rounded-2xl border border-[var(--border)] p-8 text-center">
-              <p className="text-[var(--text-dim)]">Sign in to see what's unlocked on this account.</p>
-              <a
-                href="/api/oauth/login?redirect_to=%2Faccount"
-                className="mt-6 inline-block rounded-full bg-[var(--amber)] px-6 py-3 font-semibold text-black hover:opacity-90 hover:scale-105 active:scale-95"
-              >
-                Sign in with Whop
-              </a>
+            <div className="mt-8 rounded-2xl border border-[var(--border)] p-8">
+              <p className="text-center text-[var(--text-dim)]">
+                Free, and nothing to pay for — here's what an account actually gets you.
+              </p>
+
+              <dl className="mt-6 space-y-5">
+                <div>
+                  <dt className="font-semibold">Invite friends, earn free Premium</dt>
+                  <dd className="mt-1 text-sm text-[var(--text-dim)]">
+                    Send your link. Once a friend signs in and plays for ten minutes, you get a day
+                    of Premium — free, and there's no limit on how many friends.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Bonus days at three and ten friends</dt>
+                  <dd className="mt-1 text-sm text-[var(--text-dim)]">
+                    Three qualified friends is worth two extra days on top of the one each already
+                    gave. Ten is worth five more.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Works on any device you sign into</dt>
+                  <dd className="mt-1 text-sm text-[var(--text-dim)]">
+                    Premium earned this way is tied to your account, not a browser — sign in
+                    anywhere and it's already on, same as a paid membership.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-sm">One invite link, yours for good</dt>
+                  <dd className="mt-1 text-sm text-[var(--text-dim)]">
+                    No code to request and nothing that expires — the same link works every time.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-sm">Track it at a glance</dt>
+                  <dd className="mt-1 text-sm text-[var(--text-dim)]">
+                    See how many friends you've invited, how many qualified, and exactly when your
+                    bonus runs out.
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="mt-8 text-center">
+                <a
+                  href="/api/oauth/login?redirect_to=%2Faccount"
+                  className="inline-block rounded-full bg-[var(--amber)] px-6 py-3 font-semibold text-black hover:opacity-90 hover:scale-105 active:scale-95"
+                >
+                  Sign in with Whop
+                </a>
+                <p className="mt-3 text-xs text-[var(--text-dim)]">
+                  Free. No card, and nothing about this is a subscription.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="mt-8 space-y-6">
