@@ -319,31 +319,12 @@
       shareAt: 0,             // decisions at the last showing
       shareShown: 0,          // times it has been shown, ever
 
-      /*
-       * The rotating offers (see ADS in app.js). `plusAd` is the final
-       * refusal — 'no' silences that whole kind of offer for good, not just
-       * the card that was on screen. It used to have a twin, `earn`, for the
-       * affiliate offers; those are gone and so is it. `adAt` is where the
-       * rotation got to, saved so a new game opens on the next card rather
-       * than the same one every time.
-       */
-      plusAd: '',             // '' | 'no' — whether the Premium pitch was ended
-      adAt: 0,                // rotation cursor into ADS
-      adShown: 0,             // offers shown, ever — for the record, not a cap
-
-      // The ambient timer's own daily cap (see app.js) — both undeclared here
-      // before, so neither survived a reload: ambientDay always read back as
-      // undefined, which the cap check reads as "a new day", so the six-a-day
-      // limit only ever held for as long as one tab stayed open.
-      ambientDay: null,       // YYYY-MM-DD the count below belongs to
-      ambientShown: 0,        // ambient slots shown today
-
-      // The one Premium pitch shown unconditionally, on the very first
-      // decision anybody ever finishes — see firstDecisionPremiumPitch.
-      firstPitchShown: false,
-      // Distinct-dish-count milestones (see MILESTONES) already celebrated,
-      // so each one is shown once ever rather than once a game.
-      milestonesSeen: [],
+      // Said once, ever, on a genuine later-day return — see maybeShowComeback
+      // in app.js. There used to be a whole rotating roster of unsolicited
+      // Premium offers here (ambient timer, per-game budget, milestone and
+      // first-decision cards); all of it is gone, and this one flag is what
+      // replaced the state it used to need.
+      comebackShown: false,
 
       // Whoever's invite link this profile arrived on — see the referral
       // section in app.js. Set at most once, from the first ?ref= this

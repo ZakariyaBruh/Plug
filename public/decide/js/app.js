@@ -299,17 +299,14 @@
    * you thought would open a recipe is neither. There is now a sheet with the
    * feature named on it and a "not now" the same size as the yes.
    *
-   * The card is built here rather than added to ADS because it is not a
-   * prompt: it spends no budget, waits for no spacing, and appears only
-   * because somebody asked for it. `preview` is passed for exactly that
-   * reason — this is not one of the rotating pitches and must not be counted
-   * as one.
+   * The card is built here rather than as a standing fixture because it
+   * names the specific thing that was tapped, and appears only because
+   * somebody asked for it — openAd's one and only caller now.
    */
   function goPremium(what) {
     var named = what || 'This';
     openAd({
       id: 'desire',
-      kind: 'plus',
       icon: '\u2728',
       title: named + ' is part of Premium',
       body: 'Seven days free, and it switches on everything marked Premium — not just this ' +
@@ -317,16 +314,8 @@
             'on your account page.',
       fine: 'Deciding stays free. Every dish, every recipe and everything you do not eat are ' +
             'free permanently, whatever you do here.',
-      cta: 'Seven days free',
-      /*
-       * No "Not interested" on this one. That button silences the rotating
-       * pitches for good, which is the right thing to offer somebody we
-       * interrupted and quite the wrong thing to offer somebody who opened
-       * this themselves — they would be turning off the answer to a question
-       * they had just asked.
-       */
-      noNever: true
-    }, true);
+      cta: 'Seven days free'
+    });
   }
 
   // Paid content is shown blurred rather than removed. An empty pane says
@@ -811,6 +800,88 @@
     }
   })();
 
+  /* ------------------------------------------------------- the comeback */
+  /*
+   * SAID ONCE, EVER, TO SOMEBODY ACTUALLY COMING BACK.
+   *
+   * This is what replaced the old ad rotation's job of telling a free
+   * profile something is new — but only the one honest version of that
+   * sentence: it fires at most once in a profile's whole lifetime, only on
+   * a genuine later-day return (see returningDay() above), and it is not a
+   * pitch. Nothing here asks for money, and there is nothing to refuse
+   * twice or silence for good, because there is no second one coming.
+   *
+   * FIVE SECONDS BEFORE THE WAY OUT, not an instant close. Not a dark
+   * pattern — the delay is short and the reason is the opposite of one: a
+   * message said exactly once in somebody's whole time here is worth the
+   * length of two sentences, and the count is printed on the only button
+   * there is, so nobody is left guessing whether it is stuck.
+   */
+  var COMEBACK_HOLD = 5;
+  var comebackTimer = null;
+
+  function openComeback(preview) {
+    if (!preview) {
+      progress.state.comebackShown = true;
+      progress.save();
+    }
+
+    $('comeback-title').textContent = 'Something new, since you were last here';
+    $('comeback-body').textContent =
+      'You can now invite a friend and earn a free day of Premium once they sign in ' +
+      'and play for ten minutes — you would be one of the first to try it.';
+    $('comeback-go').textContent = 'Take a look';
+
+    var skip = $('comeback-skip');
+    var left = COMEBACK_HOLD;
+    skip.disabled = true;
+    skip.textContent = 'Skip (' + left + ')';
+    clearInterval(comebackTimer);
+    comebackTimer = setInterval(function () {
+      left -= 1;
+      if (left > 0) { skip.textContent = 'Skip (' + left + ')'; return; }
+      clearInterval(comebackTimer);
+      skip.disabled = false;
+      skip.textContent = 'Skip';
+    }, 1000);
+
+    var dlg = $('comeback-sheet');
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  }
+
+  function closeComeback() {
+    clearInterval(comebackTimer);
+    var dlg = $('comeback-sheet');
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+  }
+
+  $('comeback-skip').addEventListener('click', function () {
+    if ($('comeback-skip').disabled) return;
+    Sound.tick();
+    closeComeback();
+  });
+
+  $('comeback-go').addEventListener('click', function () {
+    closeComeback();
+    setView('profile');
+  });
+
+  // ESC is refused while the countdown still holds the button — the one
+  // other way most dialogs close, and it would otherwise skip the count
+  // entirely.
+  $('comeback-sheet').addEventListener('cancel', function (e) {
+    if ($('comeback-skip').disabled) { e.preventDefault(); return; }
+    closeComeback();
+  });
+
+  function maybeShowComeback() {
+    if (progress.state.comebackShown) return;
+    if (!returningDay()) return;
+    var last = (progress.state.history || [])[0];
+    if (!last || !last.name) return;
+    if (anySheetOpen()) return;
+    openComeback();
+  }
 
   function renderIntro() {
     var state = progress.state;
@@ -846,6 +917,9 @@
      */
     label('landing-start', 'Decide for me');
     paintHello(state, played);
+    // After the landing has actually painted, so it never competes with the
+    // entrance animation for the one thing somebody looks at first.
+    setTimeout(maybeShowComeback, 1200);
     paintEndlessCard();
 
     // "Surprise me" and the week plan need a profile worth shortcutting to:
@@ -4018,7 +4092,6 @@
     if (value === 'either') Sound.shrug(); else Sound.tick();
     floatXp(gained, source);
 
-    var asked = game.answers.length;
     game.answer(current.tag, value);
     step();
     saveResume();
@@ -4026,20 +4099,6 @@
     // After step(), so the new question's render doesn't clear it.
     $('reaction').textContent = line;
     replay($('reaction'));
-
-    /*
-     * The one prompt allowed inside the question flow, and only when this
-     * game's budget is a big one.
-     *
-     * Four answers in is the quietest point in a run: past the broad strokes,
-     * not yet close enough to an answer to be worth hurrying. It still costs
-     * a beat in the middle of a game, so it is only taken when the budget is
-     * more than the reward screen can comfortably spend on its own — at two
-     * or three prompts they all go at the end, where nothing is waiting.
-     */
-    if (asked === 4 && gameBudget >= 4 && panel === 'question') {
-      setTimeout(function () { if (panel === 'question') fillSlot(); }, 900);
-    }
   }
 
   /* ---------------------------------------------------------- the funnel */
@@ -4148,14 +4207,7 @@
       // The verdict is on screen and the game has stopped of its own accord,
       // so this is a slot. After the reveal has been read, and only if the
       // reader is still on it.
-      if (gameBudget >= 3) {
-        // Worked out here rather than inside fillSlot: this is the one place
-        // that knows which dish was just landed on, and the history has not
-        // been written yet, so the answer is about the servings BEFORE this
-        // one.
-        var moment = momentFor(top && top.name);
-        setTimeout(function () { if (panel === 'result') fillSlot(moment); }, 2200);
-      }
+      setTimeout(function () { if (panel === 'result') fillSlot(); }, 2200);
     }
 
     if (!spins) return land();
@@ -4485,8 +4537,7 @@
      */
     setTimeout(function () {
       if (panel !== 'reward') return;
-      fillSlot(milestoneMoment() || (progress.state.decisions === 1 ? 'first' : null));
-      firstDecisionPremiumPitch();
+      fillSlot();
     }, 1400);
     $('xp-total').textContent = '+' + outcome.total;
 
@@ -4784,10 +4835,9 @@
    * the first time they use a thing is asking them to predict a life they
    * have not started. Two decisions in, they know whether this is for them.
    *
-   * NOT A PROMPT. It does not spend the prompt budget, it does not open a
-   * dialog, and it never covers anything. It sits on the one screen where
-   * nothing is waiting, and a reader who never looks at it is never asked
-   * again by anything else.
+   * NOT A PROMPT. It does not open a dialog, and it never covers anything.
+   * It sits on the one screen where nothing is waiting, and a reader who
+   * never looks at it is never asked again by anything else.
    *
    * NOT A CONTRACT. Forgetting it is one tap and the tap is right next to it.
    * A commitment device you cannot leave is not a commitment device, it is a
@@ -5225,90 +5275,8 @@
     'Locked in. Enjoy the bit that comes next.'
   ];
 
-  /* ------------------------------------------------------- the prompt budget */
-  /*
-   * HOW MANY PROMPTS ONE GAME IS ALLOWED, and where they are allowed to land.
-   *
-   * A game is one play-through: from starting a decision to accepting one.
-   * On Standard that game gets a budget of two or three prompts,
-   * drawn once when the game starts so the pace varies between games instead
-   * of being the same every time. A Premium member gets one: they have
-   * already bought the only thing this roster sells.
-   *
-   * WHERE THEY LAND, and why not mid-question. Three modal dialogs thrown
-   * across the question flow would hit the budget and wreck the game: every
-   * one of them steals focus in the middle of a train of thought that takes
-   * about a minute to finish. So the slots are the two places the game has
-   * already stopped — the verdict and the reward screen — plus one quiet
-   * point in the middle — one prompt at most in each.
-   *
-   * THE REWARD SCREEN USED TO SPEND WHATEVER WAS LEFT, one prompt after the
-   * next, each waiting for the last to be closed. On a first decision that
-   * meant two Premium cards back to back over the screen that says what else
-   * is free — "Not now" on the first one produced the second. That is the
-   * moment most people leave, and the thing covering the way further in was
-   * a second ask. So it is still one there at a time, never chained — see
-   * fillSlot — with the mid-question slot doing the rest of the work of a
-   * bigger number: raised back to three-to-five (from two-to-three) so that
-   * slot, gated at budget >= 4, is actually reachable most games instead of
-   * dead code sitting under a cap that could never clear it.
-   *
-   * WHAT FILLS A SLOT, in order. The two bespoke prompts first, when they
-   * are due: they are about a specific thing, they keep their own state and
-   * they are rare by design. Then the ads, which are what makes a bigger
-   * budget reachable at all — an offer with nothing behind it but "not now"
-   * comes back, where a survey answered is answered forever.
-   */
-  var GAME_BUDGET_MIN = 3;
-  var GAME_BUDGET_MAX = 5;
-
-  /*
-   * A MEMBER GETS NO PROMPTS AT ALL.
-   *
-   * It was one per game, rarely, and the one they got was the affiliate
-   * offer — the only card on the roster that might pay them something back
-   * rather than ask them for something. That offer is gone, and there is
-   * nothing to put in its place: every other card on the roster sells
-   * Premium, which is the thing they have already bought.
-   *
-   * So the budget is nought and this is not a gap waiting to be filled. What
-   * somebody paying bought includes not being sold to, and the honest number
-   * for how often to interrupt them is zero.
-   */
-  var GAME_BUDGET_PLUS = 0;
-
-  function plusPromptDue() {
-    return false;
-  }
-
-  /*
-   * HOW MANY SWAPS A MENU IS WORTH ON STANDARD.
-   *
-   * Swapping is local and free — it re-scores from the catalogue rather than
-   * asking the model — and with three courses, three swaps is a brand new
-   * menu for nothing. That made the one-every-two-days allowance a formality:
-   * take your menu, then swap every course until you like it.
-   *
-   * Two is the number because two is what the feature is actually for: "the
-   * main is right, the other two are not". Changing all three is not
-   * adjusting a menu, it is asking for a different one, and that is what the
-   * allowance covers. Premium swaps as much as it likes.
-   */
-
-  var gameBudget = 0;
-  var gameSpent = 0;
-  var gameAds = [];   // ad ids already used this game, so none repeats in it
-
-  function startGameBudget() {
-    gameSpent = 0;
-    gameAds = [];
-    gameBudget = isPlus()
-      ? GAME_BUDGET_PLUS
-      : GAME_BUDGET_MIN + Math.floor(Math.random() * (GAME_BUDGET_MAX - GAME_BUDGET_MIN + 1));
-  }
-
   function anySheetOpen() {
-    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet'];
+    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet', 'comeback-sheet'];
     for (var i = 0; i < ids.length; i++) {
       var dlg = document.getElementById(ids[i]);
       if (dlg && dlg.open) return true;
@@ -5317,348 +5285,35 @@
   }
 
   /*
-   * Spend one prompt, if there is budget and something worth showing.
-   *
-   * One per call, never chained — see the note over GAME_BUDGET_MIN. Returns
-   * whether anything was shown, so a caller can tell a spent budget from an
-   * empty roster.
+   * The two bespoke prompts, tried in order, at the verdict and the reward
+   * screen — the two places the game has already stopped on its own, so
+   * nothing is interrupted mid-thought. There used to be a rotating roster of
+   * Premium ads filled in here as well, spaced by a per-game budget; it is
+   * gone — see the note over the "invite a friend" section for what replaced
+   * it. What is left are two real things, each with its own frequency rule
+   * and each answered forever once somebody actually answers it.
    */
-  function fillSlot(moment) {
-    // Capped live rather than trusting the number drawn at the start of the
-    // game: Premium is settled by a request to the server, so the very first
-    // game of a session can begin before the answer is back. Reading isPlus()
-    // here means a member never spends a Standard-sized budget.
-    var plus = isPlus();
-    var cap = plus ? Math.min(gameBudget, GAME_BUDGET_PLUS) : gameBudget;
-    if (gameSpent >= cap) return false;
+  function fillSlot() {
     if (anySheetOpen()) return false;
-    if (plus && !plusPromptDue()) return false;
-
-    /*
-     * enjoyDue and shareDue already refuse a member on their own, so the two
-     * of them could be left in the chain and would simply never fire. They
-     * are guarded here as well because this is the line that has to be read
-     * to answer "what does a member see?", and the answer should be legible
-     * from it rather than from three functions in other places.
-     */
-    var shown = null;
-    if (!plus && enjoyDue()) { openEnjoy(); shown = 'enjoy-sheet'; }
-    else if (!plus && shareDue()) { openShare(); shown = 'share-sheet'; }
-    else if (openAd(nextAd(moment))) { shown = 'ad-sheet'; }
-
-    if (!shown) return false;
-    gameSpent += 1;
-
-    return true;
-  }
-
-  /* --------------------------------------------------------------- the ads */
-  /*
-   * The rotating prompts, and the one place a new offer is added.
-   *
-   * ADD ONE HERE. One entry, and it joins the rotation: it will be shown,
-   * spaced, counted against the per-game budget and silenced by the same
-   * refusal as the rest, with nothing else to wire up. `kind` decides who
-   * sees it — 'plus' is the upgrade pitch and is never shown to somebody
-   * already paying, which is every card on this roster now that the
-   * affiliate offers have been taken out.
-   *
-   * NO NUMBERS THAT ARE NOT KNOWN HERE. None of these name a commission rate
-   * or an amount, because this file does not know them and a made-up figure
-   * in a money pitch is the one kind of wrong that costs somebody something
-   * real. They say what the deal is and let the page at the other end say
-   * what it pays.
-   */
-
-  var ADS = [
-    /*
-     * This used to be titled "Cheaper than a cup of coffee", which was true at
-     * $3.45, stopped being worth saying when the price briefly moved to
-     * $4.99 — a coffee is about five dollars, so the claim would have hung on
-     * a single penny — and was moved to a takeaway instead: fifteen to
-     * twenty-five dollars, which a month of this is comfortably under at
-     * either price, and it is the spend this app is actually competing with.
-     */
-    {
-      id: 'plus-takeaway',
-      kind: 'plus',
-      icon: '✨',
-      title: 'Less than one takeaway',
-      body: 'Premium is the other six ways to play, cook mode, the menu builder, ' +
-            'and rules it never asks you about twice. A whole month of it costs less ' +
-            'than a single delivery order.',
-      fine: 'Seven days free first. The game you are playing stays free either way.',
-      cta: 'Seven days free'
-    },
-    /*
-     * The only card in here tied to a moment. It is shown when the dish on
-     * screen has already been served in the last fortnight, and at no other
-     * time — see nextAd(). Everything it says is a thing the reader can see
-     * for themselves on the screen behind it, which is the entire point:
-     * the pitch is the complaint they already have.
-     */
-    {
-      id: 'plus-repeat',
-      kind: 'plus',
-      moment: 'repeat',
-      icon: '\u{1F501}',
-      title: 'You have had this one recently',
-      body: 'A free profile does not remember what it served you, so it can offer ' +
-            'the same dish again next week and the week after. Premium takes a dish ' +
-            'off the table for a week once you accept it, strikes off anything you ' +
-            'never want to see again for good, and leans the rest towards what you ' +
-            'have actually liked.',
-      fine: 'Seven days free. The game you are playing stays free either way.',
-      cta: 'Stop the repeats'
-    },
-    {
-      id: 'plus-modes',
-      kind: 'plus',
-      icon: '\u{1F3C6}',
-      title: 'There are six more games in here',
-      body: 'Knockout, Blitz, This or that, Shortlist, Swipe and Together are all ' +
-            'sitting behind one switch. Same catalogue, six different ways to argue ' +
-            'with it.',
-      fine: 'Seven days free, then $19.99 a year or $3.45 a month.',
-      cta: 'Have a look'
-    },
-    /*
-     * THE FIRST ONE. Shown exactly once, on the very first decision anybody
-     * ever finishes — see firstDecisionPremiumPitch. Every other card here is
-     * about something a returning player has noticed; this one is about
-     * nothing yet, because there is nothing yet. It says so, and points at
-     * the number instead of the person.
-     */
-    {
-      id: 'plus-first',
-      kind: 'plus',
-      moment: 'first',
-      icon: '\u{1F44B}',
-      title: 'That’s one. There are 450.',
-      body: 'Premium is what changes once you have played a few of these: it ' +
-            'remembers what you actually liked, stops offering the same thing twice, ' +
-            'and opens six other ways to argue with the same catalogue.',
-      fine: 'Seven days free. The game you are playing stays free either way.',
-      cta: 'See what changes'
-    },
-    /*
-     * THE COLLECTION MILESTONES — see MILESTONES and milestoneMoment(). Each
-     * one is real: the number is Object.keys(picks).length, a count of
-     * dishes actually landed on and accepted, not a made-up streak. Shown
-     * once ever per threshold, on the reward screen right after it is
-     * crossed, which is the one moment a number like this means anything.
-     */
-    {
-      id: 'plus-tried-10',
-      kind: 'plus',
-      moment: 'tried-10',
-      icon: '\u{1F37D}\u{FE0F}',
-      title: 'Ten dishes in',
-      body: 'Ten different answers, actually eaten. Premium starts from here: it ' +
-            'remembers which ones you liked, so the next ten are a better guess than ' +
-            'the first ten were.',
-      fine: 'Seven days free. The game you are playing stays free either way.',
-      cta: 'See what it remembers'
-    },
-    {
-      id: 'plus-tried-25',
-      kind: 'plus',
-      moment: 'tried-25',
-      icon: '\u{1F37D}\u{FE0F}',
-      title: 'Twenty-five dishes, and counting',
-      body: 'That is a real taste profile now, and a free one does nothing with it. ' +
-            'Premium reads it back to you, leans the catalogue towards it, and stops ' +
-            'repeating what you have already had this week.',
-      fine: 'Seven days free. The game you are playing stays free either way.',
-      cta: 'Put it to use'
-    },
-    {
-      id: 'plus-tried-50',
-      kind: 'plus',
-      moment: 'tried-50',
-      icon: '\u{1F3C6}',
-      title: 'Fifty dishes',
-      body: 'More than one in ten of the whole menu. Premium is the six other games ' +
-            'that argue with the same catalogue, cook mode for whichever one wins, ' +
-            'and a shared browser for deciding with somebody else.',
-      fine: 'Seven days free, then $19.99 a year or $3.45 a month.',
-      cta: 'Have a look'
-    },
-    {
-      id: 'plus-tried-100',
-      kind: 'plus',
-      moment: 'tried-100',
-      icon: '\u{1F31F}',
-      title: 'A hundred dishes',
-      body: 'Most people who ask this question once do not ask it a hundred times. ' +
-            'Premium is for the ones who do: it stops the catalogue repeating itself ' +
-            'and gets you all the way to a recipe and a shopping list.',
-      fine: 'Seven days free. The game you are playing stays free either way.',
-      cta: 'See Premium'
-    },
-    {
-      id: 'plus-tried-250',
-      kind: 'plus',
-      moment: 'tried-250',
-      icon: '\u{1F31F}',
-      title: 'More than half the menu',
-      body: 'Two hundred and fifty of four hundred and fifty. There is not much of ' +
-            'this catalogue left for you to meet for the first time — Premium is ' +
-            'what makes the rest of it, and the repeats, worth revisiting.',
-      fine: 'Seven days free. The game you are playing stays free either way.',
-      cta: 'See Premium'
-    },
-    {
-      id: 'plus-tried-450',
-      kind: 'plus',
-      moment: 'tried-450',
-      icon: '\u{1F3C1}',
-      title: 'Every dish on the menu',
-      body: 'All four hundred and fifty, actually served and accepted. Premium is ' +
-            'the only thing left to try: cook mode, the extra games, and a profile ' +
-            'that finally remembers all of this.',
-      fine: 'Seven days free, then $19.99 a year or $3.45 a month.',
-      cta: 'See Premium'
-    },
-  ];
-
-  // Ascending, and read as "next uncelebrated threshold this profile has
-  // already reached" — see milestoneMoment(). Add a number here and an ADS
-  // entry with a matching 'tried-<n>' moment, and it joins on its own.
-  var MILESTONES = [10, 25, 50, 100, 250, 450];
-
-  function milestoneMoment() {
-    var distinct = Object.keys(progress.state.picks || {}).length;
-    var seen = progress.state.milestonesSeen || [];
-    for (var i = 0; i < MILESTONES.length; i++) {
-      var n = MILESTONES[i];
-      if (distinct >= n && seen.indexOf(n) === -1) return 'tried-' + n;
-    }
-    return null;
+    if (enjoyDue()) { openEnjoy(); return true; }
+    if (shareDue()) { openShare(); return true; }
+    return false;
   }
 
   /*
-   * THE BACKSTOP FOR THE FIRST ONE. The reward-screen fillSlot() call above
-   * already asks for the 'first' moment on a first decision, which is enough
-   * on its own the great majority of the time — nothing else is due that
-   * early, so the budget check is the only thing that could ever get in the
-   * way, and only when the same game's verdict screen already spent it on
-   * an ordinary card. This is what catches that case: it waits out anything
-   * already open rather than stacking on top of it, then shows the card
-   * directly, outside the prompt budget — the budget limits how often
-   * somebody already playing is nudged again, and a first-time visitor
-   * seeing the pitch at all is the more urgent problem it is not built for.
+   * THE PREMIUM EXPLAIN SHEET. Used to also be where a rotating roster of
+   * unsolicited Premium pitches lived — a card roughly every two minutes,
+   * everywhere in the app, plus a budgeted two or three a game. All of that
+   * is gone, removed rather than slowed down further: this project stopped
+   * wanting to be a thing that interrupts you to ask for money. What is left
+   * is purely reactive — it opens only because somebody tapped a locked
+   * feature or a "try it free" link, via goPremium() above, and says what
+   * that one thing is.
    */
-  function firstDecisionPremiumPitch() {
-    if (isPlus() || progress.state.decisions !== 1 || progress.state.firstPitchShown) return;
-    if (anySheetOpen()) { setTimeout(firstDecisionPremiumPitch, 600); return; }
-    var card = ADS.filter(function (a) { return a.moment === 'first'; })[0];
-    if (card) openAd(card);
-  }
-
-  /*
-   * Which ads this profile is allowed to see at all.
-   *
-   * Nothing here is about timing — that is the budget's job below. This is
-   * only the question of whether an offer makes sense for this person and
-   * whether they have told us to stop.
-   */
-  /*
-   * Has this dish already been through here lately?
-   *
-   * Read off the profile's own history, which is written when a dish is
-   * ACCEPTED — so at the moment the verdict lands this does not yet include
-   * the dish on screen, and a first serving never reads as a repeat.
-   *
-   * Fourteen days rather than seven: "don't repeat this week" is the Premium
-   * feature being pitched, so the window that triggers the pitch has to be at
-   * least as wide as the promise, or the card turns up for somebody the
-   * feature would not have helped.
-   */
-  var REPEAT_DAYS = 14;
-
-  function momentFor(name) {
-    if (!name || isPlus()) return null;
-    var since = Date.now() - REPEAT_DAYS * 864e5;
-    var seen = (progress.state.history || []).some(function (entry) {
-      return entry.name === name && (entry.at || 0) >= since;
-    });
-    return seen ? 'repeat' : null;
-  }
-
-  function adAllowed(ad) {
-    var st = progress.state;
-    if (ad.kind === 'plus') return !isPlus() && st.plusAd !== 'no';
-    return true;
-  }
-
-  /*
-   * The rotation cursor, saved.
-   *
-   * Held in progress rather than in a variable so the rotation carries across
-   * games and across days. Without that, every game would open with the same
-   * ad, which is how a roster of five ends up being one ad with four spares.
-   */
-  function nextAd(moment) {
-    var st = progress.state;
-
-    /*
-     * A CARD FOR THE THING THAT JUST HAPPENED, IF THERE IS ONE.
-     *
-     * The rotation below is fair and context-free: it shows whatever is next
-     * in the list, which means the pitch somebody reads has nothing to do
-     * with what they were doing a second earlier. "Premium never repeats" is
-     * worth almost nothing in the abstract and worth a great deal to
-     * somebody looking at the same dish for the third time this week — so
-     * when the caller can name the moment, a card written for that moment
-     * jumps the queue.
-     *
-     * A card with a `moment` is ONLY ever shown at that moment: it is left
-     * out of the ordinary rotation below, because a pitch about repeating
-     * yourself, shown to somebody who has not, is a pitch that does not make
-     * sense and reads as an app that is not paying attention. Everything
-     * else about it is unchanged — same budget, same once-per-game rule,
-     * same refusals.
-     */
-    if (moment) {
-      for (var m = 0; m < ADS.length; m++) {
-        var timely = ADS[m];
-        if (timely.moment !== moment) continue;
-        if (!adAllowed(timely)) continue;
-        if (gameAds.indexOf(timely.id) !== -1) continue;
-        gameAds.push(timely.id);
-        return timely;
-      }
-    }
-
-    var start = st.adAt || 0;
-    for (var i = 0; i < ADS.length; i++) {
-      var ad = ADS[(start + i) % ADS.length];
-      if (ad.moment) continue;
-      if (!adAllowed(ad)) continue;
-      // Never the same card twice in one game. With most of the roster
-      // refused the cursor wraps inside a single game, and it did: a profile
-      // that had refused the rest got "six more games in here",
-      // then the takeaway line, then both again, in one sitting. The same pitch
-      // twice in five minutes is the exact thing that makes somebody leave.
-      // Nothing new to say means the slot goes unfilled and the budget simply
-      // is not spent — fewer prompts for somebody who has refused most of
-      // them is the right answer, not a repeat.
-      if (gameAds.indexOf(ad.id) !== -1) continue;
-      st.adAt = (start + i + 1) % ADS.length;
-      progress.save();
-      gameAds.push(ad.id);
-      return ad;
-    }
-    return null;
-  }
-
   var adOpener = null;
-  var adShowing = null;
 
-  function openAd(ad, preview) {
+  function openAd(ad) {
     if (!ad) return false;
-    adShowing = ad;
 
     $('ad-art').textContent = ad.icon;
     $('ad-title').textContent = ad.title;
@@ -5666,39 +5321,8 @@
     $('ad-fine').textContent = ad.fine;
     $('ad-go').textContent = ad.cta;
     $('ad-go').href = premiumApi.upgradeUrl();
-    // The final refusal is named after what it ends, not after this one card,
-    // and every card left on the roster is the same pitch in different words.
-    $('ad-never').textContent = 'Not interested';
-    // See goPremium: a card somebody opened themselves does not get to offer
-    // them a switch that turns off future answers.
-    $('ad-never').hidden = !!ad.noNever;
 
-    if (!preview) {
-      var st = progress.state;
-      st.adShown = (st.adShown || 0) + 1;
-      // The one-time cards mark themselves off here, and only here — the
-      // instant they actually reach a screen, not when they are merely
-      // picked — so a preview never spends the once-ever showing, and a
-      // card pre-empted by something else this reward screen (an enjoy or
-      // share prompt, say) is still owed its turn next time.
-      if (ad.moment === 'first') st.firstPitchShown = true;
-      else if (ad.moment && ad.moment.indexOf('tried-') === 0) {
-        var n = Number(ad.moment.slice(6));
-        st.milestonesSeen = (st.milestonesSeen || []).concat(n);
-      }
-      progress.save();
-    }
-
-    /*
-     * A PREMIUM CARD REACHED SOMEBODY'S SCREEN.
-     *
-     * "Premium cards seen" against "checkout clicked" is the only way to tell
-     * a pitch nobody wants from a pitch nobody sees. `asked` separates the
-     * two kinds: a card somebody opened by tapping a lock is a different
-     * event from one we interrupted them with, and averaging them together
-     * would hide whichever is doing the work.
-     */
-    beacon('premium_seen', { card: ad.id, kind: ad.kind, asked: !!preview });
+    beacon('premium_seen', { card: ad.id });
 
     adOpener = document.activeElement;
     var dlg = $('ad-sheet');
@@ -5717,8 +5341,12 @@
   // membership data says whether it finished, so this is the last thing this
   // side needs to report.
   $('ad-go').addEventListener('click', function () {
-    beacon('premium_clicked', { card: adShowing ? adShowing.id : 'unknown', from: 'card' });
+    beacon('premium_clicked', { from: 'card' });
+    closeAd();
   });
+
+  $('ad-close').addEventListener('click', closeAd);
+  $('ad-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeAd(); });
 
   // The other way out of the app towards paying: the strip on the profile
   // screen, which is somebody who went looking rather than being asked.
@@ -5730,107 +5358,6 @@
     var top = $('topbar-premium');
     if (top) top.addEventListener('click', function () { beacon('premium_clicked', { from: 'topbar' }); });
   })();
-
-  /*
-   * There used to be a HilltopAds video slot here, alongside the Premium
-   * cards. It is gone — not paused, not swapped for another network, gone —
-   * because a third-party ad exchange serves whatever wins its auction and
-   * that roster is not vetted for what this app or its players find
-   * acceptable. The cards below are the only prompt a free profile sees now.
-   */
-
-  /*
-   * THE AMBIENT SLOT — everywhere in the app that is not one of the three
-   * moments fillSlot() already covers (mid-question, the verdict, the
-   * reward screen). A free visitor reading Dishes, the Menu, Nearby, News,
-   * Ask or their own Profile sees the same rotation on a loose timer
-   * instead, so the Premium pitch is not limited to people mid-decision.
-   *
-   * Capped per day rather than per game, since there is no game to spend a
-   * budget on out here. Skipped whenever a sheet is already open, the tab
-   * is in the background, or a question is actively being answered — that
-   * moment already has its own slot, and a modal over an in-progress tap is
-   * the one place this should never land.
-   */
-  // Once every two minutes, randomly — not on the dot. Slower than this slot
-  // used to run, and the slower cadence does double duty: the first ad can
-  // never land before about ninety seconds in, so nobody is pitched Premium
-  // before they have actually spent a minute on the site doing something
-  // else first.
-  var AMBIENT_MIN_DELAY = 90e3;
-  var AMBIENT_MAX_DELAY = 150e3;
-  // Was 6 — at the old 30s cadence that emptied in three minutes and then
-  // went quiet for the rest of the day. Left high even at the slower cadence
-  // above so a long browsing session still gets the slot throughout, not
-  // just at the start of it.
-  var AMBIENT_MAX_PER_DAY = 30;
-  var ambientTimer = null;
-
-  function ambientBudgetLeft() {
-    var st = progress.state;
-    var today = todayKey();
-    if (st.ambientDay !== today) { st.ambientDay = today; st.ambientShown = 0; }
-    return AMBIENT_MAX_PER_DAY - (st.ambientShown || 0);
-  }
-
-  function scheduleAmbientAd() {
-    clearTimeout(ambientTimer);
-    if (isPlus()) return;
-    var delay = AMBIENT_MIN_DELAY + Math.random() * (AMBIENT_MAX_DELAY - AMBIENT_MIN_DELAY);
-    ambientTimer = setTimeout(tryAmbientAd, delay);
-  }
-
-  /*
-   * The same rotation nextAd() draws from, minus its "never twice in one
-   * game" rule — right for a single twenty-question run, wrong for an
-   * ambient timer that can tick for as long as somebody sits on Dishes or
-   * News. Without this, the three cards would each show once, ever, and
-   * every ambient slot after that would come up empty. Still shares st.adAt
-   * with nextAd(), so the two rotations are one rotation, not two
-   * independent ones drifting apart.
-   */
-  function nextAmbientCard() {
-    var st = progress.state;
-    var start = st.adAt || 0;
-    for (var i = 0; i < ADS.length; i++) {
-      var ad = ADS[(start + i) % ADS.length];
-      if (ad.moment || !adAllowed(ad)) continue;
-      st.adAt = (start + i + 1) % ADS.length;
-      progress.save();
-      return ad;
-    }
-    return null;
-  }
-
-  function tryAmbientAd() {
-    if (isPlus()) return; // a member going Premium mid-session gets no more of these
-    if (document.hidden || anySheetOpen() || (view === 'decide' && panel === 'question') ||
-        ambientBudgetLeft() <= 0) {
-      return scheduleAmbientAd();
-    }
-    if (openAd(nextAmbientCard())) {
-      progress.state.ambientShown = (progress.state.ambientShown || 0) + 1;
-      progress.save();
-    }
-    scheduleAmbientAd();
-  }
-
-  $('ad-later').addEventListener('click', function () { Sound.tick(); closeAd(); });
-  $('ad-close').addEventListener('click', closeAd);
-  $('ad-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeAd(); });
-
-  // Final, and for the whole kind rather than this one card.
-  $('ad-never').addEventListener('click', function () {
-    var st = progress.state;
-    if (adShowing && adShowing.kind === 'plus') st.plusAd = 'no';
-    progress.save();
-    Sound.tick();
-    closeAd();
-  });
-
-  // Tapping the offer is an answer too: it should not be put to them again in
-  // the same breath, and the sheet is a change of context anyway.
-  $('ad-go').addEventListener('click', function () { closeAd(); });
 
   /* ----------------------------------------------------------- send it on */
   /*
@@ -9416,10 +8943,6 @@
     game.items = quickMode ? Data.QUICK : Data.ITEMS;
     toastQueue = [];
     duel.live = false;
-    // A new game, and a fresh prompt budget for it. Every mode in the app
-    // comes through here, which is what makes "per game" mean the same thing
-    // in Endless, Knockout and the ordinary question flow alike.
-    startGameBudget();
     // Order matters: the bias is read while the prior is built, and the bans are
     // applied to the weights afterwards.
     applyTaste();
@@ -13048,18 +12571,15 @@
      * and you have not said you like it", which is not something anybody
      * should have to take on trust.
      *
-     * So: ?prompt=enjoy, ?prompt=share, or ?prompt=all to walk
-     * through all three. It spends nothing — no showing is counted and
+     * So: ?prompt=enjoy, ?prompt=share, ?prompt=comeback, or ?prompt=all to
+     * walk through all three. It spends nothing — no showing is counted and
      * nothing is saved — so previewing one does not use up a real one, and it
      * cannot be stumbled into, because nobody types a query string by
      * accident.
      */
     var wanted = (here.searchParams.get('prompt') || '').toLowerCase();
     if (wanted) {
-      var queue = wanted === 'all' ? ['enjoy', 'share', 'ads']
-                : wanted === 'ads' ? ['ads']
-                : [wanted];
-      previewPrompts(queue);
+      previewPrompts(wanted === 'all' ? ['enjoy', 'share', 'comeback'] : [wanted]);
     }
   })();
 
@@ -13069,15 +12589,8 @@
    * timer, so a slow read does not stack two sheets on top of each other.
    */
   function previewPrompts(names) {
-    var openers = { enjoy: openEnjoy, share: openShare };
-    // 'ads' expands to one preview of every card in the roster, in order, so
-    // the whole rotation can be read in one go rather than played for.
-    var queue = [];
-    names.forEach(function (n) {
-      if (openers[n]) return queue.push(n);
-      if (n !== 'ads') return;
-      ADS.forEach(function (ad, i) { queue.push('ad:' + i); });
-    });
+    var openers = { enjoy: openEnjoy, share: openShare, comeback: openComeback };
+    var queue = names.filter(function (n) { return openers[n]; });
     if (!queue.length) return;
 
     function afterClose(dlg) {
@@ -13093,9 +12606,8 @@
     function next() {
       var name = queue.shift();
       if (!name) return;
-      if (name.indexOf('ad:') === 0) openAd(ADS[Number(name.slice(3))], true);
-      else openers[name](true);
-      afterClose($(name.indexOf('ad:') === 0 ? 'ad-sheet' : name + '-sheet'));
+      openers[name](true);
+      afterClose($(name + '-sheet'));
     }
 
     // After the landing has painted, or the sheet opens behind it.
@@ -13106,12 +12618,7 @@
   // account that owns Premium. No key to paste, no purchase to "claim" — the
   // checkout at /premium already attached access to the account directly, so
   // this is the same check every later load makes, just running once early.
-  //
-  // The ambient ad timer waits on this rather than starting immediately,
-  // so a Premium member on a fresh device is never shown one while the
-  // network is still confirming what they already paid for.
   syncPremium(true).then(function (status) {
-    if (!status.hasPremium) scheduleAmbientAd();
     referralHeartbeat();
   });
 })();

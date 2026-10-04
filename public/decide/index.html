@@ -2267,20 +2267,14 @@
   ever sees. A "not really" is a complete answer and gets no pitch at all.
 -->
 <!-- ===========================================================================
-     THE AD SHEET — one dialog, many prompts.
+     THE PREMIUM EXPLAIN SHEET.
 
-     The three prompts below it are each about one specific thing and each keep
-     their own state, which is why they have their own markup. These are the
-     rotating ones: the Premium pitch, in several wordings. They differ only in
-     words, so writing a dialog per angle would be several copies of the same
-     markup drifting apart. Everything here is filled in
-     from the ADS roster in app.js, which is also the one place a new offer
-     gets added.
-
-     Two refusals, and they are not the same refusal. "Not now" is a shrug and
-     the prompt comes back in a later game. The second one is final and is
-     honoured forever — a pitch with no way to end it is the thing that makes
-     people leave rather than the thing that makes them buy.
+     Used to be filled from a rotating roster of unsolicited Premium pitches,
+     shown on a timer and a per-game budget — removed entirely, not slowed
+     down further. What is left is purely reactive: it opens only because
+     somebody tapped a locked feature or a "try it free" link (see
+     goPremium() in app.js), and says what that one thing unlocks. One way
+     out, same as any other sheet.
      =========================================================================== -->
 <dialog class="sheet enjoy-sheet" id="ad-sheet" aria-labelledby="ad-title">
   <button class="sheet-x" id="ad-close" aria-label="Close">&times;</button>
@@ -2290,8 +2284,27 @@
   <p class="fine" id="ad-fine"></p>
   <div class="enjoy-actions">
     <a class="go go-sm" id="ad-go" target="_blank" rel="noopener noreferrer"></a>
-    <button class="quiet" id="ad-later" type="button">Not now</button>
-    <button class="quiet" id="ad-never" type="button"></button>
+  </div>
+</dialog>
+
+<!-- ===========================================================================
+     THE COMEBACK ANNOUNCEMENT — said once, ever, to somebody genuinely
+     coming back on a later day (see returningDay() in app.js). Not on the
+     usual roster and never about money: this is the one place in the app
+     that says "we built something new," and it is said once in a profile's
+     whole lifetime so it never curdles into an ad.
+
+     No corner "x". The only way out is the button, and it is disabled with
+     a count printed on it for the first five seconds — long enough to
+     actually read two sentences, short enough that nobody is trapped.
+     =========================================================================== -->
+<dialog class="sheet enjoy-sheet" id="comeback-sheet" aria-labelledby="comeback-title">
+  <span class="sheet-art" aria-hidden="true">🎉</span>
+  <h2 class="sheet-name" id="comeback-title"></h2>
+  <p class="sheet-note" id="comeback-body"></p>
+  <div class="enjoy-actions">
+    <button class="go go-sm" id="comeback-go" type="button"></button>
+    <button class="quiet" id="comeback-skip" type="button" disabled></button>
   </div>
 </dialog>
 

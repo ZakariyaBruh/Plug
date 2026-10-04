@@ -122,14 +122,14 @@ away.
 
 ### Moment of desire — the offer where the want is
 An offer made at the moment somebody has demonstrated they want the thing
-converts far better than the same offer made on a rotation. Tapping a locked
-feature used to fire a toast and open the Whop checkout in the same gesture;
-it now opens a card naming the feature, with the trial, the price and the exit
-on it, and a "not now" the same size as the yes. It spends no prompt budget
-and is not counted as one of the rotating pitches, because it is not one —
-somebody asked for it. The permanent "not interested" is hidden on this card:
-that switch silences unprompted pitches, and offering it to somebody who just
-asked a question would be offering to turn off the answer.
+converts far better than an unsolicited one. There used to be a rotating
+roster of unsolicited Premium pitches as well — a card on a timer everywhere
+in the app, plus a budgeted two or three a game — and it is gone, removed
+rather than slowed down further: it was still advertising, however honestly
+worded. What is left is the reactive version only. Tapping a locked feature
+opens a card naming that specific feature, with the trial, the price and the
+exit on it, and it opens for no other reason — nothing is shown because a
+timer fired or a game started.
 → `public/decide/js/app.js` (`goPremium`, `openAd`)
 
 ### Returning without being fetched
@@ -158,6 +158,17 @@ somebody arrives at and something that knows them. It costs nothing to say
 because it is true and already on their device — the honest version of what
 an account would have bought. Only on a later day than the last visit; said
 the same evening it reads as the app having forgotten the last ten minutes.
+
+**The comeback announcement.** The same later-day-return signal also carries
+the one place this app tells anybody "we built something new" — a dialog,
+said once in a profile's whole lifetime, never about money. It replaced the
+rotating ad roster's job of surfacing new things, which is the one part of
+that system worth keeping once the rest of it is gone: people who come back
+on their own are owed to know what changed, and told once rather than nagged
+about it is the honest version of that. Five seconds before the way out is
+clickable, printed as a count on the only button there is, so a message worth
+sending once is read rather than reflexively dismissed.
+→ `public/decide/js/app.js` (`maybeShowComeback`, `openComeback`)
 
 **"Free, while you're here."** The funnel's plainest finding is that people
 get an answer, say yes, and close the tab having seen one screen of an app
