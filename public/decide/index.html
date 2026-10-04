@@ -101,7 +101,7 @@
   </a>
   <nav class="topbar-nav" aria-label="Account">
     <a class="topbar-link topbar-premium" id="topbar-premium" href="/premium">Premium</a>
-    <a class="topbar-link topbar-account" id="topbar-account" href="/api/oauth/login?redirect_to=%2Fdecide%2F">Sign in</a>
+    <a class="topbar-link topbar-account" id="topbar-account" href="/api/oauth/login?redirect_to=%2Fdecide%2F" target="_top">Sign in</a>
   </nav>
 </header>
 
@@ -2077,7 +2077,11 @@
             <li>Bonus days at 3 and 10 friends</li>
             <li>Works on any device you sign into</li>
           </ul>
-          <a class="quiet" id="invite-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile">Sign in with Whop</a>
+          <!-- target="_top": this page is always inside Whop's own iframe
+               when opened from an experience (see js/app.js's `framed`), and
+               Whop's own sign-in page refuses to render inside a frame — so
+               without this the click just does nothing, with no error. -->
+          <a class="quiet" id="invite-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile" target="_top">Sign in with Whop</a>
         </div>
 
         <div id="invite-mine" hidden>
@@ -2299,11 +2303,12 @@
      that says "we built something new," and it is said once in a profile's
      whole lifetime so it never curdles into an ad.
 
-     No corner "x". Three ways out, not one: "Take a look" goes to the
-     invite card (through sign-in first if that is not done yet — see
-     app.js, which is also why there is no link to show someone who has
-     not signed in), "Play the game" goes straight back to a decision, and
-     "Skip" is the pure dismissal — the only one of the three disabled for
+     No corner "x". Three ways out, not one: the first button goes to the
+     invite card, through real sign-in first if that is not done yet (see
+     app.js — its label says which, "See my invite link" or "Sign in for
+     my link", so it is never a guess what tapping it does). "Play the
+     game" goes straight back to a decision, and "Skip" is the pure
+     dismissal — the only one of the three disabled for
      the first five seconds, long enough to actually read three sentences,
      short enough that nobody is trapped. The hold is shown two ways at
      once, not left to a digit nobody is watching: a solid bar under the

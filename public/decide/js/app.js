@@ -836,7 +836,12 @@
       'play for ten minutes — no limit on how many friends. Invite three and you get two ' +
       'extra days on top; invite ten and you get five more. It is tied to your account, ' +
       'not this browser, so it is already on wherever you sign in next.';
-    $('comeback-go').textContent = 'Take a look';
+    // What the button actually does differs by whether there is already a
+    // link to show — "Take a look" was true of neither case and told
+    // nobody what tapping it would do.
+    $('comeback-go').textContent = premiumApi.status.signedIn
+      ? 'See my invite link'
+      : 'Sign in for my link';
     $('comeback-play').textContent = 'Play the game';
 
     var skip = $('comeback-skip');
@@ -894,7 +899,14 @@
       setView('profile');
       highlightInvite();
     } else {
-      window.location.href = '/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile';
+      // window.location.href would only move the iframe: this page is
+      // always inside Whop's own frame when opened from an experience (see
+      // `framed` above), and Whop's sign-in page refuses to render inside
+      // one — so the click would look like it did nothing at all. Writing
+      // to the TOP frame's location is allowed even across origins
+      // specifically so a page like this one can break out for sign-in.
+      var url = '/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile';
+      try { window.top.location.href = url; } catch (err) { window.location.href = url; }
     }
   });
 
@@ -12628,7 +12640,7 @@
     // Profile view, with the invite card drawing the eye to itself rather
     // than left for them to go find — see highlightInvite(). The only two
     // links that ever point here are #invite-signin and the comeback
-    // dialog's "Take a look", both below.
+    // dialog's signed-out "Sign in for my link", both below.
     else if (go === 'profile') { hideLanding(); setView('profile'); highlightInvite(); }
 
     /*
