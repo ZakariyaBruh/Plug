@@ -723,6 +723,17 @@ body.is-premium .mode-lock { display: none; }
 
 .strip { margin-top: var(--s7); }
 
+.ad-wrap { margin-top: var(--s7); text-align: center; }
+.ad-wrap:empty { display: none; }
+.ad-label {
+  margin: 0 0 var(--s2);
+  font-size: var(--t-xs);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ad-wrap iframe { border: 0; max-width: 100%; }
+
 .strip-title {
   display: flex;
   align-items: baseline;

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { GA4_ON, REPLAY_ON, SITE_URL, WHOP_PAGE_URL, pageHead } from '#/lib/site'
+import { ADSTERRA_ON, GA4_ON, REPLAY_ON, SITE_URL, WHOP_PAGE_URL, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/privacy')({
 })
 
 /** Last time the wording was reviewed against the code. */
-const REVIEWED = '3 October 2026'
+const REVIEWED = '5 October 2026'
 
 /*
  * `lede` is the section's answer, in one sentence, at full brightness. `body`
@@ -178,6 +178,29 @@ const SECTIONS: Section[] = [
       'For anything held by Whop — your account, your subscription, your payment history — ask Whop directly, since that is where it lives.',
     ],
   },
+  /*
+   * ADDED WHEN ADVERTISING WAS ADDED, same commit — see ADSTERRA_ON in
+   * lib/site.ts for the one switch this section, the "is there
+   * advertising" card below, and the THIRD_PARTIES row all read. There was
+   * a video ad network here once (HilltopAds) and it was removed rather
+   * than fixed for the reason given below; this section says plainly that
+   * the same tradeoff was made again, deliberately, rather than pretend
+   * the earlier removal settled the question for good.
+   */
+  ...(ADSTERRA_ON
+    ? [
+        {
+          id: 'advertising',
+          heading: 'The ads on this site',
+          lede: 'A small number of banner ads, from one ad network (Adsterra), sandboxed so a creative cannot read anything of yours or send you anywhere by itself.',
+          body: [
+            'A handful of pages — not the game itself, and not the pages where you are signing up or paying — carry a boxed, labelled "Advertisement" banner from Adsterra. We do not choose or review individual ads: like any ad network, Adsterra runs an auction and shows whatever wins it, which is the one honest caveat here — we cannot promise every ad will be for something we would choose to put in front of you ourselves.',
+            'What is limited is what an ad is allowed to do, not what it is allowed to say. Every banner renders inside a sandboxed iframe with no access to this page at all: it cannot read this site’s cookies or local storage, cannot read or change anything else on the page, and cannot redirect your tab anywhere by itself — only a real click on the ad can open a new one, the same as clicking any other link. Whatever that site then does is between you and it, under its own privacy policy, same as tapping through from the news page.',
+            'One format Adsterra offers was deliberately left out: a floating "Social Bar" built to look like a chat bubble or a browser notification rather than an ad. The banners used here are boxed and labelled instead, specifically so an ad always reads as one.',
+          ],
+        },
+      ]
+    : []),
 ]
 
 /*
@@ -216,22 +239,25 @@ const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
     : []),
   {
     q: 'Is there advertising or cross-site tracking?',
-    a: 'No',
     /*
-     * There was briefly a third-party video ad network on the free tier
-     * (HilltopAds) and it was removed rather than fixed: an ad exchange
-     * serves whatever wins its auction, and that roster cannot be vetted.
-     * What the free tier shows instead is this app's own Premium pitch —
-     * not a third party, nothing served by an exchange, nothing that shares
-     * a visitor's IP or browser with anybody. The note changes with GA4_ON
-     * and the answer does not, for the same reason as always: Google
-     * Analytics set up the way this one is — no Signals, no advertising
-     * features, no user id — counts what happens on this site and does not
-     * follow anybody off it.
+     * ADSTERRA_ON now drives this answer directly, the same way REPLAY_ON
+     * drives the recording card above it — flip the switch in lib/site.ts
+     * and this flips with it, rather than this page keeping its old answer
+     * after the product stopped matching it. See the "advertising" entry
+     * in SECTIONS above for the detail this card is a summary of, and
+     * lib/site.ts for why the tradeoff was made again after HilltopAds was
+     * removed for the same underlying reason. GA4_ON still only changes
+     * the wording about our own analytics, not this answer.
      */
-    note: GA4_ON
-      ? 'No advertising pixel, and nothing that follows you to other sites. Google Analytics is here, counting pages and the seventeen events listed below — with none of its advertising features switched on.'
-      : 'No Google Analytics, no advertising pixel of our own, and nothing that follows you to other sites.',
+    a: ADSTERRA_ON ? 'Yes' : 'No',
+    note: ADSTERRA_ON
+      ? 'A small number of boxed, labelled banner ads from one network (Adsterra) — see “The ads on this site” below for exactly what they can and cannot do.' +
+        (GA4_ON
+          ? ' Google Analytics is also here, counting pages and the seventeen events listed below, with none of its own advertising features switched on.'
+          : ' No Google Analytics here.')
+      : GA4_ON
+        ? 'No advertising pixel, and nothing that follows you to other sites. Google Analytics is here, counting pages and the seventeen events listed below — with none of its advertising features switched on.'
+        : 'No Google Analytics, no advertising pixel of our own, and nothing that follows you to other sites.',
   },
 ]
 
@@ -242,6 +268,10 @@ const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
  */
 const THIRD_PARTIES: [string, string][] = [
   ['Whop', 'Sign-in, payments, subscription status, and the analytics on every page it serves.'],
+  // Driven by ADSTERRA_ON, same as every conditional row here.
+  ...(ADSTERRA_ON
+    ? ([['Adsterra', 'Shows the boxed, labelled banner ads on a few pages — sandboxed with no access to this site. See “The ads on this site” above.']] as [string, string][])
+    : []),
   // Driven by the same constant as the script and the paragraph above, so
   // this list cannot fall out of step with what is actually loaded.
   ...(REPLAY_ON

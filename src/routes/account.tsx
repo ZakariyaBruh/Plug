@@ -3,6 +3,7 @@ import { createServerFn } from '@tanstack/react-start'
 import { useState } from 'react'
 
 import { PageShell } from '#/components/PageShell'
+import { AdSlot } from '#/components/AdSlot'
 import { loadViewer } from '#/lib/viewer'
 import { checkProductAccess } from '#/lib/session'
 import { PREMIUM_PLAN_ID, PREMIUM_PRODUCT_ID } from '#/lib/products'
@@ -210,6 +211,10 @@ function AccountPage() {
               </a>
             </div>
           )}
+
+          <div className="mt-10">
+            <AdSlot unit="rectangle" />
+          </div>
         </div>
       </main>
     </PageShell>

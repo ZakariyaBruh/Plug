@@ -98,6 +98,61 @@ export const CLARITY_ID = 'ymncebz070'
  */
 export const GA4_ID = 'G-M5PMRS475E'
 
+/*
+ * ADSTERRA — DISPLAY ADS, ON THE SAME TERMS AS EVERYTHING ELSE HERE.
+ *
+ * There was briefly a third-party video ad network on the free tier
+ * (HilltopAds) and it was removed rather than fixed, for the reason the
+ * privacy page still gives: an ad exchange serves whatever wins its
+ * auction, and that roster cannot be vetted. That reasoning has not
+ * changed. What changed is the decision to accept the tradeoff anyway,
+ * deliberately, with the Social Bar format left out specifically because
+ * it is built to not look like an ad — see the comment on ADSTERRA_UNITS
+ * below for which formats are and are not included, and why.
+ *
+ * ONE SWITCH, same coupling as CLARITY_ID and GA4_ID above: flip this to
+ * false and every banner disappears, the component that mounts them
+ * returns nothing, and the privacy page's "is there advertising" card
+ * reverts to "No" — in one place, not four pages that could drift apart.
+ *
+ * WHAT IS NOT MITIGATED BY TURNING THIS ON. The ad creatives themselves
+ * are not reviewed by this app, cannot be, and will sometimes be for
+ * things nobody here would choose to advertise — gambling, crypto, low-
+ * rent subscriptions. What IS mitigated, in AdSlot.tsx and the game's
+ * ads.js: every banner renders inside a sandboxed iframe with no
+ * allow-same-origin and no allow-top-navigation, so whatever creative
+ * wins the auction cannot read a visitor's cookies or this page's DOM,
+ * and cannot redirect the tab out from under them — it can open a new
+ * one on a real click, and nothing more.
+ */
+export const ADSTERRA_ON = true
+
+/*
+ * The six tags handed over, minus the Social Bar (a seventh script, with
+ * no size and no atOptions, that floats a persistent widget rather than
+ * rendering as a bounded ad) — left out on purpose. A banner, however
+ * tacky, still reads as an ad; the Social Bar is built specifically to
+ * not, which is a different and worse kind of problem than ad quality.
+ *
+ * `native` has no fixed size — it renders whatever the auction hands it
+ * into its own container div, so AdSlot.tsx measures and resizes the
+ * iframe around it rather than fixing a height up front.
+ */
+export const ADSTERRA_UNITS = {
+  native: {
+    kind: 'native' as const,
+    src: 'https://bauval.org/21/d3500e59199e09eee4a23799c098b4e5',
+    containerId: 'container-d3500e59199e09eee4a23799c098b4e5',
+  },
+  skyscraperSmall: { kind: 'banner' as const, key: '31d2d6666f860531539ff1e9d29c51f6', width: 160, height: 300 },
+  mobileBanner: { kind: 'banner' as const, key: '5854b8b6f2fdd21988e40b9eb9be56c6', width: 320, height: 50 },
+  leaderboard: { kind: 'banner' as const, key: '79c3a17f491d7757c1a53e16f2e54e4b', width: 728, height: 90 },
+  rectangle: { kind: 'banner' as const, key: 'df667c7b76c1f15de99aa40aed5384d6', width: 300, height: 250 },
+  skyscraper: { kind: 'banner' as const, key: 'c34df66c2852fa155381e97d401a1a4a', width: 160, height: 600 },
+} satisfies Record<string, { kind: 'banner'; key: string; width: number; height: number } | { kind: 'native'; src: string; containerId: string }>
+
+export type AdsterraUnit = keyof typeof ADSTERRA_UNITS
+
 /** Everything downstream reads this rather than testing the string itself. */
 export const GA4_ON = GA4_ID.length > 0
 
