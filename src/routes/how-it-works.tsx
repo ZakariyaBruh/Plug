@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { AdSlot } from '#/components/AdSlot'
+import { AdCluster } from '#/components/AdSlot'
 import { DIET_FREE, DISH_COUNT, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
@@ -136,7 +136,7 @@ export function HowItWorks() {
             </Link>
           </div>
           <div className="mt-16">
-            <AdSlot unit="rectangle" />
+            <AdCluster />
           </div>
         </section>
       </main>

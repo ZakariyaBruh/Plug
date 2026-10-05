@@ -2,7 +2,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 
 import { PageShell } from '#/components/PageShell'
-import { AdSlot } from '#/components/AdSlot'
+import { AdCluster } from '#/components/AdSlot'
 import { ALL_DISHES } from '#/lib/dishes'
 import { DISH_COUNT, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
@@ -149,10 +149,7 @@ function EatIndex() {
           </section>
 
           <div className="mt-16">
-            {/* Not "leaderboard" (728x90): a fixed-size iframe does not
-                reflow for a phone-width viewport, so a wide unit would
-                simply get clipped on mobile rather than shrink to fit. */}
-            <AdSlot unit="rectangle" />
+            <AdCluster />
           </div>
         </div>
       </main>

@@ -4616,11 +4616,11 @@
     paintNext();
     paintWhy();
     paintPlan();
-    // The one place in the decide flow itself that carries a banner: after
-    // an answer is already accepted, not on the reveal (#panel-result, the
+    // The one place in the decide flow itself that carries ads: after an
+    // answer is already accepted, not on the reveal (#panel-result, the
     // actual peak moment) and not mid-question. Everybody who finishes a
     // decision reaches this screen, which #profile-ad does not.
-    Adsterra.mount($('reward-ad'), 'df667c7b76c1f15de99aa40aed5384d6', 300, 250);
+    Adsterra.mount($('reward-ad'));
     setPanel('reward');
     paintStreak();
     Sound.win();
@@ -8081,12 +8081,7 @@
     renderInsights();
     renderThemes();
     paintTuneSummary();
-    // 300x250, not the 728-wide leaderboard: this app is played at phone
-    // width even on desktop, and a fixed-size iframe does not reflow to
-    // fit a narrower box — CSS can shrink its rendered width, but the ad
-    // inside still lays out assuming the full 728px and would simply be
-    // clipped.
-    Adsterra.mount($('profile-ad'), 'df667c7b76c1f15de99aa40aed5384d6', 300, 250);
+    Adsterra.mount($('profile-ad'));
 
     var freezes = state.freezes || 0;
     $('freeze-note').hidden = !isPlus();

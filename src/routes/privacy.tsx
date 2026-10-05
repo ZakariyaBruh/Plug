@@ -192,10 +192,10 @@ const SECTIONS: Section[] = [
         {
           id: 'advertising',
           heading: 'The ads on this site',
-          lede: 'A small number of banner ads, from one ad network (Adsterra), sandboxed so a creative cannot read anything of yours or send you anywhere by itself.',
+          lede: 'A small cluster of banner ads, from one ad network (Adsterra), sandboxed so a creative cannot read anything of yours or send you anywhere by itself.',
           body: [
-            'A handful of pages — not the game itself, and not the pages where you are signing up or paying — carry a boxed, labelled "Advertisement" banner from Adsterra. We do not choose or review individual ads: like any ad network, Adsterra runs an auction and shows whatever wins it, which is the one honest caveat here — we cannot promise every ad will be for something we would choose to put in front of you ourselves.',
-            'What is limited is what an ad is allowed to do, not what it is allowed to say. Every banner renders inside a sandboxed iframe with no access to this page at all: it cannot read this site’s cookies or local storage, cannot read or change anything else on the page, and cannot redirect your tab anywhere by itself — only a real click on the ad can open a new one, the same as clicking any other link. Whatever that site then does is between you and it, under its own privacy policy, same as tapping through from the news page.',
+            'A handful of pages — not the pages where you are signing up or paying, and in the game itself only the profile screen and the one screen after a decision, never mid-question or on the answer itself — carry a labelled "Advertisement" strip of two or three small banners from Adsterra. We do not choose or review individual ads: like any ad network, Adsterra runs an auction and shows whatever wins it, which is the one honest caveat here — we cannot promise every ad will be for something we would choose to put in front of you ourselves.',
+            'What is limited is what an ad is allowed to do, not what it is allowed to say. Every banner renders inside a sandboxed iframe with no access to this page at all: it cannot read this site’s cookies or local storage, cannot read or change anything else on the page, and cannot redirect your tab anywhere by itself — only a real click on an ad can open a new one, the same as clicking any other link. Whatever that site then does is between you and it, under its own privacy policy, same as tapping through from the news page.',
             'One format Adsterra offers was deliberately left out: a floating "Social Bar" built to look like a chat bubble or a browser notification rather than an ad. The banners used here are boxed and labelled instead, specifically so an ad always reads as one.',
           ],
         },
@@ -251,7 +251,7 @@ const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
      */
     a: ADSTERRA_ON ? 'Yes' : 'No',
     note: ADSTERRA_ON
-      ? 'A small number of boxed, labelled banner ads from one network (Adsterra) — see “The ads on this site” below for exactly what they can and cannot do.' +
+      ? 'A small, labelled cluster of banner ads from one network (Adsterra) — see “The ads on this site” below for exactly what they can and cannot do.' +
         (GA4_ON
           ? ' Google Analytics is also here, counting pages and the seventeen events listed below, with none of its own advertising features switched on.'
           : ' No Google Analytics here.')
@@ -270,7 +270,7 @@ const THIRD_PARTIES: [string, string][] = [
   ['Whop', 'Sign-in, payments, subscription status, and the analytics on every page it serves.'],
   // Driven by ADSTERRA_ON, same as every conditional row here.
   ...(ADSTERRA_ON
-    ? ([['Adsterra', 'Shows the boxed, labelled banner ads on a few pages — sandboxed with no access to this site. See “The ads on this site” above.']] as [string, string][])
+    ? ([['Adsterra', 'Shows the small, labelled clusters of banner ads on a few pages — sandboxed with no access to this site. See “The ads on this site” above.']] as [string, string][])
     : []),
   // Driven by the same constant as the script and the paragraph above, so
   // this list cannot fall out of step with what is actually loaded.

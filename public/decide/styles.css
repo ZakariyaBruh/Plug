@@ -733,6 +733,13 @@ body.is-premium .mode-lock { display: none; }
   color: var(--ink-3);
 }
 .ad-wrap iframe { border: 0; max-width: 100%; }
+.ad-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--s4);
+}
 
 .strip-title {
   display: flex;

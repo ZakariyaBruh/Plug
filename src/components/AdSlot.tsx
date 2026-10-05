@@ -36,25 +36,47 @@ function bannerHtml(key: string, width: number, height: number): string {
   )
 }
 
-function nativeHtml(src: string, containerId: string): string {
+const SANDBOX = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
+
+/*
+ * THE THREE SIZES SAFE TO SHOW TOGETHER, AND WHY ONLY THESE THREE.
+ *
+ * Of the five banner sizes handed over, "leaderboard" (728 wide) and
+ * "skyscraper" (160x600) are left out of every cluster: a fixed-size
+ * iframe does not reflow for a phone-width viewport, so 728 clips rather
+ * than shrinks, and 600 tall reads as a wall of ad rather than "small and
+ * unobtrusive" however wide it is. The three kept are each narrow enough
+ * to never clip down to a phone's width and short enough that three of
+ * them together still reads as a strip, not a takeover.
+ */
+export const AD_CLUSTER_DEFAULT: AdsterraUnit[] = ['mobileBanner', 'rectangle', 'skyscraperSmall']
+
+function AdFrame({ unit }: { unit: AdsterraUnit }) {
+  const spec = ADSTERRA_UNITS[unit]
+  if (spec.kind !== 'banner') return null
   return (
-    '<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0">' +
-    `<div id="${containerId}"></div>` +
-    `<script async data-cfasync="false" src="${src}"></script>` +
-    '</body></html>'
+    <iframe
+      title="Advertisement"
+      srcDoc={bannerHtml(spec.key, spec.width, spec.height)}
+      sandbox={SANDBOX}
+      scrolling="no"
+      width={spec.width}
+      height={spec.height}
+      style={{ border: 0, display: 'inline-block', maxWidth: '100%', overflow: 'hidden' }}
+    />
   )
 }
 
-const SANDBOX = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
-
-// Only for the native unit, which carries no width/height of its own. A
-// real measurement is not available here on purpose: finding out how tall
-// the ad actually rendered would mean reading into the iframe's document,
-// which is exactly the access removing allow-same-origin was for. So this
-// is a fixed guess rather than a fit — generous enough for the usual one-
-// or two-item native card, clipped rather than left to push the rest of
-// the page around if a given auction's creative runs long.
-const NATIVE_HEIGHT = 300
+/** True only once mounted client-side and only while ADSTERRA_ON. */
+function useShowAds(): boolean {
+  const [mounted, setMounted] = useState(false)
+  // Client-only: an iframe with no src rendered on the server would just be
+  // dead markup, and the whole point is that nothing about this is in the
+  // page's own HTML for a crawler or a reader's view-source to see before
+  // it decides whether to trust the rest of the page.
+  useEffect(() => setMounted(true), [])
+  return ADSTERRA_ON && mounted
+}
 
 /**
  * One Adsterra placement. Renders nothing server-side and nothing at all
@@ -62,33 +84,34 @@ const NATIVE_HEIGHT = 300
  * this keeps in step with the privacy page.
  */
 export function AdSlot({ unit, className }: { unit: AdsterraUnit; className?: string }) {
-  const [mounted, setMounted] = useState(false)
-  const spec = ADSTERRA_UNITS[unit]
-
-  // Client-only: an iframe with no src rendered on the server would just
-  // be dead markup, and the whole point is that nothing about this is in
-  // the page's own HTML for a crawler or a reader's view-source to see
-  // before it decides whether to trust the rest of the page.
-  useEffect(() => setMounted(true), [])
-
-  if (!ADSTERRA_ON || !mounted) return null
-
-  const srcDoc = spec.kind === 'native' ? nativeHtml(spec.src, spec.containerId) : bannerHtml(spec.key, spec.width, spec.height)
-  const width = spec.kind === 'banner' ? spec.width : undefined
-  const height = spec.kind === 'banner' ? spec.height : NATIVE_HEIGHT
-
+  const show = useShowAds()
+  if (!show) return null
   return (
     <div className={`text-center ${className ?? ''}`}>
       <p className="mb-1 text-[11px] uppercase tracking-widest text-[var(--text-dim)]">Advertisement</p>
-      <iframe
-        title="Advertisement"
-        srcDoc={srcDoc}
-        sandbox={SANDBOX}
-        scrolling="no"
-        width={width}
-        height={height}
-        style={{ border: 0, display: 'inline-block', maxWidth: '100%', overflow: 'hidden' }}
-      />
+      <AdFrame unit={unit} />
+    </div>
+  )
+}
+
+/**
+ * Several placements at once, under one "Advertisement" label rather than
+ * one each — a row of ads with a label apiece reads like the page is
+ * mostly ads; one label over a short strip of them reads like what it is,
+ * a sponsored strip. Wraps under its own width rather than overflowing,
+ * so three side by side on a wide screen become a short stack on a phone.
+ */
+export function AdCluster({ units = AD_CLUSTER_DEFAULT, className }: { units?: AdsterraUnit[]; className?: string }) {
+  const show = useShowAds()
+  if (!show) return null
+  return (
+    <div className={`text-center ${className ?? ''}`}>
+      <p className="mb-2 text-[11px] uppercase tracking-widest text-[var(--text-dim)]">Advertisement</p>
+      <div className="flex flex-wrap items-start justify-center gap-4">
+        {units.map((unit) => (
+          <AdFrame key={unit} unit={unit} />
+        ))}
+      </div>
     </div>
   )
 }
