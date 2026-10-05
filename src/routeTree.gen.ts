@@ -22,14 +22,17 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiCheckinRouteImport } from './routes/api/checkin'
 import { Route as ApiDailyRouteImport } from './routes/api/daily'
 import { Route as ApiDbHealthRouteImport } from './routes/api/db-health'
 import { Route as ApiHouseholdRouteImport } from './routes/api/household'
+import { Route as ApiJournalRouteImport } from './routes/api/journal'
 import { Route as ApiMenuRouteImport } from './routes/api/menu'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
 import { Route as ApiOrderTogetherRouteImport } from './routes/api/order-together'
 import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-status'
 import { Route as ApiSuggestRouteImport } from './routes/api/suggest'
+import { Route as ApiTriviaRouteImport } from './routes/api/trivia'
 import { Route as ApiWhopEventsRouteImport } from './routes/api/whop-events'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as DecideSplatRouteImport } from './routes/decide/$'
@@ -108,6 +111,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCheckinRoute = ApiCheckinRouteImport.update({
+  id: '/api/checkin',
+  path: '/api/checkin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDailyRoute = ApiDailyRouteImport.update({
   id: '/api/daily',
   path: '/api/daily',
@@ -121,6 +129,11 @@ const ApiDbHealthRoute = ApiDbHealthRouteImport.update({
 const ApiHouseholdRoute = ApiHouseholdRouteImport.update({
   id: '/api/household',
   path: '/api/household',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiJournalRoute = ApiJournalRouteImport.update({
+  id: '/api/journal',
+  path: '/api/journal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMenuRoute = ApiMenuRouteImport.update({
@@ -146,6 +159,11 @@ const ApiPremiumStatusRoute = ApiPremiumStatusRouteImport.update({
 const ApiSuggestRoute = ApiSuggestRouteImport.update({
   id: '/api/suggest',
   path: '/api/suggest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTriviaRoute = ApiTriviaRouteImport.update({
+  id: '/api/trivia',
+  path: '/api/trivia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiWhopEventsRoute = ApiWhopEventsRouteImport.update({
@@ -223,14 +241,17 @@ export interface FileRoutesByFullPath {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/checkin': typeof ApiCheckinRoute
   '/api/daily': typeof ApiDailyRoute
   '/api/db-health': typeof ApiDbHealthRoute
   '/api/household': typeof ApiHouseholdRoute
+  '/api/journal': typeof ApiJournalRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/suggest': typeof ApiSuggestRoute
+  '/api/trivia': typeof ApiTriviaRoute
   '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
@@ -258,14 +279,17 @@ export interface FileRoutesByTo {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/checkin': typeof ApiCheckinRoute
   '/api/daily': typeof ApiDailyRoute
   '/api/db-health': typeof ApiDbHealthRoute
   '/api/household': typeof ApiHouseholdRoute
+  '/api/journal': typeof ApiJournalRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/suggest': typeof ApiSuggestRoute
+  '/api/trivia': typeof ApiTriviaRoute
   '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
@@ -294,14 +318,17 @@ export interface FileRoutesById {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/checkin': typeof ApiCheckinRoute
   '/api/daily': typeof ApiDailyRoute
   '/api/db-health': typeof ApiDbHealthRoute
   '/api/household': typeof ApiHouseholdRoute
+  '/api/journal': typeof ApiJournalRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/suggest': typeof ApiSuggestRoute
+  '/api/trivia': typeof ApiTriviaRoute
   '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
@@ -331,14 +358,17 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/api/chat'
+    | '/api/checkin'
     | '/api/daily'
     | '/api/db-health'
     | '/api/household'
+    | '/api/journal'
     | '/api/menu'
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
     | '/api/suggest'
+    | '/api/trivia'
     | '/api/whop-events'
     | '/checkout/$planId'
     | '/decide/$'
@@ -366,14 +396,17 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/api/chat'
+    | '/api/checkin'
     | '/api/daily'
     | '/api/db-health'
     | '/api/household'
+    | '/api/journal'
     | '/api/menu'
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
     | '/api/suggest'
+    | '/api/trivia'
     | '/api/whop-events'
     | '/checkout/$planId'
     | '/decide/$'
@@ -401,14 +434,17 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/api/chat'
+    | '/api/checkin'
     | '/api/daily'
     | '/api/db-health'
     | '/api/household'
+    | '/api/journal'
     | '/api/menu'
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
     | '/api/suggest'
+    | '/api/trivia'
     | '/api/whop-events'
     | '/checkout/$planId'
     | '/decide/$'
@@ -437,14 +473,17 @@ export interface RootRouteChildren {
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiCheckinRoute: typeof ApiCheckinRoute
   ApiDailyRoute: typeof ApiDailyRoute
   ApiDbHealthRoute: typeof ApiDbHealthRoute
   ApiHouseholdRoute: typeof ApiHouseholdRoute
+  ApiJournalRoute: typeof ApiJournalRoute
   ApiMenuRoute: typeof ApiMenuRoute
   ApiNewsRoute: typeof ApiNewsRoute
   ApiOrderTogetherRoute: typeof ApiOrderTogetherRoute
   ApiPremiumStatusRoute: typeof ApiPremiumStatusRoute
   ApiSuggestRoute: typeof ApiSuggestRoute
+  ApiTriviaRoute: typeof ApiTriviaRoute
   ApiWhopEventsRoute: typeof ApiWhopEventsRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
   EatDishRoute: typeof EatDishRoute
@@ -551,6 +590,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/checkin': {
+      id: '/api/checkin'
+      path: '/api/checkin'
+      fullPath: '/api/checkin'
+      preLoaderRoute: typeof ApiCheckinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/daily': {
       id: '/api/daily'
       path: '/api/daily'
@@ -570,6 +616,13 @@ declare module '@tanstack/react-router' {
       path: '/api/household'
       fullPath: '/api/household'
       preLoaderRoute: typeof ApiHouseholdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/journal': {
+      id: '/api/journal'
+      path: '/api/journal'
+      fullPath: '/api/journal'
+      preLoaderRoute: typeof ApiJournalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/menu': {
@@ -605,6 +658,13 @@ declare module '@tanstack/react-router' {
       path: '/api/suggest'
       fullPath: '/api/suggest'
       preLoaderRoute: typeof ApiSuggestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/trivia': {
+      id: '/api/trivia'
+      path: '/api/trivia'
+      fullPath: '/api/trivia'
+      preLoaderRoute: typeof ApiTriviaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/whop-events': {
@@ -719,14 +779,17 @@ const rootRouteChildren: RootRouteChildren = {
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiCheckinRoute: ApiCheckinRoute,
   ApiDailyRoute: ApiDailyRoute,
   ApiDbHealthRoute: ApiDbHealthRoute,
   ApiHouseholdRoute: ApiHouseholdRoute,
+  ApiJournalRoute: ApiJournalRoute,
   ApiMenuRoute: ApiMenuRoute,
   ApiNewsRoute: ApiNewsRoute,
   ApiOrderTogetherRoute: ApiOrderTogetherRoute,
   ApiPremiumStatusRoute: ApiPremiumStatusRoute,
   ApiSuggestRoute: ApiSuggestRoute,
+  ApiTriviaRoute: ApiTriviaRoute,
   ApiWhopEventsRoute: ApiWhopEventsRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
   EatDishRoute: EatDishRoute,

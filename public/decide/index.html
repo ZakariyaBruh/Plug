@@ -639,6 +639,7 @@
       <li><button class="rail-link" data-view="nearby">Nearby</button></li>
       <li><button class="rail-link" data-view="chat">Ask</button></li>
       <li><button class="rail-link" data-view="news">News</button></li>
+      <li><button class="rail-link" data-view="daily">Daily</button></li>
       <li><button class="rail-link" data-view="profile">Profile</button></li>
     </ul>
 
@@ -1996,6 +1997,66 @@
       <p class="count" id="dish-count-label"></p>
       <ul class="listing" id="dish-grid"></ul>
       <p class="notice" id="dish-empty" hidden>Nothing matches. Try something else.</p>
+    </section>
+
+    <!-- =========================================================================
+         THE DAILY THREE — three small, free things that have nothing to do
+         with dinner. Deciding what to eat is an episodic problem: most
+         people are not doing it every day, so there was nothing here to come
+         back for on the days they are not. These three are account-only, not
+         Premium (see lib/habits.ts) — what they need is to be the same
+         wherever you sign in, not something to pay for.
+         ========================================================================= -->
+    <section class="view" id="view-daily" aria-label="Daily">
+      <header class="head">
+        <p class="mechanic">Every day</p>
+        <h1 class="head-title">Your daily three</h1>
+        <p class="head-sub">Nothing to do with dinner. A mood to log, one good thing to write
+        down, and a question nobody in the world answered differently today &mdash; three
+        small reasons to open this even on a day with no decision to make.</p>
+      </header>
+
+      <div id="daily-signedout">
+        <p class="fine">These come free with an account &mdash; not Premium, just signed in.</p>
+        <!-- target="_top": see the note on #invite-signin above. -->
+        <a class="quiet" id="daily-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Ddaily" target="_top">Sign in with Whop</a>
+      </div>
+
+      <div id="daily-signedin" hidden>
+        <section class="strip" id="checkin-wrap">
+          <h2 class="strip-title">How&rsquo;s today going?</h2>
+          <p class="fine">Tap one. Once a day, and you can change it any time before midnight UTC.</p>
+          <div class="mood-row" id="mood-row" role="group" aria-label="Today's mood">
+            <button class="mood-btn" data-mood="great" type="button"><span class="mood-emoji">&#x1F525;</span><span class="mood-label">Great</span></button>
+            <button class="mood-btn" data-mood="good" type="button"><span class="mood-emoji">&#x1F642;</span><span class="mood-label">Good</span></button>
+            <button class="mood-btn" data-mood="okay" type="button"><span class="mood-emoji">&#x1F610;</span><span class="mood-label">Okay</span></button>
+            <button class="mood-btn" data-mood="rough" type="button"><span class="mood-emoji">&#x1F615;</span><span class="mood-label">Rough</span></button>
+            <button class="mood-btn" data-mood="bad" type="button"><span class="mood-emoji">&#x1F629;</span><span class="mood-label">Bad</span></button>
+          </div>
+          <p class="fine" id="checkin-streak"></p>
+          <div class="checkin-history" id="checkin-history" aria-hidden="true"></div>
+        </section>
+
+        <section class="strip" id="journal-wrap">
+          <h2 class="strip-title">One good thing today</h2>
+          <p class="fine">One line is enough. Tomorrow you get to read it back.</p>
+          <p class="journal-row">
+            <input class="journal-input" id="journal-input" type="text" maxlength="140"
+              placeholder="One good thing that happened today&hellip;">
+            <button class="go go-sm" id="journal-save" type="button">Save</button>
+          </p>
+          <p class="fine" id="journal-streak"></p>
+          <ul class="journal-list" id="journal-list"></ul>
+        </section>
+
+        <section class="strip" id="trivia-wrap">
+          <h2 class="strip-title">Today&rsquo;s question</h2>
+          <p class="fine" id="trivia-stats"></p>
+          <p class="trivia-q" id="trivia-question"></p>
+          <div class="trivia-choices" id="trivia-choices"></div>
+          <p class="fine" id="trivia-result" hidden></p>
+        </section>
+      </div>
     </section>
 
     <!-- ------------------------- PROFILE ------------------------- -->

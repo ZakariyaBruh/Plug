@@ -2661,6 +2661,59 @@ body.is-premium .tag-premium { display: none; }
   #invite-wrap.is-highlighted { animation: none; outline: 2px solid var(--amber); outline-offset: 4px; }
 }
 
+/* ----------------------------------------------------------- daily three */
+#daily-signedout { text-align: center; padding: var(--s6) 0; }
+#daily-signedout .fine { margin-bottom: var(--s3); }
+
+.mood-row {
+  display: flex; flex-wrap: wrap; gap: var(--s2);
+  margin: var(--s4) 0;
+}
+.mood-btn {
+  flex: 1 1 0; min-width: 4.2rem; min-height: var(--tap);
+  display: flex; flex-direction: column; align-items: center; gap: var(--s1);
+  border: 1px solid var(--hair); border-radius: 10px;
+  background: transparent; color: var(--ink-2);
+  padding: var(--s3) var(--s1); cursor: pointer;
+}
+.mood-btn:hover { border-color: var(--amber); color: var(--ink); }
+.mood-btn.is-picked { border-color: var(--amber); background: rgba(224, 163, 64, .12); color: var(--ink); }
+.mood-emoji { font-size: 1.4rem; line-height: 1; }
+.mood-label { font-size: var(--t-xs); }
+
+.checkin-history { display: flex; flex-wrap: wrap; gap: var(--s1); margin-top: var(--s3); }
+.checkin-dot { font-size: 1.05rem; line-height: 1; opacity: .85; }
+
+.journal-row {
+  display: flex; gap: var(--s2); flex-wrap: wrap;
+  margin: var(--s4) 0 var(--s2);
+}
+.journal-input {
+  flex: 1 1 14rem; min-height: var(--tap);
+  border: 1px solid var(--hair); border-radius: 8px;
+  background: transparent; color: var(--ink);
+  padding: 0 var(--s3); font-size: var(--t-sm); font-family: inherit;
+}
+.journal-input:focus { border-color: var(--amber); outline: none; }
+
+.journal-list { list-style: none; margin: var(--s3) 0 0; padding: 0; display: grid; gap: var(--s2); max-height: 14rem; overflow-y: auto; }
+.journal-list li { font-size: var(--t-sm); color: var(--ink-2); line-height: 1.5; }
+.journal-list b { font-size: var(--t-xs); color: var(--ink-3); font-weight: 600; }
+
+.trivia-q { font-size: var(--t-base); font-weight: 500; margin: var(--s3) 0 var(--s4); }
+.trivia-choices { display: grid; gap: var(--s2); }
+.trivia-choice {
+  min-height: var(--tap); text-align: left;
+  border: 1px solid var(--hair); border-radius: 8px;
+  background: transparent; color: var(--ink);
+  padding: var(--s3); font-size: var(--t-sm); font-family: inherit; cursor: pointer;
+}
+.trivia-choice:hover:not(:disabled) { border-color: var(--amber); }
+.trivia-choice:disabled { cursor: default; }
+.trivia-choice.is-correct { border-color: var(--amber); background: rgba(224, 163, 64, .12); font-weight: 600; }
+.trivia-choice.is-wrong { border-color: var(--danger); color: var(--danger); }
+#trivia-result { margin-top: var(--s3); }
+
 /* ==========================================================================
    Overlays
    ========================================================================== */

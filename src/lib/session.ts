@@ -1,5 +1,7 @@
 import { getCookie, setCookie } from '@tanstack/react-start/server'
 
+import { whopUserId } from '#/lib/whop-token'
+
 const COOKIE = {
   httpOnly: true,
   secure: true,
@@ -109,6 +111,21 @@ export async function checkProductAccess(productId: string) {
 export async function checkProductAccessFor(userId: string, productId: string) {
   const { has_access } = await accessLevel(userId, productId)
   return { signedIn: true as const, hasAccess: has_access }
+}
+
+/*
+ * Who is asking, with no product in the question at all — just an account.
+ * Cookie first (and cheaper than checkProductAccess: no accessLevel call,
+ * since nothing here is gated on owning anything), Whop's signed iframe
+ * token if that is missing, same as every other identity check in this app
+ * and for the same reason (see lib/whop-token.ts). Used by the account-only
+ * daily features (lib/habits.ts), which ask "is this a real account" and
+ * nothing more.
+ */
+export async function identifyVisitor(request: Request): Promise<string | null> {
+  const user = await currentUser()
+  if (user) return user.sub
+  return whopUserId(request)
 }
 
 /** Best-effort display name for a user id. Empty string if anything goes wrong. */

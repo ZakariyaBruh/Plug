@@ -531,6 +531,7 @@
     if (name === 'menu') renderMenuView();
     if (name === 'nearby') renderNearby();
     if (name === 'news') renderNews();
+    if (name === 'daily') renderDaily();
     if (name === 'chat') renderChat();
     // A half-written answer left running in a section nobody is looking at
     // keeps scrolling it into view from somewhere else in the app.
@@ -8282,6 +8283,14 @@
       renderProfile();
       renderIntro();
       repaintVaults();
+      // Only when Daily is actually the open view, unlike the two calls
+      // above: renderDaily() fetches three endpoints, and this handler
+      // reruns on every window focus (see below), not just once at load.
+      // Needed at all for the one race this closes: landing here straight
+      // from ?go=daily's sign-in redirect, before this very refresh has
+      // resolved for the first time — see the identical note on
+      // ?go=profile, which this view copies.
+      if (view === 'daily') renderDaily();
       // The news page reads isPlus() to decide how much of the feed to show
       // and whether to offer the rest of it. Somebody sitting on that page
       // when their status lands would otherwise keep the free six, and the
@@ -8434,6 +8443,195 @@
       } catch (err) { /* never */ }
     });
   })();
+
+  /* ------------------------------------------------------------ daily three */
+  /*
+   * THREE SMALL, FREE, ACCOUNT-ONLY THINGS THAT HAVE NOTHING TO DO WITH
+   * DINNER. See the markup comment above #view-daily and lib/habits.ts for
+   * why: deciding what to eat is episodic, so there was nothing here worth
+   * coming back for on a day with no decision to make.
+   *
+   * Each of the three fetches its own state the moment the view is opened
+   * and re-fetches after every write — there is no local cache to keep in
+   * sync, since the point of all three is that they are the same wherever
+   * you sign in, not whatever this one tab last saw.
+   */
+  var daily = { busy: false };
+  var MOOD_FACES = { great: '\u{1F525}', good: '\u{1F642}', okay: '\u{1F610}', rough: '\u{1F615}', bad: '\u{1F629}' };
+
+  function renderDaily() {
+    var signedIn = premiumApi.status.signedIn;
+    $('daily-signedout').hidden = signedIn;
+    $('daily-signedin').hidden = !signedIn;
+    if (!signedIn) return;
+    loadCheckin();
+    loadJournal();
+    loadTrivia();
+  }
+
+  function dayLabel(streak) {
+    return streak + ' day' + (streak === 1 ? '' : 's') + ' in a row.';
+  }
+
+  /* -- check-in -- */
+
+  function loadCheckin() {
+    fetch('/api/checkin', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data.signedIn) paintCheckin(data); })
+      .catch(function () {});
+  }
+
+  function paintCheckin(state) {
+    $$('#mood-row .mood-btn').forEach(function (btn) {
+      btn.classList.toggle('is-picked', btn.dataset.mood === state.today);
+    });
+    $('checkin-streak').textContent = state.streak > 0
+      ? dayLabel(state.streak)
+      : 'Tap one to start a streak.';
+    var hist = $('checkin-history');
+    hist.innerHTML = '';
+    (state.recent || []).forEach(function (row) {
+      var span = document.createElement('span');
+      span.className = 'checkin-dot';
+      span.textContent = MOOD_FACES[row.mood] || '•';
+      span.title = row.day;
+      hist.appendChild(span);
+    });
+  }
+
+  $$('#mood-row .mood-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (daily.busy) return;
+      daily.busy = true;
+      fetch('/api/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mood: btn.dataset.mood }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          daily.busy = false;
+          if (data.error) return;
+          paintCheckin(data);
+          Sound.tick();
+        })
+        .catch(function () { daily.busy = false; });
+    });
+  });
+
+  /* -- one good thing -- */
+
+  function loadJournal() {
+    fetch('/api/journal', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data.signedIn) paintJournal(data); })
+      .catch(function () {});
+  }
+
+  function paintJournal(state) {
+    var input = $('journal-input');
+    // Not disabled once written: the day's row is an upsert server-side (see
+    // lib/habits.ts), so editing today's line back is really just saving it
+    // again, and there is no reason to make that harder than writing it the
+    // first time.
+    if (document.activeElement !== input) input.value = state.today || '';
+    $('journal-save').textContent = state.today ? 'Update' : 'Save';
+    $('journal-streak').textContent = state.streak > 0
+      ? dayLabel(state.streak)
+      : 'Write one to start a streak.';
+
+    var list = $('journal-list');
+    list.innerHTML = '';
+    (state.entries || []).forEach(function (row) {
+      var li = document.createElement('li');
+      var day = document.createElement('b');
+      day.textContent = row.day;
+      li.appendChild(day);
+      li.appendChild(document.createTextNode(' — ' + row.entry));
+      list.appendChild(li);
+    });
+  }
+
+  $('journal-save').addEventListener('click', function () {
+    var input = $('journal-input');
+    var text = input.value.trim();
+    if (!text || daily.busy) return;
+    daily.busy = true;
+    fetch('/api/journal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry: text }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        daily.busy = false;
+        if (data.error) return;
+        paintJournal(data);
+        Sound.tick();
+      })
+      .catch(function () { daily.busy = false; });
+  });
+
+  /* -- trivia -- */
+
+  function loadTrivia() {
+    fetch('/api/trivia', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data.signedIn && data.question) paintTrivia(data); })
+      .catch(function () {});
+  }
+
+  function answerTrivia(index) {
+    if (daily.busy) return;
+    daily.busy = true;
+    fetch('/api/trivia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ choice: index }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        daily.busy = false;
+        if (data.error) return;
+        paintTrivia(data);
+        Sound[data.correct ? 'win' : 'reject']();
+      })
+      .catch(function () { daily.busy = false; });
+  }
+
+  function paintTrivia(state) {
+    $('trivia-question').textContent = state.question;
+    $('trivia-stats').textContent = state.totalAnswered > 0
+      ? state.totalCorrect + ' of ' + state.totalAnswered + ' correct' +
+        (state.streak > 0 ? ' · ' + state.streak + ' day streak' : '') + '.'
+      : 'A new question every day, the same one for everybody.';
+
+    var wrap = $('trivia-choices');
+    wrap.innerHTML = '';
+    state.choices.forEach(function (choice, i) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'trivia-choice';
+      btn.textContent = choice;
+      if (state.answered) {
+        btn.disabled = true;
+        if (i === state.correctIndex) btn.classList.add('is-correct');
+        else if (i === state.choiceIndex) btn.classList.add('is-wrong');
+      } else {
+        btn.addEventListener('click', function () { answerTrivia(i); });
+      }
+      wrap.appendChild(btn);
+    });
+
+    var result = $('trivia-result');
+    result.hidden = !state.answered;
+    if (state.answered) {
+      result.textContent = state.correct
+        ? 'Correct.'
+        : 'Not quite — the right one is highlighted.';
+    }
+  }
 
   var referralTimer = null;
 
@@ -12642,6 +12840,8 @@
     // links that ever point here are #invite-signin and the comeback
     // dialog's signed-out "Sign in for my link", both below.
     else if (go === 'profile') { hideLanding(); setView('profile'); highlightInvite(); }
+    // Where #daily-signin sends somebody back to, for the same reason.
+    else if (go === 'daily') { hideLanding(); setView('daily'); }
 
     /*
      * ?prompt= — see a prompt now, instead of playing until one is due.
