@@ -4616,6 +4616,11 @@
     paintNext();
     paintWhy();
     paintPlan();
+    // The one place in the decide flow itself that carries a banner: after
+    // an answer is already accepted, not on the reveal (#panel-result, the
+    // actual peak moment) and not mid-question. Everybody who finishes a
+    // decision reaches this screen, which #profile-ad does not.
+    Adsterra.mount($('reward-ad'), 'df667c7b76c1f15de99aa40aed5384d6', 300, 250);
     setPanel('reward');
     paintStreak();
     Sound.win();
