@@ -4616,11 +4616,6 @@
     paintNext();
     paintWhy();
     paintPlan();
-    // The one place in the decide flow itself that carries ads: after an
-    // answer is already accepted, not on the reveal (#panel-result, the
-    // actual peak moment) and not mid-question. Everybody who finishes a
-    // decision reaches this screen, which #profile-ad does not.
-    Adsterra.mount($('reward-ad'));
     setPanel('reward');
     paintStreak();
     Sound.win();
@@ -8081,7 +8076,6 @@
     renderInsights();
     renderThemes();
     paintTuneSummary();
-    Adsterra.mount($('profile-ad'));
 
     var freezes = state.freezes || 0;
     $('freeze-note').hidden = !isPlus();

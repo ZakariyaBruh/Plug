@@ -7,7 +7,6 @@ import { GamePreview } from '#/components/GamePreview'
 import { PlanPicker } from '#/components/PlanPicker'
 import { InstallApp } from '#/components/InstallApp'
 import { JsonLd } from '#/components/JsonLd'
-import { AdCluster } from '#/components/AdSlot'
 import {
   DISH_COUNT,
   OFFER,
@@ -330,10 +329,6 @@ function InfoPage() {
               Play free
             </a>
           </div>
-        </section>
-
-        <section className="py-10">
-          <AdCluster />
         </section>
       </main>
     </PageShell>

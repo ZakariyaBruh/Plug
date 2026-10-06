@@ -38,7 +38,6 @@ var SHELL = [
   'manifest.webmanifest',
   'icon.svg',
   'icon-maskable.svg',
-  'js/ads.js',
   'js/app.js',
   'js/confetti.js',
   'js/config.js',

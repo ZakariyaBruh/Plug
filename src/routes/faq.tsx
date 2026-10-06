@@ -2,7 +2,6 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
 import { JsonLd } from '#/components/JsonLd'
-import { AdCluster } from '#/components/AdSlot'
 import { DIET_FREE, DIET_FREE_WHY, DISH_COUNT, OFFER, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
@@ -97,9 +96,6 @@ function FaqPage() {
             >
               See Premium
             </Link>
-          </div>
-          <div className="mx-auto mt-16 max-w-3xl px-6">
-            <AdCluster />
           </div>
         </section>
       </main>

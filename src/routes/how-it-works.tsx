@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { AdCluster } from '#/components/AdSlot'
 import { DIET_FREE, DISH_COUNT, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
@@ -134,9 +133,6 @@ export function HowItWorks() {
             <Link to="/premium" className="inline-block rounded-full border border-[var(--border)] px-8 py-3 font-semibold hover:border-[var(--amber)]">
               See Premium
             </Link>
-          </div>
-          <div className="mt-16">
-            <AdCluster />
           </div>
         </section>
       </main>
