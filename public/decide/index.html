@@ -916,6 +916,22 @@
             <button class="quiet" id="done-profile-btn">Your profile</button>
           </div>
         </div>
+
+        <!-- THE ONE PART OF THIS APP THAT COSTS REAL MONEY TO RUN, and it
+             was reading as a footnote: its only other entry point was the
+             seventh quiet link on the screen before this one. Everybody who
+             accepts a dish reaches this screen, so this is where a defining
+             feature actually gets seen rather than found. -->
+        <section class="strip" id="reward-together">
+          <h2 class="strip-title">Do it together <span class="tag-premium">Premium</span></h2>
+          <p class="fine">One real browser, a cursor each, from your own phones — nobody waiting on the other to type.</p>
+          <button class="go go-alt" id="reward-order-btn">
+            <span class="go-label">Order it together</span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </button>
+        </section>
       </div>
 
       <!-- this or that -->
@@ -2525,7 +2541,12 @@
   </div>
 
   <div class="cook-foot">
-    <button class="quiet" id="cook-along-btn">Cook along <span class="tag-premium">Premium</span></button>
+    <!-- Hyperbeam-powered — upgraded from a quiet text link, same reasoning
+         as #reward-together below: this is the one part of the app that
+         costs real money to run, and it was reading as a footnote. -->
+    <button class="go go-sm go-alt" id="cook-along-btn">
+      <span class="go-label">Cook along <span class="tag-premium">Premium</span></span>
+    </button>
     <button class="quiet" id="cook-prev">Back</button>
     <button class="go go-sm" id="cook-next">
       <span class="go-label">Next step</span>
@@ -2544,7 +2565,9 @@
   <ul class="shopping" id="list-items"></ul>
   <div class="sheet-actions">
     <button class="quiet" id="list-copy">Copy the list</button>
-    <button class="quiet" id="list-shop-btn">Shop it together <span class="tag-premium">Premium</span></button>
+    <button class="go go-sm go-alt" id="list-shop-btn">
+      <span class="go-label">Shop it together <span class="tag-premium">Premium</span></span>
+    </button>
   </div>
 </dialog>
 

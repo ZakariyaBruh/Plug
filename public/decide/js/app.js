@@ -1673,6 +1673,13 @@
     openBeam('order', shownItem ? shownItem.name : '');
   });
 
+  // Same thing, offered again on the reward screen — see the markup comment
+  // over #reward-together. shownItem is still the accepted dish here; a
+  // decision does not clear it, it only confirms it.
+  $('reward-order-btn').addEventListener('click', function () {
+    openBeam('order', shownItem ? shownItem.name : '');
+  });
+
   // In cook mode: the recipe is on this screen, the technique is on a video,
   // and the other person is in a different kitchen.
   //
