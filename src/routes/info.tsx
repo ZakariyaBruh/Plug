@@ -18,6 +18,7 @@ import {
   SITE_NAME,
   SITE_TITLE,
   SITE_URL,
+  ACCOUNT,
   STANDARD,
   THE_GIFT,
   THE_INSIGHT,
@@ -267,6 +268,14 @@ function InfoPage() {
                 <p className="mt-1 text-3xl font-bold">Free</p>
                 <ul className="mt-6 space-y-3 text-sm text-[var(--text-dim)]">
                   {STANDARD.map((line) => (
+                    <li key={line}>— {line}</li>
+                  ))}
+                </ul>
+                <p className="mt-6 text-sm font-semibold uppercase tracking-widest text-[var(--text-dim)]">
+                  Free with an account
+                </p>
+                <ul className="mt-3 space-y-3 text-sm text-[var(--text-dim)]">
+                  {ACCOUNT.map((line) => (
                     <li key={line}>— {line}</li>
                   ))}
                 </ul>

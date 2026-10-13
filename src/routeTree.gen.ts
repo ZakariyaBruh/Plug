@@ -31,6 +31,7 @@ import { Route as ApiMenuRouteImport } from './routes/api/menu'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
 import { Route as ApiOrderTogetherRouteImport } from './routes/api/order-together'
 import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-status'
+import { Route as ApiRadioRouteImport } from './routes/api/radio'
 import { Route as ApiSuggestRouteImport } from './routes/api/suggest'
 import { Route as ApiTriviaRouteImport } from './routes/api/trivia'
 import { Route as ApiWhopEventsRouteImport } from './routes/api/whop-events'
@@ -156,6 +157,11 @@ const ApiPremiumStatusRoute = ApiPremiumStatusRouteImport.update({
   path: '/api/premium-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRadioRoute = ApiRadioRouteImport.update({
+  id: '/api/radio',
+  path: '/api/radio',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSuggestRoute = ApiSuggestRouteImport.update({
   id: '/api/suggest',
   path: '/api/suggest',
@@ -250,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/radio': typeof ApiRadioRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/trivia': typeof ApiTriviaRoute
   '/api/whop-events': typeof ApiWhopEventsRoute
@@ -288,6 +295,7 @@ export interface FileRoutesByTo {
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/radio': typeof ApiRadioRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/trivia': typeof ApiTriviaRoute
   '/api/whop-events': typeof ApiWhopEventsRoute
@@ -327,6 +335,7 @@ export interface FileRoutesById {
   '/api/news': typeof ApiNewsRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/radio': typeof ApiRadioRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/trivia': typeof ApiTriviaRoute
   '/api/whop-events': typeof ApiWhopEventsRoute
@@ -367,6 +376,7 @@ export interface FileRouteTypes {
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
+    | '/api/radio'
     | '/api/suggest'
     | '/api/trivia'
     | '/api/whop-events'
@@ -405,6 +415,7 @@ export interface FileRouteTypes {
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
+    | '/api/radio'
     | '/api/suggest'
     | '/api/trivia'
     | '/api/whop-events'
@@ -443,6 +454,7 @@ export interface FileRouteTypes {
     | '/api/news'
     | '/api/order-together'
     | '/api/premium-status'
+    | '/api/radio'
     | '/api/suggest'
     | '/api/trivia'
     | '/api/whop-events'
@@ -482,6 +494,7 @@ export interface RootRouteChildren {
   ApiNewsRoute: typeof ApiNewsRoute
   ApiOrderTogetherRoute: typeof ApiOrderTogetherRoute
   ApiPremiumStatusRoute: typeof ApiPremiumStatusRoute
+  ApiRadioRoute: typeof ApiRadioRoute
   ApiSuggestRoute: typeof ApiSuggestRoute
   ApiTriviaRoute: typeof ApiTriviaRoute
   ApiWhopEventsRoute: typeof ApiWhopEventsRoute
@@ -653,6 +666,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPremiumStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/radio': {
+      id: '/api/radio'
+      path: '/api/radio'
+      fullPath: '/api/radio'
+      preLoaderRoute: typeof ApiRadioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/suggest': {
       id: '/api/suggest'
       path: '/api/suggest'
@@ -788,6 +808,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiNewsRoute: ApiNewsRoute,
   ApiOrderTogetherRoute: ApiOrderTogetherRoute,
   ApiPremiumStatusRoute: ApiPremiumStatusRoute,
+  ApiRadioRoute: ApiRadioRoute,
   ApiSuggestRoute: ApiSuggestRoute,
   ApiTriviaRoute: ApiTriviaRoute,
   ApiWhopEventsRoute: ApiWhopEventsRoute,

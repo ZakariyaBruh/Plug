@@ -5013,3 +5013,179 @@ body.is-welcoming { overflow: hidden; }
   border-radius: 3px; font-style: normal;
 }
 
+
+/* ==========================================================================
+   Kitchen radio — the section, and the player that outlives it
+   ========================================================================== */
+.radio-signin { display: grid; justify-items: start; gap: var(--s3); margin-bottom: var(--s6); }
+.radio-signin .go { text-decoration: none; }
+.radio-group { margin-top: var(--s6); }
+.radio-channels .filter { white-space: nowrap; }
+.radio-blurb { margin: var(--s2) 0 var(--s4); color: var(--ink-2); font-size: var(--t-sm); max-width: 40rem; }
+.radio-foot { margin-top: var(--s6); max-width: 40rem; }
+.radio-foot a { color: var(--ink-2); }
+.radio-resume { margin: 0 0 var(--s2); }
+#radio-signin.is-nudged { animation: radio-nudge 520ms var(--ease); }
+@keyframes radio-nudge {
+  0%, 100% { transform: none; }
+  20%, 60% { transform: translateX(-5px); }
+  40%, 80% { transform: translateX(5px); }
+}
+
+.stations { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--hair); }
+.stations:empty { border-top: 0; }
+
+.station {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s3) 0;
+  border: 0;
+  border-bottom: 1px solid var(--hair);
+  background: none;
+  color: var(--ink);
+  font-family: var(--text);
+  text-align: left;
+  cursor: pointer;
+  animation: lift var(--mid) var(--ease) both;
+}
+
+.station:hover .station-name, .station.is-playing .station-name { color: var(--amber); }
+.station.is-dead { opacity: .45; }
+
+/* A station's own logo when it has one on HTTPS, the channel's dish when not. */
+.station-art, .radio-bar-art {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  overflow: hidden;
+  border-radius: .5rem;
+  background: var(--raise);
+  font-size: 1.25rem;
+}
+.station-art img, .radio-bar-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.station-text { display: grid; gap: .2rem; flex: 1; min-width: 0; }
+.station-name {
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 500;
+  letter-spacing: -.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--fast) var(--ease);
+}
+.station-meta {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.station-state { flex: none; font-size: var(--t-xs); color: var(--ink-3); }
+.station.is-playing .station-state { color: var(--amber); }
+
+.live-dot {
+  display: inline-block;
+  width: .5rem;
+  height: .5rem;
+  margin-right: .35rem;
+  border-radius: 50%;
+  background: var(--amber);
+  vertical-align: .05rem;
+  animation: radio-pulse 1.6s var(--ease) infinite;
+}
+@keyframes radio-pulse { 50% { opacity: .3; } }
+
+/* The bar. Above the rail (45) and the landing (40) so it is never lost under
+   either; below the shared browser (50) and the top bar (60), which both
+   matter more for as long as they are up. */
+.radio-bar {
+  position: fixed;
+  left: calc(var(--rail-w) + var(--s5));
+  bottom: var(--s5);
+  z-index: 47;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: min(30rem, calc(100vw - var(--rail-w) - 2 * var(--s5)));
+  padding: var(--s2) var(--s2) var(--s2) var(--s2);
+  border: 1px solid var(--hair-lit);
+  border-radius: .875rem;
+  background: var(--char);
+  box-shadow: 0 .75rem 2rem rgb(0 0 0 / .45);
+  animation: lift var(--mid) var(--ease) both;
+}
+.radio-bar[hidden] { display: none; }
+
+.radio-bar-info {
+  display: grid;
+  gap: .1rem;
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-family: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+.radio-bar-status {
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+  letter-spacing: .02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.radio-bar.is-live .radio-bar-status { color: var(--amber); }
+.radio-bar.is-broken .radio-bar-status { color: var(--danger); }
+.radio-bar-name {
+  font-family: var(--display);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.radio-bar-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.radio-bar-btn:hover { color: var(--ink); background: var(--raise); }
+.radio-bar-btn svg { width: 1.25rem; height: 1.25rem; fill: currentColor; display: block; }
+#radio-bar-toggle { color: #000; background: var(--amber); }
+#radio-bar-toggle:hover { background: #fff; }
+.radio-ico-play { display: none !important; }
+.radio-bar.is-paused .radio-ico-play { display: block !important; }
+.radio-bar.is-paused .radio-ico-pause { display: none !important; }
+
+/* Room underneath for the bar, so it never sits on the last row of anything,
+   and the toasts lifted clear of it. */
+body.has-radio .content { padding-bottom: 7.5rem; }
+body.has-radio .toasts { bottom: calc(var(--s5) + 4.75rem); }
+
+@media (max-width: 60rem) {
+  .radio-bar { left: var(--s3); right: var(--s3); bottom: var(--s3); width: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot { animation: none; }
+  .station, .radio-bar, #radio-signin.is-nudged { animation: none; }
+}

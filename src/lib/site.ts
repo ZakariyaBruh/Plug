@@ -490,6 +490,18 @@ export const STANDARD = [
 ]
 
 /*
+ * WHAT SIGNING IN ADDS, for nothing. Its own list rather than more lines on
+ * STANDARD, because "free" and "free once you have an account" are different
+ * asks: one is nothing, the other is a sign-in, and the pages should say which
+ * is which instead of letting somebody find out when the radio asks them to
+ * log in.
+ */
+export const ACCOUNT = [
+  'Kitchen radio — live stations to cook and eat to: dinner lounges, coffee-bar mornings, and the radio of whichever country is in the pan, from Italian to Caribbean. It keeps playing while you look up the recipe',
+  'The daily three — a mood check-in, one good thing, and a food question everybody gets the same day, with streaks that follow you between devices',
+]
+
+/*
  * WHAT PREMIUM IS, IN THREE SENTENCES.
  *
  * PREMIUM_SECTIONS below is thirty-odd features in five groups, and it is the

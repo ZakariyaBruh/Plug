@@ -638,6 +638,30 @@
   </p>
 </div>
 
+<!-- ===================================================================
+     THE RADIO PLAYER. Outside .app and every view in it, so changing
+     section never stops the music — see #view-radio. Hidden until a station
+     is chosen, and gone again when it is stopped.
+     =================================================================== -->
+<audio id="radio-audio" preload="none"></audio>
+<div class="radio-bar" id="radio-bar" role="region" aria-label="Radio player" hidden>
+  <span class="radio-bar-art" id="radio-bar-art" aria-hidden="true"></span>
+  <button class="radio-bar-info" id="radio-bar-info" type="button" title="Open Kitchen radio">
+    <span class="radio-bar-status" id="radio-bar-status">Tuning in&hellip;</span>
+    <span class="radio-bar-name" id="radio-bar-name"></span>
+  </button>
+  <button class="radio-bar-btn" id="radio-bar-toggle" type="button" aria-label="Pause">
+    <svg class="radio-ico-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+    <svg class="radio-ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+  </button>
+  <button class="radio-bar-btn" id="radio-bar-next" type="button" aria-label="Next station">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14l9-7zM16 5h2.5v14H16z"/></svg>
+  </button>
+  <button class="radio-bar-btn" id="radio-bar-close" type="button" aria-label="Stop the radio">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+  </button>
+</div>
+
 <div class="app">
 
   <!-- ============================ rail ============================ -->
@@ -649,6 +673,7 @@
       <li><button class="rail-link" data-view="nearby">Nearby</button></li>
       <li><button class="rail-link" data-view="chat">Ask</button></li>
       <li><button class="rail-link" data-view="news">News</button></li>
+      <li><button class="rail-link" data-view="radio">Radio</button></li>
       <li><button class="rail-link" data-view="daily">Daily</button></li>
       <li><button class="rail-link" data-view="profile">Profile</button></li>
     </ul>
@@ -1789,6 +1814,77 @@
           <button class="quiet" id="news-retry">Try again</button>
         </div>
       </div>
+    </section>
+
+    <!-- ------------------------- RADIO ------------------------- -->
+    <!-- ===============================================================
+         KITCHEN RADIO — live stations to cook and eat to. Free with an
+         account, like the daily three; see lib/radio.ts for where the
+         stations come from and why the channels are what they are.
+
+         The channels are drawn for everybody, signed in or not: "sign in
+         for radio" with nothing to look at is an ask, and twelve named
+         channels are a reason. Only the stations behind them need the
+         account.
+
+         The player is not in here. It is #radio-bar, outside every view,
+         so it carries on while you go and look up the recipe — which is
+         the point of a radio in a cooking app.
+         =============================================================== -->
+    <section class="view" id="view-radio" aria-label="Kitchen radio">
+      <header class="head">
+        <p class="mechanic">Free with an account</p>
+        <h1 class="head-title">Kitchen radio</h1>
+        <p class="head-sub">Live stations to cook and eat to &mdash; dinner lounges,
+        coffee-bar mornings, and the radio of whichever country is in the pan tonight.
+        It keeps playing while you look up the recipe.</p>
+      </header>
+
+      <div class="radio-signin" id="radio-signedout" hidden>
+        <p class="fine">Radio comes free with an account &mdash; not Premium, just signed in.
+        Pick a channel below once you are in.</p>
+        <!-- target="_top": see the note on #invite-signin. -->
+        <a class="go go-sm" id="radio-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dradio" target="_top">
+          <span class="go-label">Sign in with Whop to listen</span>
+        </a>
+      </div>
+
+      <!-- Painted from this device's memory of the last station played: one
+           tap back to "the radio" rather than the radio's menu. -->
+      <p class="radio-resume" id="radio-resume-wrap" hidden>
+        <button class="quiet" id="radio-resume" type="button"></button>
+      </p>
+
+      <h2 class="strip-title radio-group">Made for the table</h2>
+      <div class="filters radio-channels" id="radio-table" role="group" aria-label="Channels made for the table"></div>
+      <h2 class="strip-title radio-group">Cook the world</h2>
+      <div class="filters radio-channels" id="radio-world" role="group" aria-label="Channels by cuisine"></div>
+
+      <p class="radio-blurb" id="radio-blurb" hidden></p>
+
+      <div class="out-loading" id="radio-loading" hidden>
+        <div class="bone bone-row"></div>
+        <div class="bone bone-row"></div>
+        <div class="bone bone-row"></div>
+        <p class="fine">Tuning in&hellip;</p>
+      </div>
+
+      <ul class="stations" id="radio-list"></ul>
+
+      <div class="notice" id="radio-error" hidden>
+        <p>The radio directory is not answering just now.</p>
+        <p class="fine">It is a free, volunteer-run directory and it has the odd bad minute.
+        Nothing is wrong at your end.</p>
+        <div class="locate-actions">
+          <button class="quiet" id="radio-retry" type="button">Try again</button>
+        </div>
+      </div>
+
+      <p class="fine radio-foot">Stations come from
+      <a href="https://www.radio-browser.info/" target="_blank" rel="noopener noreferrer">Radio Browser</a>,
+      a free community directory. Each one streams straight from its own broadcaster to you;
+      morsels45 hosts none of them and puts nothing over them, though a station may run its
+      own adverts.</p>
     </section>
 
     <!-- Feeding people: its own section, because writing a menu is a thing you

@@ -27,7 +27,7 @@ export const Route = createFileRoute('/privacy')({
 })
 
 /** Last time the wording was reviewed against the code. */
-const REVIEWED = '6 October 2026'
+const REVIEWED = '13 October 2026'
 
 /*
  * `lede` is the section's answer, in one sentence, at full brightness. `body`
@@ -111,6 +111,23 @@ const SECTIONS: Section[] = [
     lede: 'Our server fetches the headlines, so the publishers never see you at all.',
     body: [
       'Headlines are fetched by this site’s own server, not by your browser. That means the publishers never see you: no request from your device reaches the Guardian, Eater, NYT Dining, The Kitchn, Smitten Kitchen, Saveur or King Arthur Baking unless you tap through to read the article, at which point you are on their site under their rules.',
+    ],
+  },
+  {
+    id: 'radio',
+    heading: 'Kitchen radio',
+    lede: 'The station hears you play it, the way any website hears you visit it. Nobody else does.',
+    body: [
+      'The list of stations comes from Radio Browser (radio-browser.info), a free community directory. This site’s server asks it for the list, so the directory never sees your device. When you play a station, the server also tells the directory which station was played — the station’s id and nothing else, no account and no address — because counting plays is how the directory ranks stations and its terms ask every app to do it.',
+      'The music itself streams straight from the station to your browser. That means the station sees your IP address and your browser, exactly as any website you visit does, and its own privacy policy applies to that. morsels45 does not relay, record or keep a history of what you listen to; the last channel and station are remembered in this browser only, so the radio can pick up where you left off.',
+    ],
+  },
+  {
+    id: 'daily',
+    heading: 'The daily three',
+    lede: 'Your mood, your one good thing and your trivia answer, kept against your Whop account so they follow you between devices.',
+    body: [
+      'If you use the daily check-in, the one-line journal or the daily question, what you enter is stored in our database against your Whop user id, one row a day for each: the mood you tapped, the line you wrote, the answer you picked. That is what lets your streak and yesterday’s line be there when you sign in on another device. It is used for nothing else and shown to nobody else.',
     ],
   },
   {
@@ -258,7 +275,9 @@ const THIRD_PARTIES: [string, string][] = [
   ['OpenStreetMap and Photon', 'Look up places near you, when you use Nearby and allow location.'],
   ['freeipapi.com', 'Looks up which currency your country uses, by your IP, on the Premium page.'],
   ['open.er-api.com', 'Today’s exchange rate, to show the Premium price in that currency.'],
-  ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day. Nothing else.'],
+  ['Radio Browser', 'The directory the kitchen radio’s stations come from. Asked by our server, never by your device.'],
+  ['Radio stations', 'Each station you play streams straight to you from its own broadcaster, which sees your IP address as any website would.'],
+  ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day — and, if you use them, your daily check-in, journal line and trivia answer, against your Whop user id.'],
   ['Cloudflare', 'Serves this site.'],
 ]
 
