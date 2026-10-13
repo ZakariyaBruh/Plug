@@ -100,7 +100,17 @@
     <span class="mark-word">morsels45</span>
   </a>
   <nav class="topbar-nav" aria-label="Account">
-    <a class="topbar-link topbar-premium" id="topbar-premium" href="/premium">Premium</a>
+    <!-- target="_top": same reasoning as #topbar-account below, one iframe
+         hop further downstream. This page is always inside Whop's own frame
+         when opened from an experience, and without this the click leaves
+         somebody stuck on /premium inside that frame — then PlanPicker's
+         own same-tab Link to /checkout/$planId carries the same framing
+         forward, and WhopCheckoutEmbed there is a payment form, which
+         refuses to render nested inside an ancestor frame it does not
+         recognise, the same way Whop's sign-in page does. The embed then
+         looks broken — nothing to click, nothing to retry — when the real
+         cause is three hops upstream of it. -->
+    <a class="topbar-link topbar-premium" id="topbar-premium" href="/premium" target="_top">Premium</a>
     <a class="topbar-link topbar-account" id="topbar-account" href="/api/oauth/login?redirect_to=%2Fdecide%2F" target="_top">Sign in</a>
   </nav>
 </header>
@@ -2332,19 +2342,26 @@
      for. A footer is the conventional place to look for exactly these, which
      is the whole argument for putting them there.
      =========================================================================== -->
+<!-- target="_top" on every link here, for the same reason as #topbar-premium
+     above: this page is always inside Whop's own iframe when opened from an
+     experience, and a same-tab navigation to any of these would leave
+     someone stuck looking at a full marketing-site page squeezed inside
+     that frame. For /premium specifically it is worse than a bad look — see
+     the long comment on #topbar-premium for how it breaks checkout three
+     hops downstream. -->
 <footer class="appfoot">
   <nav class="appfoot-nav" aria-label="The rest of morsels45">
-    <a href="/">Home</a>
-    <a href="/info">More about morsels45</a>
-    <a href="/eat">All dishes</a>
-    <a href="/how-it-works">How it works</a>
-    <a href="/premium">Premium</a>
-    <a href="/faq">FAQ</a>
-    <a href="/account">Account</a>
-    <a href="/privacy">Privacy</a>
-    <a href="/honesty">What we won&rsquo;t do</a>
+    <a href="/" target="_top">Home</a>
+    <a href="/info" target="_top">More about morsels45</a>
+    <a href="/eat" target="_top">All dishes</a>
+    <a href="/how-it-works" target="_top">How it works</a>
+    <a href="/premium" target="_top">Premium</a>
+    <a href="/faq" target="_top">FAQ</a>
+    <a href="/account" target="_top">Account</a>
+    <a href="/privacy" target="_top">Privacy</a>
+    <a href="/honesty" target="_top">What we won&rsquo;t do</a>
   </nav>
-  <p class="appfoot-fine">Everything you do here stays in this browser. <a href="/privacy">How that works</a>.</p>
+  <p class="appfoot-fine">Everything you do here stays in this browser. <a href="/privacy" target="_top">How that works</a>.</p>
 </footer>
 
 <!--
