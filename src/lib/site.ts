@@ -1,3 +1,5 @@
+import tvLineup from './tv-lineup.json'
+
 export const SITE_NAME = 'morsels45'
 export const SITE_URL = 'https://morsels45-app.whop.site'
 export const SITE_CARD = `${SITE_URL}/site-card.png`
@@ -496,8 +498,17 @@ export const STANDARD = [
  * is which instead of letting somebody find out when the radio asks them to
  * log in.
  */
+/*
+ * Named from the lineup the TV actually has (lib/tv-lineup.json, rebuilt by
+ * scripts/tv-lineup.mjs), so this line cannot go on promising a channel that
+ * stopped playing and was dropped from it.
+ */
+const TV_NAMES = tvLineup.channels.map((c) => c.name)
+const TV_EXAMPLES = TV_NAMES.slice(0, 3).join(', ')
+
 export const ACCOUNT = [
-  'Kitchen radio — live stations to cook and eat to: dinner lounges, coffee-bar mornings, and the radio of whichever country is in the pan, from Italian to Caribbean. It keeps playing while you look up the recipe',
+  `Food TV — ${TV_NAMES.length} free food channels, live, with what is on now and next: ${TV_EXAMPLES} and more`,
+  'Food radio — a dozen stations made for the kitchen and the table: dinner lounges, restaurant and coffee-bar channels, a barbecue station. It keeps playing while you look up the recipe',
   'The daily three — a mood check-in, one good thing, and a food question everybody gets the same day, with streaks that follow you between devices',
 ]
 

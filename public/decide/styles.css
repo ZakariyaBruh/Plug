@@ -5015,13 +5015,13 @@ body.is-welcoming { overflow: hidden; }
 
 
 /* ==========================================================================
-   Kitchen radio — the section, and the player that outlives it
+   Food TV & radio — the section, the TV stage, and the radio player that
+   outlives the section
    ========================================================================== */
 .radio-signin { display: grid; justify-items: start; gap: var(--s3); margin-bottom: var(--s6); }
 .radio-signin .go { text-decoration: none; }
-.radio-group { margin-top: var(--s6); }
-.radio-channels .filter { white-space: nowrap; }
-.radio-blurb { margin: var(--s2) 0 var(--s4); color: var(--ink-2); font-size: var(--t-sm); max-width: 40rem; }
+.media-tabs { margin: var(--s2) 0 var(--s5); }
+.media-tabs .filter { font-size: var(--t-md); white-space: nowrap; }
 .radio-foot { margin-top: var(--s6); max-width: 40rem; }
 .radio-foot a { color: var(--ink-2); }
 .radio-resume { margin: 0 0 var(--s2); }
@@ -5101,6 +5101,56 @@ body.is-welcoming { overflow: hidden; }
   animation: radio-pulse 1.6s var(--ease) infinite;
 }
 @keyframes radio-pulse { 50% { opacity: .3; } }
+
+/* --- TV --- */
+.tv-art { background: #fff; }
+.tv-art img { object-fit: contain; padding: .2rem; }
+.tv-row .station-meta { white-space: normal; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+.tv-now { color: var(--ink-2); }
+.tv-row.is-playing .tv-now { color: var(--ink); }
+
+.tv-stage {
+  margin-bottom: var(--s6);
+  scroll-margin-top: calc(var(--stack-top, var(--topbar-h)) + var(--s4));
+}
+.tv-stage[hidden] { display: none; }
+.tv-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  max-height: 70vh;
+  overflow: hidden;
+  border-radius: .75rem;
+  background: #000;
+}
+.tv-frame video { display: block; width: 100%; height: 100%; background: #000; }
+.tv-overlay {
+  position: absolute;
+  inset: auto var(--s4) var(--s4) var(--s4);
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border-radius: .5rem;
+  background: rgb(0 0 0 / .72);
+  color: #fff;
+  font-size: var(--t-sm);
+  text-align: center;
+  pointer-events: none;
+}
+.tv-overlay[hidden] { display: none; }
+.tv-stage-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s4);
+  margin-top: var(--s3);
+}
+.tv-stage-text { min-width: 0; }
+.tv-stage-name { margin: 0; font-family: var(--display); font-size: var(--t-lg); font-weight: 500; }
+.tv-stage-text .fine { margin: .2rem 0 0; color: var(--ink-2); }
+.tv-later { list-style: none; margin: var(--s3) 0 0; padding: 0; display: grid; gap: .35rem; }
+.tv-later[hidden] { display: none; }
+.tv-later li { display: flex; gap: var(--s3); font-size: var(--t-sm); color: var(--ink-2); min-width: 0; }
+.tv-later time { flex: none; min-width: 4.75rem; white-space: nowrap; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.tv-later span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* The bar. Above the rail (45) and the landing (40) so it is never lost under
    either; below the shared browser (50) and the top bar (60), which both

@@ -114,8 +114,17 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    id: 'tv',
+    heading: 'Food TV',
+    lede: 'The channel hears you watch it, the way any website hears you visit it. The guide is fetched by us, so the listing services never see you.',
+    body: [
+      'The channels are free, ad-supported food channels listed in iptv-org, an open database of free TV. The list is put together ahead of time, so opening the TV does not contact iptv-org at all. What is on now and next is fetched by this site’s server from the guide services each channel publishes its listings to — Plex and Pluto TV — so those services see our server, never your device.',
+      'When you press play, your browser streams the channel straight from that channel’s own servers, which see your IP address and your browser, exactly as any website does, and may count the view for their adverts. The video player code is a well-known open-source library (hls.js), loaded from the jsDelivr CDN the first time you press play, so jsDelivr sees that request too. morsels45 does not relay, record or keep a history of what you watch.',
+    ],
+  },
+  {
     id: 'radio',
-    heading: 'Kitchen radio',
+    heading: 'Food radio',
     lede: 'The station hears you play it, the way any website hears you visit it. Nobody else does.',
     body: [
       'The list of stations comes from Radio Browser (radio-browser.info), a free community directory. This site’s server asks it for the list, so the directory never sees your device. When you play a station, the server also tells the directory which station was played — the station’s id and nothing else, no account and no address — because counting plays is how the directory ranks stations and its terms ask every app to do it.',
@@ -275,7 +284,10 @@ const THIRD_PARTIES: [string, string][] = [
   ['OpenStreetMap and Photon', 'Look up places near you, when you use Nearby and allow location.'],
   ['freeipapi.com', 'Looks up which currency your country uses, by your IP, on the Premium page.'],
   ['open.er-api.com', 'Today’s exchange rate, to show the Premium price in that currency.'],
-  ['Radio Browser', 'The directory the kitchen radio’s stations come from. Asked by our server, never by your device.'],
+  ['TV channels', 'Each food channel you watch streams straight to you from its own servers, which see your IP address as any website would.'],
+  ['Plex and Pluto TV', 'Publish the TV listings for what is on now and next. Asked by our server, never by your device.'],
+  ['jsDelivr', 'Serves the open-source video player (hls.js), the first time you press play on a TV channel.'],
+  ['Radio Browser', 'The directory the food radio’s stations come from. Asked by our server, never by your device.'],
   ['Radio stations', 'Each station you play streams straight to you from its own broadcaster, which sees your IP address as any website would.'],
   ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day — and, if you use them, your daily check-in, journal line and trivia answer, against your Whop user id.'],
   ['Cloudflare', 'Serves this site.'],

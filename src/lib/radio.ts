@@ -1,24 +1,22 @@
 /*
- * KITCHEN RADIO — live stations to cook and eat to, free with an account.
+ * FOOD RADIO — live stations made for the kitchen and the table, free with
+ * an account.
  *
  * WHERE THE STATIONS COME FROM. Radio Browser (radio-browser.info), a free,
  * community-run directory of about fifty thousand internet radio stations
  * with a public JSON API and no key. Nothing here is a stream we host or
- * relay: this asks the directory for a list, and the reader's own browser
+ * relay: this asks the directory for a list, and the listener's own browser
  * plays the station's stream straight from the station.
  *
- * WHAT A "FOOD CHANNEL" IS, HONESTLY. The directory has almost no food talk
- * radio — searched every way there is, "food" and "cooking" turn up one
- * station each, and "kitchen" turns up Kitchener, Ontario. What it does have
- * is plenty of stations made for the table: dinner lounges, dinner jazz,
- * restaurant and coffee-bar channels. And it has every country's radio,
- * which is the better idea anyway — cooking a curry with Bollywood on, or a
- * paella with flamenco. So two kinds of channel: made for the table, and
- * cook the world.
- *
- * Each channel is one or more directory searches, run when somebody opens
- * that channel and not before, so twelve channels cost the directory nothing
- * until they are listened to.
+ * FOOD ONLY, AND NEVER MORE THAN TWELVE. The first version had twelve
+ * channels of ten stations each, half of them a country's pop radio to cook
+ * that country's food to — a hundred and twenty rows, most of them not about
+ * food at all. A list that long is a list nobody chooses from. So: one list,
+ * at most twelve, and every station on it named for eating — dinner
+ * lounges, restaurant and coffee-bar channels, a barbecue station, a tapas
+ * bar's. The directory has almost no food talk radio (searched every way
+ * there is, "cooking" finds one station and "kitchen" finds Kitchener,
+ * Ontario), so these are stations made to have on while you cook and eat.
  */
 
 export type Station = {
@@ -31,127 +29,54 @@ export type Station = {
   tags: string[]
   codec: string
   bitrate: number
-}
-
-export type ChannelGroup = 'table' | 'world'
-
-export type Channel = {
-  id: string
-  title: string
+  /** What it is named for, as a dish: shown when the station has no logo. */
   emoji: string
-  blurb: string
-  group: ChannelGroup
-  /** Directory searches, merged. Each is a set of /json/stations/search params. */
-  queries: Record<string, string>[]
-  /** Station names that match a search but are not what the channel means. */
-  exclude?: RegExp
 }
 
-export const CHANNELS: Channel[] = [
-  {
-    id: 'dinner',
-    title: 'Dinner party',
-    emoji: '\u{1F377}',
-    blurb: 'Dinner lounge, dinner jazz and restaurant channels — made to be on while people eat.',
-    group: 'table',
-    queries: [{ name: 'dinner' }, { name: 'restaurant' }],
-  },
-  {
-    id: 'coffee',
-    title: 'Coffee & brunch',
-    emoji: '☕',
-    blurb: 'Coffee-bar and café radio for slow mornings and long weekend brunches.',
-    group: 'table',
-    queries: [{ name: 'coffee' }, { name: 'cafe' }],
-  },
-  {
-    id: 'jazz',
-    title: 'Kitchen jazz',
-    emoji: '\u{1F3B7}',
-    blurb: 'Smooth jazz and bossa nova — the sound of somebody else doing the washing up.',
-    group: 'table',
-    queries: [{ tag: 'smooth jazz' }, { tag: 'bossa nova' }],
-  },
-  {
-    id: 'italian',
-    title: 'Italian',
-    emoji: '\u{1F35D}',
-    blurb: 'Cooking pasta? Italian radio — pop, canzoni and the old songs.',
-    group: 'world',
-    queries: [{ countrycode: 'IT', tag: 'italian' }, { countrycode: 'IT', tag: 'musica italiana' }],
-  },
-  {
-    id: 'french',
-    title: 'French',
-    emoji: '\u{1F950}',
-    blurb: 'Chanson for a slow braise or a Sunday tart.',
-    group: 'world',
-    queries: [{ tag: 'chansons françaises' }, { tag: 'french chansons' }, { tag: 'chanson française' }],
-  },
-  {
-    id: 'spanish',
-    title: 'Spanish',
-    emoji: '\u{1F958}',
-    blurb: 'Flamenco and rumba while the paella takes its time.',
-    group: 'world',
-    queries: [{ tag: 'flamenco' }, { tag: 'sevillanas' }, { countrycode: 'ES', tag: 'rumba' }],
-  },
-  {
-    id: 'mexican',
-    title: 'Mexican',
-    emoji: '\u{1F32E}',
-    blurb: 'Mariachi and ranchera for taco night.',
-    group: 'world',
-    queries: [{ tag: 'mariachi' }, { tag: 'ranchera' }],
-  },
-  {
-    id: 'indian',
-    title: 'Indian',
-    emoji: '\u{1F35B}',
-    blurb: 'Bollywood, old and new, for a curry that wants an hour.',
-    group: 'world',
-    queries: [{ tag: 'bollywood' }],
-  },
-  {
-    id: 'japanese',
-    title: 'Japanese',
-    emoji: '\u{1F363}',
-    blurb: 'City pop and J-pop while the rice steams.',
-    group: 'world',
-    queries: [{ tag: 'city pop' }, { countrycode: 'JP', tag: 'jpop' }, { countrycode: 'JP', tag: 'japanese' }],
-  },
-  {
-    id: 'greek',
-    title: 'Greek',
-    emoji: '\u{1FAD2}',
-    blurb: 'Greek radio for a table of mezze.',
-    group: 'world',
-    queries: [{ countrycode: 'GR', tag: 'greek' }, { tag: 'laika' }],
-  },
-  {
-    id: 'middle-eastern',
-    title: 'Middle Eastern',
-    emoji: '\u{1F9C6}',
-    blurb: 'Arabic music for falafel, shawarma and a long night of small plates.',
-    group: 'world',
-    queries: [{ tag: 'arabic music' }, { tag: 'arabic' }],
-  },
-  {
-    id: 'caribbean',
-    title: 'Caribbean & Latin',
-    emoji: '\u{1F357}',
-    blurb: 'Reggae and salsa for jerk chicken, plantain and anything off a grill.',
-    group: 'world',
-    queries: [{ tag: 'reggae' }, { tag: 'salsa' }, { tag: 'calypso' }, { tag: 'soca' }],
-  },
+/*
+ * One directory search per kind of eating, taken in turn so the twelve are a
+ * spread — a couple of dinner lounges, a couple of coffee bars, the barbecue
+ * one — rather than whichever word happens to have the most stations.
+ */
+const FOOD_SEARCHES: { name: string; emoji: string }[] = [
+  { name: 'dinner', emoji: '\u{1F377}' },
+  { name: 'restaurant', emoji: '\u{1F37D}\uFE0F' },
+  { name: 'coffee', emoji: '\u2615' },
+  { name: 'food', emoji: '\u{1F372}' },
+  { name: 'bbq', emoji: '\u{1F525}' },
+  { name: 'tapas', emoji: '\u{1FAD2}' },
+  { name: 'brunch', emoji: '\u{1F95E}' },
+  { name: 'kitchen', emoji: '\u{1F373}' },
+  { name: 'cooking', emoji: '\u{1F373}' },
+  { name: 'chef', emoji: '\u{1F9D1}\u200D\u{1F373}' },
+  { name: 'gourmet', emoji: '\u{1F37D}\uFE0F' },
+  { name: 'bistro', emoji: '\u{1F37D}\uFE0F' },
 ]
 
-export const CHANNEL_IDS = CHANNELS.map((c) => c.id)
+/*
+ * The directory's name search is a substring match, which is how "chef"
+ * finds Nostalgie Rochefort and "kitchen" finds every station in Kitchener.
+ * So each name is checked again for the word itself, on its own.
+ */
+const FOOD_WORD = /\b(dinner\w*|restaurant\w*|coffee\w*|food|bbq|tapas|brunch|kitchen|cooking|chef|gourmet|bistro)\b/i
 
-/** The lineup without the searches — what the page needs to draw the chips. */
-export function lineup() {
-  return CHANNELS.map(({ id, title, emoji, blurb, group }) => ({ id, title, emoji, blurb, group }))
+/*
+ * Checked against the name itself, not the genre list a lot of stations pad
+ * it with after a bar: "0R - HOTEL LOUNGE || Chill, Jazz, Sax, Dinner" is a
+ * hotel lounge. And not "breakfast" or "lunch" at all — in radio those are
+ * the morning and midday shows, so "Breakfast Radio" is a DJ, not a meal.
+ * "Pizza" went for the same reason: the station that has it is a college
+ * station that happens to be called Pizza FM.
+ */
+function namedForFood(name: string) {
+  return FOOD_WORD.test(name.split('|')[0])
 }
+
+export const MAX_STATIONS = 12
+// One from any one broadcaster. Three German stream networks each run a
+// dinner lounge, a restaurant lounge and a coffee lounge, and at two apiece
+// they were half the list.
+const PER_HOST = 1
 
 /*
  * WHICH SERVER. The directory runs a handful of mirrors and asks clients to
@@ -228,7 +153,7 @@ function playable(raw: Raw): raw is Required<Raw> {
   )
 }
 
-function toStation(raw: Required<Raw>): Station {
+function toStation(raw: Required<Raw>, emoji: string): Station {
   return {
     id: raw.stationuuid,
     name: raw.name.trim().replace(/\s+/g, ' ').slice(0, 80),
@@ -244,6 +169,7 @@ function toStation(raw: Required<Raw>): Station {
       .slice(0, 4),
     codec: raw.codec ?? '',
     bitrate: typeof raw.bitrate === 'number' ? raw.bitrate : 0,
+    emoji,
   }
 }
 
@@ -275,66 +201,78 @@ function talkStation(raw: Raw) {
     .some((tag) => NOT_MUSIC.has(tag.trim().toLowerCase()))
 }
 
-export const PER_CHANNEL = 10
-const SEARCH_LIMIT = 60
+const SEARCH_LIMIT = 40
 
-export async function searchChannel(channel: Channel): Promise<Station[]> {
-  const lists = await Promise.all(
-    channel.queries.map(async (query) => {
-      const params = new URLSearchParams({
-        ...query,
-        // A tag search is a substring match unless told otherwise, so
-        // "reggae" was also every reggaeton station and "rumba" a hip-hop
-        // station in Kampala. Names stay substring: "dinner" is meant to find
-        // "Dinner Lounge" and "80s80s DINNERPARTY" alike.
-        ...(query.tag ? { tagExact: 'true' } : {}),
-        hidebroken: 'true',
-        is_https: 'true',
-        order: 'votes',
-        reverse: 'true',
-        limit: String(SEARCH_LIMIT),
-      })
-      const found = await ask(`/json/stations/search?${params}`)
-      return Array.isArray(found) ? (found as Raw[]) : []
-    }),
-  )
+async function search(name: string): Promise<Raw[]> {
+  const params = new URLSearchParams({
+    name,
+    hidebroken: 'true',
+    is_https: 'true',
+    order: 'votes',
+    reverse: 'true',
+    limit: String(SEARCH_LIMIT),
+  })
+  const found = await ask(`/json/stations/search?${params}`)
+  return Array.isArray(found) ? (found as Raw[]) : []
+}
 
-  const merged = lists
-    .flat()
-    .filter(playable)
-    .filter((raw) => !channel.exclude?.test(raw.name))
-    .filter((raw) => !talkStation(raw))
-    .sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0))
+export async function searchFoodStations(): Promise<Station[]> {
+  const settled = await Promise.allSettled(FOOD_SEARCHES.map((s) => search(s.name)))
+  // Some searches failing is a thinner list; all of them failing is the
+  // directory being down, and that is an error rather than an empty radio.
+  if (settled.every((r) => r.status === 'rejected')) throw new Error('radio: every search failed')
+
+  const pools = settled.map((r, i) => ({
+    emoji: FOOD_SEARCHES[i].emoji,
+    stations: (r.status === 'fulfilled' ? r.value : [])
+      .filter(playable)
+      .filter((raw) => namedForFood(raw.name) && !talkStation(raw))
+      .sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0)),
+  }))
 
   const seenUrl = new Set<string>()
   const seenName = new Set<string>()
+  const perHost = new Map<string, number>()
   const out: Station[] = []
-  for (const raw of merged) {
-    const key = nameKey(raw.name)
-    if (seenUrl.has(raw.url_resolved) || (key && seenName.has(key))) continue
-    seenUrl.add(raw.url_resolved)
-    if (key) seenName.add(key)
-    out.push(toStation(raw))
-    if (out.length >= PER_CHANNEL) break
+  // Round robin: the best of each search, then the next best of each.
+  for (let progress = true; progress && out.length < MAX_STATIONS; ) {
+    progress = false
+    for (const pool of pools) {
+      if (out.length >= MAX_STATIONS) break
+      while (pool.stations.length) {
+        const raw = pool.stations.shift()!
+        const key = nameKey(raw.name)
+        let host = ''
+        try { host = new URL(raw.url_resolved).hostname } catch {}
+        if (seenUrl.has(raw.url_resolved) || (key && seenName.has(key))) continue
+        if ((perHost.get(host) ?? 0) >= PER_HOST) continue
+        seenUrl.add(raw.url_resolved)
+        if (key) seenName.add(key)
+        perHost.set(host, (perHost.get(host) ?? 0) + 1)
+        out.push(toStation(raw, pool.emoji))
+        progress = true
+        break
+      }
+    }
   }
   return out
 }
 
 /*
  * Kept for six hours per worker. Station lists move on the scale of weeks,
- * and a channel opened by twenty people in an afternoon should be one
- * question to the directory, not twenty. A failed search is not kept, so the
- * next person to open the channel asks again.
+ * and twenty people opening the radio in an afternoon should be one round of
+ * questions to the directory, not twenty. A failed round is not kept, so the
+ * next person to open it asks again.
  */
 const TTL_MS = 6 * 60 * 60 * 1000
-const memo = new Map<string, { at: number; stations: Promise<Station[]> }>()
+let memo: { at: number; stations: Promise<Station[]> } | null = null
 
-export function stationsFor(channel: Channel): Promise<Station[]> {
-  const hit = memo.get(channel.id)
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.stations
-  const stations = searchChannel(channel)
-  memo.set(channel.id, { at: Date.now(), stations })
-  stations.catch(() => memo.delete(channel.id))
+export function foodStations(): Promise<Station[]> {
+  if (memo && Date.now() - memo.at < TTL_MS) return memo.stations
+  const stations = searchFoodStations()
+  const entry = { at: Date.now(), stations }
+  memo = entry
+  stations.catch(() => { if (memo === entry) memo = null })
   return stations
 }
 

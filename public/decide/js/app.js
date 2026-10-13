@@ -516,6 +516,8 @@
     // Leaving the menu tab is a decision about the menu, so it is taken here,
     // before `view` moves on and the old one is unknowable. See leaveMenu.
     if (view === 'menu' && name !== 'menu') leaveMenu();
+    // Same for the TV: leaving it pauses it, unless it is in picture-in-picture.
+    if (view === 'radio' && name !== 'radio') leaveTv();
     view = name;
     $$('.view').forEach(function (el) {
       el.classList.toggle('is-current', el.id === 'view-' + name);
@@ -8644,185 +8646,68 @@
   }
 
   /*
-   * KITCHEN RADIO. Live stations to cook and eat to, free with an account —
-   * see #view-radio for the page and lib/radio.ts for where the stations come
-   * from.
+   * FOOD TV AND FOOD RADIO. Free with an account — see #view-radio for the
+   * page, and lib/tv.ts and lib/radio.ts for where each comes from.
    *
-   * One <audio> element for the whole app, outside every view, so the music
-   * carries on wherever you go in here; leaving the Radio section is not a
-   * reason to stop. What is played goes nowhere but the station itself and,
-   * as a bare station id, the directory's play count (see /api/radio). The
-   * last channel and station are remembered on this device only, so that
-   * opening the radio again is one tap back to your radio rather than the
-   * menu.
+   * Two tabs in one section. The radio is one <audio> element outside every
+   * view, so the music carries on wherever you go in here. The TV is a
+   * <video> inside the section, and pauses when you leave it unless it has
+   * been popped out into picture-in-picture. Starting either one pauses the
+   * other: two soundtracks at once is never what anybody meant.
+   *
+   * What is watched or played goes nowhere but the channel or station itself
+   * and, for the radio, a bare station id for the directory's play count
+   * (see /api/radio). The last tab and station are remembered on this device
+   * only, so opening it again is one tap back to your radio, not the menu.
    */
-  var radio = {
-    channels: null,   // the lineup, from /api/radio
-    channel: null,    // the channel on screen
-    lists: {},        // channel id -> its stations, fetched once a visit
-    dead: {},         // stations that would not play this visit
-    playing: null,    // { station, channel } in the player, playing or not
-    state: 'idle',    // idle | tuning | live | paused | broken
-    skips: 0,
-    tuneTimer: null,
-    lineupLoading: false,
-    token: 0,
-  };
-  var RADIO_KEY = 'morsels45-radio';
-  // Three dead stations in a row is the directory or the connection having a
-  // bad minute, not bad luck. Stop and say so rather than burn through the
-  // whole channel skipping.
-  var RADIO_MAX_SKIPS = 3;
-  // A stream that has not started in this long is not going to.
-  var RADIO_TUNE_MS = 15000;
+  var media = { tab: null };
+  var MEDIA_KEY = 'morsels45-radio';
 
-  function radioMemory() {
-    try { return JSON.parse(localStorage.getItem(RADIO_KEY) || '{}') || {}; } catch (err) { return {}; }
+  function mediaMemory() {
+    try { return JSON.parse(localStorage.getItem(MEDIA_KEY) || '{}') || {}; } catch (err) { return {}; }
   }
 
-  function rememberRadio(patch) {
+  function rememberMedia(patch) {
     try {
-      var mem = radioMemory();
+      var mem = mediaMemory();
       Object.keys(patch).forEach(function (key) { mem[key] = patch[key]; });
-      localStorage.setItem(RADIO_KEY, JSON.stringify(mem));
+      localStorage.setItem(MEDIA_KEY, JSON.stringify(mem));
     } catch (err) {}
   }
 
-  function radioChannel(id) {
-    if (!radio.channels || !id) return null;
-    for (var i = 0; i < radio.channels.length; i++) {
-      if (radio.channels[i].id === id) return radio.channels[i];
-    }
-    return null;
-  }
-
+  // The view's own render, named for the view (setView calls it).
   function renderRadio() {
-    var signedIn = premiumApi.status.signedIn;
-    $('radio-signedout').hidden = signedIn;
-    if (!radio.channels) return loadRadioLineup();
-    paintRadioChannels();
-    paintRadioResume();
-    if (!signedIn) {
-      $('radio-list').innerHTML = '';
-      $('radio-blurb').hidden = true;
-      $('radio-loading').hidden = true;
-      return;
-    }
-    var want = radio.channel || radioMemory().channel;
-    if (!radioChannel(want)) want = radio.channels[0].id;
-    openRadioChannel(want);
+    $('radio-signedout').hidden = premiumApi.status.signedIn;
+    showMediaTab(media.tab || mediaMemory().tab || 'tv');
   }
 
-  function loadRadioLineup() {
-    if (radio.lineupLoading) return;
-    radio.lineupLoading = true;
-    $('radio-error').hidden = true;
-    fetch('/api/radio', { headers: { Accept: 'application/json' } })
-      .then(function (r) {
-        if (!r.ok) throw new Error('radio lineup ' + r.status);
-        return r.json();
-      })
-      .then(function (data) {
-        radio.lineupLoading = false;
-        radio.channels = data.channels || [];
-        if (view === 'radio') renderRadio();
-      })
-      .catch(function () {
-        radio.lineupLoading = false;
-        if (view === 'radio') $('radio-error').hidden = false;
-      });
-  }
-
-  function paintRadioChannels() {
-    var signedIn = premiumApi.status.signedIn;
-    ['table', 'world'].forEach(function (group) {
-      var wrap = $('radio-' + group);
-      wrap.innerHTML = '';
-      radio.channels.forEach(function (ch) {
-        if (ch.group !== group) return;
-        var on = signedIn && radio.channel === ch.id;
-        var btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'filter' + (on ? ' is-on' : '');
-        btn.textContent = ch.emoji + ' ' + ch.title;
-        btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-        btn.addEventListener('click', function () {
-          if (!premiumApi.status.signedIn) { Sound.reject(); return nudgeRadioSignin(); }
-          Sound.tick();
-          openRadioChannel(ch.id);
-        });
-        wrap.appendChild(btn);
-      });
+  function showMediaTab(tab) {
+    if (tab !== 'tv' && tab !== 'radio') tab = 'tv';
+    if (media.tab === 'tv' && tab !== 'tv') leaveTv();
+    media.tab = tab;
+    rememberMedia({ tab: tab });
+    ['tv', 'radio'].forEach(function (name) {
+      var on = name === tab;
+      var btn = $('tab-' + name);
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      $(name + '-pane').hidden = !on;
     });
+    if (tab === 'tv') renderTv();
+    else renderRadioList();
   }
 
-  // A channel tapped while signed out: the answer is the sign-in button, so
+  // Something tapped while signed out: the answer is the sign-in button, so
   // take them to it rather than doing nothing.
   function nudgeRadioSignin() {
     var link = $('radio-signin');
     if (!link) return;
+    $('radio-signedout').hidden = false;
     try { link.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (err) {}
     link.classList.remove('is-nudged');
     void link.offsetWidth;
     link.classList.add('is-nudged');
     try { link.focus({ preventScroll: true }); } catch (err) {}
-  }
-
-  function paintRadioResume() {
-    var mem = radioMemory();
-    var wrap = $('radio-resume-wrap');
-    var show = premiumApi.status.signedIn && !radio.playing &&
-      mem.station && mem.station.url && radioChannel(mem.channel);
-    wrap.hidden = !show;
-    if (show) $('radio-resume').textContent = '▶ Pick up where you left off: ' + mem.station.name;
-  }
-
-  function openRadioChannel(id) {
-    var ch = radioChannel(id);
-    if (!ch) return;
-    radio.channel = id;
-    rememberRadio({ channel: id });
-    paintRadioChannels();
-    var blurb = $('radio-blurb');
-    blurb.textContent = ch.blurb;
-    blurb.hidden = false;
-    $('radio-error').hidden = true;
-    if (radio.lists[id]) {
-      $('radio-loading').hidden = true;
-      return paintStations();
-    }
-    $('radio-list').innerHTML = '';
-    $('radio-loading').hidden = false;
-    var token = ++radio.token;
-    fetchStations(id)
-      .then(function () {
-        if (token !== radio.token) return;
-        $('radio-loading').hidden = true;
-        paintStations();
-      })
-      .catch(function (err) {
-        if (token !== radio.token) return;
-        $('radio-loading').hidden = true;
-        // The session ran out between loading the app and opening a channel:
-        // that is a sign-in, not a broken directory.
-        if (err && err.message === 'not_signed_in') {
-          $('radio-signedout').hidden = false;
-          return;
-        }
-        $('radio-error').hidden = false;
-      });
-  }
-
-  function fetchStations(id) {
-    if (radio.lists[id]) return Promise.resolve(radio.lists[id]);
-    return fetch('/api/radio?channel=' + encodeURIComponent(id), { headers: { Accept: 'application/json' } })
-      .then(function (r) {
-        return r.json().then(function (data) {
-          if (!r.ok || !data.stations) throw new Error(data.error || 'radio ' + r.status);
-          radio.lists[id] = data.stations;
-          return data.stations;
-        });
-      });
   }
 
   function shortCountry(name) {
@@ -8835,6 +8720,89 @@
     return short[name] || String(name).replace(/^The /, '');
   }
 
+  // A logo if there is one on HTTPS, the fallback if not — and the fallback
+  // again if the logo turns out to be a dead link, which in a volunteer
+  // directory a good share of them are.
+  function mediaArt(el, src, fallback) {
+    el.innerHTML = '';
+    if (!src) { el.textContent = fallback; return el; }
+    var img = document.createElement('img');
+    img.alt = '';
+    img.loading = 'lazy';
+    img.referrerPolicy = 'no-referrer';
+    img.addEventListener('error', function () { el.textContent = fallback; });
+    img.src = src;
+    el.appendChild(img);
+    return el;
+  }
+
+  /* ------------------------------------------------------------ radio -- */
+
+  var radio = {
+    stations: null,   // from /api/radio
+    withStreams: null,// whether that list came signed in, with the streams
+    loading: false,
+    dead: {},         // stations that would not play this visit
+    playing: null,    // the station in the player, playing or not
+    state: 'idle',    // idle | tuning | live | paused | broken
+    skips: 0,
+    tuneTimer: null,
+  };
+  // Three dead stations in a row is the directory or the connection having a
+  // bad minute, not bad luck. Stop and say so rather than burn through the
+  // whole list skipping.
+  var RADIO_MAX_SKIPS = 3;
+  // A stream that has not started in this long is not going to.
+  var RADIO_TUNE_MS = 15000;
+
+  function renderRadioList() {
+    // A list fetched signed out has no streams in it, so signing in since
+    // means asking again.
+    if (radio.stations && radio.withStreams !== premiumApi.status.signedIn) radio.stations = null;
+    paintRadioResume();
+    if (radio.stations && $$('#radio-list .station').length === radio.stations.length) return paintStationStates();
+    if (radio.stations) return paintStations();
+    loadRadio();
+  }
+
+  function loadRadio() {
+    if (radio.loading) return;
+    radio.loading = true;
+    $('radio-error').hidden = true;
+    $('radio-list').innerHTML = '';
+    $('radio-loading').hidden = false;
+    fetch('/api/radio', { headers: { Accept: 'application/json' } })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          if (!r.ok || !data.stations) throw new Error(data.error || 'radio ' + r.status);
+          return data;
+        });
+      })
+      .then(function (data) {
+        radio.loading = false;
+        radio.stations = data.stations;
+        radio.withStreams = !!data.signedIn;
+        $('radio-loading').hidden = true;
+        if (view === 'radio' && media.tab === 'radio') {
+          $('radio-signedout').hidden = !!data.signedIn;
+          paintStations();
+          paintRadioResume();
+        }
+      })
+      .catch(function () {
+        radio.loading = false;
+        $('radio-loading').hidden = true;
+        if (view === 'radio' && media.tab === 'radio') $('radio-error').hidden = false;
+      });
+  }
+
+  function paintRadioResume() {
+    var mem = mediaMemory();
+    var show = premiumApi.status.signedIn && !radio.playing && mem.station && mem.station.url;
+    $('radio-resume-wrap').hidden = !show;
+    if (show) $('radio-resume').textContent = '▶ Pick up where you left off: ' + mem.station.name;
+  }
+
   function stationMeta(st) {
     var bits = [];
     if (st.country) bits.push(shortCountry(st.country));
@@ -8842,36 +8810,17 @@
     return bits.join(' · ');
   }
 
-  // The station's own logo if it has one on HTTPS, the channel's dish if not
-  // — and the dish again if the logo turns out to be a dead link, which a
-  // good share of them in a volunteer directory are.
-  function stationArt(el, st, channelId) {
-    var ch = radioChannel(channelId);
-    var fallback = (ch && ch.emoji) || '\u{1F4FB}';
-    el.innerHTML = '';
-    if (!st.favicon) { el.textContent = fallback; return el; }
-    var img = document.createElement('img');
-    img.alt = '';
-    img.loading = 'lazy';
-    img.referrerPolicy = 'no-referrer';
-    img.addEventListener('error', function () { el.textContent = fallback; });
-    img.src = st.favicon;
-    el.appendChild(img);
-    return el;
-  }
-
   function paintStations() {
     var list = $('radio-list');
-    var stations = radio.lists[radio.channel] || [];
+    var stations = radio.stations || [];
     list.innerHTML = '';
     if (!stations.length) {
       var none = document.createElement('li');
       none.className = 'fine';
-      none.textContent = 'Nothing on this channel is on air right now. Try another one.';
+      none.textContent = 'No food stations are on air right now. Try again in a little while.';
       list.appendChild(none);
       return;
     }
-    var channelId = radio.channel;
     stations.forEach(function (st, i) {
       var li = document.createElement('li');
       var btn = document.createElement('button');
@@ -8883,7 +8832,7 @@
       var art = document.createElement('span');
       art.className = 'station-art';
       art.setAttribute('aria-hidden', 'true');
-      stationArt(art, st, channelId);
+      mediaArt(art, st.favicon, st.emoji || '\u{1F4FB}');
 
       var text = document.createElement('span');
       text.className = 'station-text';
@@ -8903,10 +8852,11 @@
       btn.appendChild(text);
       btn.appendChild(state);
       btn.addEventListener('click', function () {
-        if (radio.playing && radio.playing.station.id === st.id) return toggleRadio();
+        if (!st.url) { Sound.reject(); return nudgeRadioSignin(); }
+        if (radio.playing && radio.playing.id === st.id) return toggleRadio();
         radio.skips = 0;
         delete radio.dead[st.id];
-        playStation(st, channelId);
+        playStation(st);
       });
       li.appendChild(btn);
       list.appendChild(li);
@@ -8917,13 +8867,15 @@
   function paintStationStates() {
     $$('#radio-list .station').forEach(function (btn) {
       var id = btn.dataset.station;
-      var current = radio.playing && radio.playing.station.id === id;
+      var current = radio.playing && radio.playing.id === id;
       var dead = !current && radio.dead[id];
       btn.classList.toggle('is-playing', !!current);
       btn.classList.toggle('is-dead', !!dead);
       var state = btn.querySelector('.station-state');
       state.innerHTML = '';
-      if (current && radio.state === 'live') {
+      if (!radio.withStreams) {
+        state.textContent = 'Sign in';
+      } else if (current && radio.state === 'live') {
         var dot = document.createElement('span');
         dot.className = 'live-dot';
         state.appendChild(dot);
@@ -8942,35 +8894,33 @@
 
   function paintRadioBar() {
     var bar = $('radio-bar');
-    var p = radio.playing;
-    bar.hidden = !p;
-    document.body.classList.toggle('has-radio', !!p);
-    if (!p) return;
-    var ch = radioChannel(p.channel);
+    var st = radio.playing;
+    bar.hidden = !st;
+    document.body.classList.toggle('has-radio', !!st);
+    if (!st) return;
     bar.classList.toggle('is-live', radio.state === 'live');
     bar.classList.toggle('is-paused', radio.state === 'paused' || radio.state === 'broken');
     bar.classList.toggle('is-broken', radio.state === 'broken');
-    var status = {
+    $('radio-bar-status').textContent = {
       tuning: 'Tuning in…',
-      live: '● Live' + (ch ? ' · ' + ch.title : ''),
+      live: '● Live · Food radio',
       paused: 'Paused',
       broken: 'Not answering — try another station',
     }[radio.state] || '';
-    $('radio-bar-status').textContent = status;
-    $('radio-bar-name').textContent = p.station.name;
+    $('radio-bar-name').textContent = st.name;
     var art = $('radio-bar-art');
-    if (art.dataset.station !== p.station.id) {
-      art.dataset.station = p.station.id;
-      stationArt(art, p.station, p.channel);
+    if (art.dataset.station !== st.id) {
+      art.dataset.station = st.id;
+      mediaArt(art, st.favicon, st.emoji || '\u{1F4FB}');
     }
-    var playing = radio.state === 'live' || radio.state === 'tuning';
-    $('radio-bar-toggle').setAttribute('aria-label', playing ? 'Pause' : 'Play');
+    var on = radio.state === 'live' || radio.state === 'tuning';
+    $('radio-bar-toggle').setAttribute('aria-label', on ? 'Pause' : 'Play');
   }
 
   function paintRadio() {
     paintRadioBar();
     paintStationStates();
-    if (view === 'radio') paintRadioResume();
+    if (view === 'radio' && media.tab === 'radio') paintRadioResume();
   }
 
   function armTuneTimer() {
@@ -8980,18 +8930,22 @@
     }, RADIO_TUNE_MS);
   }
 
-  function playStation(st, channelId) {
+  function radioOn() {
+    return !!radio.playing && (radio.state === 'live' || radio.state === 'tuning');
+  }
+
+  function playStation(st) {
     var audio = $('radio-audio');
-    radio.playing = { station: st, channel: channelId };
+    pauseTv();
+    radio.playing = st;
     radio.state = 'tuning';
     audio.src = st.url;
     var attempt = audio.play();
     if (attempt && attempt.catch) {
       attempt.catch(function (err) {
-        // Refused for want of a tap (a resumed station on a fresh load, say)
-        // is a pause, not a dead station. Anything else arrives through the
-        // element's own error event below.
-        if (err && err.name === 'NotAllowedError' && radio.playing && radio.playing.station.id === st.id) {
+        // Refused for want of a tap is a pause, not a dead station. Anything
+        // else arrives through the element's own error event below.
+        if (err && err.name === 'NotAllowedError' && radio.playing && radio.playing.id === st.id) {
           clearTimeout(radio.tuneTimer);
           radio.state = 'paused';
           paintRadio();
@@ -8999,8 +8953,8 @@
       });
     }
     armTuneTimer();
-    rememberRadio({ channel: channelId, station: st });
-    setRadioSession(st, channelId);
+    rememberMedia({ station: st });
+    setRadioSession(st);
     countRadioPlay(st.id);
     paintRadio();
   }
@@ -9008,7 +8962,7 @@
   function toggleRadio() {
     if (!radio.playing) return;
     var audio = $('radio-audio');
-    if (radio.state === 'live' || radio.state === 'tuning') {
+    if (radioOn()) {
       clearTimeout(radio.tuneTimer);
       audio.pause();
       radio.state = 'paused';
@@ -9017,9 +8971,10 @@
     }
     // Back on air, not back where it stopped: a live stream resumed from its
     // buffer is however many minutes behind it was paused for, for good.
+    pauseTv();
     radio.skips = 0;
     radio.state = 'tuning';
-    audio.src = radio.playing.station.url;
+    audio.src = radio.playing.url;
     var attempt = audio.play();
     if (attempt && attempt.catch) attempt.catch(function () {});
     armTuneTimer();
@@ -9041,35 +8996,30 @@
   }
 
   function nextStation() {
-    var p = radio.playing;
-    if (!p) return;
-    fetchStations(p.channel).then(function (list) {
-      if (!list.length || radio.playing !== p) return;
-      var at = -1;
-      for (var i = 0; i < list.length; i++) if (list[i].id === p.station.id) at = i;
-      var pick = null;
-      for (var step = 1; step <= list.length; step++) {
-        var cand = list[(at + step + list.length) % list.length];
-        if (cand.id !== p.station.id && !radio.dead[cand.id]) { pick = cand; break; }
-      }
-      if (!pick) {
-        radio.state = 'broken';
-        $('radio-audio').pause();
-        paintRadio();
-        return;
-      }
-      playStation(pick, p.channel);
-    }).catch(function () {
+    var current = radio.playing;
+    if (!current) return;
+    var list = (radio.stations || []).filter(function (st) { return st.url; });
+    var at = -1;
+    for (var i = 0; i < list.length; i++) if (list[i].id === current.id) at = i;
+    var pick = null;
+    for (var step = 1; step <= list.length; step++) {
+      var cand = list[(at + step + list.length) % list.length];
+      if (cand.id !== current.id && !radio.dead[cand.id]) { pick = cand; break; }
+    }
+    if (!pick) {
       radio.state = 'broken';
+      $('radio-audio').pause();
       paintRadio();
-    });
+      return;
+    }
+    playStation(pick);
   }
 
   function radioFailed() {
-    var p = radio.playing;
-    if (!p) return;
+    var current = radio.playing;
+    if (!current) return;
     clearTimeout(radio.tuneTimer);
-    radio.dead[p.station.id] = true;
+    radio.dead[current.id] = true;
     radio.skips += 1;
     if (radio.skips >= RADIO_MAX_SKIPS) {
       radio.state = 'broken';
@@ -9092,23 +9042,402 @@
   }
 
   // The phone's lock screen and the headset buttons, so the radio can be
-  // paused with greasy hands without unlocking anything.
-  function setRadioSession(st, channelId) {
+  // paused with floury hands without unlocking anything.
+  function setRadioSession(st) {
     if (!('mediaSession' in navigator) || typeof MediaMetadata === 'undefined') return;
     try {
-      var ch = radioChannel(channelId);
       navigator.mediaSession.metadata = new MediaMetadata({
         title: st.name,
-        artist: (ch ? ch.title + ' · ' : '') + 'Kitchen radio',
+        artist: 'Food radio',
         album: 'morsels45',
         artwork: st.favicon ? [{ src: st.favicon }] : [],
       });
     } catch (err) {}
   }
 
-  (function wireRadio() {
+  /* --------------------------------------------------------------- tv -- */
+
+  /*
+   * hls.js, because the channels are HLS and only Safari plays HLS from a
+   * bare <video>. Fetched the first time somebody presses play rather than
+   * with the app: half a megabyte nobody who never opens the TV should pay
+   * for. Pinned to an exact version with its hash, so the file that runs is
+   * the file that was checked.
+   */
+  var HLS_SRC = 'https://cdn.jsdelivr.net/npm/hls.js@1.6.13/dist/hls.min.js';
+  var HLS_SRI = 'sha384-z+tuLqMWl1/cPv7O+39RO0EURSNvorimpcCaMgeNwU+qFBx+AlUIl7jaAwg0cYil';
+  var TV_GUIDE_MS = 5 * 60 * 1000;
+
+  var tv = {
+    channels: null,
+    withStreams: null,
+    loading: false,
+    guide: {},        // channel id -> [{title, subtitle, start, stop}]
+    guideAt: 0,
+    guideLoading: false,
+    offset: 0,        // the server's clock minus this one
+    dead: {},
+    current: null,
+    hls: null,
+    hlsLoading: null,
+    recovered: 0,
+    ticker: null,
+  };
+
+  function tvNow() { return Date.now() + tv.offset; }
+
+  function clockTime(ms) {
+    try { return new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+    catch (err) { return new Date(ms).toTimeString().slice(0, 5); }
+  }
+
+  function renderTv() {
+    if (tv.channels && tv.withStreams !== premiumApi.status.signedIn) tv.channels = null;
+    startTvTicker();
+    if (!tv.channels) return loadTv();
+    // Already drawn (this runs again on every window focus, from
+    // syncPremium): bring it up to date in place rather than redraw it.
+    if ($$('#tv-list .tv-row').length === tv.channels.length) paintTvGuide();
+    else paintTv();
+    if (tv.withStreams && Date.now() - tv.guideAt > TV_GUIDE_MS) loadGuide();
+  }
+
+  function loadTv() {
+    if (tv.loading) return;
+    tv.loading = true;
+    $('tv-error').hidden = true;
+    $('tv-list').innerHTML = '';
+    $('tv-loading').hidden = false;
+    fetch('/api/tv', { headers: { Accept: 'application/json' } })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          if (!r.ok || !data.channels) throw new Error(data.error || 'tv ' + r.status);
+          return data;
+        });
+      })
+      .then(function (data) {
+        tv.loading = false;
+        tv.channels = data.channels;
+        tv.withStreams = !!data.signedIn;
+        $('tv-loading').hidden = true;
+        if (view === 'radio' && media.tab === 'tv') {
+          $('radio-signedout').hidden = !!data.signedIn;
+          paintTv();
+        }
+        if (tv.withStreams) loadGuide();
+      })
+      .catch(function () {
+        tv.loading = false;
+        $('tv-loading').hidden = true;
+        if (view === 'radio' && media.tab === 'tv') $('tv-error').hidden = false;
+      });
+  }
+
+  function loadGuide() {
+    if (tv.guideLoading) return;
+    tv.guideLoading = true;
+    fetch('/api/tv?guide=1', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        tv.guideLoading = false;
+        if (!data || !data.guide) return;
+        tv.guide = data.guide;
+        tv.guideAt = Date.now();
+        // Listings are in real time and this device's clock may not be.
+        if (typeof data.now === 'number') tv.offset = data.now - Date.now();
+        paintTvGuide();
+      })
+      .catch(function () { tv.guideLoading = false; });
+  }
+
+  // Keeps "now" moving while the list is open, and asks for fresh listings
+  // every few minutes. Does nothing at all when nobody is looking.
+  function startTvTicker() {
+    if (tv.ticker) return;
+    tv.ticker = setInterval(function () {
+      if (view !== 'radio' || media.tab !== 'tv' || document.hidden || !tv.channels) return;
+      if (tv.withStreams && Date.now() - tv.guideAt > TV_GUIDE_MS) loadGuide();
+      else paintTvGuide();
+    }, 30000);
+  }
+
+  function airing(id) {
+    var list = tv.guide[id] || [];
+    var now = tvNow();
+    var out = { now: null, next: null, later: [] };
+    for (var i = 0; i < list.length; i++) {
+      var p = list[i];
+      if (p.stop <= now) continue;
+      if (p.start <= now && !out.now) out.now = p;
+      else if (p.start > now) {
+        if (!out.next) out.next = p;
+        out.later.push(p);
+      }
+    }
+    return out;
+  }
+
+  function showLine(p) {
+    return p.title + (p.subtitle ? ' — ' + p.subtitle : '');
+  }
+
+  function paintTv() {
+    var list = $('tv-list');
+    list.innerHTML = '';
+    (tv.channels || []).forEach(function (ch, i) {
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'station tv-row';
+      btn.style.animationDelay = Math.min(i, 8) * 30 + 'ms';
+      btn.dataset.channel = ch.id;
+
+      var art = document.createElement('span');
+      art.className = 'station-art tv-art';
+      art.setAttribute('aria-hidden', 'true');
+      mediaArt(art, ch.logo, '\u{1F4FA}');
+
+      var text = document.createElement('span');
+      text.className = 'station-text';
+      var name = document.createElement('span');
+      name.className = 'station-name';
+      name.textContent = ch.name;
+      var now = document.createElement('span');
+      now.className = 'station-meta tv-now';
+      var next = document.createElement('span');
+      next.className = 'station-meta tv-next';
+      text.appendChild(name);
+      text.appendChild(now);
+      text.appendChild(next);
+
+      var state = document.createElement('span');
+      state.className = 'station-state';
+
+      btn.appendChild(art);
+      btn.appendChild(text);
+      btn.appendChild(state);
+      btn.addEventListener('click', function () {
+        if (!ch.stream) { Sound.reject(); return nudgeRadioSignin(); }
+        if (tv.current && tv.current.id === ch.id) {
+          var video = $('tv-video');
+          if (video.paused) startVideo(video);
+          return scrollToStage();
+        }
+        Sound.tick();
+        delete tv.dead[ch.id];
+        playTv(ch);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+    paintTvGuide();
+  }
+
+  // The parts that change as the clock moves, painted in place so the list
+  // does not re-animate every thirty seconds.
+  function paintTvGuide() {
+    $$('#tv-list .tv-row').forEach(function (btn) {
+      var id = btn.dataset.channel;
+      var ch = null;
+      (tv.channels || []).forEach(function (c) { if (c.id === id) ch = c; });
+      if (!ch) return;
+      var on = airing(id);
+      var nowEl = btn.querySelector('.tv-now');
+      var nextEl = btn.querySelector('.tv-next');
+      if (on.now) nowEl.textContent = 'Now: ' + showLine(on.now) + ' · until ' + clockTime(on.now.stop);
+      else if (!tv.withStreams) nowEl.textContent = 'Sign in to see what’s on';
+      else if (ch.hasGuide && !tv.guideAt) nowEl.textContent = 'Finding what’s on…';
+      else nowEl.textContent = 'Live now';
+      nextEl.textContent = on.next ? 'Next ' + clockTime(on.next.start) + ': ' + on.next.title : '';
+      nextEl.hidden = !on.next;
+
+      var current = tv.current && tv.current.id === id;
+      btn.classList.toggle('is-playing', !!current);
+      btn.classList.toggle('is-dead', !current && !!tv.dead[id]);
+      var state = btn.querySelector('.station-state');
+      state.innerHTML = '';
+      if (!tv.withStreams) state.textContent = 'Sign in';
+      else if (current) {
+        var dot = document.createElement('span');
+        dot.className = 'live-dot';
+        state.appendChild(dot);
+        state.appendChild(document.createTextNode('Watching'));
+      } else state.textContent = tv.dead[id] ? 'Off air' : 'Watch';
+      btn.setAttribute('aria-label', (current ? 'Watching ' : 'Watch ') + ch.name);
+    });
+    paintTvStage();
+  }
+
+  function paintTvStage() {
+    var ch = tv.current;
+    $('tv-stage').hidden = !ch;
+    if (!ch) return;
+    $('tv-stage-name').textContent = ch.name;
+    var on = airing(ch.id);
+    $('tv-stage-now').textContent = on.now
+      ? 'Now: ' + showLine(on.now) + ' · until ' + clockTime(on.now.stop)
+      : ch.hasGuide
+        ? 'Live now.'
+        : 'Live now. This channel does not publish listings we can read, so there is no schedule for it.';
+    var later = $('tv-later');
+    later.innerHTML = '';
+    on.later.slice(0, 5).forEach(function (p) {
+      var li = document.createElement('li');
+      var time = document.createElement('time');
+      time.dateTime = new Date(p.start).toISOString();
+      time.textContent = clockTime(p.start);
+      var title = document.createElement('span');
+      title.textContent = showLine(p);
+      li.appendChild(time);
+      li.appendChild(title);
+      later.appendChild(li);
+    });
+    later.hidden = !on.later.length;
+  }
+
+  function scrollToStage() {
+    try { $('tv-stage').scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (err) {}
+  }
+
+  function setTvOverlay(text) {
+    var el = $('tv-overlay');
+    el.textContent = text || '';
+    el.hidden = !text;
+  }
+
+  function loadHls() {
+    if (window.Hls) return Promise.resolve(window.Hls);
+    if (tv.hlsLoading) return tv.hlsLoading;
+    tv.hlsLoading = new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = HLS_SRC;
+      script.integrity = HLS_SRI;
+      script.crossOrigin = 'anonymous';
+      script.async = true;
+      script.onload = function () { window.Hls ? resolve(window.Hls) : reject(new Error('hls.js did not define Hls')); };
+      script.onerror = function () { tv.hlsLoading = null; reject(new Error('hls.js would not load')); };
+      document.head.appendChild(script);
+    });
+    return tv.hlsLoading;
+  }
+
+  function teardownTv() {
+    if (tv.hls) { try { tv.hls.destroy(); } catch (err) {} tv.hls = null; }
+    var video = $('tv-video');
+    video.pause();
+    video.removeAttribute('src');
+    try { video.load(); } catch (err) {}
+  }
+
+  function startVideo(video) {
+    var attempt = video.play();
+    if (attempt && attempt.catch) {
+      attempt.catch(function (err) {
+        if (!err || err.name !== 'NotAllowedError') return;
+        // The tap that chose the channel was spent waiting for the player to
+        // load. Every browser allows a muted start, so start muted and say so.
+        video.muted = true;
+        video.play()
+          .then(function () { setTvOverlay('Muted — tap the speaker to hear it'); })
+          .catch(function () { setTvOverlay('Press play to start'); });
+      });
+    }
+  }
+
+  function playTv(ch) {
+    if (radioOn()) toggleRadio();
+    teardownTv();
+    tv.current = ch;
+    tv.recovered = 0;
+    setTvOverlay('Tuning in…');
+    paintTvGuide();
+    scrollToStage();
+
+    var video = $('tv-video');
+    video.muted = false;
+    var nativeHls = !!video.canPlayType('application/vnd.apple.mpegurl');
+    var hasMse = !!(window.MediaSource || window.ManagedMediaSource);
+    // An iPhone without Media Source plays HLS itself and needs nothing loaded.
+    if (nativeHls && !hasMse) {
+      video.src = ch.stream;
+      return startVideo(video);
+    }
+    loadHls().then(function (Hls) {
+      if (tv.current !== ch) return;
+      if (!Hls.isSupported()) {
+        if (nativeHls) { video.src = ch.stream; return startVideo(video); }
+        return tvFailed('This browser cannot play live TV.', true);
+      }
+      var hls = new Hls({ maxBufferLength: 20, capLevelToPlayerSize: true });
+      tv.hls = hls;
+      hls.on(Hls.Events.ERROR, function (event, data) {
+        if (!data || !data.fatal || tv.hls !== hls) return;
+        // The channel is fine; this browser cannot decode its video (H.264
+        // and AAC — some Linux builds ship without them). Saying the channel
+        // is off air would send them hunting through channels that will all
+        // fail the same way.
+        if (data.details === Hls.ErrorDetails.MANIFEST_INCOMPATIBLE_CODECS_ERROR ||
+            data.details === Hls.ErrorDetails.BUFFER_ADD_CODEC_ERROR ||
+            data.details === Hls.ErrorDetails.BUFFER_INCOMPATIBLE_CODECS_ERROR) {
+          return tvFailed('This browser cannot play the video format these channels use. Chrome, Safari, Edge or Firefox on a phone or a Mac will.', true);
+        }
+        // One recovery of each kind, then call it: a channel that is down
+        // should say so, not spin.
+        if (tv.recovered < 2 && data.type === Hls.ErrorTypes.NETWORK_ERROR) { tv.recovered += 1; hls.startLoad(); return; }
+        if (tv.recovered < 2 && data.type === Hls.ErrorTypes.MEDIA_ERROR) { tv.recovered += 1; hls.recoverMediaError(); return; }
+        tvFailed();
+      });
+      hls.on(Hls.Events.MANIFEST_PARSED, function () { startVideo(video); });
+      hls.loadSource(ch.stream);
+      hls.attachMedia(video);
+    }).catch(function () {
+      if (tv.current === ch) tvFailed('The video player would not load. Check your connection and try again.', true);
+    });
+  }
+
+  function tvFailed(message, notTheChannel) {
+    var ch = tv.current;
+    if (!ch) return;
+    teardownTv();
+    if (!notTheChannel) tv.dead[ch.id] = true;
+    setTvOverlay(message || 'This channel is not answering right now — free channels come and go. Try another.');
+    paintTvGuide();
+  }
+
+  function closeTv() {
+    teardownTv();
+    tv.current = null;
+    setTvOverlay('');
+    paintTvGuide();
+  }
+
+  function pauseTv() {
+    var video = $('tv-video');
+    if (video && !video.paused) video.pause();
+  }
+
+  // Leaving the TV — another tab, another section. Paused rather than closed,
+  // so coming back is a tap on play; left alone in picture-in-picture, which
+  // is exactly how somebody watches while they read the recipe.
+  function leaveTv() {
+    var video = $('tv-video');
+    if (!video || !tv.current) return;
+    if (document.pictureInPictureElement === video) return;
+    pauseTv();
+  }
+
+  (function wireMedia() {
     var audio = $('radio-audio');
-    if (!audio) return;
+    var video = $('tv-video');
+    if (!audio || !video) return;
+
+    $$('.media-tabs .filter').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        Sound.tick();
+        showMediaTab(btn.dataset.tab);
+      });
+    });
+
     audio.addEventListener('playing', function () {
       if (!radio.playing) return;
       clearTimeout(radio.tuneTimer);
@@ -9135,31 +9464,51 @@
       radioFailed();
     });
 
+    video.addEventListener('playing', function () {
+      if (!video.muted) setTvOverlay('');
+      else if ($('tv-overlay').textContent === 'Tuning in…') setTvOverlay('');
+      if (radioOn()) toggleRadio();
+    });
+    video.addEventListener('volumechange', function () {
+      if (!video.muted && /^Muted/.test($('tv-overlay').textContent)) setTvOverlay('');
+    });
+    video.addEventListener('waiting', function () {
+      if (tv.current && !video.paused) setTvOverlay('Buffering…');
+    });
+    // Native playback (Safari) reports a dead stream here; hls.js reports
+    // through its own error event above.
+    video.addEventListener('error', function () {
+      if (tv.current && !tv.hls && video.getAttribute('src')) tvFailed();
+    });
+
+    $('tv-close').addEventListener('click', closeTv);
+    $('tv-retry').addEventListener('click', function () { tv.channels = null; loadTv(); });
+
     $('radio-bar-toggle').addEventListener('click', toggleRadio);
     $('radio-bar-next').addEventListener('click', function () { radio.skips = 0; nextStation(); });
     $('radio-bar-close').addEventListener('click', stopRadio);
     $('radio-bar-info').addEventListener('click', function () {
       leaveEndless();
       hideLanding();
+      if (view === 'radio') return showMediaTab('radio');
+      media.tab = 'radio';
       setView('radio');
     });
     $('radio-retry').addEventListener('click', function () {
-      $('radio-error').hidden = true;
-      if (!radio.channels) return loadRadioLineup();
-      if (radio.channel) { delete radio.lists[radio.channel]; openRadioChannel(radio.channel); }
+      radio.stations = null;
+      loadRadio();
     });
     $('radio-resume').addEventListener('click', function () {
-      var mem = radioMemory();
-      if (!mem.station || !radioChannel(mem.channel)) return;
+      var mem = mediaMemory();
+      if (!mem.station || !mem.station.url) return;
       radio.skips = 0;
-      playStation(mem.station, mem.channel);
-      if (radio.channel !== mem.channel) openRadioChannel(mem.channel);
+      playStation(mem.station);
     });
 
     if ('mediaSession' in navigator) {
       try {
-        navigator.mediaSession.setActionHandler('play', function () { if (radio.state !== 'live') toggleRadio(); });
-        navigator.mediaSession.setActionHandler('pause', function () { if (radio.state === 'live' || radio.state === 'tuning') toggleRadio(); });
+        navigator.mediaSession.setActionHandler('play', function () { if (!radioOn()) toggleRadio(); });
+        navigator.mediaSession.setActionHandler('pause', function () { if (radioOn()) toggleRadio(); });
         navigator.mediaSession.setActionHandler('nexttrack', function () { radio.skips = 0; nextStation(); });
         navigator.mediaSession.setActionHandler('stop', stopRadio);
       } catch (err) {}
@@ -13375,8 +13724,11 @@
     else if (go === 'profile') { hideLanding(); setView('profile'); highlightInvite(); }
     // Where #daily-signin sends somebody back to, for the same reason.
     else if (go === 'daily') { hideLanding(); setView('daily'); }
-    // Where #radio-signin sends somebody back to.
+    // Where #radio-signin sends somebody back to, on whichever tab they
+    // were on; ?go=tv and ?go=listen pick the tab outright.
     else if (go === 'radio') { hideLanding(); setView('radio'); }
+    else if (go === 'tv') { hideLanding(); media.tab = 'tv'; setView('radio'); }
+    else if (go === 'listen') { hideLanding(); media.tab = 'radio'; setView('radio'); }
 
     /*
      * ?prompt= — see a prompt now, instead of playing until one is due.

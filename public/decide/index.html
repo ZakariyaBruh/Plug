@@ -646,7 +646,7 @@
 <audio id="radio-audio" preload="none"></audio>
 <div class="radio-bar" id="radio-bar" role="region" aria-label="Radio player" hidden>
   <span class="radio-bar-art" id="radio-bar-art" aria-hidden="true"></span>
-  <button class="radio-bar-info" id="radio-bar-info" type="button" title="Open Kitchen radio">
+  <button class="radio-bar-info" id="radio-bar-info" type="button" title="Open Food radio">
     <span class="radio-bar-status" id="radio-bar-status">Tuning in&hellip;</span>
     <span class="radio-bar-name" id="radio-bar-name"></span>
   </button>
@@ -673,7 +673,7 @@
       <li><button class="rail-link" data-view="nearby">Nearby</button></li>
       <li><button class="rail-link" data-view="chat">Ask</button></li>
       <li><button class="rail-link" data-view="news">News</button></li>
-      <li><button class="rail-link" data-view="radio">Radio</button></li>
+      <li><button class="rail-link" data-view="radio">TV &amp; radio</button></li>
       <li><button class="rail-link" data-view="daily">Daily</button></li>
       <li><button class="rail-link" data-view="profile">Profile</button></li>
     </ul>
@@ -1816,75 +1816,120 @@
       </div>
     </section>
 
-    <!-- ------------------------- RADIO ------------------------- -->
+    <!-- ------------------------- TV & RADIO ------------------------- -->
     <!-- ===============================================================
-         KITCHEN RADIO — live stations to cook and eat to. Free with an
-         account, like the daily three; see lib/radio.ts for where the
-         stations come from and why the channels are what they are.
+         FOOD TV AND FOOD RADIO — free with an account, like the daily
+         three. lib/tv.ts and lib/radio.ts say where each comes from.
 
-         The channels are drawn for everybody, signed in or not: "sign in
-         for radio" with nothing to look at is an ask, and twelve named
-         channels are a reason. Only the stations behind them need the
-         account.
+         Twelve of each at most, and food only. The first radio had a
+         hundred and twenty stations in twelve channels; a list that long is
+         a list nobody chooses from.
 
-         The player is not in here. It is #radio-bar, outside every view,
-         so it carries on while you go and look up the recipe — which is
-         the point of a radio in a cooking app.
+         The names are drawn for everybody, signed in or not: "sign in for
+         TV" with nothing to look at is an ask, and BBC Food and Hell's
+         Kitchen on a list is a reason. Only the streams and the listings
+         need the account.
+
+         The radio player is not in here. It is #radio-bar, outside every
+         view, so it carries on while you go and look up the recipe. The TV
+         stays here — a picture nobody can see is just noise — and pauses
+         when you leave, unless it is in picture-in-picture.
          =============================================================== -->
-    <section class="view" id="view-radio" aria-label="Kitchen radio">
+    <section class="view" id="view-radio" aria-label="Food TV and radio">
       <header class="head">
         <p class="mechanic">Free with an account</p>
-        <h1 class="head-title">Kitchen radio</h1>
-        <p class="head-sub">Live stations to cook and eat to &mdash; dinner lounges,
-        coffee-bar mornings, and the radio of whichever country is in the pan tonight.
-        It keeps playing while you look up the recipe.</p>
+        <h1 class="head-title">Food TV &amp; radio</h1>
+        <p class="head-sub">Free food channels with what&rsquo;s on now and next, and a dozen
+        radio stations made for the kitchen and the table. The radio keeps playing while you
+        look up the recipe.</p>
       </header>
 
       <div class="radio-signin" id="radio-signedout" hidden>
-        <p class="fine">Radio comes free with an account &mdash; not Premium, just signed in.
-        Pick a channel below once you are in.</p>
+        <p class="fine">TV and radio come free with an account &mdash; not Premium, just
+        signed in.</p>
         <!-- target="_top": see the note on #invite-signin. -->
         <a class="go go-sm" id="radio-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dradio" target="_top">
-          <span class="go-label">Sign in with Whop to listen</span>
+          <span class="go-label">Sign in with Whop to watch and listen</span>
         </a>
       </div>
 
-      <!-- Painted from this device's memory of the last station played: one
-           tap back to "the radio" rather than the radio's menu. -->
-      <p class="radio-resume" id="radio-resume-wrap" hidden>
-        <button class="quiet" id="radio-resume" type="button"></button>
-      </p>
-
-      <h2 class="strip-title radio-group">Made for the table</h2>
-      <div class="filters radio-channels" id="radio-table" role="group" aria-label="Channels made for the table"></div>
-      <h2 class="strip-title radio-group">Cook the world</h2>
-      <div class="filters radio-channels" id="radio-world" role="group" aria-label="Channels by cuisine"></div>
-
-      <p class="radio-blurb" id="radio-blurb" hidden></p>
-
-      <div class="out-loading" id="radio-loading" hidden>
-        <div class="bone bone-row"></div>
-        <div class="bone bone-row"></div>
-        <div class="bone bone-row"></div>
-        <p class="fine">Tuning in&hellip;</p>
+      <div class="filters media-tabs" role="tablist" aria-label="TV or radio">
+        <button class="filter" id="tab-tv" data-tab="tv" role="tab" type="button">&#x1F4FA; Food TV</button>
+        <button class="filter" id="tab-radio" data-tab="radio" role="tab" type="button">&#x1F4FB; Food radio</button>
       </div>
 
-      <ul class="stations" id="radio-list"></ul>
-
-      <div class="notice" id="radio-error" hidden>
-        <p>The radio directory is not answering just now.</p>
-        <p class="fine">It is a free, volunteer-run directory and it has the odd bad minute.
-        Nothing is wrong at your end.</p>
-        <div class="locate-actions">
-          <button class="quiet" id="radio-retry" type="button">Try again</button>
+      <!-- ---------- TV ---------- -->
+      <div class="media-pane" id="tv-pane" role="tabpanel" aria-labelledby="tab-tv">
+        <div class="tv-stage" id="tv-stage" hidden>
+          <div class="tv-frame">
+            <video id="tv-video" playsinline controls preload="none"></video>
+            <p class="tv-overlay" id="tv-overlay" hidden></p>
+          </div>
+          <div class="tv-stage-head">
+            <div class="tv-stage-text">
+              <p class="tv-stage-name" id="tv-stage-name"></p>
+              <p class="fine" id="tv-stage-now"></p>
+            </div>
+            <button class="quiet" id="tv-close" type="button">Close</button>
+          </div>
+          <ol class="tv-later" id="tv-later"></ol>
         </div>
+
+        <div class="out-loading" id="tv-loading" hidden>
+          <div class="bone bone-row"></div>
+          <div class="bone bone-row"></div>
+          <div class="bone bone-row"></div>
+          <p class="fine">Finding what&rsquo;s on&hellip;</p>
+        </div>
+        <ul class="stations" id="tv-list"></ul>
+        <div class="notice" id="tv-error" hidden>
+          <p>The channel list would not load.</p>
+          <div class="locate-actions">
+            <button class="quiet" id="tv-retry" type="button">Try again</button>
+          </div>
+        </div>
+        <p class="fine radio-foot">Channels from
+        <a href="https://github.com/iptv-org/iptv" target="_blank" rel="noopener noreferrer">iptv-org</a>,
+        the open database of free TV, and only the food ones whose own streams play here. What&rsquo;s
+        on comes from each channel&rsquo;s published listings, found through
+        <a href="https://github.com/iptv-org/epg" target="_blank" rel="noopener noreferrer">iptv-org/epg</a>;
+        a channel can run a few minutes off them. They are free, ad-supported channels &mdash;
+        the adverts are theirs, not ours.</p>
       </div>
 
-      <p class="fine radio-foot">Stations come from
-      <a href="https://www.radio-browser.info/" target="_blank" rel="noopener noreferrer">Radio Browser</a>,
-      a free community directory. Each one streams straight from its own broadcaster to you;
-      morsels45 hosts none of them and puts nothing over them, though a station may run its
-      own adverts.</p>
+      <!-- ---------- RADIO ---------- -->
+      <div class="media-pane" id="radio-pane" role="tabpanel" aria-labelledby="tab-radio" hidden>
+        <!-- Painted from this device's memory of the last station played: one
+             tap back to "the radio" rather than the list. -->
+        <p class="radio-resume" id="radio-resume-wrap" hidden>
+          <button class="quiet" id="radio-resume" type="button"></button>
+        </p>
+
+        <div class="out-loading" id="radio-loading" hidden>
+          <div class="bone bone-row"></div>
+          <div class="bone bone-row"></div>
+          <div class="bone bone-row"></div>
+          <p class="fine">Tuning in&hellip;</p>
+        </div>
+
+        <ul class="stations" id="radio-list"></ul>
+
+        <div class="notice" id="radio-error" hidden>
+          <p>The radio directory is not answering just now.</p>
+          <p class="fine">It is a free, volunteer-run directory and it has the odd bad minute.
+          Nothing is wrong at your end.</p>
+          <div class="locate-actions">
+            <button class="quiet" id="radio-retry" type="button">Try again</button>
+          </div>
+        </div>
+
+        <p class="fine radio-foot">Stations come from
+        <a href="https://www.radio-browser.info/" target="_blank" rel="noopener noreferrer">Radio Browser</a>,
+        a free community directory, and every one is named for eating &mdash; dinner lounges,
+        restaurant and coffee-bar channels, a barbecue station. Each streams straight from its own
+        broadcaster to you; morsels45 hosts none of them and puts nothing over them, though a
+        station may run its own adverts.</p>
+      </div>
     </section>
 
     <!-- Feeding people: its own section, because writing a menu is a thing you
