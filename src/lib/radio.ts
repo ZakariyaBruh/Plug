@@ -156,7 +156,10 @@ function playable(raw: Raw): raw is Required<Raw> {
 function toStation(raw: Required<Raw>, emoji: string): Station {
   return {
     id: raw.stationuuid,
-    name: raw.name.trim().replace(/\s+/g, ' ').slice(0, 80),
+    // "0R - RESTAURANT LOUNGE || Lounge, Jazz, Chill, Soft" and "90s90s
+    // Dinnerparty | aac 64k": the name is the part before the bar, and the
+    // rest is a genre list or a bitrate that the row already shows.
+    name: (raw.name.split('|')[0].trim() || raw.name.trim()).replace(/\s+/g, ' ').slice(0, 80),
     url: raw.url_resolved,
     // An http:// favicon is mixed content on this page; better the emoji.
     favicon: raw.favicon?.startsWith('https://') ? raw.favicon : '',
