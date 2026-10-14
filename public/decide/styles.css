@@ -5656,3 +5656,85 @@ details.hub-prep:not([open]) > summary::after { content: ' \25B8'; }
    which turned the background white under light text. */
 .go.go-alt:hover { background: var(--amber-dim); color: var(--ink); }
 .go.go-alt:hover .landing-quick-sub { color: var(--ink-2); }
+
+/* --- text size (the Aa button) --- */
+html.text-lg { font-size: 115%; }
+html.text-xl { font-size: 130%; }
+.topbar-text {
+  display: inline-flex; align-items: baseline; gap: .05rem;
+  min-width: var(--tap); justify-content: center;
+  border: 1px solid var(--hair-lit); border-radius: .5rem; background: none;
+  color: var(--ink); font-family: var(--display); font-weight: 700; cursor: pointer;
+}
+.topbar-text-small { font-size: .8em; }
+.topbar-text-big { font-size: 1.15em; }
+.topbar-text.is-on { border-color: var(--amber); color: var(--amber); }
+
+/* --- the top bar on a phone ---
+   Brand, Aa, Premium and the account name have to share 360px, at any of
+   the three text sizes. A long name is cut short with "…" (the full name is
+   its tooltip and on /account). Once someone has Premium, the account label
+   already says so, so the Premium link steps out of the way. And at the two
+   bigger sizes the 45 mark alone stands for the name. */
+.topbar-account-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+@media (max-width: 34rem) {
+  .topbar { padding: 0 var(--s3); gap: var(--s2); }
+  .topbar-nav { gap: var(--s2); min-width: 0; }
+  .topbar-link { padding: var(--s1) var(--s2); }
+  .topbar-account { min-width: 0; max-width: 11rem; }
+  .topbar-account-name { max-width: 7rem; }
+  body.is-premium .topbar-premium { display: none; }
+  html.text-lg .topbar-brand .mark-word,
+  html.text-xl .topbar-brand .mark-word { display: none; }
+}
+
+/* --- nothing wider than the phone, at any text size ---
+   A grid's one automatic column is as wide as its widest child will go, and
+   a <select> will not go narrower than its longest option, so at the largest
+   text size "Empty lunches and dinners" pushed the whole planner off the
+   right of a phone. Columns that cannot be pushed, and landing links that may
+   wrap onto a second line rather than run off the screen. */
+.hub-body, .hub-ai, .hub-ai-out { grid-template-columns: minmax(0, 1fr); }
+.hub-select { min-width: 0; text-overflow: ellipsis; }
+.landing-actions .landing-plain { flex: 0 1 auto; min-width: 0; max-width: 100%; text-align: left; }
+.appfoot-nav a { max-width: 100%; }
+/* The footer's rail offset (.appfoot, above) comes later in this file than
+   the phone override that zeroes it, so on a phone it won: the footer kept a
+   13rem left margin with no rail beside it, and its links were squeezed into
+   a sliver down the right-hand edge. Restated here, after both. */
+@media (max-width: 60rem) {
+  .appfoot { margin-left: 0; }
+}
+
+/* --- Help: every section in plain words --- */
+.help-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr)); gap: var(--s3); }
+.help-card {
+  display: grid; grid-template-rows: auto 1fr auto auto; gap: var(--s2); min-width: 0;
+  padding: var(--s4); border: 1px solid var(--hair-lit); border-radius: .875rem; background: var(--char);
+}
+.help-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+.help-icon { font-size: 1.6rem; line-height: 1; }
+.help-name { margin: 0; font-family: var(--display); font-weight: 700; font-size: var(--t-md); }
+.help-tier {
+  margin-left: auto; padding: .15rem .55rem; border: 1px solid var(--hair-lit); border-radius: 999px;
+  font-size: var(--t-xs); color: var(--ink-2); white-space: nowrap;
+}
+.help-tier.is-premium { border-color: var(--amber); color: var(--amber); }
+.help-tier.is-yours { border-color: #2e9d5b; color: #3cbf72; }
+[data-theme="paper"] .help-tier.is-yours { color: #1f7a44; }
+.help-what { margin: 0; line-height: 1.6; }
+.help-extra { margin: 0; color: var(--ink-2); font-size: var(--t-sm); line-height: 1.55; }
+.help-open {
+  justify-self: start; margin-top: var(--s1); min-height: var(--tap); padding: .5rem 1rem;
+  border: 1px solid var(--amber); border-radius: .625rem; background: none;
+  color: var(--amber); font: inherit; font-weight: 600; cursor: pointer;
+}
+.help-open:hover, .help-open:focus-visible { background: var(--amber); color: #000; outline: none; }
+.help-words { margin: 0; display: grid; gap: var(--s3); }
+.help-words dt { font-weight: 700; }
+.help-words dd { margin: .15rem 0 0; color: var(--ink-2); line-height: 1.6; }
+.help-stuck { display: grid; gap: var(--s2); line-height: 1.6; }
+.help-stuck a { color: var(--amber); }
+@media (max-width: 30rem) {
+  .help-tier { margin-left: 0; flex-basis: auto; }
+}

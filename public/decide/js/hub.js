@@ -2405,6 +2405,124 @@
   }
 
   /* ====================================================================
+   * HELP (#view-help)
+   *
+   * Every section of the app in a sentence anybody can follow, what it
+   * costs, and a button that goes there. Written for somebody who has never
+   * used an app like this and does not want to find out by tapping things:
+   * no feature names that only make sense once you know them, and every word
+   * on the screen that might stop someone explained at the bottom.
+   *
+   * The price line on each card reads the visitor's own status, so a
+   * signed-in visitor is told "you have this" rather than "free with an
+   * account" about something they already have.
+   * ==================================================================== */
+
+  var HELP_SECTIONS = [
+    { view: 'decide', icon: '\u{1F3B2}', name: 'Decide', tier: 'free',
+      what: 'Can’t decide what to eat? Answer a few easy questions — just tap the one you like more — and it picks a dish for you. In a hurry? “Tonight’s pick” gives you an answer with no questions at all.' },
+    { view: 'dishes', icon: '\u{1F4D6}', name: 'Dishes', tier: 'free',
+      what: 'Every dish in the app. Look through them, or search for one by name, and tap one to see what it is and how to make it.' },
+    { view: 'planner', icon: '\u{1F5D3}️', name: 'Meal planner', tier: 'account', extra: 'The shopping list, healthy-week check, costs and dinner-party planner are Premium.',
+      what: 'Plan breakfast, lunch, dinner and a snack for each day of the week. It is saved to your account, so it is the same on your phone and your computer.' },
+    { view: 'kitchen', icon: '\u{1F373}', name: 'Recipes & kitchen', tier: 'mixed', extra: 'Kitchen timers and “In season” are free with an account. Your recipes and the fridge photo are Premium.',
+      what: 'Keep your own recipes safe — type them in, or take a photo of a recipe card or cookbook page. Copy a recipe from any website without the adverts. See what you can cook from a photo of your fridge. Set kitchen timers.' },
+    { view: 'scan', icon: '\u{1F4F7}', name: 'Scan food', tier: 'premium',
+      what: 'Point your phone’s camera at the barcode on a packet, tin or bottle. It tells you in plain words how healthy it is — a healthy choice, fine now and then, or best as a treat.' },
+    { view: 'menu', icon: '\u{1F37D}️', name: 'Menu', tier: 'free',
+      what: 'Having people over? It writes a menu of five courses that go well together — something to nibble, a starter, a main, a pudding and something to finish.' },
+    { view: 'nearby', icon: '\u{1F4CD}', name: 'Nearby', tier: 'free',
+      what: 'Places to eat close to where you are. It asks to use your location for that one search, and does not keep it.' },
+    { view: 'chat', icon: '\u{1F4AC}', name: 'Ask', tier: 'free', extra: 'Three questions a day are free. Premium has no limit.',
+      what: 'Ask any food question in your own words, the way you would ask a friend — “what can I make with eggs and spinach?”' },
+    { view: 'news', icon: '\u{1F4F0}', name: 'News', tier: 'free', extra: 'Premium adds a short summary of the day’s food news at the top.',
+      what: 'The latest food stories from newspapers and food websites.' },
+    { view: 'radio', icon: '\u{1F4FA}', name: 'TV & radio', tier: 'account',
+      what: 'Free food TV channels — cooking shows and more — with what is on now and next. And radio stations to listen to while you cook.' },
+    { view: 'daily', icon: '☀️', name: 'Daily', tier: 'account',
+      what: 'A one-minute check-in each day: how you are feeling, one good thing, and a food question everybody gets the same day.' },
+    { view: 'profile', icon: '\u{1F464}', name: 'Profile', tier: 'free',
+      what: 'Your settings. Tell it what you do not eat — vegetarian, no pork, no nuts and so on — and it never suggests those again.' }
+  ];
+
+  var HELP_WORDS = [
+    ['Premium', 'The paid version of the app. The first seven days are free. If you cancel before they are up, you pay nothing.'],
+    ['Free with an account', 'Free, but you need to sign in, so the app can keep your things safe and show them on all your devices. Tap “Sign in” at the top.'],
+    ['Whop', 'The company morsels45 uses for signing in and payments. If you do not have a Whop account, you can make one with your email address in a minute.'],
+    ['Shared browser', 'A web page two people can use at the same time, each on their own phone — to order a takeaway or fill a supermarket basket together. It is Premium.'],
+    ['Barcode', 'The black stripes with numbers underneath, printed on almost every packet. Scan food reads it.'],
+    ['Nutri-Score', 'A letter from A (the healthiest) to E (the least healthy) that many food packets have. Scan food uses it when the product has one.'],
+    ['Ultra-processed', 'Made mostly in a factory, with ingredients you would not have in your own kitchen. Fine sometimes, but best not every day.'],
+    ['AI', 'A computer program that can read and write. Here it helps plan your week, read recipes from photos and answer questions. It can make mistakes, so always check anything to do with allergies yourself.'],
+    ['XP and streaks', 'Points you collect for using the app, and how many days in a row you have used it. Just for fun.']
+  ];
+
+  function helpTier(section) {
+    var inNow = signedIn(), plusNow = plus();
+    if (section.tier === 'free') return { text: 'Free', cls: 'is-free' };
+    if (section.tier === 'account') return inNow ? { text: 'Free — you have this', cls: 'is-yours' } : { text: 'Free with an account', cls: 'is-account' };
+    if (section.tier === 'premium') return plusNow ? { text: 'Premium — you have this', cls: 'is-yours' } : { text: 'Premium', cls: 'is-premium' };
+    if (plusNow) return { text: 'You have all of it', cls: 'is-yours' };
+    return { text: 'Some free, some Premium', cls: 'is-mixed' };
+  }
+
+  function renderHelp() {
+    var root = M.$('view-help');
+    if (!root) return;
+    clear(root);
+    root.appendChild(head('Help', 'How to use morsels45',
+      'Everything this app can do, in plain words. Tap “Open” on any of them to go straight there. You can come back to this page any time — it is “Help”, at the end of the menu.'));
+    var body = el('div', { class: 'hub-body help' });
+    root.appendChild(body);
+
+    body.appendChild(howTo([
+      'To get an idea for a meal, tap “Decide” in the menu, then the big “Decide for me” button. Tap the answer you like more each time, and it picks a dish.',
+      'To plan your week, keep recipes, or watch food TV, sign in first. It is free: tap “Sign in” at the top of the screen.',
+      'If the writing is too small, tap the “Aa” button at the top. Tap it again to make it bigger still, and a third time to go back to normal.',
+      'Nothing you tap can break anything. If you get lost, tap “Help” in the menu to come back here.'
+    ], 'Start here'));
+
+    body.appendChild(el('h2', { class: 'strip-title', text: 'What each part does' }));
+    body.appendChild(el('div', { class: 'help-grid' }, HELP_SECTIONS.map(function (s) {
+      var t = helpTier(s);
+      return el('article', { class: 'help-card' }, [
+        el('div', { class: 'help-card-head' }, [
+          el('span', { class: 'help-icon', 'aria-hidden': 'true', text: s.icon }),
+          el('h3', { class: 'help-name', text: s.name }),
+          el('span', { class: 'help-tier ' + t.cls, text: t.text })
+        ]),
+        el('p', { class: 'help-what', text: s.what }),
+        s.extra ? el('p', { class: 'help-extra', text: s.extra }) : null,
+        el('button', {
+          class: 'help-open',
+          type: 'button',
+          'aria-label': 'Open ' + s.name,
+          on: { click: function () { Sound.tick(); M.setView(s.view); } }
+        }, ['Open ' + s.name, el('span', { 'aria-hidden': 'true', text: ' ›' })])
+      ]);
+    })));
+
+    body.appendChild(el('h2', { class: 'strip-title', text: 'Words you might see' }));
+    body.appendChild(el('dl', { class: 'help-words' }, HELP_WORDS.reduce(function (out, w) {
+      out.push(el('dt', { text: w[0] }), el('dd', { text: w[1] }));
+      return out;
+    }, [])));
+
+    body.appendChild(el('h2', { class: 'strip-title', text: 'Still stuck?' }));
+    body.appendChild(el('div', { class: 'help-stuck' }, [
+      el('p', { text: 'If something does not look right, try closing the app and opening it again — that fixes most things.' }),
+      el('p', {}, [
+        'The answers to the questions people ask most are on ',
+        // target="_top": see the note on #invite-signin in index.html.
+        el('a', { href: '/faq', target: '_top', text: 'the questions page' }),
+        '. What Premium includes, and what it costs, is on ',
+        el('a', { href: '/premium', target: '_top', text: 'the Premium page' }),
+        '.'
+      ])
+    ]));
+  }
+
+  /* ====================================================================
    * WIRING
    * ==================================================================== */
 
@@ -2431,6 +2549,7 @@
       else if (name === 'kitchen') renderKitchen();
       else if (name === 'scan') renderScanView();
       else if (name === 'news') renderBriefing();
+      else if (name === 'help') renderHelp();
     },
     // Called whenever the account status is checked again, which is on
     // every window focus. Only a change of tier redraws anything: redrawing
@@ -2443,7 +2562,7 @@
       lastTier = now;
       if (changedAccount) { plan.data = null; plan.loadedFor = null; cookbook.list = null; }
       var v = M.currentView();
-      if (v === 'planner' || v === 'kitchen' || v === 'scan' || v === 'news') window.M45Hub.onView(v);
+      if (v === 'planner' || v === 'kitchen' || v === 'scan' || v === 'news' || v === 'help') window.M45Hub.onView(v);
     }
   };
 
@@ -2452,5 +2571,5 @@
   ensureTicker();
   // Opened before this file had loaded — ?go=planner at boot, say.
   var opened = M.currentView();
-  if (opened === 'planner' || opened === 'kitchen' || opened === 'scan' || opened === 'news') window.M45Hub.onView(opened);
+  if (opened === 'planner' || opened === 'kitchen' || opened === 'scan' || opened === 'news' || opened === 'help') window.M45Hub.onView(opened);
 })();

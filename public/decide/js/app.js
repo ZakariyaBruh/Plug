@@ -1746,6 +1746,40 @@
 
   $('beam-close').addEventListener('click', closeBeam);
 
+  /*
+   * TEXT SIZE. Normal, large, larger — one tap each, round again to normal.
+   * Remembered on this device; applied before first paint by the line in
+   * <head>. It scales rem, which is what nearly everything is sized in, so
+   * the layout grows with the text rather than the text spilling out of it.
+   */
+  var TEXT_SIZES = ['', 'lg', 'xl'];
+  var TEXT_NAMES = { '': 'normal', lg: 'large', xl: 'larger' };
+  function paintTextSize(size) {
+    var btn = $('topbar-text');
+    if (!btn) return;
+    btn.setAttribute('aria-label', 'Text size: ' + TEXT_NAMES[size] + '. Tap for ' + (size === 'xl' ? 'normal' : 'bigger') + ' text.');
+    btn.classList.toggle('is-on', !!size);
+  }
+  (function () {
+    var current = '';
+    try { current = localStorage.getItem('m45-text') || ''; } catch (err) {}
+    if (TEXT_SIZES.indexOf(current) === -1) current = '';
+    paintTextSize(current);
+    var btn = $('topbar-text');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var next = TEXT_SIZES[(TEXT_SIZES.indexOf(current) + 1) % TEXT_SIZES.length];
+      document.documentElement.classList.remove('text-lg', 'text-xl');
+      if (next) document.documentElement.classList.add('text-' + next);
+      try { if (next) localStorage.setItem('m45-text', next); else localStorage.removeItem('m45-text'); } catch (err) {}
+      current = next;
+      paintTextSize(next);
+      Sound.tick();
+      toast('Aa', next ? 'Bigger text' : 'Normal text', next ? 'Tap Aa again for ' + (next === 'lg' ? 'even bigger' : 'normal size') + '.' : 'Tap Aa any time to make it bigger.');
+      measureStack();
+    });
+  })();
+
   // The hub's sections, straight from the landing screen.
   $$('[data-landing-view]').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -8353,12 +8387,19 @@
     if (account) {
       account.classList.toggle('is-premium', !!status.hasPremium);
       if (status.signedIn) {
-        account.textContent = status.hasPremium
-          ? (status.username || 'Account') + ' · Premium'
-          : status.username || 'Account';
+        // In two parts so a phone can cut a long name short with "…" and
+        // still show it is Premium (see .topbar-account-name).
+        var name = document.createElement('span');
+        name.className = 'topbar-account-name';
+        name.textContent = status.username || 'Account';
+        account.textContent = '';
+        account.appendChild(name);
+        if (status.hasPremium) account.appendChild(document.createTextNode('\u00a0· Premium'));
+        account.title = (status.username || 'Account') + (status.hasPremium ? ' · Premium' : '');
         account.href = '/account';
       } else {
         account.textContent = 'Sign in';
+        account.removeAttribute('title');
         account.href = '/api/oauth/login?redirect_to=%2Fdecide%2F';
       }
     }
@@ -13920,6 +13961,7 @@
     else if (go === 'radio') { hideLanding(); setView('radio'); }
     else if (go === 'tv') { hideLanding(); media.tab = 'tv'; setView('radio'); }
     else if (go === 'listen') { hideLanding(); media.tab = 'radio'; setView('radio'); }
+    else if (go === 'help') { hideLanding(); setView('help'); }
 
     /*
      * ?prompt= — see a prompt now, instead of playing until one is due.

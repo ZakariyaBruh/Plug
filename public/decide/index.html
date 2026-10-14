@@ -3,6 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Text size, chosen with "Aa" in the top bar and remembered on this
+     device. Applied here, before anything is drawn, so a larger setting never
+     flashes small first. Everything is sized in rem, so this one class scales
+     the whole app. -->
+<script>try{var t=localStorage.getItem('m45-text');if(t==='lg'||t==='xl')document.documentElement.classList.add('text-'+t)}catch(e){}</script>
 <title>morsels45 — what should you eat?</title>
 <meta name="description" content="Twenty questions that work out what you actually feel like eating.">
 <meta name="8c05a9c7e728a9bdcd859b116fa7b4d7c713ac2c" content="8c05a9c7e728a9bdcd859b116fa7b4d7c713ac2c">
@@ -110,6 +115,10 @@
          recognise, the same way Whop's sign-in page does. The embed then
          looks broken — nothing to click, nothing to retry — when the real
          cause is three hops upstream of it. -->
+    <!-- Bigger text, for anybody who wants it: three sizes, one button. -->
+    <button class="topbar-link topbar-text" id="topbar-text" type="button" aria-label="Text size: normal. Tap for bigger text." title="Text size">
+      <span class="topbar-text-small" aria-hidden="true">A</span><span class="topbar-text-big" aria-hidden="true">A</span>
+    </button>
     <a class="topbar-link topbar-premium" id="topbar-premium" href="/premium" target="_top">Premium</a>
     <a class="topbar-link topbar-account" id="topbar-account" href="/api/oauth/login?redirect_to=%2Fdecide%2F" target="_top">Sign in</a>
   </nav>
@@ -388,6 +397,7 @@
       <button class="plain landing-plain" type="button" data-landing-view="scan">Scan food &mdash; is it healthy?</button>
       <button class="plain landing-plain" type="button" data-landing-view="radio">Food TV &amp; radio</button>
       <button class="plain landing-plain" id="landing-invite">Decide with a friend</button>
+      <button class="plain landing-plain" type="button" data-landing-view="help">New here? How to use morsels45</button>
     </div>
 
     <div class="knob-block" id="party-wrap">
@@ -695,6 +705,7 @@
       <li><button class="rail-link" data-view="radio">TV &amp; radio</button></li>
       <li><button class="rail-link" data-view="daily">Daily</button></li>
       <li><button class="rail-link" data-view="profile">Profile</button></li>
+      <li><button class="rail-link" data-view="help">Help</button></li>
     </ul>
 
     <p class="rail-foot" id="rail-streak" hidden><b id="streak-count">0</b> day streak</p>
@@ -1848,6 +1859,8 @@
     <!-- Scan food: its own section, not a tab in the kitchen, because it is
          the one people reach for in a shop with a packet in their hand. -->
     <section class="view" id="view-scan" aria-label="Scan food"></section>
+    <!-- Every section in plain words, and a way to each. Rendered by hub.js. -->
+    <section class="view" id="view-help" aria-label="Help"></section>
 
     <!-- ------------------------- TV & RADIO ------------------------- -->
     <!-- ===============================================================
@@ -2540,7 +2553,7 @@
     <a href="/privacy" target="_top">Privacy</a>
     <a href="/honesty" target="_top">What we won&rsquo;t do</a>
   </nav>
-  <p class="appfoot-fine">Everything you do here stays in this browser. <a href="/privacy" target="_top">How that works</a>.</p>
+  <p class="appfoot-fine">Your games and settings stay in this browser. Once you sign in, your meal plan, your recipes and your daily check-ins are kept with your account, so they are on all your devices. <a href="/privacy" target="_top">How that works</a>.</p>
 </footer>
 
 <!--
