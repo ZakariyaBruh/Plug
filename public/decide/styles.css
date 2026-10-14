@@ -348,7 +348,7 @@ button { font-family: inherit; }
   font-family: var(--display);
   font-size: var(--t-base);
   font-weight: 400;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: color var(--fast) var(--ease);
 }
@@ -463,7 +463,7 @@ button { font-family: inherit; }
   flex-direction: column;
   align-items: flex-start;
   gap: var(--s2);
-  text-align: left;
+  text-align: start;
   padding: var(--s4);
   border: 1px solid var(--hair);
   border-radius: 4px;
@@ -966,7 +966,7 @@ kbd {
   border: 0;
   background: var(--raise);
   color: var(--ink);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: background var(--fast) var(--ease), padding-left var(--mid) var(--ease);
 }
@@ -1134,7 +1134,7 @@ kbd {
   justify-content: flex-start;
   flex-wrap: wrap;
   row-gap: 0;
-  text-align: left;
+  text-align: start;
 }
 
 .alternates { margin-top: var(--s7); }
@@ -1274,7 +1274,7 @@ kbd {
   border: 0;
   background: none;
   color: var(--ink);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -1421,7 +1421,7 @@ kbd {
   border: 0;
   background: none;
   color: var(--ink);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   animation: lift var(--mid) var(--ease) both;
   transition: padding-left var(--fast) var(--ease);
@@ -1551,7 +1551,7 @@ kbd {
   border-bottom: 1px solid var(--hair);
   background: none;
   color: var(--ink);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: padding-left var(--fast) var(--ease);
 }
@@ -1597,7 +1597,7 @@ kbd {
   color: var(--ink-2);
   font-family: var(--text);
   font-size: var(--t-sm);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
 }
@@ -1953,7 +1953,7 @@ kbd {
   flex: 1;
   min-width: 0;
   justify-content: flex-start;
-  text-align: left;
+  text-align: start;
   font-family: var(--display);
   font-size: var(--t-md);
   font-weight: 500;
@@ -2153,7 +2153,7 @@ body.is-premium .tag-premium { display: none; }
   color: var(--ink-2);
   font-family: var(--display);
   font-size: var(--t-md);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: padding-left var(--fast) var(--ease), color var(--fast) var(--ease);
 }
@@ -2483,7 +2483,7 @@ body.is-premium .tag-premium { display: none; }
   color: var(--ink-2);
   font-family: var(--text);
   font-size: var(--t-sm);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -3190,7 +3190,7 @@ body.is-beaming { overflow: hidden; }
   border: 1px solid var(--hair);
   color: var(--ink-2);
   font: inherit;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: border-color var(--fast) var(--ease);
 }
@@ -3498,7 +3498,7 @@ body.is-beaming { overflow: hidden; }
   border: 0;
   background: none;
   color: var(--ink);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
 }
 
@@ -3582,7 +3582,7 @@ body.is-beaming { overflow: hidden; }
   align-items: flex-start;
   gap: var(--s3);
   width: 100%;
-  text-align: left;
+  text-align: start;
   padding: var(--s5);
   border: 1px solid var(--amber-dim);
   border-radius: 4px;
@@ -3864,7 +3864,7 @@ body.is-beaming { overflow: hidden; }
   border: 1px solid var(--hair);
   background: var(--raise);
   color: var(--ink);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease);
 }
@@ -4082,7 +4082,7 @@ body.is-beaming { overflow: hidden; }
   font-size: var(--t-lg);
   font-weight: 700;
   color: var(--ink);
-  text-align: left;
+  text-align: start;
 }
 
 .menu-note { grid-area: note; font-size: var(--t-sm); color: var(--ink-3); }
@@ -4226,7 +4226,7 @@ body.is-beaming { overflow: hidden; }
   font-size: var(--t-lg);
   font-weight: 700;
   color: var(--ink);
-  text-align: left;
+  text-align: start;
 }
 
 /* The reason, which is the whole point of this screen — a list of dishes
@@ -4254,7 +4254,7 @@ body.is-beaming { overflow: hidden; }
   border: 1px solid var(--hair);
   border-radius: 2px;
   background: none;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
 }
@@ -4276,3 +4276,91 @@ body.is-beaming { overflow: hidden; }
    hidden. */
 #sheet-vault { margin-top: var(--s2); }
 #sheet-recipes .fine { margin: 0; }
+
+/* ==========================================================================
+   Language — the chooser, and the tab that opens it again
+   ========================================================================== */
+/* One row per language, big enough to hit without reading. The native name
+   leads because somebody looking for Thai is looking for "ภาษาไทย"; the
+   English name sits under it for the reader who has ended up somewhere they
+   did not mean to and needs the way back. */
+.lang-list { list-style: none; margin: var(--s4) 0 var(--s5); padding: 0; display: grid; gap: var(--s2); }
+
+.lang-btn {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: 'flag name' 'flag sub';
+  align-items: center;
+  gap: 0 var(--s4);
+  width: 100%;
+  min-height: var(--tap);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--hair);
+  border-radius: 2px;
+  background: none;
+  color: var(--ink-2);
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease),
+              color var(--fast) var(--ease);
+}
+
+.lang-btn:hover { border-color: var(--ink-3); background: var(--raise); color: var(--ink); }
+.lang-flag { grid-area: flag; font-size: var(--t-lg); line-height: 1; }
+.lang-name { grid-area: name; font-family: var(--display); font-size: var(--t-md); font-weight: 700; color: var(--ink); }
+.lang-sub  { grid-area: sub;  font-size: var(--t-xs); color: var(--ink-3); }
+/* The English row carries no sub-line; without this its name sits in the
+   top half of a two-row grid and reads as misaligned next to the others. */
+.lang-btn:not(:has(.lang-sub)) { grid-template-areas: 'flag name'; }
+
+/* The one in use. Same amber as everywhere else that means "this is on". */
+.lang-row.is-on .lang-btn {
+  border-color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 10%, transparent);
+}
+.lang-row.is-on .lang-name { color: var(--amber); }
+
+/* The first-run gate. Over everything, including the landing, because it has
+   to be answered before any of it can be read. */
+.lang-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 60;                     /* above the landing (40) and the rail (45) */
+  overflow-y: auto;
+  background: var(--void);
+  display: grid;
+  place-items: center;
+  padding: var(--s6) var(--s4);
+}
+
+.lang-gate-inner { width: min(28rem, 100%); text-align: center; }
+.lang-gate-mark { font-size: 3rem; line-height: 1; margin: 0 0 var(--s3); }
+
+.lang-gate-title {
+  font-family: var(--display);
+  font-size: clamp(1.6rem, 7vw, var(--t-xl));
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 var(--s2);
+}
+
+.lang-gate .lang-list { text-align: start; }
+.lang-gate .go { margin-inline: auto; }
+.lang-gate .fine { margin-top: var(--s4); }
+
+/* Nothing behind it scrolls while it is up. */
+body.is-lang-gate { overflow: hidden; }
+
+/* The translation warning. Amber-edged rather than red: it is a caveat on
+   something that is working, not an error, and the app's one alarm colour
+   should stay rare enough to mean something. */
+.lang-warn {
+  margin: var(--s4) 0 0;
+  padding: var(--s3) var(--s4);
+  border-inline-start: 2px solid var(--amber);
+  background: color-mix(in srgb, var(--amber) 7%, transparent);
+  font-size: var(--t-xs);
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-align: start;
+}

@@ -129,6 +129,15 @@
        * no way to tell this morning's shelf from last Tuesday's.
        */
       daily: null,
+
+      /*
+       * Which language the app is in, and whether the chooser has been
+       * answered. They are two facts, not one: '' for lang would be
+       * indistinguishable from "chose English", and somebody who deliberately
+       * picked English would be asked again on every visit.
+       */
+      lang: 'en',
+      langAsked: false,
       tuned: false,           // did they tell us what they like, on purpose
       loves: [],              // tags they said they like, as opposed to played
       pantry: [],             // what is in the cupboard, for "what can I make?"
