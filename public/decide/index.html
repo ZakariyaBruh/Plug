@@ -342,6 +342,18 @@
           <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
         </span>
       </button>
+      <!-- QUICK DECIDE, as a button. It was a line of text in the quiet row
+           underneath, and read as a footnote rather than as the faster way in
+           it is. The second button, not a second primary: outlined, so
+           "Decide for me" is still the one loud thing on the screen. -->
+      <button class="go go-big go-alt landing-quick" id="quick-btn" type="button">
+        <span class="go-label">Quick decide
+          <span class="landing-quick-sub">100 favourites &middot; fewer questions</span>
+        </span>
+        <span class="go-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+        </span>
+      </button>
       <!--
         THE NO-QUESTIONS ROUTE, and the label says so.
 
@@ -366,7 +378,6 @@
         instead of 99.3%. Free, like the long one: it is a shorter route to
         the same kind of answer, not a cut-down version of it.
       -->
-      <button class="plain landing-plain" id="quick-btn">Quick decide &mdash; the 100 everyone knows</button>
       <button class="plain landing-plain" id="landing-browse">Browse the menu</button>
       <button class="plain landing-plain" id="landing-nearby">See what&rsquo;s near you</button>
       <button class="plain landing-plain" id="landing-ask">Ask what to eat</button>

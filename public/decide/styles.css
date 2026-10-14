@@ -5644,3 +5644,15 @@ details.hub-prep:not([open]) > summary::after { content: ' \25B8'; }
   .hub-light-plain { grid-column: 2 / -1; }
   .hub-health { flex-direction: column; align-items: flex-start; }
 }
+
+/* Quick decide: the landing's second button. Outlined, so "Decide for me"
+   stays the loud one; a small line under the label says what is quick. */
+.landing-quick .go-label { display: grid; gap: .1rem; text-align: left; }
+.landing-quick-sub { font-family: var(--text); font-size: var(--t-xs); font-weight: 400; color: var(--ink-3); letter-spacing: 0; }
+@media (max-width: 30rem) {
+  .landing-actions .landing-quick { flex: 1 0 100%; justify-content: space-between; }
+}
+/* An outlined button's hover is a tint, not the solid hover of a filled one —
+   which turned the background white under light text. */
+.go.go-alt:hover { background: var(--amber-dim); color: var(--ink); }
+.go.go-alt:hover .landing-quick-sub { color: var(--ink-2); }
