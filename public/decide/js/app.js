@@ -4460,7 +4460,8 @@
   var ADS = [
     /*
      * This used to be titled "Cheaper than a cup of coffee", which was true at
-     * $3.45 and is not worth saying at $4.99 — a coffee is about five dollars,
+     * $3.45 and is not worth saying at $4.99 (the price is $3.45 again, and the
+     * takeaway line below is true at either) — a coffee is about five dollars,
      * so the claim would hang on a single penny. A pitch that needs rounding in
      * its own favour is the kind of wrong worth being careful about, so the
      * comparison moved to a takeaway: fifteen to twenty-five dollars, which a
@@ -4486,7 +4487,7 @@
       body: 'Knockout, Blitz, This or that, Shortlist, Swipe and Together are all ' +
             'sitting behind one switch. Same catalogue, six different ways to argue ' +
             'with it.',
-      fine: 'Seven days free, then $4.99 a month.',
+      fine: 'Seven days free, then $3.45 a month.',
       cta: 'Have a look'
     },
     {
@@ -7209,7 +7210,7 @@
     $('buy-note').textContent = on
       ? 'Cancel any time — you keep Premium until the period you already paid for ' +
         'runs out.'
-      : 'Free for seven days, then $4.99/month — cancel before it ends and you ' +
+      : 'Free for seven days, then $3.45/month — cancel before it ends and you ' +
         'are not charged. Tax may be added depending on where you are, so the ' +
         'total can come to a little over that; checkout shows it before you pay. ' +
         'Sign in on any device and Premium is already on.';

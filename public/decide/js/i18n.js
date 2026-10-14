@@ -204,7 +204,7 @@ window.I18n = (function () {
    * English until somebody writes it.
    *
    * Keyed by the ad's id, each as [title, body, fine, cta]. No figure is added
-   * or changed in translation — the $4.99 is the one the English carries.
+   * or changed in translation — the $3.45 is the one the English carries.
    */
   var ADS = {
     ms: {
@@ -214,7 +214,7 @@ window.I18n = (function () {
         'Tujuh hari percuma'],
       'plus-modes': ['Ada enam lagi permainan di sini',
         'Knockout, Blitz, Ini atau itu, Senarai pendek, Swipe dan Bersama — semuanya menunggu di sebalik satu suis. Katalog yang sama, enam cara berbeza untuk berbalah mengenainya.',
-        'Tujuh hari percuma, kemudian $4.99 sebulan.',
+        'Tujuh hari percuma, kemudian $3.45 sebulan.',
         'Jenguk sekejap'],
       'aff-tell': ['Dapat bayaran kerana bercerita',
         'morsels45 ada program affiliate. Kongsi pautan anda sendiri, dan apabila seseorang mendaftar melaluinya, anda dapat bahagian — selagi mereka kekal.',
@@ -248,7 +248,7 @@ window.I18n = (function () {
         'ลองฟรีเจ็ดวัน'],
       'plus-modes': ['ข้างในยังมีอีกหกเกม',
         'Knockout, Blitz, This or that, Shortlist, Swipe และ Together ซ่อนอยู่หลังสวิตช์เดียว รายการอาหารชุดเดิม แต่มีหกวิธีให้เถียงกันไม่ซ้ำ',
-        'ฟรีเจ็ดวัน จากนั้น $4.99 ต่อเดือน',
+        'ฟรีเจ็ดวัน จากนั้น $3.45 ต่อเดือน',
         'ลองดู'],
       'aff-tell': ['ได้เงินแค่บอกต่อ',
         'morsels45 มีโปรแกรมพันธมิตร (affiliate) แชร์ลิงก์ของคุณเอง เมื่อมีคนสมัครผ่านลิงก์นั้น คุณจะได้ส่วนแบ่ง — ตราบเท่าที่เขายังใช้อยู่',
@@ -282,7 +282,7 @@ window.I18n = (function () {
         'سبعة أيام مجانًا'],
       'plus-modes': ['هنا ست ألعاب أخرى',
         'Knockout وBlitz وThis or that وShortlist وSwipe وTogether — كلها خلف مفتاح واحد. الكتالوج نفسه، وست طرق مختلفة للجدال حوله.',
-        'سبعة أيام مجانًا، ثم 4.99$ في الشهر.',
+        'سبعة أيام مجانًا، ثم 3.45$ في الشهر.',
         'ألقِ نظرة'],
       'aff-tell': ['احصل على أجر مقابل إخبار الناس',
         'لدى morsels45 برنامج شراكة بالعمولة. شارك رابطك الخاص، وعندما يشترك أحدهم من خلاله تحصل على حصة — ما دام مستمرًا.',
