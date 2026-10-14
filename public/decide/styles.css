@@ -5578,9 +5578,13 @@ details.hub-prep:not([open]) > summary::after { content: ' \25B8'; }
 .hub-note.is-warn { border-color: #e0b340; color: var(--ink); background: color-mix(in srgb, #e0b340 12%, transparent); }
 
 /* --- scanning --- */
-.hub-camera-wrap { position: relative; width: 100%; max-width: 28rem; }
+.hub-camera-wrap { width: 100%; max-width: 28rem; display: grid; gap: var(--s2); scroll-margin-top: calc(var(--stack-top, var(--topbar-h)) + var(--s3)); }
 .hub-camera-wrap[hidden] { display: none; }
+.hub-camera-view { position: relative; }
 .hub-camera-wrap .hub-camera { display: block; }
+.hub-camera-hint { margin: 0; min-height: 3.2em; color: var(--ink); font-weight: 600; line-height: 1.5; }
+.hub-camera-tools { gap: var(--s2); }
+.hub-torch[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }
 .hub-camera-box {
   position: absolute; inset: 30% 12%;
   border: 3px solid var(--amber); border-radius: .5rem;

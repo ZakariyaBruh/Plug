@@ -1647,41 +1647,361 @@
    * SCAN FOOD (P) — its own section
    * ==================================================================== */
 
-  var ZXING_SRC = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
-  var ZXING_SRI = 'sha384-BzBxP10ZE72aitqj5UMmUsbKFliP/DZqA8Wq+BNNhlIJDGoEd1tpkMYXOg9+n6sB';
-  var scan = { stream: null, timer: null, reader: null, last: null, zxing: null };
-
   var TAG_WORDS = { pork: 'pork', beef: 'beef', alcohol: 'alcohol', allium: 'onion or garlic', root: 'root vegetables', shellfish: 'shellfish', meat: 'meat', seafood: 'fish', dairy: 'dairy', egg: 'egg' };
   var VERDICT_ICON = { good: '\u{1F7E2}', ok: '\u{1F7E1}', treat: '\u{1F534}', unknown: '⚪' };
   var LEVEL_WORD = { low: 'Low', moderate: 'Medium', high: 'High' };
 
   /*
-   * Reading barcodes. Chrome on Android and on Macs can read them itself
-   * (BarcodeDetector). Everywhere else — every iPhone, Windows — the open
-   * source ZXing reader does it, fetched the first time somebody scans and
-   * pinned with its hash.
+   * BLURRED BARCODES. A reader for the barcodes on food — EAN-13, and UPC-A,
+   * which is the same thing with a 0 in front — that still works when the
+   * picture is out of focus.
+   *
+   * Every ordinary reader starts by turning the picture into black and
+   * white, then measures how wide each bar is. Out of focus, the thinnest
+   * bars never get dark enough to count as black, and that is the end of it:
+   * the old reader gave up on a barcode blurred by a third of a bar's width.
+   * This one never decides what is black. It knows what each digit looks
+   * like, blurs it the way the camera did, and asks which digit, blurred,
+   * looks most like what the camera saw — through blur as wide as a whole
+   * bar. The check digit says whether it got there; the scanner then wants
+   * the same answer twice before it believes it.
    */
+  var BlurEan = (function () {
+    var L = ['0001101', '0011001', '0010011', '0111101', '0100011', '0110001', '0101111', '0111011', '0110111', '0001011'];
+    var R = L.map(function (c) { return c.replace(/./g, function (b) { return b === '1' ? '0' : '1'; }); });
+    var G = R.map(function (c) { return c.split('').reverse().join(''); });
+    // The first digit is not drawn; it is which of L and G the next six use.
+    var PARITY = ['LLLLLL', 'LLGLGG', 'LLGGLG', 'LLGGGL', 'LGLLGG', 'LGGLLG', 'LGGGLL', 'LGLGLG', 'LGLGGL', 'LGGLGL'];
+    function bits(s) { return s.split('').map(Number); }
+    // Left of the middle a digit is drawn as L or G (20 shapes), right of it as R.
+    var LEFT = L.map(bits).concat(G.map(bits)), RIGHT = R.map(bits);
+
+    // The bell curve's running total, from a table: the shape of the blur.
+    var PHI = new Float64Array(1601);
+    (function () {
+      function erf(x) {
+        var t = 1 / (1 + .3275911 * Math.abs(x));
+        var y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - .284496736) * t + .254829592) * t * Math.exp(-x * x);
+        return x >= 0 ? y : -y;
+      }
+      for (var i = 0; i <= 1600; i++) PHI[i] = .5 * (1 + erf((i / 200 - 4) / Math.SQRT2));
+    })();
+    function phi(z) {
+      if (z <= -4) return 0;
+      if (z >= 4) return 1;
+      var f = (z + 4) * 200, i = f | 0;
+      return PHI[i] + (PHI[i + 1] - PHI[i]) * (f - i);
+    }
+
+    // What is known about the 95 modules (stripes one module wide) before
+    // reading any digit: the three guards, and that every digit on the left
+    // starts light and ends dark, and on the right the other way round.
+    var SKELETON = new Float64Array(95).fill(.5);
+    [0, 2, 46, 48, 92, 94].forEach(function (i) { SKELETON[i] = 1; });
+    [1, 45, 47, 49, 93].forEach(function (i) { SKELETON[i] = 0; });
+    for (var k = 0; k < 6; k++) { SKELETON[3 + 7 * k] = 0; SKELETON[9 + 7 * k] = 1; SKELETON[50 + 7 * k] = 1; SKELETON[56 + 7 * k] = 0; }
+    function moduleAt(mods, j) { return j < 0 || j > 94 ? 0 : mods[j]; }
+    function digitStart(k) { return k < 6 ? 3 + 7 * k : 50 + 7 * (k - 6); }
+    var GUARDS = [[-6, 3], [45, 50], [92, 101]];
+    var MIN_FIT = .94;
+
+    /*
+     * The samples between modules a and b, and how much each of the modules
+     * a-2 .. b+1 darkens each of them once blurred. Worked out once per line
+     * up and shared by every digit tried there.
+     */
+    var CAP = 64, COLS = 14;
+    function newWindow() { return { n: 0, cols: 0, W: new Float64Array(CAP * COLS), ys: new Float64Array(CAP), sy: 0, syy: 0 }; }
+    var WINS = [], EDGE = new Float64Array(COLS + 1);
+    for (k = 0; k < 15; k++) WINS.push(newWindow());
+
+    function windowAt(w, y, x0, m, s, a, b) {
+      var from = Math.max(0, Math.floor(x0 + a * m)), to = Math.min(y.length - 1, Math.ceil(x0 + b * m));
+      var n = Math.min(CAP, Math.max(0, to - from + 1)), cols = b - a + 4, sy = 0, syy = 0;
+      for (var i = 0; i < n; i++) {
+        var x = from + i, u = (x + .5 - x0) / m, o = i * cols;
+        for (var e = 0; e <= cols; e++) EDGE[e] = phi((u - (a - 2 + e)) / s);
+        for (var c = 0; c < cols; c++) w.W[o + c] = EDGE[c] - EDGE[c + 1];
+        w.ys[i] = y[x]; sy += y[x]; syy += y[x] * y[x];
+      }
+      w.n = n; w.cols = cols; w.sy = sy; w.syy = syy;
+      return w;
+    }
+
+    /*
+     * What is left unexplained once a pattern has been fitted to a window,
+     * with its own brightness and contrast — so a shadow or a glare across
+     * the label does not count against it — but with bars always darker.
+     */
+    function leftOver(w, n, sd, sdd, syd) {
+      var vd = sdd - sd * sd / n, cov = syd - sd * w.sy / n, vy = w.syy - w.sy * w.sy / n;
+      if (vd <= 1e-9) return vy;
+      var gain = cov / vd;
+      return gain >= 0 ? vy + 1e-6 : vy - gain * cov;
+    }
+
+    function fitFixed(w, mods) {
+      var n = w.n, cols = w.cols, sd = 0, sdd = 0, syd = 0;
+      if (n < 3) return Infinity;
+      for (var i = 0, o = 0; i < n; i++, o += cols) {
+        var dk = 0;
+        for (var c = 0; c < cols; c++) dk += mods[c] * w.W[o + c];
+        sd += dk; sdd += dk * dk; syd += w.ys[i] * dk;
+      }
+      return leftOver(w, n, sd, sdd, syd);
+    }
+
+    /*
+     * Every shape a digit could have, scored against one digit's window. The
+     * two modules either side are fixed; the seven in the middle are the
+     * digit. Fitting is linear, so the sums each shape needs are made from
+     * sums worked out once per window rather than going over every sample
+     * thirty times.
+     */
+    var S = new Float64Array(7), Y = new Float64Array(7), GB = new Float64Array(7), GM = new Float64Array(49);
+    function scoreDigit(w, outer, shapes, out) {
+      var n = w.n, W = w.W, ys = w.ys, sb = 0, yb = 0, gbb = 0, i, j, q;
+      S.fill(0); Y.fill(0); GB.fill(0); GM.fill(0);
+      if (n < 3) { out.fill(Infinity); return; }
+      for (i = 0; i < n; i++) {
+        var o = i * 11, base = outer[0] * W[o] + outer[1] * W[o + 1] + outer[2] * W[o + 9] + outer[3] * W[o + 10];
+        sb += base; yb += ys[i] * base; gbb += base * base;
+        for (j = 0; j < 7; j++) {
+          var wj = W[o + 2 + j];
+          S[j] += wj; Y[j] += ys[i] * wj; GB[j] += base * wj;
+          for (q = 0; q <= j; q++) GM[j * 7 + q] += wj * W[o + 2 + q];
+        }
+      }
+      for (var c = 0; c < shapes.length; c++) {
+        var b = shapes[c], sd = sb, syd = yb, sdd = gbb;
+        for (j = 0; j < 7; j++) {
+          if (!b[j]) continue;
+          sd += S[j]; syd += Y[j]; sdd += 2 * GB[j] + GM[j * 7 + j];
+          for (q = 0; q < j; q++) if (b[q]) sdd += 2 * GM[j * 7 + q];
+        }
+        out[c] = leftOver(w, n, sd, sdd, syd);
+      }
+    }
+
+    /*
+     * How badly every shape fits at each of the twelve places, for one line
+     * up: where module 0 starts (x0), how wide a module is (m), and how wide
+     * the blur is, in modules (s). A second pass fills in each digit's
+     * neighbours from the first. The guards and quiet zones are scored too,
+     * or a line up a whole digit out could fit as well as the right one.
+     */
+    function decodeWith(y, x0, m, s, passes) {
+      var mods = new Float64Array(SKELETON), errs = [], best = [], outer = new Float64Array(4), total = 0, k, j;
+      for (k = 0; k < 12; k++) {
+        windowAt(WINS[k], y, x0, m, s, digitStart(k), digitStart(k) + 7);
+        errs.push(new Float64Array(k < 6 ? 20 : 10));
+      }
+      for (var pass = 0; pass < passes; pass++) {
+        total = 0;
+        for (k = 0; k < 12; k++) {
+          var st = digitStart(k), e = errs[k], bi = 0;
+          outer[0] = moduleAt(mods, st - 2); outer[1] = moduleAt(mods, st - 1);
+          outer[2] = moduleAt(mods, st + 7); outer[3] = moduleAt(mods, st + 8);
+          scoreDigit(WINS[k], outer, k < 6 ? LEFT : RIGHT, e);
+          for (j = 1; j < e.length; j++) if (e[j] < e[bi]) bi = j;
+          best[k] = bi;
+          total += e[bi];
+        }
+        for (k = 0; k < 12; k++) {
+          var shape = (k < 6 ? LEFT : RIGHT)[best[k]];
+          for (j = 0; j < 7; j++) mods[digitStart(k) + j] = shape[j];
+        }
+      }
+      for (var g = 0; g < GUARDS.length; g++) {
+        var r = GUARDS[g], w = windowAt(WINS[12 + g], y, x0, m, s, r[0], r[1]), gp = new Float64Array(w.cols);
+        for (j = 0; j < w.cols; j++) gp[j] = moduleAt(mods, r[0] - 2 + j);
+        total += fitFixed(w, gp);
+      }
+      var spread = 0;
+      for (k = 0; k < 15; k++) { var wk = WINS[k]; if (wk.n) spread += wk.syy - wk.sy * wk.sy / wk.n; }
+      return { errs: errs, total: total, spread: spread };
+    }
+
+    // The thirteen digits from the scores: the first is whichever L/G
+    // pattern on the left fits best.
+    function digitsOf(dec) {
+      var best = null, k, d;
+      for (var first = 0; first < 10; first++) {
+        var pat = PARITY[first], err = 0, code = String(first);
+        for (k = 0; k < 6; k++) {
+          var off = pat[k] === 'L' ? 0 : 10, bd = 0;
+          for (d = 1; d < 10; d++) if (dec.errs[k][off + d] < dec.errs[k][off + bd]) bd = d;
+          err += dec.errs[k][off + bd]; code += bd;
+        }
+        if (!best || err < best.err) best = { err: err, code: code };
+      }
+      var code13 = best.code;
+      for (k = 6; k < 12; k++) {
+        var br = 0;
+        for (d = 1; d < 10; d++) if (dec.errs[k][d] < dec.errs[k][br]) br = d;
+        code13 += br;
+      }
+      return code13;
+    }
+
+    function checksumOk(code) {
+      var sum = 0;
+      for (var i = 0; i < 12; i++) sum += (+code[i]) * (i % 2 ? 3 : 1);
+      return (10 - sum % 10) % 10 === +code[12];
+    }
+
+    // Roughly where the barcode is along the line, from where it crosses
+    // half-way between its lightest and darkest: the longest run of
+    // crossings with no gap in it as wide as a quiet zone.
+    function roughly(y) {
+      var sorted = Array.prototype.slice.call(y).sort(function (a, b) { return a - b; });
+      var lo = sorted[Math.floor(sorted.length * .05)], hi = sorted[Math.floor(sorted.length * .95)];
+      if (hi - lo < 12) return null;
+      var mid = (lo + hi) / 2, xs = [], i;
+      for (i = 1; i < y.length; i++) if ((y[i - 1] - mid) * (y[i] - mid) < 0) xs.push(i - 1 + (mid - y[i - 1]) / (y[i] - y[i - 1]));
+      if (xs.length < 12) return null;
+      var gaps = [];
+      for (i = 1; i < xs.length; i++) gaps.push(xs[i] - xs[i - 1]);
+      var typical = gaps.slice().sort(function (a, b) { return a - b; })[gaps.length >> 1];
+      var quiet = Math.max(typical * 4, 6), from = 0, bestA = 0, bestB = 0;
+      for (i = 1; i <= xs.length; i++) {
+        if (i === xs.length || xs[i] - xs[i - 1] > quiet) {
+          if (xs[i - 1] - xs[from] > xs[bestB] - xs[bestA]) { bestA = from; bestB = i - 1; }
+          from = i;
+        }
+      }
+      var span = xs[bestB] - xs[bestA];
+      return span < 95 * 1.2 ? null : { x0: xs[bestA], m: span / 95 };
+    }
+
+    /*
+     * One line across the barcode, already averaged down the bars. Resampled
+     * to three and a half samples a module, so a sharp camera costs no more
+     * than a blurry one; then the line up and the blur are found by trying a
+     * coarse spread of them, and walking the best few downhill.
+     */
+    function readLine(line) {
+      var ext = roughly(line);
+      if (!ext) return null;
+      var f = Math.min(1, 3.5 / ext.m);
+      var lo = Math.max(0, Math.floor(ext.x0 - 16 * ext.m)), hi = Math.min(line.length, Math.ceil(ext.x0 + 112 * ext.m));
+      var n = Math.max(1, Math.floor((hi - lo) * f)), y = new Float32Array(n), i;
+      for (i = 0; i < n; i++) {
+        var a = lo + i / f, b = lo + (i + 1) / f, acc = 0, wsum = 0;
+        for (var x = Math.floor(a); x < Math.ceil(b) && x < line.length; x++) {
+          var wgt = Math.min(b, x + 1) - Math.max(a, x);
+          if (wgt > 0) { acc += line[x] * wgt; wsum += wgt; }
+        }
+        y[i] = wsum ? acc / wsum : 0;
+      }
+      var x0c = (ext.x0 - lo) * f, mc = ext.m * f, top = [];
+      function consider(x0, m, s, passes) {
+        var c = { x0: x0, m: m, s: s, total: decodeWith(y, x0, m, s, passes).total };
+        if (top.length === 3 && c.total >= top[2].total) return;
+        top.push(c);
+        top.sort(function (p, q) { return p.total - q.total; });
+        if (top.length > 3) top.length = 3;
+      }
+      [.3, .55, .85].forEach(function (s) {
+        for (var mf = -4; mf <= 4; mf++) {
+          var m = mc * (1 + mf * .02);
+          for (var dx = -6; dx <= 6; dx++) consider(x0c + dx * .5 * m, m, s, 1);
+        }
+      });
+      var winner = null;
+      top.slice().forEach(function (c) {
+        var here = { x0: c.x0, m: c.m, s: c.s, total: decodeWith(y, c.x0, c.m, c.s, 2).total };
+        for (var step = 0; step < 16; step++) {
+          var moves = [[.125, 0, 0], [-.125, 0, 0], [0, .005, 0], [0, -.005, 0], [0, 0, .08], [0, 0, -.08]], next = null;
+          for (var q = 0; q < moves.length; q++) {
+            var mv = moves[q], m = here.m * (1 + mv[1]), s = Math.max(.15, here.s + mv[2]);
+            var t = { x0: here.x0 + mv[0] * m, m: m, s: s };
+            t.total = decodeWith(y, t.x0, t.m, t.s, 2).total;
+            if (t.total < (next ? next.total : here.total)) next = t;
+          }
+          if (!next) break;
+          here = next;
+        }
+        if (!winner || here.total < winner.total) winner = here;
+      });
+      /*
+       * Believed only if the check digit agrees, the blur found is one a
+       * barcode could still be read through, and the pattern explains nearly
+       * everything on the line. Real barcodes, however blurred, come out
+       * above 0.97; wrong readings, print and noise never reached 0.92.
+       */
+      var dec = decodeWith(y, winner.x0, winner.m, winner.s, 2), code = digitsOf(dec);
+      var fit = 1 - dec.total / Math.max(1e-9, dec.spread);
+      return checksumOk(code) && winner.s <= 1.2 && fit >= MIN_FIT ? code : null;
+    }
+
+    // Both ways round: a barcode held upside down reads backwards.
+    function read(line) {
+      var code = readLine(line);
+      if (code) return code;
+      var back = new Float32Array(line.length);
+      for (var i = 0; i < line.length; i++) back[i] = line[line.length - 1 - i];
+      return readLine(back);
+    }
+
+    return { read: read };
+  })();
+
+  /*
+   * READING BARCODES — three readers, the quickest first, on every frame:
+   *
+   *   1. The phone's own, where it has one (BarcodeDetector: Chrome on
+   *      Android and on Macs).
+   *   2. ZXing — the open-source reader most scanning apps are built on, in
+   *      its C++ version compiled to WebAssembly. Fetched from jsDelivr the
+   *      first time somebody scans, both halves checked against their hashes.
+   *      It replaced the older JavaScript port, which gave up on a barcode
+   *      blurred by a third of a bar's width.
+   *   3. BlurEan (below), for food barcodes the other two cannot read
+   *      because the picture is out of focus.
+   *
+   * And the camera is asked for what reading needs rather than whatever it
+   * starts with: full HD rather than 640x480, focusing all the time, zoomed
+   * in a little so the phone can be held far enough away to focus at all,
+   * and not the fixed-focus wide-angle lens some phones open by default.
+   */
+  var ZXING_JS = 'https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.4/dist/iife/reader/index.js';
+  var ZXING_JS_SRI = 'sha384-PN2+TcV6o3ygq0xnuFCxKBra0Yt4uPsZhoQ/vGYAwE57BrG9nHTvynv6YPyluWaU';
+  var ZXING_WASM = 'https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.4/dist/reader/zxing_reader.wasm';
+  var ZXING_WASM_SRI = 'sha384-uU3W9ksDBq9UOyHhv5S9GtsH9dlOsIMpeSy3WpglpRsLh12aEnMYcjZeSJq5MEum';
+  var ZXING_FORMATS = ['EAN13', 'EAN8', 'UPCA', 'UPCE'];
+  var scan = { stream: null, track: null, timer: null, run: 0, last: null, zxing: null };
+
   function loadZxing() {
-    if (window.ZXing) return Promise.resolve(window.ZXing);
     if (scan.zxing) return scan.zxing;
     scan.zxing = new Promise(function (resolve, reject) {
+      if (window.ZXingWASM) return resolve(window.ZXingWASM);
       var s = document.createElement('script');
-      s.src = ZXING_SRC;
-      s.integrity = ZXING_SRI;
+      s.src = ZXING_JS;
+      s.integrity = ZXING_JS_SRI;
       s.crossOrigin = 'anonymous';
       s.async = true;
-      s.onload = function () { window.ZXing ? resolve(window.ZXing) : reject(new Error('no ZXing')); };
-      s.onerror = function () { scan.zxing = null; reject(new Error('ZXing would not load')); };
+      s.onload = function () { window.ZXingWASM ? resolve(window.ZXingWASM) : reject(new Error('no reader')); };
+      s.onerror = function () { reject(new Error('the reader would not load')); };
       document.head.appendChild(s);
+    }).then(function (Z) {
+      // The WebAssembly half is fetched here, hash checked, and handed over —
+      // left to itself the reader would fetch it unchecked.
+      return fetch(ZXING_WASM, { integrity: ZXING_WASM_SRI, mode: 'cors', credentials: 'omit' })
+        .then(function (r) { if (!r.ok) throw new Error('wasm ' + r.status); return r.arrayBuffer(); })
+        .then(function (wasm) { return Z.prepareZXingModule({ overrides: { wasmBinary: wasm }, fireImmediately: true }); })
+        .then(function () { return Z; });
     });
+    // A failed load is tried again next time; BlurEan reads on without it.
+    scan.zxing.catch(function () { scan.zxing = null; });
     return scan.zxing;
   }
 
-  function zxingReader(Z) {
-    var hints = new Map();
-    hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.UPC_E]);
-    hints.set(Z.DecodeHintType.TRY_HARDER, true);
-    return new Z.BrowserMultiFormatReader(hints);
+  function zxRead(Z, image) {
+    return Z.readBarcodes(image, { formats: ZXING_FORMATS, tryHarder: true, maxNumberOfSymbols: 1 }).then(function (found) {
+      for (var i = 0; i < found.length; i++) if (found[i].isValid && /^\d{8,14}$/.test(found[i].text)) return found[i].text;
+      return null;
+    }).catch(function () { return null; });
   }
 
   function nativeDetector() {
@@ -1689,34 +2009,238 @@
     try { return new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] }); } catch (err) { return null; }
   }
 
-  function stopCamera() {
-    if (scan.timer) cancelAnimationFrame(scan.timer);
-    scan.timer = null;
-    if (scan.reader) { try { scan.reader.reset(); } catch (err) {} scan.reader = null; }
-    if (scan.stream) scan.stream.getTracks().forEach(function (t) { t.stop(); });
-    scan.stream = null;
+  function nativeRead(det, source) {
+    if (!det) return Promise.resolve(null);
+    return det.detect(source).then(function (codes) {
+      for (var i = 0; i < codes.length; i++) if (/^\d{8,14}$/.test(codes[i].rawValue)) return codes[i].rawValue;
+      return null;
+    }).catch(function () { return null; });
   }
 
-  // A photo of the barcode: the way that works everywhere, including inside
-  // apps that will not share the live camera.
-  function readBarcodePhoto(file) {
-    var det = nativeDetector();
-    if (det && window.createImageBitmap) {
-      return createImageBitmap(file).then(function (bmp) { return det.detect(bmp); }).then(function (codes) {
-        if (codes && codes.length) return codes[0].rawValue;
-        return readWithZxing(file);
-      }).catch(function () { return readWithZxing(file); });
+  /*
+   * One line of brightness across the picture, averaged over `rows` rows
+   * (or, `across`, columns) — down the bars, so the camera's grain averages
+   * out and the bars themselves do not.
+   */
+  function barLine(img, at, rows, across) {
+    var w = img.width, h = img.height, d = img.data, len = across ? h : w, line = new Float32Array(len), i, j;
+    var from = Math.max(0, Math.min((across ? w : h) - rows, Math.round(at - rows / 2)));
+    for (j = from; j < from + rows; j++) {
+      for (i = 0; i < len; i++) {
+        var o = across ? (i * w + j) * 4 : (j * w + i) * 4;
+        line[i] += d[o] * .299 + d[o + 1] * .587 + d[o + 2] * .114;
+      }
     }
-    return readWithZxing(file);
+    for (i = 0; i < len; i++) line[i] /= rows;
+    return line;
   }
 
-  function readWithZxing(file) {
-    return loadZxing().then(function (Z) {
-      var url = URL.createObjectURL(file);
-      return zxingReader(Z).decodeFromImageUrl(url).then(function (result) {
-        URL.revokeObjectURL(url);
-        return result.getText();
-      }, function () { URL.revokeObjectURL(url); return null; });
+  /*
+   * The same picture made easier for ZXing when it is soft: each run of
+   * eight rows averaged into one, and sharpened across the bars. Mild blur
+   * that stops ZXing on the picture as it is often does not stop it here.
+   */
+  function sharpened(img) {
+    var w = img.width, rows = Math.floor(img.height / 8), out = new ImageData(w, Math.max(1, rows)), o = out.data;
+    var line = new Float32Array(w), soft = new Float32Array(w);
+    for (var r = 0; r < rows; r++) {
+      line.set(barLine(img, r * 8 + 4, 8));
+      var acc = 0, n = 0, rad = 5, i;
+      for (i = 0; i < Math.min(w, rad + 1); i++) { acc += line[i]; n++; }
+      for (i = 0; i < w; i++) {
+        soft[i] = acc / n;
+        if (i + rad + 1 < w) { acc += line[i + rad + 1]; n++; }
+        if (i - rad >= 0) { acc -= line[i - rad]; n--; }
+      }
+      for (i = 0; i < w; i++) {
+        var v = line[i] + 1.5 * (line[i] - soft[i]), p = (r * w + i) * 4;
+        o[p] = o[p + 1] = o[p + 2] = v < 0 ? 0 : v > 255 ? 255 : v;
+        o[p + 3] = 255;
+      }
+    }
+    return out;
+  }
+
+  /*
+   * BlurEan answers are believed once two separate looks agree — two lines
+   * of the same photo, or two frames of the video — so a misreading has to
+   * happen the same way twice to get through.
+   */
+  function agreement() {
+    var seen = {};
+    return function (code) {
+      if (!code) return null;
+      var now = Date.now(), prev = seen[code];
+      seen[code] = { n: prev && now - prev.at < 4000 ? prev.n + 1 : 1, at: now };
+      return seen[code].n >= 2 ? code : null;
+    };
+  }
+
+  /* ---------------------------------------------------- the camera -- */
+
+  function cameraConstraints(deviceId) {
+    var video = { width: { ideal: 1920 }, height: { ideal: 1080 } };
+    if (deviceId) video.deviceId = { exact: deviceId };
+    else video.facingMode = { ideal: 'environment' };
+    return { video: video, audio: false };
+  }
+
+  function canFocus(track) {
+    var caps = track.getCapabilities ? track.getCapabilities() : null;
+    // Browsers that do not say (Safari) are given the benefit of the doubt.
+    if (!caps || !caps.focusMode) return true;
+    return caps.focusMode.indexOf('continuous') !== -1;
+  }
+
+  function stopStream(stream) { if (stream) stream.getTracks().forEach(function (t) { t.stop(); }); }
+
+  /*
+   * Phones with three cameras on the back often open the wide-angle one,
+   * which cannot focus close up — everything is a blur at barcode distance,
+   * and no reader can fix that. So if the first camera cannot focus, the
+   * other back cameras are tried for one that can, and the one that worked
+   * is remembered for next time.
+   */
+  function openCamera() {
+    var gum = function (c) { return navigator.mediaDevices.getUserMedia(c); };
+    var saved = store('scan-camera');
+    return (saved ? gum(cameraConstraints(saved)).catch(function () { return gum(cameraConstraints()); }) : gum(cameraConstraints()))
+      .then(function (stream) {
+        var track = stream.getVideoTracks()[0];
+        if (canFocus(track) || !navigator.mediaDevices.enumerateDevices) return stream;
+        var first = track.getSettings ? track.getSettings().deviceId : '';
+        return navigator.mediaDevices.enumerateDevices().then(function (devices) {
+          var others = devices.filter(function (d) {
+            return d.kind === 'videoinput' && d.deviceId && d.deviceId !== first && !/front|user|facetime/i.test(d.label);
+          }).slice(0, 4);
+          if (!others.length) return stream;
+          stopStream(stream);
+          var tryNext = function (i) {
+            if (i >= others.length) return gum(cameraConstraints(first));
+            return gum(cameraConstraints(others[i].deviceId)).then(function (s) {
+              if (canFocus(s.getVideoTracks()[0])) { store('scan-camera', others[i].deviceId); return s; }
+              stopStream(s);
+              return tryNext(i + 1);
+            }, function () { return tryNext(i + 1); });
+          };
+          return tryNext(0);
+        });
+      });
+  }
+
+  // Focus all the time, and zoom in to twice where the camera can — so a
+  // barcode fills the box with the phone far enough away to focus on it.
+  function tuneCamera(track) {
+    var caps = track.getCapabilities ? track.getCapabilities() : {};
+    var want = {};
+    if (caps.focusMode && caps.focusMode.indexOf('continuous') !== -1) want.focusMode = 'continuous';
+    if (caps.zoom && caps.zoom.max >= 1.5) want.zoom = Math.max(caps.zoom.min || 1, Math.min(caps.zoom.max, 2));
+    if (Object.keys(want).length) track.applyConstraints({ advanced: [want] }).catch(function () {});
+    return { torch: !!caps.torch };
+  }
+
+  function stopCamera() {
+    scan.run++;
+    if (scan.timer) clearTimeout(scan.timer);
+    scan.timer = null;
+    stopStream(scan.stream);
+    scan.stream = null;
+    scan.track = null;
+  }
+
+  /*
+   * The part of the frame to read: a little more than the orange box, which
+   * covers the middle 76% x 40% of the 4:3 picture shown — worked out on the
+   * full frame the camera sends, which is wider than what is shown.
+   */
+  function scanRegion(video) {
+    var vw = video.videoWidth, vh = video.videoHeight, shown = 4 / 3, w, h;
+    if (vw / vh > shown) { h = vh; w = vh * shown; } else { w = vw; h = vw / shown; }
+    var x = (vw - w) / 2, y = (vh - h) / 2;
+    return { sx: Math.round(x + w * .04), sy: Math.round(y + h * .24), sw: Math.round(w * .92), sh: Math.round(h * .52) };
+  }
+
+  /*
+   * Reads frames until something is found or the camera is stopped. Each
+   * look: the phone's reader, then ZXing (every other frame on the
+   * sharpened picture), then BlurEan on one line across the middle of the
+   * box, moving between three heights frame to frame.
+   */
+  function readFrames(video, onCode, onLook) {
+    var run = scan.run, det = nativeDetector(), Z = null, frame = 0, agree = agreement();
+    var canvas = document.createElement('canvas'), ctx = canvas.getContext('2d', { willReadFrequently: true });
+    loadZxing().then(function (z) { Z = z; }, function () {});
+    function next() { if (run === scan.run) scan.timer = setTimeout(look, 60); }
+    function done(code) { if (code && run === scan.run) { onCode(code); return true; } return false; }
+    function look() {
+      if (run !== scan.run) return;
+      if (video.readyState < 2 || !video.videoWidth) return next();
+      var r = scanRegion(video);
+      canvas.width = r.sw; canvas.height = r.sh;
+      ctx.drawImage(video, r.sx, r.sy, r.sw, r.sh, 0, 0, r.sw, r.sh);
+      var img = ctx.getImageData(0, 0, r.sw, r.sh), f = frame++;
+      onLook(f);
+      nativeRead(det, canvas).then(function (code) {
+        if (done(code)) return true;
+        return Z ? zxRead(Z, f % 2 ? sharpened(img) : img).then(done) : false;
+      }).then(function (found) {
+        if (found || run !== scan.run) return;
+        var at = img.height * [.5, .38, .62][f % 3];
+        done(agree(BlurEan.read(barLine(img, at, Math.max(4, Math.round(img.height * .06))))));
+      }).catch(function () {}).then(function () { if (run === scan.run) next(); });
+    }
+    look();
+  }
+
+  /* ------------------------------------------------ a photo instead -- */
+
+  function photoPixels(file) {
+    var fromBitmap = window.createImageBitmap
+      ? createImageBitmap(file).catch(function () { return null; })
+      : Promise.resolve(null);
+    return fromBitmap.then(function (bmp) {
+      if (bmp) return bmp;
+      return new Promise(function (resolve, reject) {
+        var url = URL.createObjectURL(file), im = new Image();
+        im.onload = function () { URL.revokeObjectURL(url); resolve(im); };
+        im.onerror = function () { URL.revokeObjectURL(url); reject(new Error('not a picture')); };
+        im.src = url;
+      });
+    }).then(function (pic) {
+      var w = pic.width, h = pic.height, k = Math.min(1, 2000 / Math.max(w, h));
+      var c = document.createElement('canvas');
+      c.width = Math.round(w * k); c.height = Math.round(h * k);
+      var x = c.getContext('2d', { willReadFrequently: true });
+      x.drawImage(pic, 0, 0, c.width, c.height);
+      return { canvas: c, img: x.getImageData(0, 0, c.width, c.height) };
+    });
+  }
+
+  /*
+   * A photo of the barcode: the way that works everywhere, including inside
+   * apps that will not share the live camera. The same three readers; for
+   * BlurEan, lines across the photo at nine heights, both ways round in
+   * case the barcode was photographed on its side, until two agree.
+   */
+  function readBarcodePhoto(file) {
+    return photoPixels(file).then(function (p) {
+      return nativeRead(nativeDetector(), p.canvas).then(function (code) {
+        if (code) return code;
+        return loadZxing().then(function (Z) {
+          return zxRead(Z, p.img).then(function (c) { return c || zxRead(Z, sharpened(p.img)); });
+        }, function () { return null; });
+      }).then(function (code) {
+        if (code) return code;
+        var agree = agreement(), img = p.img;
+        for (var side = 0; side < 2; side++) {
+          var len = side ? img.width : img.height, rows = Math.max(4, Math.round(len * .02));
+          for (var f = .3; f <= .701; f += .05) {
+            var found = agree(BlurEan.read(barLine(img, len * f, rows, side === 1)));
+            if (found) return found;
+          }
+        }
+        return null;
+      });
     });
   }
 
@@ -1739,12 +2263,20 @@
 
     body.appendChild(howTo([
       'Tap “Scan with my camera”. If your phone asks to use the camera, tap Allow.',
-      'Hold the barcode (the black stripes) inside the box, about a hand’s width from the phone.',
-      'The answer appears by itself. If the camera will not work, tap “Take a photo of the barcode” instead.'
+      'Hold the barcode (the black stripes) inside the orange box, with the phone about 15 cm (6 inches) away — roughly the length of your hand. Hold it still for a moment.',
+      'It does not need to look sharp: it reads blurry barcodes too. The answer appears by itself.',
+      'If the camera will not work, tap “Take a photo of the barcode” instead.'
     ]));
 
     var video = el('video', { class: 'hub-camera', playsinline: true, muted: true, hidden: true });
-    var frame = el('div', { class: 'hub-camera-wrap', hidden: true }, [video, el('span', { class: 'hub-camera-box', 'aria-hidden': 'true' })]);
+    var hint = el('p', { class: 'hub-camera-hint', 'aria-live': 'polite' });
+    var torch = el('button', { class: 'quiet hub-torch', type: 'button', hidden: true, 'aria-pressed': 'false', text: '\u{1F526} Turn the light on' });
+    var stopBtn = el('button', { class: 'quiet', type: 'button', text: 'Stop the camera' });
+    var frame = el('div', { class: 'hub-camera-wrap', hidden: true }, [
+      el('div', { class: 'hub-camera-view' }, [video, el('span', { class: 'hub-camera-box', 'aria-hidden': 'true' })]),
+      hint,
+      el('div', { class: 'hub-row hub-camera-tools' }, [torch, stopBtn])
+    ]);
     var out = el('div', { 'aria-live': 'polite' });
     var code = el('input', { class: 'hub-input', type: 'text', inputmode: 'numeric', pattern: '[0-9]*', maxlength: '14', placeholder: 'For example 5000157024671', 'aria-label': 'The numbers under the barcode', id: 'hub-scan-code' });
     var look = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Check it' })]);
@@ -1775,47 +2307,66 @@
       el('span', { class: 'hub-big-label', text: 'Scan with my camera' }),
       el('span', { class: 'hub-big-sub', text: 'Point it at the barcode' })
     ]);
+    // What to try next, said while it looks, for anybody it is not reading for.
+    var HINTS = [
+      [0, 'Hold the barcode inside the orange box…'],
+      [5000, 'Still looking. Move the phone a little further away, and hold it still.'],
+      [12000, 'Make sure the whole barcode is inside the box, and that there is no shine on it. In a dim room, turn the light on.'],
+      [22000, 'Still no luck? Tap “Stop the camera” and “Take a photo of the barcode” instead, or type the numbers under it.']
+    ];
+
     camBtn.addEventListener('click', function () {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         clear(out).appendChild(note('This browser cannot use the camera here. Tap “Take a photo of the barcode” instead.', 'error'));
         return;
       }
       stopCamera();
+      var run = scan.run;
       clear(out).appendChild(note('Starting the camera…'));
-      var det = nativeDetector();
-      if (det) {
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (stream) {
-          scan.stream = stream;
-          video.srcObject = stream;
-          video.hidden = false;
-          frame.hidden = false;
-          video.play();
-          clear(out).appendChild(note('Hold the barcode inside the box…'));
-          var busy = false;
-          (function tick() {
-            if (!scan.stream) return;
-            if (!busy && video.readyState >= 2) {
-              busy = true;
-              det.detect(video).then(function (codes) {
-                busy = false;
-                if (codes && codes.length) { Sound.tick(); lookup(codes[0].rawValue); }
-              }).catch(function () { busy = false; });
-            }
-            scan.timer = requestAnimationFrame(tick);
-          })();
-        }).catch(cameraRefused);
-        return;
-      }
-      loadZxing().then(function (Z) {
-        var reader = zxingReader(Z);
-        scan.reader = reader;
+      loadZxing().catch(function () {});
+      openCamera().then(function (stream) {
+        if (run !== scan.run) { stopStream(stream); return; }
+        scan.stream = stream;
+        scan.track = stream.getVideoTracks()[0];
+        var can = tuneCamera(scan.track);
+        torch.hidden = !can.torch;
+        torch.setAttribute('aria-pressed', 'false');
+        torch.textContent = '\u{1F526} Turn the light on';
+        video.srcObject = stream;
         video.hidden = false;
         frame.hidden = false;
-        clear(out).appendChild(note('Hold the barcode inside the box…'));
-        return reader.decodeFromConstraints({ video: { facingMode: 'environment' } }, video, function (result) {
-          if (result && scan.reader === reader) { Sound.tick(); lookup(result.getText()); }
+        clear(out);
+        var started = Date.now();
+        hint.textContent = HINTS[0][1];
+        var p = video.play();
+        if (p && p.catch) p.catch(function () {});
+        try { frame.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (err) {}
+        readFrames(video, function (value) {
+          Sound.tick();
+          if (navigator.vibrate) { try { navigator.vibrate(60); } catch (err) {} }
+          lookup(value);
+        }, function () {
+          var since = Date.now() - started, say = HINTS[0][1];
+          HINTS.forEach(function (h) { if (since >= h[0]) say = h[1]; });
+          if (hint.textContent !== say) hint.textContent = say;
         });
       }).catch(cameraRefused);
+    });
+
+    torch.addEventListener('click', function () {
+      if (!scan.track) return;
+      var on = torch.getAttribute('aria-pressed') !== 'true';
+      scan.track.applyConstraints({ advanced: [{ torch: on }] }).then(function () {
+        torch.setAttribute('aria-pressed', on ? 'true' : 'false');
+        torch.textContent = on ? '\u{1F526} Turn the light off' : '\u{1F526} Turn the light on';
+      }).catch(function () { torch.hidden = true; });
+    });
+
+    stopBtn.addEventListener('click', function () {
+      stopCamera();
+      frame.hidden = true;
+      video.hidden = true;
+      clear(out);
     });
 
     function cameraRefused() {
@@ -1832,10 +2383,11 @@
       frame.hidden = true;
       clear(out).appendChild(note('Reading the barcode in your photo…'));
       readBarcodePhoto(file).then(function (value) {
-        photo.value = '';
         if (value) lookup(value);
-        else clear(out).appendChild(note('Could not see a barcode in that photo. Try again closer, in good light, with the stripes filling most of the picture — or type the numbers below.', 'error'));
-      }).catch(function () { clear(out).appendChild(note('Could not read that photo. Type the numbers under the barcode instead.', 'error')); });
+        else clear(out).appendChild(note('Could not read a barcode in that photo. Try again in good light, with the barcode filling about half the picture and no shine on it — or type the numbers below.', 'error'));
+      }).catch(function () {
+        clear(out).appendChild(note('Could not read that photo. Type the numbers under the barcode instead.', 'error'));
+      }).then(function () { photo.value = ''; });
     });
 
     look.addEventListener('click', function () { lookup(code.value); });
