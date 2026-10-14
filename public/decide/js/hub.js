@@ -1,0 +1,2149 @@
+/*
+ * hub.js — everything after "what shall we eat".
+ *
+ * morsels45 started as a way to decide dinner. This file is the rest of the
+ * food hub around that: planning the week, shopping for it, cooking it, and
+ * the kitchen tools in between. Thirteen features in two new sections and
+ * two existing ones, each one either free with an account or Premium:
+ *
+ *   PLANNER (#view-planner)
+ *     Week          meal-prep calendar, with an AI that only ever works on
+ *                   the calendar — fill the gaps, plan a prep session,
+ *                   balance the week ................................ account
+ *     Shopping list built from the week's recipes, merged, by aisle . Premium
+ *     Nutrition     estimated per day against your targets ......... Premium
+ *     Budget        estimated cost per meal, cheaper swaps ......... Premium
+ *     Dinner party  a menu every guest can eat, and a timeline ..... Premium
+ *
+ *   KITCHEN (#view-kitchen)
+ *     Cookbook      your own and imported recipes, synced ......... Premium
+ *     Import        any recipe page, without the page ............. Premium
+ *     Scan          a barcode, checked against your rules ......... Premium
+ *     Fridge photo  what dinner is in there ....................... Premium
+ *     Timers        several at once, plus a unit converter ........ account
+ *     In season     what's good this month, and what to cook with it  account
+ *
+ *   NEWS          a one-minute AI briefing at the top .............. Premium
+ *   COOK MODE     hands-free: voice commands, steps read aloud ..... Premium
+ *
+ * Ten Premium, three free with an account — the account ones are the ones
+ * whose whole value is following you between devices.
+ *
+ * WHAT THIS FILE MAY TOUCH of the app is window.M45 (built in app.js) and
+ * nothing else; what it may ask the server is the hub routes under /api,
+ * every one of which checks the tier itself — what is gated here is gated
+ * again there, so nothing here is the lock, only the sign on the door.
+ */
+(function () {
+  'use strict';
+
+  var M = window.M45;
+  if (!M) return;
+  var Data = M.Data;
+  var Recipes = M.Recipes;
+  var Sound = M.Sound;
+
+  /* ------------------------------------------------------------ helpers -- */
+
+  function el(tag, props, kids) {
+    var node = document.createElement(tag);
+    if (props) {
+      Object.keys(props).forEach(function (key) {
+        var value = props[key];
+        if (value === null || value === undefined || value === false) return;
+        if (key === 'class') node.className = value;
+        else if (key === 'text') node.textContent = value;
+        else if (key === 'on') Object.keys(value).forEach(function (ev) { node.addEventListener(ev, value[ev]); });
+        else if (key === 'dataset') Object.keys(value).forEach(function (d) { node.dataset[d] = value[d]; });
+        else if (typeof value !== 'string' && key in node) node[key] = value;
+        else node.setAttribute(key, value === true ? '' : value);
+      });
+    }
+    (kids || []).forEach(function (kid) {
+      if (kid === null || kid === undefined || kid === false) return;
+      node.appendChild(typeof kid === 'string' ? document.createTextNode(kid) : kid);
+    });
+    return node;
+  }
+
+  function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); return node; }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+  function store(key, value) {
+    try {
+      if (value === undefined) return JSON.parse(localStorage.getItem('m45-' + key) || 'null');
+      localStorage.setItem('m45-' + key, JSON.stringify(value));
+    } catch (err) {}
+    return null;
+  }
+
+  var ERRORS = {
+    not_signed_in: 'Sign in to use this.',
+    premium_required: 'This is part of Premium.',
+    daily_limit: 'That is today’s limit for this — it resets at midnight (UTC).',
+    busy: 'The AI is busy right now. Try again in a minute.',
+    unavailable: 'That did not work just now. Try again in a minute.',
+    no_answer: 'The AI came back with nothing usable. Try again.',
+    storage_unavailable: 'Could not save just now. It is kept on this device and will sync next time.',
+    nothing_to_fill: 'There are no empty slots of that kind this week.',
+    empty_week: 'Put a few dishes in the week first.',
+    bad_url: 'That does not look like a web address.',
+    no_recipe: 'That page does not publish its recipe in a form we can read. Most big recipe sites do — try another.',
+    refused: 'That site does not let apps read its pages \u2014 Allrecipes, Serious Eats and Simply Recipes block everyone. BBC Good Food, Bon App\u00E9tit, King Arthur, Food Network and most others work.',
+    unreachable: 'That page did not answer.',
+    not_a_page: 'That address is not a web page.',
+    blocked: 'That address is not allowed.',
+    not_found: 'That barcode is not in Open Food Facts yet.',
+    bad_code: 'A barcode is 8 to 14 digits.',
+    bad_image: 'That photo could not be read. Try another.',
+    too_restrictive: 'Between them, the guests rule out nearly everything. Try fewer rules or fewer courses.',
+    no_guests: 'Add at least one guest.',
+    cookbook_full: 'Your cookbook is full (200 recipes). Delete one to add another.'
+  };
+
+  function errorText(err) {
+    return ERRORS[err && err.code] || 'Something went wrong. Try again.';
+  }
+
+  function api(path, options) {
+    options = options || {};
+    var init = { method: options.method || 'GET', headers: { Accept: 'application/json' } };
+    if (options.body !== undefined) {
+      init.headers['Content-Type'] = 'application/json';
+      init.body = JSON.stringify(options.body);
+    }
+    return fetch(path, init).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        if (!r.ok) {
+          var err = new Error(data.error || 'http_' + r.status);
+          err.code = data.error || (r.status === 401 ? 'not_signed_in' : r.status === 402 ? 'premium_required' : 'unavailable');
+          err.status = r.status;
+          throw err;
+        }
+        return data;
+      });
+    });
+  }
+
+  function signedIn() { return M.signedIn(); }
+  function plus() { return M.isPlus(); }
+
+  function signInHref(go) {
+    return '/api/oauth/login?redirect_to=' + encodeURIComponent('/decide/?go=' + go);
+  }
+
+  function signInCard(what, why, go) {
+    return el('div', { class: 'hub-gate' }, [
+      el('p', { class: 'hub-gate-tier', text: 'Free with an account' }),
+      el('p', { class: 'hub-gate-title', text: what }),
+      el('p', { class: 'hub-gate-why', text: why }),
+      el('p', { class: 'fine', text: 'Not Premium — just signed in, so it is the same on every device.' }),
+      // target="_top": see the note on #invite-signin in index.html.
+      el('a', { class: 'go go-sm hub-gate-go', href: signInHref(go), target: '_top' }, [
+        el('span', { class: 'go-label', text: 'Sign in with Whop' })
+      ])
+    ]);
+  }
+
+  function premiumCard(what, why, points) {
+    return el('div', { class: 'hub-gate is-premium' }, [
+      el('p', { class: 'hub-gate-tier', text: 'Premium' }),
+      el('p', { class: 'hub-gate-title', text: what }),
+      el('p', { class: 'hub-gate-why', text: why }),
+      points && points.length ? el('ul', { class: 'hub-gate-points' }, points.map(function (p) { return el('li', { text: p }); })) : null,
+      el('button', { class: 'go go-sm', type: 'button', on: { click: function () { M.goPremium(what); } } }, [
+        el('span', { class: 'go-label', text: 'Seven days free' })
+      ])
+    ]);
+  }
+
+  function head(mechanic, title, sub) {
+    return el('header', { class: 'head' }, [
+      el('p', { class: 'mechanic', text: mechanic }),
+      el('h1', { class: 'head-title', text: title }),
+      sub ? el('p', { class: 'head-sub', text: sub }) : null
+    ]);
+  }
+
+  function tabStrip(tabs, current, onPick) {
+    return el('div', { class: 'filters hub-tabs', role: 'tablist' }, tabs.map(function (tab) {
+      var on = tab.id === current;
+      return el('button', {
+        class: 'filter' + (on ? ' is-on' : ''),
+        type: 'button',
+        role: 'tab',
+        'aria-selected': on ? 'true' : 'false',
+        on: { click: function () { Sound.tick(); onPick(tab.id); } }
+      }, [tab.label, tab.premium ? el('span', { class: 'hub-tier-dot', title: 'Premium', 'aria-label': 'Premium', text: '✦' }) : null]);
+    }));
+  }
+
+  function note(text, kind) {
+    return el('p', { class: 'hub-note' + (kind ? ' is-' + kind : ''), role: kind === 'error' ? 'alert' : null, text: text });
+  }
+
+  function busyButton(btn, busy, label) {
+    btn.disabled = !!busy;
+    if (label) btn.textContent = label;
+  }
+
+  /* ----------------------------------------------------- the catalogue -- */
+
+  var FOOD = Data.ITEMS.filter(function (d) { return !(d.tags.drink > 0); });
+
+  function allowedFood() {
+    return FOOD.filter(function (d) { return !M.breaksRules(d); });
+  }
+
+  function dish(name) { return M.dishByName(name); }
+
+  function recipeFor(name) {
+    var list = Recipes.forDish(name);
+    return list && list.length ? list[0] : null;
+  }
+
+  function searchFood(query, limit) {
+    var q = query.trim().toLowerCase();
+    var pool = allowedFood();
+    if (!q) return pool.slice(0, limit);
+    var starts = [];
+    var contains = [];
+    pool.forEach(function (d) {
+      var n = d.name.toLowerCase();
+      if (n.indexOf(q) === 0) starts.push(d);
+      else if (n.indexOf(q) !== -1 || (d.blurb || '').toLowerCase().indexOf(q) !== -1) contains.push(d);
+    });
+    return starts.concat(contains).slice(0, limit);
+  }
+
+  /* --------------------------------------------------------- the week -- */
+
+  var DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+  var DAY_NAME = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+  var MEALS = ['breakfast', 'lunch', 'dinner', 'snack'];
+  var MEAL_NAME = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snack' };
+
+  function mondayOf(date) {
+    var d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d;
+  }
+
+  function isoDay(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+
+  function fromIso(iso) {
+    var p = iso.split('-');
+    return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  }
+
+  function dayDate(week, day) {
+    var d = fromIso(week);
+    d.setDate(d.getDate() + DAYS.indexOf(day));
+    return d;
+  }
+
+  function shortDate(d) {
+    try { return d.toLocaleDateString([], { day: 'numeric', month: 'short' }); } catch (err) { return d.getDate() + '/' + (d.getMonth() + 1); }
+  }
+
+  function emptyPlan() {
+    return { v: 1, slots: {}, prepDay: 'sun', checked: {}, extras: [], people: 2, prep: null, prepDone: {} };
+  }
+
+  var plan = {
+    week: isoDay(mondayOf(new Date())),
+    data: null,
+    loadedFor: null,
+    loading: false,
+    saveTimer: null,
+    saving: false,
+    status: '',
+    listeners: []
+  };
+
+  function onPlan(fn) { plan.listeners.push(fn); }
+  function planChanged() { plan.listeners.forEach(function (fn) { try { fn(); } catch (err) {} }); }
+
+  function loadWeek(week, force) {
+    if (!signedIn()) return Promise.resolve(null);
+    if (!force && plan.loadedFor === week && plan.data) return Promise.resolve(plan.data);
+    plan.loading = true;
+    plan.week = week;
+    var local = store('plan-' + week);
+    return api('/api/planner?week=' + week).then(function (res) {
+      plan.loading = false;
+      plan.data = normalise(res.plan || local || emptyPlan());
+      plan.loadedFor = week;
+      store('plan-' + week, plan.data);
+      planChanged();
+      return plan.data;
+    }).catch(function (err) {
+      plan.loading = false;
+      plan.data = normalise(local || emptyPlan());
+      plan.loadedFor = week;
+      plan.status = err.code === 'not_signed_in' ? '' : 'Offline copy — will sync when it can';
+      planChanged();
+      return plan.data;
+    });
+  }
+
+  function normalise(data) {
+    var base = emptyPlan();
+    if (!data || typeof data !== 'object') return base;
+    Object.keys(base).forEach(function (k) { if (data[k] === undefined) data[k] = base[k]; });
+    if (!data.slots || typeof data.slots !== 'object') data.slots = {};
+    return data;
+  }
+
+  function savePlan() {
+    if (!plan.data) return;
+    store('plan-' + plan.week, plan.data);
+    plan.status = 'Saving…';
+    planChanged();
+    clearTimeout(plan.saveTimer);
+    var week = plan.week;
+    var data = plan.data;
+    plan.saveTimer = setTimeout(function () {
+      api('/api/planner', { method: 'PUT', body: { week: week, plan: data } }).then(function () {
+        plan.status = 'Saved';
+        planChanged();
+      }).catch(function (err) {
+        plan.status = errorText(err);
+        planChanged();
+      });
+    }, 700);
+  }
+
+  function slotItems(key) {
+    var list = plan.data && plan.data.slots[key];
+    return Array.isArray(list) ? list : [];
+  }
+
+  function setSlot(key, items) {
+    if (!plan.data) return;
+    if (items.length) plan.data.slots[key] = items;
+    else delete plan.data.slots[key];
+    savePlan();
+  }
+
+  function addToSlot(key, item) {
+    var items = slotItems(key).slice();
+    if (items.length >= 4) items.shift();
+    items.push(item);
+    setSlot(key, items);
+  }
+
+  function weekDishNames() {
+    var names = [];
+    if (!plan.data) return names;
+    Object.keys(plan.data.slots).forEach(function (key) {
+      slotItems(key).forEach(function (item) {
+        if (item.t === 'dish' && names.indexOf(item.name) === -1) names.push(item.name);
+      });
+    });
+    return names;
+  }
+
+  // The week as "slot key -> catalogue names", which is what the calendar AI reads.
+  function slotsForAi() {
+    var out = {};
+    if (!plan.data) return out;
+    Object.keys(plan.data.slots).forEach(function (key) {
+      var names = slotItems(key).filter(function (i) { return i.t === 'dish'; }).map(function (i) { return i.name; });
+      if (names.length) out[key] = names;
+    });
+    return out;
+  }
+
+  function itemLabel(item) {
+    if (item.t === 'note') return item.text;
+    return item.name;
+  }
+
+  function itemIcon(item) {
+    if (item.t === 'note') return '\u{1F4DD}';
+    if (item.t === 'recipe') return '\u{1F4D6}';
+    var d = dish(item.name);
+    return d ? d.icon : '\u{1F37D}️';
+  }
+
+  /* ====================================================================
+   * PLANNER
+   * ==================================================================== */
+
+  var planner = { tab: store('planner-tab') || 'week', root: null, ai: null };
+
+  var PLANNER_TABS = [
+    { id: 'week', label: 'Week' },
+    { id: 'shop', label: 'Shopping list', premium: true },
+    { id: 'nutrition', label: 'Nutrition', premium: true },
+    { id: 'budget', label: 'Budget', premium: true },
+    { id: 'party', label: 'Dinner party', premium: true }
+  ];
+
+  function renderPlanner() {
+    var root = M.$('view-planner');
+    if (!root) return;
+    planner.root = root;
+    clear(root);
+    root.appendChild(head('Plan the week', 'Meal planner',
+      'Plan the week’s meals, let the AI fill the gaps and plan your prep, then shop, count and budget it — all from the same calendar.'));
+    root.appendChild(tabStrip(PLANNER_TABS, planner.tab, function (id) {
+      planner.tab = id;
+      store('planner-tab', id);
+      renderPlanner();
+    }));
+    var body = el('div', { class: 'hub-body' });
+    root.appendChild(body);
+
+    if (planner.tab === 'week') return renderWeek(body);
+    if (planner.tab === 'shop') return renderShop(body);
+    if (planner.tab === 'nutrition') return renderNutrition(body);
+    if (planner.tab === 'budget') return renderBudget(body);
+    if (planner.tab === 'party') return renderParty(body);
+  }
+
+  function needsWeek(body, render) {
+    if (!signedIn()) {
+      body.appendChild(signInCard('Your week, planned', 'Everything here starts from the meal calendar, which comes free with an account.', 'planner'));
+      return false;
+    }
+    if (!plan.data || plan.loadedFor !== plan.week) {
+      body.appendChild(note('Loading your week…'));
+      loadWeek(plan.week).then(function () { if (planner.root && M.currentView() === 'planner') render(clear(body)); });
+      return false;
+    }
+    return true;
+  }
+
+  /* -------------------------------------------------- week (account) -- */
+
+  function renderWeek(body) {
+    if (!signedIn()) {
+      body.appendChild(signInCard('Meal-prep calendar',
+        'Plan breakfast, lunch, dinner and a snack for every day of the week. Tap a slot to add a dish from the catalogue, one of your own recipes, or a note — and let the calendar’s AI fill the gaps, plan a prep session and check the balance.', 'planner'));
+      return;
+    }
+    if (!needsWeek(body, renderWeek)) return;
+
+    var monday = fromIso(plan.week);
+    var sunday = dayDate(plan.week, 'sun');
+    var thisWeek = isoDay(mondayOf(new Date()));
+    var status = el('span', { class: 'hub-status', 'aria-live': 'polite', text: plan.status });
+
+    body.appendChild(el('div', { class: 'hub-week-nav' }, [
+      el('button', { class: 'hub-arrow', type: 'button', 'aria-label': 'Previous week', text: '‹', on: { click: function () { shiftWeek(-7); } } }),
+      el('p', { class: 'hub-week-title', text: 'Week of ' + shortDate(monday) + ' – ' + shortDate(sunday) }),
+      el('button', { class: 'hub-arrow', type: 'button', 'aria-label': 'Next week', text: '›', on: { click: function () { shiftWeek(7); } } }),
+      plan.week !== thisWeek ? el('button', { class: 'quiet', type: 'button', text: 'This week', on: { click: function () { goWeek(thisWeek); } } }) : null,
+      status
+    ]));
+
+    body.appendChild(renderAiBar());
+
+    var grid = el('div', { class: 'hub-week' });
+    var todayIso = isoDay(new Date());
+    DAYS.forEach(function (day) {
+      var date = dayDate(plan.week, day);
+      var row = el('div', { class: 'hub-day' + (isoDay(date) === todayIso ? ' is-today' : '') }, [
+        el('p', { class: 'hub-day-name' }, [DAY_NAME[day], el('span', { text: ' ' + shortDate(date) })])
+      ]);
+      MEALS.forEach(function (meal) { row.appendChild(renderSlot(day + '-' + meal, meal)); });
+      grid.appendChild(row);
+    });
+    body.appendChild(grid);
+
+    body.appendChild(el('p', { class: 'fine hub-foot', text: 'Saved to your account as you go, so it is the same on your phone and your laptop. Tap a dish to see its recipe.' }));
+  }
+
+  function shiftWeek(days) {
+    var d = fromIso(plan.week);
+    d.setDate(d.getDate() + days);
+    goWeek(isoDay(d));
+  }
+
+  function goWeek(week) {
+    plan.week = week;
+    plan.data = null;
+    planner.ai = null;
+    plan.status = '';
+    renderPlanner();
+  }
+
+  function renderSlot(key, meal) {
+    var items = slotItems(key);
+    var list = el('ul', { class: 'hub-slot-items' }, items.map(function (item, i) {
+      return el('li', { class: 'hub-chip' + (item.ai ? ' is-ai' : '') }, [
+        el('button', {
+          class: 'hub-chip-main',
+          type: 'button',
+          title: item.t === 'note' ? 'Note' : 'Open ' + item.name,
+          on: { click: function () { openItem(item); } }
+        }, [el('span', { class: 'hub-chip-icon', 'aria-hidden': 'true', text: itemIcon(item) }), el('span', { class: 'hub-chip-name', text: itemLabel(item) })]),
+        el('button', {
+          class: 'hub-chip-x',
+          type: 'button',
+          'aria-label': 'Remove ' + itemLabel(item),
+          text: '×',
+          on: { click: function () {
+            var next = slotItems(key).slice();
+            next.splice(i, 1);
+            setSlot(key, next);
+            renderPlanner();
+          } }
+        })
+      ]);
+    }));
+    return el('div', { class: 'hub-slot', dataset: { slot: key } }, [
+      el('p', { class: 'hub-slot-label', text: MEAL_NAME[meal] }),
+      list,
+      el('button', { class: 'hub-add', type: 'button', 'aria-label': 'Add to ' + MEAL_NAME[meal], text: '+ Add', on: { click: function () { openPicker(key, meal); } } })
+    ]);
+  }
+
+  function openItem(item) {
+    if (item.t === 'dish') { M.openDish(item.name); return; }
+    if (item.t === 'recipe') {
+      kitchen.tab = 'cookbook';
+      kitchen.open = item.id;
+      store('kitchen-tab', 'cookbook');
+      M.setView('kitchen');
+    }
+  }
+
+  /* ---- the picker: a dish, one of your recipes, or a note -------------- */
+
+  var picker = { dialog: null, slot: null };
+
+  function openPicker(slot, meal) {
+    picker.slot = slot;
+    if (!picker.dialog) {
+      picker.dialog = el('dialog', { class: 'hub-picker', 'aria-label': 'Add to the calendar' });
+      document.body.appendChild(picker.dialog);
+      picker.dialog.addEventListener('click', function (e) { if (e.target === picker.dialog) picker.dialog.close(); });
+    }
+    var dlg = clear(picker.dialog);
+    var parts = slot.split('-');
+    var results = el('ul', { class: 'hub-picker-list' });
+    var input = el('input', { class: 'hub-input', type: 'search', placeholder: 'Search 450 dishes, or type a note…', 'aria-label': 'Search dishes' });
+
+    function add(item) {
+      addToSlot(picker.slot, item);
+      Sound.tick();
+      dlg.close();
+      renderPlanner();
+    }
+
+    function paint() {
+      clear(results);
+      var q = input.value;
+      var foods = searchFood(q, 24);
+      // Breakfast slots lead with breakfast food when nothing is typed.
+      if (!q.trim() && meal === 'breakfast') foods = allowedFood().filter(function (d) { return d.tags.breakfast > 0; }).slice(0, 24);
+      (cookbook.list || []).filter(function (r) { return !q.trim() || r.name.toLowerCase().indexOf(q.trim().toLowerCase()) !== -1; }).slice(0, 6).forEach(function (r) {
+        results.appendChild(el('li', {}, [el('button', { class: 'hub-picker-item', type: 'button', on: { click: function () { add({ t: 'recipe', id: r.id, name: r.name }); } } }, [
+          el('span', { 'aria-hidden': 'true', text: '\u{1F4D6}' }), ' ' + r.name, el('span', { class: 'hub-picker-meta', text: 'Your cookbook' })
+        ])]));
+      });
+      foods.forEach(function (d) {
+        results.appendChild(el('li', {}, [el('button', { class: 'hub-picker-item', type: 'button', on: { click: function () { add({ t: 'dish', name: d.name }); } } }, [
+          el('span', { 'aria-hidden': 'true', text: d.icon }), ' ' + d.name, el('span', { class: 'hub-picker-meta', text: d.blurb })
+        ])]));
+      });
+      // Last, not first: typing "pizza" and pressing Enter means the dish.
+      if (q.trim()) {
+        results.appendChild(el('li', {}, [el('button', { class: 'hub-picker-item is-note', type: 'button', on: { click: function () { add({ t: 'note', text: q.trim().slice(0, 80) }); } } }, [
+          el('span', { 'aria-hidden': 'true', text: '\u{1F4DD}' }), ' Add “' + q.trim().slice(0, 40) + '” as a note'
+        ])]));
+      }
+      if (!results.children.length) results.appendChild(el('li', { class: 'fine', text: 'Nothing matches. Type a note instead.' }));
+    }
+
+    input.addEventListener('input', paint);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        var first = results.querySelector('button');
+        if (first) first.click();
+      }
+    });
+    dlg.appendChild(el('div', { class: 'hub-picker-head' }, [
+      el('p', { class: 'hub-picker-title', text: DAY_NAME[parts[0]] + ' · ' + MEAL_NAME[parts[1]] }),
+      el('button', { class: 'quiet', type: 'button', text: 'Close', on: { click: function () { dlg.close(); } } })
+    ]));
+    dlg.appendChild(input);
+    dlg.appendChild(el('p', { class: 'fine', text: 'Only dishes that keep your food rules are listed.' }));
+    dlg.appendChild(results);
+    paint();
+    if (plus() && !cookbook.list && !cookbook.loading) loadCookbook().then(paint).catch(function () {});
+    dlg.showModal();
+    input.focus();
+  }
+
+  /* ---- the calendar's AI ----------------------------------------------- */
+
+  function emptySlots(which) {
+    var meals = which === 'dinner' ? ['dinner'] : which === 'main' ? ['lunch', 'dinner'] : MEALS;
+    var out = [];
+    DAYS.forEach(function (day) {
+      meals.forEach(function (meal) {
+        var key = day + '-' + meal;
+        if (!slotItems(key).length) out.push(key);
+      });
+    });
+    return out;
+  }
+
+  function renderAiBar() {
+    var wrap = el('section', { class: 'hub-ai', 'aria-label': 'Calendar assistant' });
+    var fillWhich = el('select', { class: 'hub-select', 'aria-label': 'Which empty slots to fill' }, [
+      el('option', { value: 'dinner', text: 'Empty dinners' }),
+      el('option', { value: 'main', text: 'Empty lunches and dinners' }),
+      el('option', { value: 'all', text: 'Every empty slot' })
+    ]);
+    fillWhich.value = store('fill-which') || 'dinner';
+    fillWhich.addEventListener('change', function () { store('fill-which', fillWhich.value); });
+
+    var fillBtn = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: '✨ Fill the gaps' })]);
+    var prepBtn = el('button', { class: 'quiet', type: 'button', text: '\u{1F961} Plan my prep session' });
+    var balanceBtn = el('button', { class: 'quiet', type: 'button', text: '⚖️ Balance my week' });
+    var out = el('div', { class: 'hub-ai-out', 'aria-live': 'polite' });
+
+    fillBtn.addEventListener('click', function () {
+      var slots = emptySlots(fillWhich.value);
+      if (!slots.length) { clear(out).appendChild(note(ERRORS.nothing_to_fill)); return; }
+      var before = JSON.stringify(plan.data.slots);
+      busyButton(fillBtn, true);
+      clear(out).appendChild(note('Filling ' + slots.length + ' slot' + (slots.length === 1 ? '' : 's') + '…'));
+      api('/api/planner-ai', { method: 'POST', body: { action: 'fill', slots: slotsForAi(), fill: slots, rules: M.effectiveRules(), liked: M.likedNames() } })
+        .then(function (res) {
+          res.fills.forEach(function (f) { addToSlot(f.slot, { t: 'dish', name: f.name, ai: true }); });
+          planner.ai = { kind: 'fill', count: res.fills.length, undo: before };
+          Sound.win();
+          renderPlanner();
+        })
+        .catch(function (err) { busyButton(fillBtn, false); clear(out).appendChild(note(errorText(err), 'error')); });
+    });
+
+    prepBtn.addEventListener('click', function () {
+      busyButton(prepBtn, true);
+      clear(out).appendChild(note('Planning your prep…'));
+      api('/api/planner-ai', { method: 'POST', body: { action: 'prep', slots: slotsForAi(), rules: M.effectiveRules() } })
+        .then(function (res) {
+          plan.data.prep = { sessions: res.sessions, keeps: res.keeps };
+          plan.data.prepDone = {};
+          savePlan();
+          planner.ai = { kind: 'prep' };
+          renderPlanner();
+        })
+        .catch(function (err) { busyButton(prepBtn, false); clear(out).appendChild(note(errorText(err), 'error')); });
+    });
+
+    balanceBtn.addEventListener('click', function () {
+      busyButton(balanceBtn, true);
+      clear(out).appendChild(note('Reading your week…'));
+      api('/api/planner-ai', { method: 'POST', body: { action: 'balance', slots: slotsForAi(), rules: M.effectiveRules() } })
+        .then(function (res) {
+          planner.ai = { kind: 'balance', notes: res.notes, swaps: res.swaps };
+          renderPlanner();
+        })
+        .catch(function (err) { busyButton(balanceBtn, false); clear(out).appendChild(note(errorText(err), 'error')); });
+    });
+
+    wrap.appendChild(el('div', { class: 'hub-ai-head' }, [
+      el('p', { class: 'hub-ai-title', text: 'Calendar AI' }),
+      el('p', { class: 'fine', text: 'It only works on this calendar: filling it, planning the prep, checking the balance. Every dish it picks is from the catalogue and keeps your food rules.' })
+    ]));
+    wrap.appendChild(el('div', { class: 'hub-ai-row' }, [fillWhich, fillBtn, prepBtn, balanceBtn]));
+    wrap.appendChild(out);
+
+    var ai = planner.ai;
+    if (ai && ai.kind === 'fill') {
+      out.appendChild(el('p', { class: 'hub-note is-good' }, [
+        'Added ' + ai.count + ' dish' + (ai.count === 1 ? '' : 'es') + ' (marked ✨). ',
+        el('button', { class: 'link-btn', type: 'button', text: 'Undo', on: { click: function () {
+          plan.data.slots = JSON.parse(ai.undo);
+          planner.ai = null;
+          savePlan();
+          renderPlanner();
+        } } })
+      ]));
+    }
+    if (ai && ai.kind === 'balance') {
+      if (ai.notes.length) out.appendChild(el('ul', { class: 'hub-ai-notes' }, ai.notes.map(function (n) { return el('li', { text: n }); })));
+      ai.swaps.forEach(function (s) {
+        var parts = s.slot.split('-');
+        out.appendChild(el('div', { class: 'hub-swap' }, [
+          el('p', {}, [el('strong', { text: DAY_NAME[parts[0]] + ' ' + MEAL_NAME[parts[1]].toLowerCase() + ': ' }), s.icon + ' ' + s.name + ' — ' + s.why]),
+          el('button', { class: 'quiet', type: 'button', text: 'Swap it in', on: { click: function () {
+            setSlot(s.slot, [{ t: 'dish', name: s.name, ai: true }]);
+            ai.swaps = ai.swaps.filter(function (x) { return x !== s; });
+            renderPlanner();
+          } } })
+        ]));
+      });
+    }
+    if (plan.data && plan.data.prep && plan.data.prep.sessions) out.appendChild(renderPrep(plan.data.prep));
+    return wrap;
+  }
+
+  function renderPrep(prep) {
+    var done = plan.data.prepDone || (plan.data.prepDone = {});
+    // Folded away with a tap: it is long, and it sits above the calendar.
+    var box = el('details', { class: 'hub-prep', open: !store('prep-folded') }, [el('summary', { class: 'hub-ai-title', text: '\u{1F961} Your prep plan' })]);
+    box.addEventListener('toggle', function () { store('prep-folded', !box.open); });
+    prep.sessions.forEach(function (s, si) {
+      box.appendChild(el('p', { class: 'hub-prep-title', text: s.title + (s.minutes ? ' · about ' + s.minutes + ' min' : '') }));
+      box.appendChild(el('ul', { class: 'hub-checks' }, s.tasks.map(function (task, ti) {
+        var key = si + ':' + ti;
+        var box2 = el('input', { type: 'checkbox', checked: !!done[key], on: { change: function () { done[key] = box2.checked; savePlan(); } } });
+        return el('li', {}, [el('label', {}, [box2, ' ' + task])]);
+      })));
+    });
+    if (prep.keeps && prep.keeps.length) {
+      box.appendChild(el('p', { class: 'hub-prep-title', text: 'How long it keeps' }));
+      box.appendChild(el('ul', { class: 'hub-ai-notes' }, prep.keeps.map(function (k) { return el('li', { text: k }); })));
+    }
+    box.appendChild(el('button', { class: 'link-btn', type: 'button', text: 'Clear the prep plan', on: { click: function () { plan.data.prep = null; savePlan(); renderPlanner(); } } }));
+    return box;
+  }
+
+  /* ---------------------------------------------- shopping list (P) -- */
+
+  var AISLES = [
+    ['Fruit & veg', /onion|garlic|tomato|potato|carrot|bell pepper|red pepper|green pepper|yellow pepper|peppers\b|chilli|chili|lettuce|spinach|cabbage|leek|celery|cucumber|courgette|zucchini|aubergine|eggplant|mushroom|parsley|coriander|cilantro|basil|mint|thyme|rosemary|dill|sage|ginger|lemon|lime|apple|banana|berr|avocado|spring onion|scallion|shallot|kale|broccoli|cauliflower|squash|pumpkin|sweetcorn|corn on|\bpeas?\b|beansprout|bean sprout|rocket|orange|mango|pineapple|grape|herb|salad|radish|beetroot|fennel|asparagus|sweet potato|plantain|okra|pak choi|bok choy|lemongrass|chive/i],
+    ['Meat & fish', /chicken|beef|pork|lamb|mince|bacon|sausage|\bham\b|turkey|duck|fish|salmon|cod|tuna|prawn|shrimp|steak|chorizo|anchov|mussel|squid|haddock|mackerel|crab|lobster|scallop|pancetta|prosciutto|veal|goat/i],
+    ['Dairy & eggs', /milk|cream|butter|cheese|yoghurt|yogurt|\beggs?\b|parmesan|mozzarella|feta|cr[eè]me|ghee|halloumi|paneer|ricotta|mascarpone/i],
+    ['Bread & bakery', /bread|\bbuns?\b|rolls?\b|tortilla|pitta|pita|naan|bagel|wraps?\b|baguette|brioche|croissant|crumpet|muffin/i],
+    ['Tins & jars', /\btins?\b|\bcans?\b|tinned|canned|passata|stock|broth|sauce|paste|ketchup|mayo|mustard|vinegar|honey|\bjam\b|peanut butter|coconut milk|soy|chutney|pickle|olives|capers|syrup|tahini|miso|fish sauce/i],
+    ['Cupboard', /flour|sugar|\brice\b|pasta|spaghetti|noodle|oats|lentil|chickpea|beans|spice|cumin|paprika|turmeric|cinnamon|nutmeg|cardamom|clove|chilli flakes|oregano|bay lea|salt|oil|baking|yeast|cocoa|chocolate|\bnuts?\b|almond|cashew|walnut|peanut|seeds?\b|stock cube|curry powder|garam masala|vanilla|cornflour|cornstarch|breadcrumb|couscous|quinoa|polenta|bulgur|semolina/i],
+    ['Frozen', /frozen|ice cream/i]
+  ];
+
+  function aisleOf(name) {
+    for (var i = 0; i < AISLES.length; i++) if (AISLES[i][1].test(name)) return AISLES[i][0];
+    return 'Everything else';
+  }
+
+  var QTY_LINE = /^((?:\d+(?:\.\d+)?)(?:\s+\d+\/\d+)?|\d+\/\d+)\s*(kg|g|ml|l|tsp|tbsp|cups?|cloves?|tins?|cans?|slices?|handfuls?|bunch(?:es)?|pinch(?:es)?|x)?\b\.?\s*(.*)$/i
+
+  function parseLine(line) {
+    var m = QTY_LINE.exec(line.trim());
+    var qty = null;
+    var unit = '';
+    var rest = line.trim();
+    if (m) {
+      qty = Recipes.parseQuantity(m[1]);
+      unit = (m[2] || '').toLowerCase().replace(/s$/, '');
+      rest = m[3] || '';
+    }
+    var name = rest.replace(/\([^)]*\)/g, ' ').split(',')[0].replace(/^(of|large|small|medium)\s+/i, '').replace(/\s+/g, ' ').trim();
+    return { qty: qty, unit: unit, name: name || line.trim(), line: line.trim() };
+  }
+
+  function shoppingItems(people) {
+    var merged = {};
+    var meals = 0;
+    if (!plan.data) return { items: [], meals: 0, missing: [] };
+    var missing = [];
+    Object.keys(plan.data.slots).forEach(function (key) {
+      slotItems(key).forEach(function (item) {
+        var recipe = null;
+        var from = item.name;
+        if (item.t === 'dish') recipe = recipeFor(item.name);
+        else if (item.t === 'recipe') recipe = (cookbook.list || []).filter(function (r) { return r.id === item.id; })[0] || null;
+        else return;
+        if (!recipe) { if (missing.indexOf(from) === -1) missing.push(from); return; }
+        meals++;
+        Recipes.scale(recipe, people).forEach(function (line) {
+          var p = parseLine(line);
+          var k = p.name.toLowerCase() + '|' + p.unit;
+          var e = merged[k];
+          if (!e) e = merged[k] = { name: p.name, unit: p.unit, qty: 0, counted: true, lines: [], from: [] };
+          if (p.qty === null || !isFinite(p.qty)) e.counted = false;
+          else e.qty += p.qty;
+          e.lines.push(p.line);
+          if (e.from.indexOf(from) === -1) e.from.push(from);
+        });
+      });
+    });
+    var items = Object.keys(merged).map(function (k) {
+      var e = merged[k];
+      var text;
+      if (e.counted && e.qty > 0) {
+        var q = Recipes.formatQuantity(e.qty);
+        text = q + (e.unit ? (['g', 'kg', 'ml', 'l'].indexOf(e.unit) !== -1 ? e.unit + ' ' : ' ' + e.unit + (e.qty > 1 && /^(tin|can|clove|slice|handful|cup|bunch|pinch)$/.test(e.unit) ? 's ' : ' ')) : ' ') + e.name;
+      } else {
+        text = e.lines.length === 1 ? e.lines[0] : e.name + ' (' + e.lines.length + ' recipes)';
+      }
+      return { key: k, text: text.replace(/\s+/g, ' ').trim(), aisle: aisleOf(e.name), from: e.from };
+    });
+    (plan.data.extras || []).forEach(function (x, i) {
+      items.push({ key: 'extra:' + i, text: x, aisle: 'Your extras', from: [], extra: i });
+    });
+    return { items: items, meals: meals, missing: missing };
+  }
+
+  function renderShop(body) {
+    if (!plus()) {
+      body.appendChild(premiumCard('Shopping list from your week',
+        'Every ingredient in every recipe on your calendar, worked out for how many you are feeding, merged into one list and sorted by aisle.',
+        ['Two recipes that both need onions become one line with the total', 'Scaled to your household size', 'Tick things off in the shop; it syncs to your other devices', 'Copy or share it in one tap']));
+      return;
+    }
+    if (!needsWeek(body, renderShop)) return;
+    var people = plan.data.people || 2;
+    var hideDone = !!store('shop-hide');
+    var result = shoppingItems(people);
+    if (!cookbook.list && !cookbook.loading && Object.keys(plan.data.slots).some(function (k) { return slotItems(k).some(function (i) { return i.t === 'recipe'; }); })) {
+      loadCookbook().then(function () { renderPlanner(); }).catch(function () {});
+    }
+
+    var peopleSel = el('select', { class: 'hub-select', 'aria-label': 'How many people' }, [1, 2, 3, 4, 5, 6, 8].map(function (n) {
+      return el('option', { value: String(n), text: n + (n === 1 ? ' person' : ' people') });
+    }));
+    peopleSel.value = String(people);
+    peopleSel.addEventListener('change', function () { plan.data.people = Number(peopleSel.value); savePlan(); renderPlanner(); });
+
+    var copyBtn = el('button', { class: 'quiet', type: 'button', text: 'Copy the list' });
+    var shareBtn = navigator.share ? el('button', { class: 'quiet', type: 'button', text: 'Share' }) : null;
+    var hideBtn = el('label', { class: 'hub-toggle' }, [el('input', { type: 'checkbox', checked: hideDone, on: { change: function (e) { store('shop-hide', e.target.checked); renderPlanner(); } } }), ' Hide ticked']);
+
+    body.appendChild(el('div', { class: 'hub-row' }, [
+      el('p', { class: 'hub-week-title', text: result.items.length + ' things for ' + result.meals + ' meal' + (result.meals === 1 ? '' : 's') }),
+      peopleSel, hideBtn, copyBtn, shareBtn
+    ]));
+    // The shared browser, where a week's shop actually happens: one
+    // supermarket basket, filled by both of you. "What's this?" opens the
+    // same explainer as every other shared-browser button (see #beam-help).
+    body.appendChild(el('div', { class: 'hub-row' }, [
+      el('button', { class: 'go go-sm go-alt', type: 'button', on: { click: function () { M.openBeam('shop', 'This week\u2019s list'); } } }, [el('span', { class: 'go-label', text: '\u{1F6D2} Shop it together' })]),
+      el('button', { class: 'link-btn beam-help-link', type: 'button', text: 'What\u2019s this?' }),
+      el('span', { class: 'fine', text: 'One supermarket basket, filled by both of you from your own phones.' })
+    ]));
+
+    if (!result.items.length) {
+      body.appendChild(note('Nothing to buy yet. Add dishes to this week’s calendar and their ingredients appear here.'));
+    }
+
+    var checked = plan.data.checked || (plan.data.checked = {});
+    var byAisle = {};
+    result.items.forEach(function (it) { (byAisle[it.aisle] = byAisle[it.aisle] || []).push(it); });
+    var order = AISLES.map(function (a) { return a[0]; }).concat(['Everything else', 'Your extras']);
+    var textLines = [];
+    order.forEach(function (aisle) {
+      var items = byAisle[aisle];
+      if (!items) return;
+      textLines.push('', aisle.toUpperCase());
+      var ul = el('ul', { class: 'hub-checks hub-shop' });
+      items.sort(function (a, b) { return a.text.localeCompare(b.text); }).forEach(function (it) {
+        textLines.push((checked[it.key] ? '[x] ' : '[ ] ') + it.text);
+        if (hideDone && checked[it.key]) return;
+        var box = el('input', { type: 'checkbox', checked: !!checked[it.key], on: { change: function () {
+          if (box.checked) checked[it.key] = true; else delete checked[it.key];
+          savePlan();
+          li.classList.toggle('is-done', box.checked);
+        } } });
+        var li = el('li', { class: checked[it.key] ? 'is-done' : '' }, [
+          el('label', {}, [box, ' ', el('span', { text: it.text }), it.from.length ? el('span', { class: 'hub-from', text: ' · ' + it.from.slice(0, 3).join(', ') }) : null]),
+          it.extra !== undefined ? el('button', { class: 'hub-chip-x', type: 'button', 'aria-label': 'Remove ' + it.text, text: '×', on: { click: function () {
+            plan.data.extras.splice(it.extra, 1);
+            savePlan();
+            renderPlanner();
+          } } }) : null
+        ]);
+        ul.appendChild(li);
+      });
+      body.appendChild(el('h2', { class: 'strip-title', text: aisle }));
+      body.appendChild(ul);
+    });
+
+    var extra = el('input', { class: 'hub-input', type: 'text', maxlength: '80', placeholder: 'Add something else — kitchen roll, coffee…', 'aria-label': 'Add an item' });
+    var addBtn = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Add' })]);
+    function addExtra() {
+      var v = extra.value.trim();
+      if (!v) return;
+      plan.data.extras = (plan.data.extras || []).concat([v.slice(0, 80)]).slice(-40);
+      savePlan();
+      renderPlanner();
+    }
+    addBtn.addEventListener('click', addExtra);
+    extra.addEventListener('keydown', function (e) { if (e.key === 'Enter') addExtra(); });
+    body.appendChild(el('div', { class: 'hub-row hub-add-row' }, [extra, addBtn]));
+
+    if (result.missing.length) body.appendChild(note('No recipe on file for: ' + result.missing.join(', ') + ' — so nothing from those is on the list.'));
+
+    var text = ('Shopping list — week of ' + shortDate(fromIso(plan.week)) + '\n' + textLines.join('\n')).trim();
+    copyBtn.addEventListener('click', function () {
+      try {
+        navigator.clipboard.writeText(text).then(function () { copyBtn.textContent = 'Copied'; });
+      } catch (err) { copyBtn.textContent = 'Could not copy'; }
+    });
+    if (shareBtn) shareBtn.addEventListener('click', function () { navigator.share({ title: 'Shopping list', text: text }).catch(function () {}); });
+  }
+
+  /* -------------------------------------------------- nutrition (P) -- */
+
+  var nutrition = { data: {}, pending: [], loading: false, error: '' };
+
+  function targets() {
+    return store('nutrition-targets') || { kcal: 2000, protein: 60, carbs: 260, fat: 70, fibre: 30 };
+  }
+
+  function renderNutrition(body) {
+    if (!plus()) {
+      body.appendChild(premiumCard('Nutrition for your week',
+        'Roughly what each day on your calendar adds up to — energy, protein, carbs, fat and fibre — against targets you set.',
+        ['Estimated per serving from the recipe each dish actually uses', 'Day-by-day totals and a weekly average', 'Set your own daily targets', 'Estimates, clearly labelled — not a medical tool']));
+      return;
+    }
+    if (!needsWeek(body, renderNutrition)) return;
+    var names = weekDishNames();
+    if (!names.length) {
+      body.appendChild(note('Add dishes to this week’s calendar and their nutrition appears here.'));
+      return;
+    }
+    var want = names.filter(function (n) { return !nutrition.data[n]; });
+    if (want.length && !nutrition.loading && !nutrition.error) {
+      nutrition.loading = true;
+      api('/api/nutrition', { method: 'POST', body: { dishes: want } }).then(function (res) {
+        nutrition.loading = false;
+        Object.keys(res.nutrition || {}).forEach(function (n) { nutrition.data[n] = res.nutrition[n]; });
+        nutrition.pending = res.pending || [];
+        if (M.currentView() === 'planner' && planner.tab === 'nutrition') renderPlanner();
+      }).catch(function (err) {
+        nutrition.loading = false;
+        nutrition.error = errorText(err);
+        if (M.currentView() === 'planner' && planner.tab === 'nutrition') renderPlanner();
+      });
+    }
+
+    var t = targets();
+    var keys = [['kcal', 'Energy', 'kcal'], ['protein', 'Protein', 'g'], ['carbs', 'Carbs', 'g'], ['fat', 'Fat', 'g'], ['fibre', 'Fibre', 'g']];
+
+    var form = el('div', { class: 'hub-row hub-targets' }, [el('span', { class: 'fine', text: 'Daily targets:' })].concat(keys.map(function (k) {
+      var input = el('input', { class: 'hub-input hub-num', type: 'number', min: '0', value: String(t[k[0]]), 'aria-label': k[1] + ' target' });
+      input.addEventListener('change', function () {
+        var next = targets();
+        next[k[0]] = Math.max(0, Number(input.value) || 0);
+        store('nutrition-targets', next);
+        renderPlanner();
+      });
+      return el('label', { class: 'hub-target' }, [k[1] + ' ', input, ' ' + k[2]]);
+    })));
+    body.appendChild(form);
+
+    if (nutrition.loading) body.appendChild(note('Working out ' + want.length + ' dish' + (want.length === 1 ? '' : 'es') + '…'));
+    if (nutrition.error) body.appendChild(el('p', { class: 'hub-note is-error' }, [nutrition.error + ' ', el('button', { class: 'link-btn', type: 'button', text: 'Try again', on: { click: function () { nutrition.error = ''; renderPlanner(); } } })]));
+
+    var table = el('div', { class: 'hub-nutri' });
+    var totalsAll = { kcal: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 };
+    var plannedDays = 0;
+    DAYS.forEach(function (day) {
+      var sums = { kcal: 0, protein: 0, carbs: 0, fat: 0, fibre: 0 };
+      var count = 0;
+      MEALS.forEach(function (meal) {
+        slotItems(day + '-' + meal).forEach(function (item) {
+          var n = item.t === 'dish' && nutrition.data[item.name];
+          if (!n) return;
+          count++;
+          keys.forEach(function (k) { sums[k[0]] += n[k[0]]; });
+        });
+      });
+      if (count) { plannedDays++; keys.forEach(function (k) { totalsAll[k[0]] += sums[k[0]]; }); }
+      table.appendChild(el('div', { class: 'hub-nutri-day' }, [
+        el('p', { class: 'hub-day-name', text: DAY_NAME[day] }),
+        count ? el('div', { class: 'hub-bars' }, keys.map(function (k) {
+          var pct = t[k[0]] ? Math.min(150, Math.round(100 * sums[k[0]] / t[k[0]])) : 0;
+          return el('div', { class: 'hub-bar' + (pct > 115 ? ' is-over' : '') }, [
+            el('span', { class: 'hub-bar-label', text: k[1] }),
+            el('span', { class: 'hub-bar-track' }, [el('span', { class: 'hub-bar-fill', style: 'width:' + Math.min(100, pct) + '%' })]),
+            el('span', { class: 'hub-bar-value', text: Math.round(sums[k[0]]) + ' ' + k[2] })
+          ]);
+        })) : el('p', { class: 'fine', text: 'Nothing planned with a known recipe.' })
+      ]));
+    });
+    if (plannedDays) {
+      body.appendChild(el('p', { class: 'hub-week-title', text: 'Average planned day: ' + Math.round(totalsAll.kcal / plannedDays) + ' kcal · ' + Math.round(totalsAll.protein / plannedDays) + ' g protein · ' + Math.round(totalsAll.fibre / plannedDays) + ' g fibre' }));
+    }
+    body.appendChild(table);
+    body.appendChild(el('p', { class: 'fine hub-foot', text: 'Estimates per serving, worked out from the recipe each dish uses here — good for spotting a heavy week, not for medical or allergy decisions. Snacks and drinks you do not plan are not counted.' }));
+  }
+
+  /* ----------------------------------------------------- budget (P) -- */
+
+  var CURRENCY_BY_REGION = { GB: 'GBP', US: 'USD', CA: 'CAD', AU: 'AUD', NZ: 'NZD', IN: 'INR', ZA: 'ZAR', SE: 'SEK', NO: 'NOK', DK: 'DKK', CH: 'CHF', JP: 'JPY', SG: 'SGD', AE: 'AED', IE: 'EUR', DE: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR', NL: 'EUR', BE: 'EUR', AT: 'EUR', PT: 'EUR', FI: 'EUR', GR: 'EUR' };
+  var budget = { costs: {}, currency: null, loading: false, error: '' };
+
+  function guessCurrency() {
+    var saved = store('budget-currency');
+    if (saved) return saved;
+    var region = '';
+    try { region = (new Intl.Locale(navigator.language)).maximize().region || ''; } catch (err) {}
+    return CURRENCY_BY_REGION[region] || 'GBP';
+  }
+
+  function money(value, currency) {
+    try { return new Intl.NumberFormat([], { style: 'currency', currency: currency, maximumFractionDigits: currency === 'JPY' ? 0 : 2 }).format(value); }
+    catch (err) { return currency + ' ' + value.toFixed(2); }
+  }
+
+  function renderBudget(body) {
+    if (!plus()) {
+      body.appendChild(premiumCard('Budget for your week',
+        'Roughly what the week on your calendar costs to cook, meal by meal, against a weekly budget you set — with cheaper swaps for the priciest nights.',
+        ['Estimated from supermarket prices for the amounts each recipe uses', 'In your own currency, for your household size', 'Cheaper dishes that keep your food rules, swapped in with one tap']));
+      return;
+    }
+    if (!needsWeek(body, renderBudget)) return;
+    var currency = guessCurrency();
+    if (budget.currency !== currency) { budget.costs = {}; budget.currency = currency; budget.error = ''; }
+    var people = plan.data.people || 2;
+    var names = weekDishNames();
+
+    var curSel = el('select', { class: 'hub-select', 'aria-label': 'Currency' }, ['GBP', 'USD', 'EUR', 'CAD', 'AUD', 'NZD', 'INR', 'ZAR', 'SEK', 'NOK', 'DKK', 'CHF', 'JPY', 'SGD', 'AED'].map(function (c) { return el('option', { value: c, text: c }); }));
+    curSel.value = currency;
+    curSel.addEventListener('change', function () { store('budget-currency', curSel.value); renderPlanner(); });
+    var limit = Number(store('budget-limit-' + currency)) || 0;
+    var limitInput = el('input', { class: 'hub-input hub-num', type: 'number', min: '0', step: '1', value: limit ? String(limit) : '', placeholder: 'e.g. 60', 'aria-label': 'Weekly budget' });
+    limitInput.addEventListener('change', function () { store('budget-limit-' + currency, Number(limitInput.value) || 0); renderPlanner(); });
+
+    body.appendChild(el('div', { class: 'hub-row' }, [
+      el('label', { class: 'hub-target' }, ['Weekly budget ', limitInput]), curSel,
+      el('span', { class: 'fine', text: 'for ' + people + (people === 1 ? ' person' : ' people') + ' (change it on the Shopping list tab)' })
+    ]));
+
+    if (!names.length) { body.appendChild(note('Add dishes to this week’s calendar and their cost appears here.')); return; }
+
+    var want = names.filter(function (n) { return budget.costs[n] === undefined; });
+    if (want.length && !budget.loading && !budget.error) {
+      budget.loading = true;
+      api('/api/budget', { method: 'POST', body: { dishes: want, currency: currency } }).then(function (res) {
+        budget.loading = false;
+        Object.keys(res.costs || {}).forEach(function (n) { budget.costs[n] = res.costs[n]; });
+        if (M.currentView() === 'planner' && planner.tab === 'budget') renderPlanner();
+      }).catch(function (err) {
+        budget.loading = false;
+        budget.error = errorText(err);
+        if (M.currentView() === 'planner' && planner.tab === 'budget') renderPlanner();
+      });
+    }
+    if (budget.loading) body.appendChild(note('Pricing ' + want.length + ' dish' + (want.length === 1 ? '' : 'es') + '…'));
+    if (budget.error) body.appendChild(el('p', { class: 'hub-note is-error' }, [budget.error + ' ', el('button', { class: 'link-btn', type: 'button', text: 'Try again', on: { click: function () { budget.error = ''; renderPlanner(); } } })]));
+
+    var meals = [];
+    var total = 0;
+    DAYS.forEach(function (day) {
+      MEALS.forEach(function (meal) {
+        slotItems(day + '-' + meal).forEach(function (item) {
+          if (item.t !== 'dish' || budget.costs[item.name] === undefined) return;
+          var cost = budget.costs[item.name] * people;
+          total += cost;
+          meals.push({ day: day, meal: meal, name: item.name, cost: cost });
+        });
+      });
+    });
+
+    var pct = limit ? Math.round(100 * total / limit) : 0;
+    body.appendChild(el('div', { class: 'hub-budget-total' }, [
+      el('p', { class: 'hub-big', text: money(total, currency) }),
+      el('p', { class: 'fine', text: limit ? (total <= limit ? money(limit - total, currency) + ' under your budget of ' + money(limit, currency) : money(total - limit, currency) + ' over your budget of ' + money(limit, currency)) : 'Set a weekly budget to compare against.' }),
+      limit ? el('span', { class: 'hub-bar-track hub-bar-wide' }, [el('span', { class: 'hub-bar-fill' + (pct > 100 ? ' is-over' : ''), style: 'width:' + Math.min(100, pct) + '%' })]) : null
+    ]));
+
+    var ranked = meals.slice().sort(function (a, b) { return b.cost - a.cost; });
+    var planned = weekDishNames();
+    body.appendChild(el('h2', { class: 'strip-title', text: 'Priciest meals, and cheaper ideas' }));
+    var list = el('ul', { class: 'hub-budget-list' });
+    ranked.slice(0, 3).forEach(function (m) {
+      var key = m.day + '-' + m.meal;
+      var ideas = allowedFood().filter(function (d) {
+        if (!(d.tags.cheap > 0) || planned.indexOf(d.name) !== -1) return false;
+        if (m.meal === 'breakfast') return d.tags.breakfast > 0;
+        return !(d.tags.breakfast > 0) && !(d.tags.sweet > 0);
+      });
+      // A stable, different handful per meal rather than the same three every time.
+      var start = (m.name.length * 7) % Math.max(1, ideas.length);
+      ideas = ideas.slice(start).concat(ideas.slice(0, start)).slice(0, 2);
+      list.appendChild(el('li', {}, [
+        el('p', {}, [el('strong', { text: DAY_NAME[m.day] + ' ' + MEAL_NAME[m.meal].toLowerCase() + ': ' }), m.name + ' — about ' + money(m.cost, currency)]),
+        el('div', { class: 'hub-row' }, ideas.map(function (d) {
+          return el('button', { class: 'quiet', type: 'button', text: 'Swap for ' + d.icon + ' ' + d.name, on: { click: function () {
+            var items = slotItems(key).map(function (i) { return i.t === 'dish' && i.name === m.name ? { t: 'dish', name: d.name } : i; });
+            setSlot(key, items);
+            renderPlanner();
+          } } });
+        }))
+      ]));
+    });
+    body.appendChild(list);
+    body.appendChild(el('p', { class: 'fine hub-foot', text: 'Estimates from typical supermarket prices for the amounts each recipe uses, so a spoonful of spice costs pennies, not the jar. Your shop will differ; the comparison between nights is the useful part.' }));
+  }
+
+  /* ----------------------------------------------- dinner party (P) -- */
+
+  var PARTY_RULES = [
+    ['vegetarian', 'Vegetarian', ['meat', 'seafood']],
+    ['vegan', 'Vegan', ['meat', 'seafood', 'dairy', 'egg']],
+    ['pork', 'No pork', ['pork']],
+    ['beef', 'No beef', ['beef']],
+    ['shellfish', 'No shellfish', ['shellfish']],
+    ['seafood', 'No fish', ['seafood']],
+    ['dairy', 'No dairy', ['dairy']],
+    ['egg', 'No egg', ['egg']],
+    ['alcohol', 'No alcohol', ['alcohol']],
+    ['allium', 'No onion or garlic', ['allium']],
+    ['spicy', 'Nothing spicy', ['spicy']]
+  ];
+
+  var party = store('party') || { guests: [{ name: '', rules: [] }, { name: '', rules: [] }], courses: ['Starter', 'Main', 'Pudding'], time: '19:30', style: '', result: null };
+
+  function saveParty() { store('party', party); }
+
+  function partyTags(guest) {
+    var tags = [];
+    guest.rules.forEach(function (id) {
+      PARTY_RULES.forEach(function (r) { if (r[0] === id) r[2].forEach(function (t) { if (tags.indexOf(t) === -1) tags.push(t); }); });
+    });
+    return tags;
+  }
+
+  function renderParty(body) {
+    if (!plus()) {
+      body.appendChild(premiumCard('Dinner party planner',
+        'Tell it who is coming and what each of them does not eat. It plans a menu every one of them can eat, and a cooking timeline that works back from the moment you sit down.',
+        ['Vegetarian, vegan, no pork, no dairy… for each guest separately', 'Starter, main and pudding that belong together', 'A clock-time timeline: what to start at 4:15, what goes in at 6:50', 'Put it in your calendar, get the shopping list']));
+      return;
+    }
+
+    var form = el('div', { class: 'hub-party' });
+    party.guests.forEach(function (g, gi) {
+      var name = el('input', { class: 'hub-input', type: 'text', maxlength: '40', value: g.name, placeholder: 'Guest ' + (gi + 1), 'aria-label': 'Guest name' });
+      name.addEventListener('input', function () { g.name = name.value; saveParty(); });
+      form.appendChild(el('div', { class: 'hub-guest' }, [
+        el('div', { class: 'hub-row' }, [name, party.guests.length > 1 ? el('button', { class: 'hub-chip-x', type: 'button', 'aria-label': 'Remove guest', text: '×', on: { click: function () { party.guests.splice(gi, 1); saveParty(); renderPlanner(); } } }) : null]),
+        el('div', { class: 'hub-pills' }, PARTY_RULES.map(function (r) {
+          var on = g.rules.indexOf(r[0]) !== -1;
+          return el('button', { class: 'hub-pill' + (on ? ' is-on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', text: r[1], on: { click: function () {
+            if (on) g.rules = g.rules.filter(function (x) { return x !== r[0]; }); else g.rules.push(r[0]);
+            saveParty();
+            renderPlanner();
+          } } });
+        }))
+      ]));
+    });
+    form.appendChild(el('button', { class: 'quiet', type: 'button', text: '+ Add a guest', on: { click: function () { if (party.guests.length < 16) party.guests.push({ name: '', rules: [] }); saveParty(); renderPlanner(); } } }));
+
+    var courses = el('div', { class: 'hub-pills' }, ['Nibbles', 'Starter', 'Main', 'Side', 'Pudding'].map(function (c) {
+      var on = party.courses.indexOf(c) !== -1;
+      return el('button', { class: 'hub-pill' + (on ? ' is-on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', text: c, on: { click: function () {
+        if (on) party.courses = party.courses.filter(function (x) { return x !== c; }); else party.courses.push(c);
+        party.courses.sort(function (a, b) { return ['Nibbles', 'Starter', 'Main', 'Side', 'Pudding'].indexOf(a) - ['Nibbles', 'Starter', 'Main', 'Side', 'Pudding'].indexOf(b); });
+        saveParty();
+        renderPlanner();
+      } } });
+    }));
+    var time = el('input', { class: 'hub-input hub-time', type: 'time', value: party.time, 'aria-label': 'Sitting down at' });
+    time.addEventListener('change', function () { party.time = time.value || '19:30'; saveParty(); if (party.result) renderPlanner(); });
+    var style = el('input', { class: 'hub-input', type: 'text', maxlength: '160', value: party.style, placeholder: 'Anything else? “Autumnal, nothing too fiddly, one of them hates coriander”' , 'aria-label': 'Anything else' });
+    style.addEventListener('input', function () { party.style = style.value; saveParty(); });
+
+    var go = el('button', { class: 'go', type: 'button' }, [el('span', { class: 'go-label', text: 'Plan the party' })]);
+    var out = el('div', { class: 'hub-party-out', 'aria-live': 'polite' });
+    go.addEventListener('click', function () {
+      if (!party.courses.length) { clear(out).appendChild(note('Pick at least one course.', 'error')); return; }
+      busyButton(go, true);
+      clear(out).appendChild(note('Planning a menu everybody can eat…'));
+      api('/api/party', { method: 'POST', body: {
+        guests: party.guests.map(function (g, i) { return { name: g.name || 'Guest ' + (i + 1), rules: partyTags(g) }; }),
+        hostRules: M.effectiveRules(),
+        courses: party.courses,
+        style: party.style
+      } }).then(function (res) {
+        party.result = res;
+        saveParty();
+        Sound.win();
+        renderPlanner();
+      }).catch(function (err) { busyButton(go, false); clear(out).appendChild(note(errorText(err), 'error')); });
+    });
+
+    body.appendChild(el('h2', { class: 'strip-title', text: 'Who is coming' }));
+    body.appendChild(form);
+    body.appendChild(el('p', { class: 'fine', text: 'Your own food rules from Profile are added automatically.' }));
+    body.appendChild(el('h2', { class: 'strip-title', text: 'The meal' }));
+    body.appendChild(courses);
+    body.appendChild(el('div', { class: 'hub-row' }, [el('label', { class: 'hub-target' }, ['Sitting down at ', time])]));
+    body.appendChild(style);
+    body.appendChild(el('div', { class: 'hub-row' }, [go]));
+    body.appendChild(out);
+    if (party.result) out.appendChild(renderPartyResult(party.result));
+  }
+
+  function clockAt(sitDown, minutesBefore) {
+    var p = (sitDown || '19:30').split(':');
+    var d = new Date();
+    d.setHours(Number(p[0]) || 19, Number(p[1]) || 0, 0, 0);
+    d.setMinutes(d.getMinutes() - minutesBefore);
+    try { return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); } catch (err) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  }
+
+  function renderPartyResult(res) {
+    var box = el('div', { class: 'hub-party-result' });
+    box.appendChild(el('h2', { class: 'strip-title', text: 'The menu' }));
+    box.appendChild(el('ul', { class: 'hub-menu' }, res.menu.map(function (m) {
+      return el('li', {}, [el('button', { class: 'hub-menu-item', type: 'button', on: { click: function () { M.openDish(m.name); } } }, [
+        el('span', { class: 'hub-menu-course', text: m.course }),
+        el('span', { class: 'hub-menu-name', text: m.icon + ' ' + m.name }),
+        el('span', { class: 'hub-from', text: m.why })
+      ])]);
+    })));
+    box.appendChild(el('p', { class: 'fine', text: 'Safe for all ' + res.guests.length + ' guest' + (res.guests.length === 1 ? '' : 's') + (res.ruledOut.length ? ' — nothing with ' + res.ruledOut.join(', ') + '.' : '.') }));
+    if (res.timeline.length) {
+      box.appendChild(el('h2', { class: 'strip-title', text: 'Your timeline' }));
+      box.appendChild(el('ol', { class: 'hub-timeline' }, res.timeline.map(function (t) {
+        return el('li', {}, [el('time', { text: t.minutesBefore === 0 ? 'Sit down' : clockAt(party.time, t.minutesBefore) }), el('span', { text: t.task })]);
+      })));
+    }
+    if (res.tips.length) box.appendChild(el('ul', { class: 'hub-ai-notes' }, res.tips.map(function (t) { return el('li', { text: t }); })));
+
+    var daySel = el('select', { class: 'hub-select', 'aria-label': 'Which day' }, DAYS.map(function (d) { return el('option', { value: d, text: DAY_NAME[d] }); }));
+    daySel.value = 'sat';
+    var put = el('button', { class: 'quiet', type: 'button', text: 'Put it in this week’s calendar' });
+    put.addEventListener('click', function () {
+      loadWeek(plan.week).then(function () {
+        if (!plan.data) return;
+        setSlot(daySel.value + '-dinner', res.menu.slice(0, 4).map(function (m) { return { t: 'dish', name: m.name }; }));
+        put.textContent = 'Added to ' + DAY_NAME[daySel.value] + ' dinner';
+      });
+    });
+    var people = party.guests.length + 1;
+    var listBtn = el('button', { class: 'quiet', type: 'button', text: 'Shopping list for ' + people });
+    var listOut = el('div');
+    listBtn.addEventListener('click', function () {
+      clear(listOut);
+      var lines = [];
+      res.menu.forEach(function (m) {
+        var r = recipeFor(m.name);
+        if (r) Recipes.scale(r, people).forEach(function (l) { lines.push(l + ' — ' + m.name); });
+      });
+      listOut.appendChild(el('ul', { class: 'hub-checks' }, lines.map(function (l) { return el('li', { text: l }); })));
+    });
+    box.appendChild(el('div', { class: 'hub-row' }, [daySel, put, listBtn]));
+    box.appendChild(listOut);
+    return box;
+  }
+
+  /* ====================================================================
+   * KITCHEN
+   * ==================================================================== */
+
+  var kitchen = { tab: store('kitchen-tab') || 'cookbook', root: null, open: null, editing: null, imported: null };
+
+  var KITCHEN_TABS = [
+    { id: 'cookbook', label: 'Cookbook', premium: true },
+    { id: 'import', label: 'Import a recipe', premium: true },
+    { id: 'scan', label: 'Scan a barcode', premium: true },
+    { id: 'fridge', label: 'Fridge photo', premium: true },
+    { id: 'timers', label: 'Timers & converter' },
+    { id: 'season', label: 'In season' }
+  ];
+
+  function renderKitchen() {
+    var root = M.$('view-kitchen');
+    if (!root) return;
+    kitchen.root = root;
+    clear(root);
+    root.appendChild(head('Your kitchen', 'Kitchen',
+      'Your own cookbook, recipes from any website, a barcode scanner that knows what you do not eat, dinner from a photo of the fridge — and timers, conversions and what is in season.'));
+    root.appendChild(tabStrip(KITCHEN_TABS, kitchen.tab, function (id) {
+      kitchen.tab = id;
+      store('kitchen-tab', id);
+      if (id !== 'cookbook') kitchen.open = null;
+      renderKitchen();
+    }));
+    var body = el('div', { class: 'hub-body' });
+    root.appendChild(body);
+    if (kitchen.tab === 'cookbook') return renderCookbook(body);
+    if (kitchen.tab === 'import') return renderImport(body);
+    if (kitchen.tab === 'scan') return renderScan(body);
+    if (kitchen.tab === 'fridge') return renderFridge(body);
+    if (kitchen.tab === 'timers') return renderTimers(body);
+    if (kitchen.tab === 'season') return renderSeason(body);
+  }
+
+  /* ---------------------------------------------------- cookbook (P) -- */
+
+  var cookbook = { list: null, loading: false, error: '' };
+
+  function loadCookbook() {
+    cookbook.loading = true;
+    return api('/api/cookbook').then(function (res) {
+      cookbook.loading = false;
+      cookbook.list = res.recipes || [];
+      cookbook.error = '';
+      return cookbook.list;
+    }).catch(function (err) {
+      cookbook.loading = false;
+      cookbook.error = errorText(err);
+      throw err;
+    });
+  }
+
+  function saveRecipe(recipe) {
+    return api('/api/cookbook', { method: 'POST', body: { recipe: recipe } }).then(function (res) {
+      var list = (cookbook.list || []).filter(function (r) { return r.id !== res.recipe.id; });
+      list.unshift(res.recipe);
+      cookbook.list = list;
+      return res.recipe;
+    });
+  }
+
+  function renderCookbook(body) {
+    if (!plus()) {
+      body.appendChild(premiumCard('Your cookbook',
+        'Your own recipes and the ones you import, kept against your account so they are on every device — and they work with everything else here.',
+        ['Write your own, or import from any recipe website', 'Scale any recipe to how many you are feeding', 'Cook it step by step in cook mode, hands-free', 'Drop it into the calendar; it goes on the shopping list']));
+      return;
+    }
+    if (kitchen.editing) return renderRecipeForm(body, kitchen.editing);
+    if (!cookbook.list) {
+      if (cookbook.error) {
+        body.appendChild(el('p', { class: 'hub-note is-error' }, [cookbook.error + ' ', el('button', { class: 'link-btn', type: 'button', text: 'Try again', on: { click: function () { cookbook.error = ''; renderKitchen(); } } })]));
+        return;
+      }
+      body.appendChild(note('Opening your cookbook…'));
+      if (!cookbook.loading) loadCookbook().then(renderKitchen).catch(renderKitchen);
+      return;
+    }
+    if (kitchen.open) {
+      var r = cookbook.list.filter(function (x) { return x.id === kitchen.open; })[0];
+      if (r) return renderRecipe(body, r);
+      kitchen.open = null;
+    }
+
+    body.appendChild(el('div', { class: 'hub-row' }, [
+      el('button', { class: 'go go-sm', type: 'button', on: { click: function () { kitchen.editing = { name: '', serves: 2, time: '', ingredients: [], steps: [], notes: '' }; renderKitchen(); } } }, [el('span', { class: 'go-label', text: '+ Write a recipe' })]),
+      el('button', { class: 'quiet', type: 'button', text: 'Import one from a website', on: { click: function () { kitchen.tab = 'import'; store('kitchen-tab', 'import'); renderKitchen(); } } })
+    ]));
+
+    if (!cookbook.list.length) {
+      body.appendChild(note('Nothing in your cookbook yet. Write down a family recipe, or import one from any recipe site.'));
+      return;
+    }
+    body.appendChild(el('ul', { class: 'hub-cards' }, cookbook.list.map(function (r) {
+      return el('li', {}, [el('button', { class: 'hub-card', type: 'button', on: { click: function () { kitchen.open = r.id; renderKitchen(); } } }, [
+        r.image ? el('img', { class: 'hub-card-img', src: r.image, alt: '', loading: 'lazy', referrerPolicy: 'no-referrer' }) : el('span', { class: 'hub-card-img is-blank', 'aria-hidden': 'true', text: '\u{1F4D6}' }),
+        el('span', { class: 'hub-card-name', text: r.name }),
+        el('span', { class: 'hub-from', text: [r.time ? r.time + ' min' : '', 'serves ' + r.serves, r.source ? hostOf(r.source) : 'your recipe'].filter(Boolean).join(' · ') })
+      ])]);
+    })));
+  }
+
+  function hostOf(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ''); } catch (err) { return ''; }
+  }
+
+  function renderRecipe(body, r) {
+    var serves = r.serves;
+    var list = el('ul', { class: 'hub-ingredients' });
+    function paintList() {
+      clear(list);
+      Recipes.scale(r, serves).forEach(function (line) { list.appendChild(el('li', { text: line })); });
+    }
+    var servesSel = el('select', { class: 'hub-select', 'aria-label': 'Serves' }, [1, 2, 3, 4, 5, 6, 8, 10, 12].concat([r.serves]).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(function (a, b) { return a - b; }).map(function (n) {
+      return el('option', { value: String(n), text: 'Serves ' + n });
+    }));
+    servesSel.value = String(serves);
+    servesSel.addEventListener('change', function () { serves = Number(servesSel.value); paintList(); });
+    paintList();
+
+    var slotDay = el('select', { class: 'hub-select', 'aria-label': 'Day' }, DAYS.map(function (d) { return el('option', { value: d, text: DAY_NAME[d] }); }));
+    var slotMeal = el('select', { class: 'hub-select', 'aria-label': 'Meal' }, MEALS.map(function (m) { return el('option', { value: m, text: MEAL_NAME[m] }); }));
+    slotMeal.value = 'dinner';
+    var addCal = el('button', { class: 'quiet', type: 'button', text: 'Add to this week' });
+    addCal.addEventListener('click', function () {
+      loadWeek(plan.week).then(function () {
+        if (!plan.data) return;
+        addToSlot(slotDay.value + '-' + slotMeal.value, { t: 'recipe', id: r.id, name: r.name });
+        addCal.textContent = 'Added to ' + DAY_NAME[slotDay.value] + ' ' + slotMeal.value;
+      });
+    });
+
+    body.appendChild(el('div', { class: 'hub-row' }, [el('button', { class: 'quiet', type: 'button', text: '‹ All recipes', on: { click: function () { kitchen.open = null; renderKitchen(); } } })]));
+    body.appendChild(el('article', { class: 'hub-recipe' }, [
+      r.image ? el('img', { class: 'hub-recipe-img', src: r.image, alt: '', referrerPolicy: 'no-referrer' }) : null,
+      el('h2', { class: 'hub-recipe-name', text: r.name }),
+      el('p', { class: 'fine', text: [r.time ? r.time + ' minutes' : '', r.source ? 'from ' + hostOf(r.source) : 'your own recipe'].filter(Boolean).join(' · ') }),
+      r.notes ? el('p', { class: 'hub-recipe-notes', text: r.notes }) : null,
+      el('div', { class: 'hub-row' }, [
+        el('button', { class: 'go go-sm', type: 'button', on: { click: function () { M.openCookMode({ name: r.name, serves: r.serves, ingredients: r.ingredients, steps: r.steps.length ? r.steps : ['Cook it the way the notes say.'] }, serves, { name: r.name, icon: '\u{1F4D6}' }); } } }, [el('span', { class: 'go-label', text: 'Cook it' })]),
+        servesSel
+      ]),
+      el('h3', { class: 'strip-title', text: 'Ingredients' }),
+      list,
+      el('h3', { class: 'strip-title', text: 'Method' }),
+      el('ol', { class: 'hub-steps' }, r.steps.map(function (s) { return el('li', { text: s }); })),
+      r.source ? el('p', { class: 'fine' }, ['Original: ', el('a', { href: r.source, target: '_blank', rel: 'noopener noreferrer', text: hostOf(r.source) })]) : null,
+      el('div', { class: 'hub-row' }, [slotDay, slotMeal, addCal]),
+      el('div', { class: 'hub-row' }, [
+        el('button', { class: 'quiet', type: 'button', text: 'Edit', on: { click: function () { kitchen.editing = JSON.parse(JSON.stringify(r)); renderKitchen(); } } }),
+        el('button', { class: 'quiet danger', type: 'button', text: 'Delete', on: { click: function (e) {
+          var btn = e.currentTarget;
+          if (btn.dataset.sure !== '1') { btn.dataset.sure = '1'; btn.textContent = 'Tap again to delete'; return; }
+          api('/api/cookbook?id=' + encodeURIComponent(r.id), { method: 'DELETE' }).then(function () {
+            cookbook.list = cookbook.list.filter(function (x) { return x.id !== r.id; });
+            kitchen.open = null;
+            renderKitchen();
+          }).catch(function (err) { btn.textContent = errorText(err); });
+        } } })
+      ])
+    ]));
+  }
+
+  function renderRecipeForm(body, draft) {
+    var name = el('input', { class: 'hub-input', type: 'text', maxlength: '120', value: draft.name || '', placeholder: 'Grandma’s lasagne', 'aria-label': 'Recipe name' });
+    var serves = el('input', { class: 'hub-input hub-num', type: 'number', min: '1', max: '50', value: String(draft.serves || 2), 'aria-label': 'Serves' });
+    var time = el('input', { class: 'hub-input hub-num', type: 'number', min: '1', max: '1440', value: draft.time ? String(draft.time) : '', placeholder: 'mins', 'aria-label': 'Minutes' });
+    var ingredients = el('textarea', { class: 'hub-input hub-area', rows: '8', placeholder: 'One per line, e.g.\n500g beef mince\n2 onions, chopped\n1 tin chopped tomatoes', 'aria-label': 'Ingredients, one per line' });
+    ingredients.value = (draft.ingredients || []).join('\n');
+    var steps = el('textarea', { class: 'hub-input hub-area', rows: '8', placeholder: 'One step per line', 'aria-label': 'Method, one step per line' });
+    steps.value = (draft.steps || []).join('\n');
+    var notes = el('textarea', { class: 'hub-input hub-area', rows: '3', placeholder: 'Notes — where it came from, what to serve it with', 'aria-label': 'Notes' });
+    notes.value = draft.notes || '';
+    var out = el('div', { 'aria-live': 'polite' });
+    var save = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Save to my cookbook' })]);
+    save.addEventListener('click', function () {
+      var recipe = {
+        id: draft.id,
+        name: name.value.trim(),
+        serves: Number(serves.value) || 2,
+        time: Number(time.value) || null,
+        ingredients: ingredients.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean),
+        steps: steps.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean),
+        source: draft.source || '',
+        image: draft.image || '',
+        notes: notes.value.trim()
+      };
+      if (!recipe.name || (!recipe.ingredients.length && !recipe.steps.length)) {
+        clear(out).appendChild(note('Give it a name and at least an ingredient or a step.', 'error'));
+        return;
+      }
+      busyButton(save, true);
+      saveRecipe(recipe).then(function (savedRecipe) {
+        kitchen.editing = null;
+        kitchen.open = savedRecipe.id;
+        Sound.win();
+        renderKitchen();
+      }).catch(function (err) { busyButton(save, false); clear(out).appendChild(note(errorText(err), 'error')); });
+    });
+    body.appendChild(el('div', { class: 'hub-form' }, [
+      el('label', { class: 'hub-label', text: 'Name' }), name,
+      el('div', { class: 'hub-row' }, [el('label', { class: 'hub-target' }, ['Serves ', serves]), el('label', { class: 'hub-target' }, ['Takes ', time, ' min'])]),
+      el('label', { class: 'hub-label', text: 'Ingredients' }), ingredients,
+      el('label', { class: 'hub-label', text: 'Method' }), steps,
+      el('label', { class: 'hub-label', text: 'Notes' }), notes,
+      el('div', { class: 'hub-row' }, [save, el('button', { class: 'quiet', type: 'button', text: 'Cancel', on: { click: function () { kitchen.editing = null; renderKitchen(); } } })]),
+      out
+    ]));
+  }
+
+  /* ------------------------------------------------------ import (P) -- */
+
+  function renderImport(body) {
+    if (!plus()) {
+      body.appendChild(premiumCard('Import any recipe',
+        'Paste the address of a recipe on any website and get just the recipe — the ingredients and the method, without the life story, the pop-ups or the adverts.',
+        ['Works with most big recipe sites', 'Saves to your cookbook, synced to your account', 'Then scale it, cook it hands-free, or plan it into your week']));
+      return;
+    }
+    var input = el('input', { class: 'hub-input', type: 'url', placeholder: 'https://www.example.com/recipes/best-ever-brownies', 'aria-label': 'Recipe web address' });
+    var go = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Get the recipe' })]);
+    var out = el('div', { class: 'hub-import-out', 'aria-live': 'polite' });
+    function run() {
+      var url = input.value.trim();
+      if (!url) return;
+      busyButton(go, true);
+      clear(out).appendChild(note('Reading the page…'));
+      api('/api/recipe-import', { method: 'POST', body: { url: url } }).then(function (res) {
+        busyButton(go, false);
+        kitchen.imported = res.recipe;
+        paintImported(out);
+      }).catch(function (err) { busyButton(go, false); clear(out).appendChild(note(errorText(err), 'error')); });
+    }
+    go.addEventListener('click', run);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
+    body.appendChild(el('div', { class: 'hub-row hub-add-row' }, [input, go]));
+    body.appendChild(el('p', { class: 'fine', text: 'Reads the recipe the site publishes for search engines (schema.org), so it is the site’s own ingredients and method, word for word. The original is always linked.' }));
+    body.appendChild(out);
+    if (kitchen.imported) paintImported(out);
+  }
+
+  function paintImported(out) {
+    var r = kitchen.imported;
+    clear(out);
+    var save = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Save to my cookbook' })]);
+    save.addEventListener('click', function () {
+      busyButton(save, true);
+      saveRecipe(r).then(function (savedRecipe) {
+        kitchen.imported = null;
+        kitchen.tab = 'cookbook';
+        kitchen.open = savedRecipe.id;
+        store('kitchen-tab', 'cookbook');
+        Sound.win();
+        renderKitchen();
+      }).catch(function (err) { busyButton(save, false); out.appendChild(note(errorText(err), 'error')); });
+    });
+    out.appendChild(el('article', { class: 'hub-recipe' }, [
+      r.image ? el('img', { class: 'hub-recipe-img', src: r.image, alt: '', referrerPolicy: 'no-referrer' }) : null,
+      el('h2', { class: 'hub-recipe-name', text: r.name }),
+      el('p', { class: 'fine', text: [r.time ? r.time + ' minutes' : '', 'serves ' + r.serves, 'from ' + hostOf(r.source)].filter(Boolean).join(' · ') }),
+      r.notes ? el('p', { class: 'hub-recipe-notes', text: r.notes }) : null,
+      el('div', { class: 'hub-row' }, [save, el('button', { class: 'quiet', type: 'button', text: 'Edit before saving', on: { click: function () { kitchen.editing = JSON.parse(JSON.stringify(r)); kitchen.tab = 'cookbook'; store('kitchen-tab', 'cookbook'); renderKitchen(); } } })]),
+      el('h3', { class: 'strip-title', text: 'Ingredients (' + r.ingredients.length + ')' }),
+      el('ul', { class: 'hub-ingredients' }, r.ingredients.map(function (l) { return el('li', { text: l }); })),
+      el('h3', { class: 'strip-title', text: 'Method (' + r.steps.length + ' steps)' }),
+      el('ol', { class: 'hub-steps' }, r.steps.map(function (s) { return el('li', { text: s }); }))
+    ]));
+  }
+
+  /* -------------------------------------------------------- scan (P) -- */
+
+  var scan = { stream: null, timer: null, last: null };
+
+  var TAG_WORDS = { pork: 'pork', beef: 'beef', alcohol: 'alcohol', allium: 'onion or garlic', root: 'root vegetables', shellfish: 'shellfish', meat: 'meat', seafood: 'fish', dairy: 'dairy', egg: 'egg' };
+
+  function stopCamera() {
+    if (scan.timer) cancelAnimationFrame(scan.timer);
+    scan.timer = null;
+    if (scan.stream) scan.stream.getTracks().forEach(function (t) { t.stop(); });
+    scan.stream = null;
+  }
+
+  function renderScan(body) {
+    stopCamera();
+    if (!plus()) {
+      body.appendChild(premiumCard('Barcode scanner',
+        'Scan a packet in the shop and see what is really in it — checked against the food rules you already set, in the same words.',
+        ['“Has dairy — you have ruled out dairy”, before it is in the basket', 'Nutri-Score, how processed it is, and the numbers per 100 g', 'Allergens and “may contain” traces', 'From Open Food Facts, the open database of 3 million products']));
+      return;
+    }
+    var code = el('input', { class: 'hub-input', type: 'text', inputmode: 'numeric', pattern: '[0-9]*', maxlength: '14', placeholder: 'Or type the number under the barcode', 'aria-label': 'Barcode number' });
+    var look = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Look it up' })]);
+    var camBtn = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: '\u{1F4F7} Scan with the camera' })]);
+    var video = el('video', { class: 'hub-camera', playsinline: true, muted: true, hidden: true });
+    var out = el('div', { 'aria-live': 'polite' });
+
+    function lookup(value) {
+      var c = String(value || '').replace(/\D/g, '');
+      if (!/^\d{8,14}$/.test(c)) { clear(out).appendChild(note(ERRORS.bad_code, 'error')); return; }
+      stopCamera();
+      video.hidden = true;
+      clear(out).appendChild(note('Looking up ' + c + '…'));
+      api('/api/scan?code=' + c).then(function (res) {
+        scan.last = res.product;
+        var recent = (store('scans') || []).filter(function (p) { return p.code !== res.product.code; });
+        recent.unshift({ code: res.product.code, name: res.product.name, brand: res.product.brand });
+        store('scans', recent.slice(0, 8));
+        paintProduct(clear(out), res.product);
+      }).catch(function (err) { clear(out).appendChild(note(errorText(err), 'error')); });
+    }
+
+    look.addEventListener('click', function () { lookup(code.value); });
+    code.addEventListener('keydown', function (e) { if (e.key === 'Enter') lookup(code.value); });
+
+    var canDetect = 'BarcodeDetector' in window && navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+    camBtn.addEventListener('click', function () {
+      if (!canDetect) return;
+      var detector;
+      try { detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] }); } catch (err) { clear(out).appendChild(note('This browser cannot read barcodes from the camera. Type the number instead.', 'error')); return; }
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (stream) {
+        scan.stream = stream;
+        video.srcObject = stream;
+        video.hidden = false;
+        video.play();
+        clear(out).appendChild(note('Point the camera at the barcode…'));
+        var busy = false;
+        function tick() {
+          if (!scan.stream) return;
+          if (!busy && video.readyState >= 2) {
+            busy = true;
+            detector.detect(video).then(function (codes) {
+              busy = false;
+              if (codes && codes.length) { Sound.tick(); code.value = codes[0].rawValue; lookup(codes[0].rawValue); }
+            }).catch(function () { busy = false; });
+          }
+          scan.timer = requestAnimationFrame(tick);
+        }
+        tick();
+      }).catch(function () { clear(out).appendChild(note('The camera is not available — allow it in your browser, or type the number instead.', 'error')); });
+    });
+
+    body.appendChild(el('div', { class: 'hub-row' }, [canDetect ? camBtn : el('p', { class: 'fine', text: 'Camera scanning works in Chrome on Android and on Macs. Here, type the number under the barcode.' })]));
+    body.appendChild(video);
+    body.appendChild(el('div', { class: 'hub-row hub-add-row' }, [code, look]));
+    body.appendChild(out);
+    if (scan.last) paintProduct(out, scan.last);
+
+    var recent = store('scans') || [];
+    if (recent.length) {
+      body.appendChild(el('h2', { class: 'strip-title', text: 'Recently scanned' }));
+      body.appendChild(el('div', { class: 'hub-row' }, recent.map(function (p) {
+        return el('button', { class: 'quiet', type: 'button', text: p.name + (p.brand ? ' (' + p.brand + ')' : ''), on: { click: function () { lookup(p.code); } } });
+      })));
+    }
+    body.appendChild(el('p', { class: 'fine hub-foot' }, ['Product data from ', el('a', { href: 'https://world.openfoodfacts.org/', target: '_blank', rel: 'noopener noreferrer', text: 'Open Food Facts' }), ', written by volunteers. Always check the packet if an allergy is serious.']));
+  }
+
+  function paintProduct(out, p) {
+    var rules = M.effectiveRules();
+    var clashes = p.contains.filter(function (t) { return rules.indexOf(t) !== -1; });
+    var verdict;
+    if (clashes.length) verdict = el('p', { class: 'hub-verdict is-bad', text: '⚠ Has ' + clashes.map(function (t) { return TAG_WORDS[t] || t; }).join(', ') + ' — which you have ruled out.' });
+    else if (!p.ingredientsKnown) verdict = el('p', { class: 'hub-verdict is-unknown', text: 'No ingredient list on record, so it cannot be checked against your rules. Read the packet.' });
+    else verdict = el('p', { class: 'hub-verdict is-good', text: rules.length ? '✓ Nothing you have ruled out, going by its ingredient list.' : '✓ Ingredient list on record. Set food rules in Profile and they are checked here too.' });
+
+    var per = p.per100g;
+    var rows = [['Energy', per.kcal, 'kcal'], ['Fat', per.fat, 'g'], ['of which saturates', per.saturates, 'g'], ['Carbohydrate', per.carbs, 'g'], ['of which sugars', per.sugars, 'g'], ['Fibre', per.fibre, 'g'], ['Protein', per.protein, 'g'], ['Salt', per.salt, 'g']].filter(function (r) { return r[1] !== null; });
+
+    out.appendChild(el('article', { class: 'hub-product' }, [
+      el('div', { class: 'hub-product-head' }, [
+        p.image ? el('img', { class: 'hub-product-img', src: p.image, alt: '', referrerPolicy: 'no-referrer' }) : null,
+        el('div', {}, [
+          el('h2', { class: 'hub-recipe-name', text: p.name }),
+          el('p', { class: 'fine', text: [p.brand, p.quantity, p.code].filter(Boolean).join(' · ') }),
+          el('div', { class: 'hub-row' }, [
+            p.nutriscore ? el('span', { class: 'hub-score is-' + p.nutriscore.toLowerCase(), text: 'Nutri-Score ' + p.nutriscore }) : null,
+            p.nova ? el('span', { class: 'hub-score', text: 'NOVA ' + p.nova + (p.nova === 4 ? ' · ultra-processed' : p.nova === 1 ? ' · unprocessed' : '') }) : null,
+            p.vegan === true ? el('span', { class: 'hub-score is-a', text: 'Vegan' }) : p.vegetarian === true ? el('span', { class: 'hub-score is-b', text: 'Vegetarian' }) : null
+          ])
+        ])
+      ]),
+      verdict,
+      p.contains.length ? el('p', {}, [el('strong', { text: 'Contains: ' }), p.contains.map(function (t) { return TAG_WORDS[t] || t; }).join(', ')]) : null,
+      p.traces.length ? el('p', { class: 'fine', text: 'May contain traces of: ' + p.traces.join(', ') }) : null,
+      rows.length ? el('table', { class: 'hub-table' }, [el('caption', { text: 'Per 100 g' })].concat(rows.map(function (r) {
+        return el('tr', {}, [el('th', { scope: 'row', text: r[0] }), el('td', { text: r[1] + ' ' + r[2] })]);
+      }))) : null,
+      p.ingredients ? el('details', {}, [el('summary', { text: 'Ingredients' }), el('p', { class: 'fine', text: p.ingredients })]) : null
+    ]));
+  }
+
+  /* ------------------------------------------------------ fridge (P) -- */
+
+  function shrinkPhoto(file) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var max = 1024;
+        var scale = Math.min(1, max / Math.max(img.width, img.height));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        var data = canvas.toDataURL('image/jpeg', 0.8);
+        resolve({ preview: data, base64: data.split(',')[1], mime: 'image/jpeg' });
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('bad image')); };
+      img.src = url;
+    });
+  }
+
+  function renderFridge(body) {
+    if (!plus()) {
+      body.appendChild(premiumCard('Dinner from a photo of your fridge',
+        'Take a photo of the fridge, the cupboard or what is on the worktop. It works out what is there and which dishes you can make with it — and what, if anything, you would still need.',
+        ['Only dishes that keep your food rules', 'What each one uses from the photo, and what is missing', 'Tap one for the recipe, or put it straight in your calendar', 'The photo is not stored anywhere']));
+      return;
+    }
+    var input = el('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'hub-file', id: 'hub-fridge-file' });
+    var label = el('label', { class: 'go hub-file-label', for: 'hub-fridge-file' }, [el('span', { class: 'go-label', text: '\u{1F4F8} Take or choose a photo' })]);
+    var preview = el('img', { class: 'hub-fridge-preview', alt: 'Your photo', hidden: true });
+    var out = el('div', { 'aria-live': 'polite' });
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      clear(out).appendChild(note('Looking in your fridge…'));
+      shrinkPhoto(file).then(function (photo) {
+        preview.src = photo.preview;
+        preview.hidden = false;
+        return api('/api/fridge', { method: 'POST', body: { image: photo.base64, mime: photo.mime, rules: M.effectiveRules() } });
+      }).then(function (res) {
+        clear(out);
+        if (!res.seen.length) { out.appendChild(note('No food in that photo that the AI could make out. Try one with the fridge door open and the light on.')); return; }
+        out.appendChild(el('p', {}, [el('strong', { text: 'I can see: ' }), res.seen.join(', ')]));
+        if (!res.dishes.length) { out.appendChild(note('Nothing on the menu fits what is there and your food rules. Try adding the cupboard.')); return; }
+        out.appendChild(el('ul', { class: 'hub-fridge' }, res.dishes.map(function (d) {
+          return el('li', { class: 'hub-fridge-dish' }, [
+            el('button', { class: 'hub-menu-item', type: 'button', on: { click: function () { M.openDish(d.name); } } }, [
+              el('span', { class: 'hub-menu-name', text: d.icon + ' ' + d.name }),
+              el('span', { class: 'hub-from', text: d.why })
+            ]),
+            d.uses.length ? el('p', { class: 'fine', text: 'Uses: ' + d.uses.join(', ') }) : null,
+            el('p', { class: 'fine', text: d.missing.length ? 'Still need: ' + d.missing.join(', ') : 'Nothing else to buy.' })
+          ]);
+        })));
+        Sound.win();
+      }).catch(function (err) { clear(out).appendChild(note(err && err.code ? errorText(err) : ERRORS.bad_image, 'error')); });
+    });
+    body.appendChild(el('div', { class: 'hub-row' }, [input, label]));
+    body.appendChild(preview);
+    body.appendChild(out);
+    body.appendChild(el('p', { class: 'fine hub-foot', text: 'The photo is shrunk on your device, looked at once by the AI to list the food in it, and not kept — not by us, not in a log.' }));
+  }
+
+  /* --------------------------------------- timers & converter (account) -- */
+
+  var timers = { list: store('timers') || [], ticker: null };
+
+  function saveTimers() { store('timers', timers.list); }
+
+  function fmt(ms) {
+    var s = Math.max(0, Math.round(ms / 1000));
+    var h = Math.floor(s / 3600);
+    var m = Math.floor((s % 3600) / 60);
+    var sec = s % 60;
+    return (h ? h + ':' + pad(m) : m) + ':' + pad(sec);
+  }
+
+  function remaining(t) { return t.paused ? t.left : t.ends - Date.now(); }
+
+  // Runs whatever section is open, so a timer set in the Kitchen still goes
+  // off while you are reading a recipe in Dishes.
+  function tickTimers() {
+    var now = Date.now();
+    var changed = false;
+    timers.list.forEach(function (t) {
+      if (!t.paused && !t.done && t.ends <= now) {
+        t.done = true;
+        changed = true;
+        Sound.win();
+        M.toast('⏰', t.name + ' is done', 'Your ' + fmt(t.total) + ' timer just finished.');
+        try { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); } catch (err) {}
+      }
+    });
+    if (changed) saveTimers();
+    if (M.currentView() === 'kitchen' && kitchen.tab === 'timers') {
+      M.$$('.hub-timer').forEach(function (row) {
+        var t = timers.list.filter(function (x) { return x.id === row.dataset.id; })[0];
+        if (!t) return;
+        row.querySelector('.hub-timer-clock').textContent = t.done ? 'Done' : fmt(remaining(t));
+        row.classList.toggle('is-done', !!t.done);
+      });
+      if (changed) renderKitchen();
+    }
+    var running = timers.list.some(function (t) { return !t.paused && !t.done; });
+    if (!running && timers.ticker) { clearInterval(timers.ticker); timers.ticker = null; }
+  }
+
+  function ensureTicker() {
+    if (!timers.ticker && timers.list.some(function (t) { return !t.paused && !t.done; })) timers.ticker = setInterval(tickTimers, 500);
+  }
+
+  function addTimer(name, minutes) {
+    var ms = Math.round(minutes * 60000);
+    if (!(ms > 0)) return;
+    timers.list.push({ id: String(Date.now()) + Math.random().toString(36).slice(2, 6), name: name || 'Timer', total: ms, ends: Date.now() + ms, paused: false, left: 0, done: false });
+    timers.list = timers.list.slice(-8);
+    saveTimers();
+    ensureTicker();
+  }
+
+  var CONVERT = {
+    weight: { label: 'Weight', units: { g: 1, kg: 1000, oz: 28.3495, lb: 453.592 } },
+    volume: { label: 'Volume', units: { ml: 1, l: 1000, tsp: 4.92892, tbsp: 14.7868, 'cup (US)': 236.588, 'fl oz': 29.5735, 'pint (UK)': 568.261, 'pint (US)': 473.176 } }
+  };
+  var CUP_GRAMS = { 'plain flour': 125, 'self-raising flour': 125, 'caster sugar': 200, 'granulated sugar': 200, 'brown sugar': 220, 'icing sugar': 120, butter: 227, 'rice (uncooked)': 185, 'rolled oats': 90, 'cocoa powder': 85, honey: 340, milk: 245, water: 240, 'grated cheese': 100, 'ground almonds': 96, 'chocolate chips': 170 };
+  var GAS = [[1, 140], [2, 150], [3, 170], [4, 180], [5, 190], [6, 200], [7, 220], [8, 230], [9, 240]];
+
+  function renderTimers(body) {
+    if (!signedIn()) {
+      body.appendChild(signInCard('Kitchen timers and converter',
+        'Run several named timers at once — rice, oven, eggs — that keep going while you use the rest of the app, plus a converter for cups, ounces, grams, °F and gas marks.', 'kitchen'));
+      return;
+    }
+    var name = el('input', { class: 'hub-input', type: 'text', maxlength: '30', placeholder: 'What for? (rice, oven…)', 'aria-label': 'Timer name' });
+    var mins = el('input', { class: 'hub-input hub-num', type: 'number', min: '0', max: '600', step: '0.5', value: '10', 'aria-label': 'Minutes' });
+    var start = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Start' })]);
+    start.addEventListener('click', function () { addTimer(name.value.trim(), Number(mins.value)); Sound.tick(); renderKitchen(); });
+    body.appendChild(el('h2', { class: 'strip-title', text: 'Timers' }));
+    body.appendChild(el('div', { class: 'hub-row' }, [name, el('label', { class: 'hub-target' }, [mins, ' min']), start]));
+    body.appendChild(el('div', { class: 'hub-row' }, [1, 3, 5, 8, 10, 12, 15, 20, 30, 45, 60].map(function (m) {
+      return el('button', { class: 'hub-pill', type: 'button', text: m + ' min', on: { click: function () { addTimer(name.value.trim() || m + ' minutes', m); Sound.tick(); renderKitchen(); } } });
+    })));
+    var list = el('ul', { class: 'hub-timers' });
+    timers.list.forEach(function (t) {
+      list.appendChild(el('li', { class: 'hub-timer' + (t.done ? ' is-done' : ''), dataset: { id: t.id } }, [
+        el('span', { class: 'hub-timer-name', text: t.name }),
+        el('span', { class: 'hub-timer-clock', text: t.done ? 'Done' : fmt(remaining(t)) }),
+        t.done ? null : el('button', { class: 'quiet', type: 'button', text: t.paused ? 'Resume' : 'Pause', on: { click: function () {
+          if (t.paused) { t.ends = Date.now() + t.left; t.paused = false; } else { t.left = t.ends - Date.now(); t.paused = true; }
+          saveTimers(); ensureTicker(); renderKitchen();
+        } } }),
+        el('button', { class: 'quiet', type: 'button', text: t.done ? 'Clear' : 'Cancel', on: { click: function () {
+          timers.list = timers.list.filter(function (x) { return x !== t; });
+          saveTimers(); renderKitchen();
+        } } })
+      ]));
+    });
+    if (timers.list.length) body.appendChild(list);
+    else body.appendChild(note('No timers running. They keep going and ring wherever you are in the app.'));
+
+    body.appendChild(el('h2', { class: 'strip-title', text: 'Converter' }));
+    Object.keys(CONVERT).forEach(function (kind) {
+      var c = CONVERT[kind];
+      var amount = el('input', { class: 'hub-input hub-num', type: 'number', value: kind === 'weight' ? '100' : '250', step: 'any', 'aria-label': c.label + ' amount' });
+      var from = el('select', { class: 'hub-select', 'aria-label': 'From' }, Object.keys(c.units).map(function (u) { return el('option', { value: u, text: u }); }));
+      var result = el('p', { class: 'hub-convert-out' });
+      function paint() {
+        var base = (Number(amount.value) || 0) * c.units[from.value];
+        result.textContent = Object.keys(c.units).filter(function (u) { return u !== from.value; }).map(function (u) {
+          var v = base / c.units[u];
+          return (v >= 100 ? Math.round(v) : Math.round(v * 100) / 100) + ' ' + u;
+        }).join('  ·  ');
+      }
+      amount.addEventListener('input', paint);
+      from.addEventListener('change', paint);
+      paint();
+      body.appendChild(el('div', { class: 'hub-convert' }, [el('p', { class: 'hub-label', text: c.label }), el('div', { class: 'hub-row' }, [amount, from]), result]));
+    });
+
+    var temp = el('input', { class: 'hub-input hub-num', type: 'number', value: '180', 'aria-label': 'Temperature' });
+    var tUnit = el('select', { class: 'hub-select', 'aria-label': 'Unit' }, [el('option', { value: 'c', text: '°C' }), el('option', { value: 'f', text: '°F' }), el('option', { value: 'gas', text: 'Gas mark' })]);
+    var tOut = el('p', { class: 'hub-convert-out' });
+    function paintTemp() {
+      var v = Number(temp.value) || 0;
+      var c = tUnit.value === 'c' ? v : tUnit.value === 'f' ? (v - 32) * 5 / 9 : (GAS.filter(function (g) { return g[0] === Math.round(v); })[0] || [0, 0])[1];
+      var gas = GAS.reduce(function (best, g) { return Math.abs(g[1] - c) < Math.abs(best[1] - c) ? g : best; }, GAS[0]);
+      tOut.textContent = Math.round(c) + ' °C  ·  ' + Math.round(c * 9 / 5 + 32) + ' °F  ·  gas ' + gas[0] + '  ·  fan ' + Math.round(c - 20) + ' °C';
+    }
+    temp.addEventListener('input', paintTemp);
+    tUnit.addEventListener('change', paintTemp);
+    paintTemp();
+    body.appendChild(el('div', { class: 'hub-convert' }, [el('p', { class: 'hub-label', text: 'Oven' }), el('div', { class: 'hub-row' }, [temp, tUnit]), tOut]));
+
+    var cups = el('input', { class: 'hub-input hub-num', type: 'number', value: '1', step: 'any', 'aria-label': 'Cups' });
+    var what = el('select', { class: 'hub-select', 'aria-label': 'Ingredient' }, Object.keys(CUP_GRAMS).map(function (k) { return el('option', { value: k, text: k }); }));
+    var cOut = el('p', { class: 'hub-convert-out' });
+    function paintCups() { cOut.textContent = (Number(cups.value) || 0) + ' cup of ' + what.value + ' ≈ ' + Math.round((Number(cups.value) || 0) * CUP_GRAMS[what.value]) + ' g'; }
+    cups.addEventListener('input', paintCups);
+    what.addEventListener('change', paintCups);
+    paintCups();
+    body.appendChild(el('div', { class: 'hub-convert' }, [el('p', { class: 'hub-label', text: 'Cups to grams (American recipes)' }), el('div', { class: 'hub-row' }, [cups, el('span', { text: 'cup of' }), what]), cOut]));
+  }
+
+  /* ------------------------------------------------ in season (account) -- */
+
+  // What is good in a temperate northern-hemisphere kitchen (UK, northern
+  // Europe, most of the US), month by month. South of the equator the
+  // months turn round by half a year.
+  var SEASON = [
+    ['Leeks', 'Kale', 'Cabbage', 'Parsnips', 'Swede', 'Celeriac', 'Brussels sprouts', 'Cauliflower', 'Blood oranges', 'Clementines', 'Lemons', 'Forced rhubarb', 'Pears', 'Mussels'],
+    ['Leeks', 'Kale', 'Cauliflower', 'Parsnips', 'Purple sprouting broccoli', 'Forced rhubarb', 'Blood oranges', 'Lemons', 'Celeriac', 'Chicory', 'Swede', 'Mussels'],
+    ['Purple sprouting broccoli', 'Spring greens', 'Wild garlic', 'Leeks', 'Rhubarb', 'Cauliflower', 'Spinach', 'Radishes', 'Kale', 'Chicory'],
+    ['Asparagus', 'Wild garlic', 'Spring onions', 'Radishes', 'Spinach', 'Rhubarb', 'Purple sprouting broccoli', 'Watercress', 'Morels', 'Lamb'],
+    ['Asparagus', 'New potatoes', 'Peas', 'Broad beans', 'Radishes', 'Spring onions', 'Lettuce', 'Rhubarb', 'Strawberries', 'Watercress', 'Crab'],
+    ['Strawberries', 'Cherries', 'Broad beans', 'Peas', 'Courgettes', 'New potatoes', 'Lettuce', 'Asparagus', 'Gooseberries', 'Elderflower', 'Beetroot', 'Mackerel'],
+    ['Tomatoes', 'Courgettes', 'Raspberries', 'Blueberries', 'Cherries', 'Peas', 'Green beans', 'Cucumber', 'Fennel', 'Beetroot', 'Apricots', 'Peaches', 'Sweetcorn'],
+    ['Tomatoes', 'Sweetcorn', 'Aubergine', 'Peppers', 'Courgettes', 'Plums', 'Blackberries', 'Peaches', 'Nectarines', 'Runner beans', 'Cucumber', 'Watermelon'],
+    ['Apples', 'Pears', 'Plums', 'Blackberries', 'Sweetcorn', 'Tomatoes', 'Squash', 'Figs', 'Peppers', 'Aubergine', 'Mushrooms', 'Grapes'],
+    ['Pumpkin', 'Squash', 'Apples', 'Pears', 'Mushrooms', 'Kale', 'Beetroot', 'Parsnips', 'Celeriac', 'Chestnuts', 'Quince', 'Leeks'],
+    ['Pumpkin', 'Squash', 'Parsnips', 'Brussels sprouts', 'Kale', 'Celeriac', 'Leeks', 'Cranberries', 'Pomegranate', 'Chestnuts', 'Pears', 'Clementines'],
+    ['Brussels sprouts', 'Parsnips', 'Chestnuts', 'Cranberries', 'Clementines', 'Red cabbage', 'Kale', 'Leeks', 'Celeriac', 'Pomegranate', 'Turnips', 'Oysters']
+  ];
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  var PRODUCE_EMOJI = { Leeks: '\u{1F96C}', Kale: '\u{1F96C}', Cabbage: '\u{1F96C}', 'Red cabbage': '\u{1F96C}', 'Spring greens': '\u{1F96C}', Spinach: '\u{1F96C}', Lettuce: '\u{1F96C}', Watercress: '\u{1F33F}', 'Wild garlic': '\u{1F33F}', Elderflower: '\u{1F33C}', Parsnips: '\u{1F955}', Swede: '\u{1F954}', Turnips: '\u{1F954}', Celeriac: '\u{1F954}', 'New potatoes': '\u{1F954}', 'Brussels sprouts': '\u{1F966}', Cauliflower: '\u{1F966}', 'Purple sprouting broccoli': '\u{1F966}', 'Blood oranges': '\u{1F34A}', Clementines: '\u{1F34A}', Lemons: '\u{1F34B}', 'Forced rhubarb': '\u{1F33F}', Rhubarb: '\u{1F33F}', Pears: '\u{1F350}', Apples: '\u{1F34E}', Mussels: '\u{1F9AA}', Oysters: '\u{1F9AA}', Crab: '\u{1F980}', Mackerel: '\u{1F41F}', Lamb: '\u{1F411}', Chicory: '\u{1F96C}', Radishes: '\u{1F955}', 'Spring onions': '\u{1F9C5}', Asparagus: '\u{1F33F}', Morels: '\u{1F344}', Mushrooms: '\u{1F344}', Peas: '\u{1FADB}', 'Broad beans': '\u{1FADB}', 'Green beans': '\u{1FADB}', 'Runner beans': '\u{1FADB}', Strawberries: '\u{1F353}', Cherries: '\u{1F352}', Courgettes: '\u{1F952}', Cucumber: '\u{1F952}', Gooseberries: '\u{1F347}', Grapes: '\u{1F347}', Beetroot: '\u{1F955}', Tomatoes: '\u{1F345}', Raspberries: '\u{1F353}', Blueberries: '\u{1FAD0}', Fennel: '\u{1F33F}', Apricots: '\u{1F351}', Peaches: '\u{1F351}', Nectarines: '\u{1F351}', Sweetcorn: '\u{1F33D}', Aubergine: '\u{1F346}', Peppers: '\u{1FAD1}', Plums: '\u{1F351}', Blackberries: '\u{1FAD0}', Watermelon: '\u{1F349}', Squash: '\u{1F383}', Pumpkin: '\u{1F383}', Figs: '\u{1F347}', Chestnuts: '\u{1F330}', Quince: '\u{1F350}', Cranberries: '\u{1F352}', Pomegranate: '\u{1F34E}' };
+  // What to look for in an ingredient list, where the name alone would miss it.
+  var PRODUCE_MATCH = {
+    'Brussels sprouts': /sprout/i, 'Purple sprouting broccoli': /broccoli/i, Swede: /swede|rutabaga/i, 'Spring greens': /greens|cabbage/i,
+    Courgettes: /courgette|zucchini/i, Aubergine: /aubergine|eggplant/i, Peppers: /bell pepper|red pepper|green pepper|yellow pepper|peppers\b|capsicum/i,
+    Sweetcorn: /sweetcorn|corn kernel|corn on the cob|\bcorn\b/i, Squash: /squash|butternut/i, Pumpkin: /pumpkin|squash/i, 'Forced rhubarb': /rhubarb/i,
+    'New potatoes': /potato/i, 'Blood oranges': /orange/i, Clementines: /clementine|satsuma|mandarin|orange/i, 'Red cabbage': /cabbage/i,
+    'Wild garlic': /wild garlic|garlic/i, 'Spring onions': /spring onion|scallion|green onion/i, 'Broad beans': /broad bean|fava/i,
+    'Green beans': /green bean|french bean/i, 'Runner beans': /runner bean|green bean/i, Morels: /mushroom/i, Mushrooms: /mushroom/i,
+    Peas: /\bpeas?\b/i, Lamb: /\blamb\b/i, Mackerel: /mackerel/i, Crab: /\bcrab\b/i, Mussels: /mussel/i, Oysters: /oyster/i
+  };
+
+  function dishesUsing(produce) {
+    var re = PRODUCE_MATCH[produce] || new RegExp(produce.replace(/(es|s)$/, '').replace(/[^a-z ]/gi, ''), 'i');
+    return allowedFood().filter(function (d) {
+      if (re.test(d.name) || re.test(d.blurb || '')) return true;
+      return (Recipes.forDish(d.name) || []).some(function (r) { return r.ingredients.some(function (l) { return re.test(l); }); });
+    }).slice(0, 12);
+  }
+
+  function renderSeason(body) {
+    if (!signedIn()) {
+      body.appendChild(signInCard('What is in season',
+        'What is at its best this month where you are, and the dishes in the catalogue that use it — so you cook what is cheap, ripe and good right now.', 'kitchen'));
+      return;
+    }
+    var south = !!store('season-south');
+    var month = typeof kitchen.month === 'number' ? kitchen.month : new Date().getMonth();
+    var index = south ? (month + 6) % 12 : month;
+    var monthSel = el('select', { class: 'hub-select', 'aria-label': 'Month' }, MONTHS.map(function (m, i) { return el('option', { value: String(i), text: m }); }));
+    monthSel.value = String(month);
+    monthSel.addEventListener('change', function () { kitchen.month = Number(monthSel.value); kitchen.produce = null; renderKitchen(); });
+    var hemi = el('label', { class: 'hub-toggle' }, [el('input', { type: 'checkbox', checked: south, on: { change: function (e) { store('season-south', e.target.checked); kitchen.produce = null; renderKitchen(); } } }), ' Southern hemisphere']);
+    body.appendChild(el('div', { class: 'hub-row' }, [monthSel, hemi]));
+    body.appendChild(el('p', { class: 'hub-week-title', text: 'At its best in ' + MONTHS[month] }));
+    var grid = el('div', { class: 'hub-pills hub-season' }, SEASON[index].map(function (p) {
+      var on = kitchen.produce === p;
+      return el('button', { class: 'hub-pill' + (on ? ' is-on' : ''), type: 'button', 'aria-pressed': on ? 'true' : 'false', on: { click: function () { kitchen.produce = on ? null : p; renderKitchen(); } } }, [
+        el('span', { 'aria-hidden': 'true', text: (PRODUCE_EMOJI[p] || '\u{1F33F}') + ' ' }), p
+      ]);
+    }));
+    body.appendChild(grid);
+    if (kitchen.produce) {
+      var found = dishesUsing(kitchen.produce);
+      body.appendChild(el('h2', { class: 'strip-title', text: 'Cook with ' + kitchen.produce.toLowerCase() }));
+      if (!found.length) body.appendChild(note('Nothing in the catalogue uses it by name — a good excuse to try something new.'));
+      else body.appendChild(el('ul', { class: 'hub-cards' }, found.map(function (d) {
+        return el('li', {}, [el('button', { class: 'hub-card', type: 'button', on: { click: function () { M.openDish(d.name); } } }, [
+          el('span', { class: 'hub-card-img is-blank', 'aria-hidden': 'true', text: d.icon }),
+          el('span', { class: 'hub-card-name', text: d.name }),
+          el('span', { class: 'hub-from', text: d.blurb })
+        ])]);
+      })));
+    } else {
+      body.appendChild(note('Tap something to see the dishes that use it.'));
+    }
+    body.appendChild(el('p', { class: 'fine hub-foot', text: 'For a temperate climate — the UK, northern Europe and most of the US. Further south it starts sooner and runs longer.' }));
+  }
+
+  /* ====================================================================
+   * NEWS: TODAY'S BRIEFING (P)
+   * ==================================================================== */
+
+  var briefing = { data: null, loading: false, error: '' };
+
+  function utcDay() { return new Date().toISOString().slice(0, 10); }
+
+  function renderBriefing() {
+    var view = M.$('view-news');
+    if (!view) return;
+    var box = M.$('hub-briefing');
+    if (!box) {
+      box = el('section', { id: 'hub-briefing', class: 'hub-briefing', 'aria-label': 'Today’s food briefing' });
+      var headEl = view.querySelector('.head');
+      if (headEl && headEl.nextSibling) view.insertBefore(box, headEl.nextSibling);
+      else view.appendChild(box);
+    }
+    clear(box);
+    if (!plus()) {
+      box.classList.add('is-teaser');
+      box.appendChild(el('p', { class: 'hub-gate-tier', text: 'Premium' }));
+      box.appendChild(el('p', { class: 'hub-briefing-title', text: 'Today’s food news in a minute' }));
+      box.appendChild(el('p', { class: 'fine', text: 'The five stories worth knowing from everything below, in plain words with a link to each, and one thing to cook today because of them.' }));
+      box.appendChild(el('button', { class: 'quiet', type: 'button', text: 'Get the daily briefing', on: { click: function () { M.goPremium('The daily food briefing'); } } }));
+      return;
+    }
+    box.classList.remove('is-teaser');
+    if (briefing.data && briefing.data.day === utcDay()) return paintBriefing(box, briefing.data);
+    if (briefing.error) {
+      box.appendChild(el('p', { class: 'hub-note is-error' }, [briefing.error + ' ', el('button', { class: 'link-btn', type: 'button', text: 'Try again', on: { click: function () { briefing.error = ''; renderBriefing(); } } })]));
+      return;
+    }
+    box.appendChild(el('p', { class: 'hub-briefing-title', text: 'Today’s briefing' }));
+    box.appendChild(note('Reading this morning’s food news…'));
+    if (briefing.loading) return;
+    briefing.loading = true;
+    api('/api/briefing').then(function (res) {
+      briefing.loading = false;
+      briefing.data = res.briefing;
+      if (M.currentView() === 'news') renderBriefing();
+    }).catch(function (err) {
+      briefing.loading = false;
+      briefing.error = errorText(err);
+      if (M.currentView() === 'news') renderBriefing();
+    });
+  }
+
+  function paintBriefing(box, b) {
+    box.appendChild(el('p', { class: 'hub-gate-tier', text: 'Today’s briefing' }));
+    box.appendChild(el('p', { class: 'hub-briefing-title', text: b.headline }));
+    box.appendChild(el('ol', { class: 'hub-briefing-list' }, b.items.map(function (it) {
+      return el('li', {}, [
+        el('span', { text: it.text + ' ' }),
+        el('a', { href: it.link, target: '_blank', rel: 'noopener noreferrer', class: 'hub-from', text: it.source + ' ↗' })
+      ]);
+    })));
+    if (b.cook) {
+      box.appendChild(el('button', { class: 'hub-menu-item', type: 'button', on: { click: function () { M.openDish(b.cook.name); } } }, [
+        el('span', { class: 'hub-menu-course', text: 'Cook today' }),
+        el('span', { class: 'hub-menu-name', text: b.cook.icon + ' ' + b.cook.name }),
+        el('span', { class: 'hub-from', text: b.cook.why })
+      ]));
+    }
+    box.appendChild(el('p', { class: 'fine', text: 'Summarised by AI from the stories below; each one links to the publisher’s own article.' }));
+  }
+
+  /* ====================================================================
+   * COOK MODE: HANDS-FREE (P)
+   * ==================================================================== */
+
+  var voice = { on: false, rec: null, observer: null, btn: null, status: null };
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  function stepText() {
+    var kind = (M.$('cook-kind') || {}).textContent || '';
+    var step = (M.$('cook-step') || {}).textContent || '';
+    var list = M.$('cook-why');
+    var items = list && !list.hidden ? Array.prototype.map.call(list.querySelectorAll('li'), function (li) { return li.textContent; }) : [];
+    return kind + '. ' + step + (items.length ? ' ' + items.join(', ') + '.' : '');
+  }
+
+  function speak(text) {
+    if (!('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      var u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.98;
+      window.speechSynthesis.speak(u);
+    } catch (err) {}
+  }
+
+  function click(id) {
+    var b = M.$(id);
+    if (b && !b.disabled && !b.hidden && b.offsetParent !== null) b.click();
+  }
+
+  function heard(raw) {
+    var t = String(raw || '').toLowerCase();
+    if (/\b(stop listening|hands off|voice off)\b/.test(t)) return stopVoice();
+    if (/\b(repeat|again|say that again|pardon|what was that)\b/.test(t)) return speak(stepText());
+    if (/\b(pause|stop) (the )?timer\b/.test(t)) {
+      var btn = M.$('cook-timer-btn');
+      if (btn && /pause/i.test(btn.textContent)) btn.click();
+      return;
+    }
+    if (/\b(start|set|begin)\b.*\btimer\b|\btimer\b/.test(t)) return click('cook-timer-btn');
+    if (/\b(back|previous|go back|last step)\b/.test(t)) return click('cook-prev');
+    if (/\b(next|continue|done|go on|carry on|okay next|finished)\b/.test(t)) return click('cook-next');
+  }
+
+  function setVoiceStatus(text) {
+    if (voice.status) { voice.status.textContent = text; voice.status.hidden = !text; }
+  }
+
+  function startVoice() {
+    if (!plus()) { M.goPremium('Hands-free cook mode'); return; }
+    voice.on = true;
+    voice.btn.classList.add('is-on');
+    voice.btn.setAttribute('aria-pressed', 'true');
+    speak(stepText());
+    var stage = M.$('cook-step');
+    if (stage && 'MutationObserver' in window) {
+      voice.observer = new MutationObserver(function () { if (voice.on) speak(stepText()); });
+      voice.observer.observe(stage, { childList: true, characterData: true, subtree: true });
+    }
+    if (!SR) {
+      setVoiceStatus('Reading the steps aloud. This browser cannot take voice commands — tap Next as usual.');
+      return;
+    }
+    try {
+      voice.rec = new SR();
+      voice.rec.continuous = true;
+      voice.rec.interimResults = false;
+      voice.rec.lang = navigator.language || 'en-GB';
+      voice.rec.onresult = function (e) {
+        var last = e.results[e.results.length - 1];
+        if (last && last[0]) heard(last[0].transcript);
+      };
+      voice.rec.onerror = function (e) {
+        if (e && (e.error === 'not-allowed' || e.error === 'service-not-allowed')) {
+          setVoiceStatus('The microphone is blocked, so it is reading the steps aloud only. Allow the microphone to talk back.');
+          voice.rec = null;
+        }
+      };
+      // Recognition stops itself after a pause; while hands-free is on, it
+      // starts listening again.
+      voice.rec.onend = function () {
+        var dialog = M.$('cook-mode');
+        if (voice.on && voice.rec && dialog && dialog.open) { try { voice.rec.start(); } catch (err) {} }
+      };
+      voice.rec.start();
+      setVoiceStatus('Listening — say “next”, “back”, “repeat” or “start timer”.');
+    } catch (err) {
+      setVoiceStatus('Reading the steps aloud. Voice commands are not available here.');
+    }
+  }
+
+  function stopVoice() {
+    voice.on = false;
+    if (voice.btn) { voice.btn.classList.remove('is-on'); voice.btn.setAttribute('aria-pressed', 'false'); }
+    if (voice.rec) { var r = voice.rec; voice.rec = null; try { r.stop(); } catch (err) {} }
+    if (voice.observer) { voice.observer.disconnect(); voice.observer = null; }
+    try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (err) {}
+    setVoiceStatus('');
+  }
+
+  function setupVoice() {
+    var dialog = M.$('cook-mode');
+    if (!dialog || M.$('hub-voice')) return;
+    var bar = dialog.querySelector('.cook-bar');
+    voice.btn = el('button', { id: 'hub-voice', class: 'quiet hub-voice-btn', type: 'button', 'aria-pressed': 'false', title: 'Hands-free: steps read aloud, voice commands' }, [
+      '\u{1F399}️ Hands-free', plus() ? null : el('span', { class: 'tag-premium', text: 'Premium' })
+    ]);
+    voice.btn.addEventListener('click', function () { if (voice.on) stopVoice(); else startVoice(); });
+    voice.status = el('p', { class: 'fine hub-voice-status', hidden: true, 'aria-live': 'polite' });
+    if (bar) { bar.appendChild(voice.btn); bar.parentNode.insertBefore(voice.status, bar.nextSibling); }
+    dialog.addEventListener('close', stopVoice);
+  }
+
+  function refreshVoiceTag() {
+    if (!voice.btn) return;
+    var tag = voice.btn.querySelector('.tag-premium');
+    if (plus() && tag) tag.remove();
+    if (!plus() && !tag) voice.btn.appendChild(el('span', { class: 'tag-premium', text: 'Premium' }));
+  }
+
+  /* ====================================================================
+   * WIRING
+   * ==================================================================== */
+
+  var lastTier = null;
+
+  function tier() { return (signedIn() ? 'in' : 'out') + (plus() ? '+' : ''); }
+
+  window.M45Hub = {
+    // "Put it in your week" on the result screen: one dish into the planner,
+    // on the day given. Resolves true once it is saved (or queued to save).
+    addDish: function (name, date, meal) {
+      if (!signedIn()) return Promise.resolve(false);
+      var week = isoDay(mondayOf(date));
+      var day = DAYS[(date.getDay() + 6) % 7];
+      return loadWeek(week, plan.loadedFor !== week).then(function () {
+        if (!plan.data || plan.week !== week) return false;
+        addToSlot(day + '-' + (MEALS.indexOf(meal) !== -1 ? meal : 'dinner'), { t: 'dish', name: name });
+        return true;
+      }).catch(function () { return false; });
+    },
+    onView: function (name) {
+      if (name !== 'kitchen') stopCamera();
+      if (name === 'planner') renderPlanner();
+      else if (name === 'kitchen') renderKitchen();
+      else if (name === 'news') renderBriefing();
+    },
+    // Called whenever the account status is checked again, which is on
+    // every window focus. Only a change of tier redraws anything: redrawing
+    // on every focus would throw away whatever somebody was typing.
+    onStatus: function () {
+      var now = tier();
+      refreshVoiceTag();
+      if (now === lastTier) return;
+      var changedAccount = lastTier !== null && lastTier.charAt(1) !== now.charAt(1);
+      lastTier = now;
+      if (changedAccount) { plan.data = null; plan.loadedFor = null; cookbook.list = null; }
+      var v = M.currentView();
+      if (v === 'planner' || v === 'kitchen' || v === 'news') window.M45Hub.onView(v);
+    }
+  };
+
+  lastTier = tier();
+  setupVoice();
+  ensureTicker();
+  // Opened before this file had loaded — ?go=planner at boot, say.
+  var opened = M.currentView();
+  if (opened === 'planner' || opened === 'kitchen' || opened === 'news') window.M45Hub.onView(opened);
+})();

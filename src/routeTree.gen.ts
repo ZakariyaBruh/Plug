@@ -21,17 +21,27 @@ import { Route as PremiumRouteImport } from './routes/premium'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ApiBriefingRouteImport } from './routes/api/briefing'
+import { Route as ApiBudgetRouteImport } from './routes/api/budget'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiCheckinRouteImport } from './routes/api/checkin'
+import { Route as ApiCookbookRouteImport } from './routes/api/cookbook'
 import { Route as ApiDailyRouteImport } from './routes/api/daily'
 import { Route as ApiDbHealthRouteImport } from './routes/api/db-health'
+import { Route as ApiFridgeRouteImport } from './routes/api/fridge'
 import { Route as ApiHouseholdRouteImport } from './routes/api/household'
 import { Route as ApiJournalRouteImport } from './routes/api/journal'
 import { Route as ApiMenuRouteImport } from './routes/api/menu'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
+import { Route as ApiNutritionRouteImport } from './routes/api/nutrition'
 import { Route as ApiOrderTogetherRouteImport } from './routes/api/order-together'
+import { Route as ApiPartyRouteImport } from './routes/api/party'
+import { Route as ApiPlannerRouteImport } from './routes/api/planner'
+import { Route as ApiPlannerAiRouteImport } from './routes/api/planner-ai'
 import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-status'
 import { Route as ApiRadioRouteImport } from './routes/api/radio'
+import { Route as ApiRecipeImportRouteImport } from './routes/api/recipe-import'
+import { Route as ApiScanRouteImport } from './routes/api/scan'
 import { Route as ApiSuggestRouteImport } from './routes/api/suggest'
 import { Route as ApiTriviaRouteImport } from './routes/api/trivia'
 import { Route as ApiTvRouteImport } from './routes/api/tv'
@@ -108,6 +118,16 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBriefingRoute = ApiBriefingRouteImport.update({
+  id: '/api/briefing',
+  path: '/api/briefing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBudgetRoute = ApiBudgetRouteImport.update({
+  id: '/api/budget',
+  path: '/api/budget',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
@@ -118,6 +138,11 @@ const ApiCheckinRoute = ApiCheckinRouteImport.update({
   path: '/api/checkin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCookbookRoute = ApiCookbookRouteImport.update({
+  id: '/api/cookbook',
+  path: '/api/cookbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDailyRoute = ApiDailyRouteImport.update({
   id: '/api/daily',
   path: '/api/daily',
@@ -126,6 +151,11 @@ const ApiDailyRoute = ApiDailyRouteImport.update({
 const ApiDbHealthRoute = ApiDbHealthRouteImport.update({
   id: '/api/db-health',
   path: '/api/db-health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFridgeRoute = ApiFridgeRouteImport.update({
+  id: '/api/fridge',
+  path: '/api/fridge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiHouseholdRoute = ApiHouseholdRouteImport.update({
@@ -148,9 +178,29 @@ const ApiNewsRoute = ApiNewsRouteImport.update({
   path: '/api/news',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiNutritionRoute = ApiNutritionRouteImport.update({
+  id: '/api/nutrition',
+  path: '/api/nutrition',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOrderTogetherRoute = ApiOrderTogetherRouteImport.update({
   id: '/api/order-together',
   path: '/api/order-together',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPartyRoute = ApiPartyRouteImport.update({
+  id: '/api/party',
+  path: '/api/party',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPlannerRoute = ApiPlannerRouteImport.update({
+  id: '/api/planner',
+  path: '/api/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPlannerAiRoute = ApiPlannerAiRouteImport.update({
+  id: '/api/planner-ai',
+  path: '/api/planner-ai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPremiumStatusRoute = ApiPremiumStatusRouteImport.update({
@@ -161,6 +211,16 @@ const ApiPremiumStatusRoute = ApiPremiumStatusRouteImport.update({
 const ApiRadioRoute = ApiRadioRouteImport.update({
   id: '/api/radio',
   path: '/api/radio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRecipeImportRoute = ApiRecipeImportRouteImport.update({
+  id: '/api/recipe-import',
+  path: '/api/recipe-import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiScanRoute = ApiScanRouteImport.update({
+  id: '/api/scan',
+  path: '/api/scan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiSuggestRoute = ApiSuggestRouteImport.update({
@@ -252,17 +312,27 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/briefing': typeof ApiBriefingRoute
+  '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
   '/api/checkin': typeof ApiCheckinRoute
+  '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
   '/api/db-health': typeof ApiDbHealthRoute
+  '/api/fridge': typeof ApiFridgeRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/journal': typeof ApiJournalRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
+  '/api/nutrition': typeof ApiNutritionRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
+  '/api/party': typeof ApiPartyRoute
+  '/api/planner': typeof ApiPlannerRoute
+  '/api/planner-ai': typeof ApiPlannerAiRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/radio': typeof ApiRadioRoute
+  '/api/recipe-import': typeof ApiRecipeImportRoute
+  '/api/scan': typeof ApiScanRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/trivia': typeof ApiTriviaRoute
   '/api/tv': typeof ApiTvRoute
@@ -292,17 +362,27 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/briefing': typeof ApiBriefingRoute
+  '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
   '/api/checkin': typeof ApiCheckinRoute
+  '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
   '/api/db-health': typeof ApiDbHealthRoute
+  '/api/fridge': typeof ApiFridgeRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/journal': typeof ApiJournalRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
+  '/api/nutrition': typeof ApiNutritionRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
+  '/api/party': typeof ApiPartyRoute
+  '/api/planner': typeof ApiPlannerRoute
+  '/api/planner-ai': typeof ApiPlannerAiRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/radio': typeof ApiRadioRoute
+  '/api/recipe-import': typeof ApiRecipeImportRoute
+  '/api/scan': typeof ApiScanRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/trivia': typeof ApiTriviaRoute
   '/api/tv': typeof ApiTvRoute
@@ -333,17 +413,27 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/briefing': typeof ApiBriefingRoute
+  '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
   '/api/checkin': typeof ApiCheckinRoute
+  '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
   '/api/db-health': typeof ApiDbHealthRoute
+  '/api/fridge': typeof ApiFridgeRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/journal': typeof ApiJournalRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
+  '/api/nutrition': typeof ApiNutritionRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
+  '/api/party': typeof ApiPartyRoute
+  '/api/planner': typeof ApiPlannerRoute
+  '/api/planner-ai': typeof ApiPlannerAiRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/radio': typeof ApiRadioRoute
+  '/api/recipe-import': typeof ApiRecipeImportRoute
+  '/api/scan': typeof ApiScanRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/trivia': typeof ApiTriviaRoute
   '/api/tv': typeof ApiTvRoute
@@ -375,17 +465,27 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/briefing'
+    | '/api/budget'
     | '/api/chat'
     | '/api/checkin'
+    | '/api/cookbook'
     | '/api/daily'
     | '/api/db-health'
+    | '/api/fridge'
     | '/api/household'
     | '/api/journal'
     | '/api/menu'
     | '/api/news'
+    | '/api/nutrition'
     | '/api/order-together'
+    | '/api/party'
+    | '/api/planner'
+    | '/api/planner-ai'
     | '/api/premium-status'
     | '/api/radio'
+    | '/api/recipe-import'
+    | '/api/scan'
     | '/api/suggest'
     | '/api/trivia'
     | '/api/tv'
@@ -415,17 +515,27 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/briefing'
+    | '/api/budget'
     | '/api/chat'
     | '/api/checkin'
+    | '/api/cookbook'
     | '/api/daily'
     | '/api/db-health'
+    | '/api/fridge'
     | '/api/household'
     | '/api/journal'
     | '/api/menu'
     | '/api/news'
+    | '/api/nutrition'
     | '/api/order-together'
+    | '/api/party'
+    | '/api/planner'
+    | '/api/planner-ai'
     | '/api/premium-status'
     | '/api/radio'
+    | '/api/recipe-import'
+    | '/api/scan'
     | '/api/suggest'
     | '/api/trivia'
     | '/api/tv'
@@ -455,17 +565,27 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/briefing'
+    | '/api/budget'
     | '/api/chat'
     | '/api/checkin'
+    | '/api/cookbook'
     | '/api/daily'
     | '/api/db-health'
+    | '/api/fridge'
     | '/api/household'
     | '/api/journal'
     | '/api/menu'
     | '/api/news'
+    | '/api/nutrition'
     | '/api/order-together'
+    | '/api/party'
+    | '/api/planner'
+    | '/api/planner-ai'
     | '/api/premium-status'
     | '/api/radio'
+    | '/api/recipe-import'
+    | '/api/scan'
     | '/api/suggest'
     | '/api/trivia'
     | '/api/tv'
@@ -496,17 +616,27 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiBriefingRoute: typeof ApiBriefingRoute
+  ApiBudgetRoute: typeof ApiBudgetRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiCheckinRoute: typeof ApiCheckinRoute
+  ApiCookbookRoute: typeof ApiCookbookRoute
   ApiDailyRoute: typeof ApiDailyRoute
   ApiDbHealthRoute: typeof ApiDbHealthRoute
+  ApiFridgeRoute: typeof ApiFridgeRoute
   ApiHouseholdRoute: typeof ApiHouseholdRoute
   ApiJournalRoute: typeof ApiJournalRoute
   ApiMenuRoute: typeof ApiMenuRoute
   ApiNewsRoute: typeof ApiNewsRoute
+  ApiNutritionRoute: typeof ApiNutritionRoute
   ApiOrderTogetherRoute: typeof ApiOrderTogetherRoute
+  ApiPartyRoute: typeof ApiPartyRoute
+  ApiPlannerRoute: typeof ApiPlannerRoute
+  ApiPlannerAiRoute: typeof ApiPlannerAiRoute
   ApiPremiumStatusRoute: typeof ApiPremiumStatusRoute
   ApiRadioRoute: typeof ApiRadioRoute
+  ApiRecipeImportRoute: typeof ApiRecipeImportRoute
+  ApiScanRoute: typeof ApiScanRoute
   ApiSuggestRoute: typeof ApiSuggestRoute
   ApiTriviaRoute: typeof ApiTriviaRoute
   ApiTvRoute: typeof ApiTvRoute
@@ -609,6 +739,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/briefing': {
+      id: '/api/briefing'
+      path: '/api/briefing'
+      fullPath: '/api/briefing'
+      preLoaderRoute: typeof ApiBriefingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/budget': {
+      id: '/api/budget'
+      path: '/api/budget'
+      fullPath: '/api/budget'
+      preLoaderRoute: typeof ApiBudgetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -623,6 +767,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCheckinRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cookbook': {
+      id: '/api/cookbook'
+      path: '/api/cookbook'
+      fullPath: '/api/cookbook'
+      preLoaderRoute: typeof ApiCookbookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/daily': {
       id: '/api/daily'
       path: '/api/daily'
@@ -635,6 +786,13 @@ declare module '@tanstack/react-router' {
       path: '/api/db-health'
       fullPath: '/api/db-health'
       preLoaderRoute: typeof ApiDbHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fridge': {
+      id: '/api/fridge'
+      path: '/api/fridge'
+      fullPath: '/api/fridge'
+      preLoaderRoute: typeof ApiFridgeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/household': {
@@ -665,11 +823,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiNewsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/nutrition': {
+      id: '/api/nutrition'
+      path: '/api/nutrition'
+      fullPath: '/api/nutrition'
+      preLoaderRoute: typeof ApiNutritionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/order-together': {
       id: '/api/order-together'
       path: '/api/order-together'
       fullPath: '/api/order-together'
       preLoaderRoute: typeof ApiOrderTogetherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/party': {
+      id: '/api/party'
+      path: '/api/party'
+      fullPath: '/api/party'
+      preLoaderRoute: typeof ApiPartyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/planner': {
+      id: '/api/planner'
+      path: '/api/planner'
+      fullPath: '/api/planner'
+      preLoaderRoute: typeof ApiPlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/planner-ai': {
+      id: '/api/planner-ai'
+      path: '/api/planner-ai'
+      fullPath: '/api/planner-ai'
+      preLoaderRoute: typeof ApiPlannerAiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/premium-status': {
@@ -684,6 +870,20 @@ declare module '@tanstack/react-router' {
       path: '/api/radio'
       fullPath: '/api/radio'
       preLoaderRoute: typeof ApiRadioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/recipe-import': {
+      id: '/api/recipe-import'
+      path: '/api/recipe-import'
+      fullPath: '/api/recipe-import'
+      preLoaderRoute: typeof ApiRecipeImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/scan': {
+      id: '/api/scan'
+      path: '/api/scan'
+      fullPath: '/api/scan'
+      preLoaderRoute: typeof ApiScanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/suggest': {
@@ -818,17 +1018,27 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiBriefingRoute: ApiBriefingRoute,
+  ApiBudgetRoute: ApiBudgetRoute,
   ApiChatRoute: ApiChatRoute,
   ApiCheckinRoute: ApiCheckinRoute,
+  ApiCookbookRoute: ApiCookbookRoute,
   ApiDailyRoute: ApiDailyRoute,
   ApiDbHealthRoute: ApiDbHealthRoute,
+  ApiFridgeRoute: ApiFridgeRoute,
   ApiHouseholdRoute: ApiHouseholdRoute,
   ApiJournalRoute: ApiJournalRoute,
   ApiMenuRoute: ApiMenuRoute,
   ApiNewsRoute: ApiNewsRoute,
+  ApiNutritionRoute: ApiNutritionRoute,
   ApiOrderTogetherRoute: ApiOrderTogetherRoute,
+  ApiPartyRoute: ApiPartyRoute,
+  ApiPlannerRoute: ApiPlannerRoute,
+  ApiPlannerAiRoute: ApiPlannerAiRoute,
   ApiPremiumStatusRoute: ApiPremiumStatusRoute,
   ApiRadioRoute: ApiRadioRoute,
+  ApiRecipeImportRoute: ApiRecipeImportRoute,
+  ApiScanRoute: ApiScanRoute,
   ApiSuggestRoute: ApiSuggestRoute,
   ApiTriviaRoute: ApiTriviaRoute,
   ApiTvRoute: ApiTvRoute,

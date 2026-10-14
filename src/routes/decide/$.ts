@@ -24,6 +24,7 @@ import progressJs from '../../../public/decide/js/progress.js?raw'
 import recipesJs from '../../../public/decide/js/recipes.js?raw'
 import soundJs from '../../../public/decide/js/sound.js?raw'
 import tasteJs from '../../../public/decide/js/taste.js?raw'
+import hubJs from '../../../public/decide/js/hub.js?raw'
 import manifestJson from '../../../public/decide/manifest.webmanifest?raw'
 import iconSvg from '../../../public/decide/icon.svg?raw'
 import iconMaskableSvg from '../../../public/decide/icon-maskable.svg?raw'
@@ -60,7 +61,7 @@ const VERSIONED = [
   'styles.css', 'js/app.js', 'js/confetti.js', 'js/config.js', 'js/data.js',
   'js/engine.js', 'js/flavor.js', 'js/mapview.js', 'js/places.js', 'js/premium.js',
   'js/progress.js', 'js/recipes.js', 'js/sound.js',
-  'js/taste.js',
+  'js/taste.js', 'js/hub.js',
 ]
 
 function stampUrls(text: string, quote: string): string {
@@ -138,6 +139,7 @@ const FILES: Record<string, { body: string; type: string }> = {
   'js/recipes.js': { body: recipesJs, type: 'text/javascript; charset=utf-8' },
   'js/sound.js': { body: soundJs, type: 'text/javascript; charset=utf-8' },
   'js/taste.js': { body: tasteJs, type: 'text/javascript; charset=utf-8' },
+  'js/hub.js': { body: hubJs, type: 'text/javascript; charset=utf-8' },
   'manifest.webmanifest': { body: manifestJson, type: 'application/manifest+json; charset=utf-8' },
   'icon.svg': { body: iconSvg, type: 'image/svg+xml; charset=utf-8' },
   'icon-maskable.svg': { body: iconMaskableSvg, type: 'image/svg+xml; charset=utf-8' },
