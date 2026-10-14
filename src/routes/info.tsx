@@ -16,7 +16,6 @@ import {
   SITE_CARD,
   SITE_DESCRIPTION,
   SITE_NAME,
-  SITE_TITLE,
   SITE_URL,
   ACCOUNT,
   STANDARD,
@@ -33,8 +32,11 @@ export const Route = createFileRoute('/info')({
   head: () =>
     pageHead({
       path: '/info',
-      title: SITE_TITLE,
-      description: SITE_DESCRIPTION,
+      // Not the home page's title: two pages with one title are two pages
+      // Google has to choose between.
+      title: 'About morsels45 — what’s free, what an account adds, and Premium',
+      description:
+        'Everything morsels45 does in one place: deciding what to eat, the meal planner, recipes, food TV and radio, and Premium. What’s free and what isn’t.',
     }),
   component: InfoPage,
 })

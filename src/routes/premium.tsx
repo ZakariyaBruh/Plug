@@ -29,7 +29,7 @@ export const Route = createFileRoute('/premium')({
       path: '/premium',
       title: `Premium — morsels45 · ${OFFER_SHORT}, then ${PRICE_MONTHLY}`,
       description:
-        `Premium switches on the rest of the food hub: a shopping list, nutrition and budget for your planned week, a dinner-party planner, your own recipes and recipes from any website, a food scanner that says how healthy something is, dinner from a fridge photo, hands-free cook mode, a daily AI food briefing and the shared browser. ${OFFER}.`,
+        `Shopping list, nutrition and costs for your week, your own recipes, a food scanner, dinner from a fridge photo and more. ${OFFER}.`,
       ogTitle: `morsels45 Premium — ${OFFER_SHORT}`,
       ogDescription:
         `Shopping list, nutrition and budget for your week. Your own recipes, recipes from any website, a food scanner that tells you how healthy it is, and dinner from a photo of your fridge. Hands-free cook mode, a daily AI food briefing, and a browser two of you drive at once. ${OFFER}.`,

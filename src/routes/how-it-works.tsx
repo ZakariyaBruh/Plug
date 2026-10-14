@@ -9,9 +9,9 @@ export const Route = createFileRoute('/how-it-works')({
   head: () =>
     pageHead({
       path: '/how-it-works',
-      title: 'How it works — morsels45',
+      title: 'How morsels45 works — from “what should I eat?” to one dish',
       description:
-        'How morsels45 turns “what should I eat” into a handful of either-ors, then one dish you can push lighter, spicier or sooner until it is right — and what Premium adds on top.',
+        'How morsels45 turns “what should I eat?” into a few either-or questions and one dish you can make lighter, spicier or quicker — and what Premium adds.',
     }),
   component: HowItWorks,
 })

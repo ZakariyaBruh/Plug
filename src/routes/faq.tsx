@@ -10,8 +10,9 @@ export const Route = createFileRoute('/faq')({
   head: () =>
     pageHead({
       path: '/faq',
-      title: 'FAQ — morsels45',
-      description: 'What is free, what Premium adds, how the dietary rules work, and how to cancel.',
+      title: 'morsels45 FAQ — what’s free, food rules and cancelling',
+      description:
+        'Answers about morsels45: what’s free, what an account and Premium add, how the food rules (halal, kosher, vegetarian, allergies) work, and how to cancel.',
     }),
   component: FaqPage,
 })

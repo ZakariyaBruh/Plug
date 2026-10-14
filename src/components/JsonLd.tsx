@@ -8,7 +8,7 @@
  * "<" is escaped because a JSON string containing "</script>" would otherwise
  * close this tag early and spill the rest of the document into the page.
  */
-export function JsonLd({ data }: { data: Record<string, unknown> }) {
+export function JsonLd({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {
   return (
     <script
       type="application/ld+json"

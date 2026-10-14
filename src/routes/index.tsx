@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { PageShell } from '#/components/PageShell'
 import { loadViewer } from '#/lib/viewer'
 import { JsonLd } from '#/components/JsonLd'
-import { DISH_COUNT, OFFER, SITE_NAME, SITE_TITLE, SITE_DESCRIPTION, SITE_URL, pageHead, track } from '#/lib/site'
+import { DISH_COUNT, OFFER, SITE_NAME, SITE_TITLE, SITE_META_DESCRIPTION, SITE_URL, pageHead, track } from '#/lib/site'
 
 export const Route = createFileRoute('/')({
   loader: () => loadViewer(),
@@ -12,13 +12,13 @@ export const Route = createFileRoute('/')({
     ...pageHead({
       path: '/',
       title: SITE_TITLE,
-      description: SITE_DESCRIPTION,
+      description: SITE_META_DESCRIPTION,
     }),
     meta: [
       ...(pageHead({
         path: '/',
         title: SITE_TITLE,
-        description: SITE_DESCRIPTION,
+        description: SITE_META_DESCRIPTION,
       }).meta || []),
       {
         name: '8c05a9c7e728a9bdcd859b116fa7b4d7c713ac2c',
@@ -29,12 +29,25 @@ export const Route = createFileRoute('/')({
   component: HomePage,
 })
 
-const SITE_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: SITE_NAME,
-  url: SITE_URL,
-}
+/*
+ * The site and who is behind it. Organization with a logo is what search
+ * engines use for the name and icon beside results from this site.
+ */
+const SITE_SCHEMA = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    url: SITE_URL,
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: SITE_NAME,
+    url: SITE_URL,
+    logo: `${SITE_URL}/icon-512.png`,
+  },
+]
 
 const HOME_TIERS: { name: string; note: string; premium?: boolean; items: [string, string][] }[] = [
   {

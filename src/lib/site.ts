@@ -158,6 +158,8 @@ type PageHead = {
   ogTitle?: string
   ogDescription?: string
   noindex?: boolean
+  /** A page's own picture for shared links — a dish's photo — instead of the site card. */
+  image?: { url: string; width: number; height: number; alt: string }
 }
 
 export function pageHead(page: PageHead) {
@@ -170,13 +172,13 @@ export function pageHead(page: PageHead) {
     { property: 'og:type', content: 'website' },
     { property: 'og:site_name', content: SITE_NAME },
     { property: 'og:title', content: ogTitle },
-    { property: 'og:image', content: SITE_CARD },
-    { property: 'og:image:width', content: '1200' },
-    { property: 'og:image:height', content: '630' },
-    { property: 'og:image:alt', content: SITE_CARD_ALT },
+    { property: 'og:image', content: page.image?.url ?? SITE_CARD },
+    { property: 'og:image:width', content: String(page.image?.width ?? 1200) },
+    { property: 'og:image:height', content: String(page.image?.height ?? 630) },
+    { property: 'og:image:alt', content: page.image?.alt ?? SITE_CARD_ALT },
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:title', content: ogTitle },
-    { name: 'twitter:image', content: SITE_CARD },
+    { name: 'twitter:image', content: page.image?.url ?? SITE_CARD },
   ]
   if (url) meta.push({ property: 'og:url', content: url })
   if (page.description) meta.push({ name: 'description', content: page.description })
@@ -411,7 +413,22 @@ export const THE_JOBS: { name: string; blurb: string }[] = [
   },
 ]
 
-export const SITE_TITLE = 'morsels45 — your food hub: decide, plan, cook'
+/*
+ * The home page's title. Whop's hosting puts the app's own listing name over
+ * the home page's <title>, so this is also the app's name on Whop (set with
+ * `whop apps update --name`), and Whop caps that at thirty characters. Brand
+ * first, then the question people actually type into a search box.
+ */
+export const SITE_TITLE = 'morsels45: What Should I Eat?'
+
+/*
+ * The description search results show: under 160 characters, or Google cuts
+ * it mid-sentence. SITE_DESCRIPTION below is the long version, for structured
+ * data, which has no such limit. Also the app's description on Whop, for the
+ * same reason as the title.
+ */
+export const SITE_META_DESCRIPTION =
+  'Can’t decide what to eat? Answer a few quick questions and get one dish with its recipe. Then plan your week, shop for it and cook it. Free to start.'
 export const SITE_DESCRIPTION =
   `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner and TV and radio to cook and eat to are free with an account; Premium adds the shopping list, nutrition, budget, your own recipes, recipes from websites, a food scanner that says how healthy something is, and more.`
 

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -699,14 +700,40 @@ function previewCheck(): Plugin {
   }
 }
 
+/*
+ * When each page last changed, for the sitemap's <lastmod>: the date of the
+ * last commit that touched the files the page is made from. It was the build
+ * time, which moved every page's date on every deploy — several a day — so
+ * the dates said "everything changed" when almost nothing had, and a sitemap
+ * whose dates are always new has them ignored. Baked in at build time,
+ * because the worker has no git and no memory of what changed.
+ */
+function lastChanged(...files: string[]): string {
+  try {
+    const out = execFileSync('git', ['log', '-1', '--format=%cI', '--', ...files], { encoding: 'utf8' }).trim()
+    if (out) return new Date(out).toISOString()
+  } catch {}
+  return new Date().toISOString()
+}
+const DISH_SOURCES = ['public/decide/js/data.js', 'public/decide/js/recipes.js', 'src/routes/eat.$dish.tsx', 'src/lib/recipes.ts', 'src/lib/dishes.ts', 'src/lib/dish-photos.json']
+const PAGE_DATES = {
+  '/': lastChanged('src/routes/index.tsx', 'src/lib/site.ts'),
+  '/decide/': lastChanged('public/decide/index.html', 'public/decide/js', 'public/decide/styles.css'),
+  '/eat': lastChanged('src/routes/eat.index.tsx', 'public/decide/js/data.js'),
+  '/premium': lastChanged('src/routes/premium.tsx', 'src/lib/site.ts'),
+  '/info': lastChanged('src/routes/info.tsx', 'src/lib/site.ts'),
+  '/how-it-works': lastChanged('src/routes/how-it-works.tsx'),
+  '/faq': lastChanged('src/routes/faq.tsx'),
+  '/honesty': lastChanged('src/routes/honesty.tsx'),
+  '/privacy': lastChanged('src/routes/privacy.tsx'),
+  dish: lastChanged(...DISH_SOURCES),
+}
+
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
-  // When this build was made, for the sitemap's <lastmod>. It has to be baked
-  // in at build time: the worker has no memory of when it was deployed, and
-  // reading the clock at request time would report the moment of the request —
-  // a sitemap claiming every page changed seconds ago, every time it is read,
-  // which is exactly the pattern that gets lastmod ignored.
-  define: { __BUILT_AT__: JSON.stringify(new Date().toISOString()) },
+  define: {
+    __PAGE_DATES__: JSON.stringify(PAGE_DATES),
+  },
   plugins: [
     recipeBook(),
     dietCheck(),

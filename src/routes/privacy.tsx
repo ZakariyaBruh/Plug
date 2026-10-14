@@ -302,6 +302,7 @@ const THIRD_PARTIES: [string, string][] = [
   ['TV channels', 'Each channel you watch streams straight to you from its own servers, which see your IP address as any website would.'],
   ['Plex and Pluto TV', 'Publish the TV listings for what is on now and next. Asked by our server, never by your device.'],
   ['jsDelivr', 'Serves two open-source tools when they are first needed: the video player (hls.js) for the TV, and the barcode reader (ZXing) for Scan food.'],
+  ['Wikimedia Commons', 'Where the dish pages’ photographs come from, each credited under it. Our server fetches them and the page shows them from this site, so your browser never contacts Wikimedia.'],
   ['Radio Browser', 'The directory the radio’s stations come from. Asked by our server, never by your device.'],
   ['Radio stations', 'Each station you play streams straight to you from its own broadcaster, which sees your IP address as any website would.'],
   ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day — and, if you use them, your daily check-in, journal line and trivia answer, your planned weeks, your cookbook and your daily AI request counts, against your Whop user id.'],

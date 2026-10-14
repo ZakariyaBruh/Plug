@@ -52,6 +52,7 @@ import { Route as EatIndexRouteImport } from './routes/eat.index'
 import { Route as EatDishRouteImport } from './routes/eat.$dish'
 import { Route as ExperiencesExperienceIdRouteImport } from './routes/experiences.$experienceId'
 import { Route as OauthAuthorizeRouteImport } from './routes/oauth.authorize'
+import { Route as PhotosFileRouteImport } from './routes/photos.$file'
 import { Route as SeatIdRouteImport } from './routes/seat.$id'
 import { Route as TogetherCodeRouteImport } from './routes/together.$code'
 import { Route as ApiOauthCallbackRouteImport } from './routes/api/oauth/callback'
@@ -274,6 +275,11 @@ const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
   path: '/oauth/authorize',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PhotosFileRoute = PhotosFileRouteImport.update({
+  id: '/photos/$file',
+  path: '/photos/$file',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SeatIdRoute = SeatIdRouteImport.update({
   id: '/seat/$id',
   path: '/seat/$id',
@@ -348,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/photos/$file': typeof PhotosFileRoute
   '/seat/$id': typeof SeatIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/eat/': typeof EatIndexRoute
@@ -399,6 +406,7 @@ export interface FileRoutesByTo {
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/photos/$file': typeof PhotosFileRoute
   '/seat/$id': typeof SeatIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/eat': typeof EatIndexRoute
@@ -451,6 +459,7 @@ export interface FileRoutesById {
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
   '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/photos/$file': typeof PhotosFileRoute
   '/seat/$id': typeof SeatIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/eat/': typeof EatIndexRoute
@@ -504,6 +513,7 @@ export interface FileRouteTypes {
     | '/eat/$dish'
     | '/experiences/$experienceId'
     | '/oauth/authorize'
+    | '/photos/$file'
     | '/seat/$id'
     | '/together/$code'
     | '/eat/'
@@ -555,6 +565,7 @@ export interface FileRouteTypes {
     | '/eat/$dish'
     | '/experiences/$experienceId'
     | '/oauth/authorize'
+    | '/photos/$file'
     | '/seat/$id'
     | '/together/$code'
     | '/eat'
@@ -606,6 +617,7 @@ export interface FileRouteTypes {
     | '/eat/$dish'
     | '/experiences/$experienceId'
     | '/oauth/authorize'
+    | '/photos/$file'
     | '/seat/$id'
     | '/together/$code'
     | '/eat/'
@@ -657,6 +669,7 @@ export interface RootRouteChildren {
   EatDishRoute: typeof EatDishRoute
   ExperiencesExperienceIdRoute: typeof ExperiencesExperienceIdRoute
   OauthAuthorizeRoute: typeof OauthAuthorizeRoute
+  PhotosFileRoute: typeof PhotosFileRoute
   SeatIdRoute: typeof SeatIdRoute
   TogetherCodeRoute: typeof TogetherCodeRoute
   EatIndexRoute: typeof EatIndexRoute
@@ -969,6 +982,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OauthAuthorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/photos/$file': {
+      id: '/photos/$file'
+      path: '/photos/$file'
+      fullPath: '/photos/$file'
+      preLoaderRoute: typeof PhotosFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/seat/$id': {
       id: '/seat/$id'
       path: '/seat/$id'
@@ -1067,6 +1087,7 @@ const rootRouteChildren: RootRouteChildren = {
   EatDishRoute: EatDishRoute,
   ExperiencesExperienceIdRoute: ExperiencesExperienceIdRoute,
   OauthAuthorizeRoute: OauthAuthorizeRoute,
+  PhotosFileRoute: PhotosFileRoute,
   SeatIdRoute: SeatIdRoute,
   TogetherCodeRoute: TogetherCodeRoute,
   EatIndexRoute: EatIndexRoute,

@@ -3,7 +3,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { useEffect } from 'react'
 
-import { CLARITY_ID, GA4_ID, GA4_ON, REPLAY_ON, SITE_DESCRIPTION, SITE_TITLE } from '#/lib/site'
+import { CLARITY_ID, GA4_ID, GA4_ON, REPLAY_ON, SITE_META_DESCRIPTION, SITE_TITLE } from '#/lib/site'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -25,7 +25,7 @@ export const Route = createRootRoute({
       },
       {
         name: 'description',
-        content: SITE_DESCRIPTION,
+        content: SITE_META_DESCRIPTION,
       },
       // Without these, an icon added to the Home Screen on iOS opens in a
       // normal Safari view with the address bar. iOS 16.4 and later reads

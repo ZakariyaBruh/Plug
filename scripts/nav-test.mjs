@@ -58,6 +58,7 @@ const NOT_NAVIGABLE = {
   'decide': 'the app, served from public/decide and linked as "/decide/"',
   'experiences.$experienceId': 'a Whop iframe entry point, not a page on this site',
   'oauth.authorize': 'a redirect on to Whop sign-in, for app shells that resolve its path here',
+  'photos.$file': 'dish photographs, served as images to the dish pages, not a page',
   'robots[.]txt': 'for crawlers',
   'sitemap[.]xml': 'for crawlers',
 }

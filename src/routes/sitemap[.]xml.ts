@@ -23,35 +23,34 @@ const PAGES: Array<[path: string, priority: string]> = [
   // pages were URLs only this file knew about.
   ['/eat', '0.85'],
   ['/premium', '0.8'],
+  // Everything the site does, on one page — linked from every footer, and
+  // missing from here until now.
+  ['/info', '0.7'],
   ['/how-it-works', '0.7'],
   ['/faq', '0.6'],
   ['/honesty', '0.4'],
   ['/privacy', '0.3'],
 ]
 
-// Injected by vite at build time — see vite.config.ts.
-declare const __BUILT_AT__: string
+// Injected by vite at build time — see PAGE_DATES in vite.config.ts.
+declare const __PAGE_DATES__: Record<string, string>
 
 /*
  * <lastmod> is the only honest lever left for asking to be recrawled. Google
  * retired the sitemap ping endpoint, so what is left is telling the truth
- * about when a page changed and being believed — and being believed is the
- * hard part. A lastmod that reads "just now" every time it is fetched is
- * noise, and a sitemap that behaves that way gets its dates ignored
- * altogether. This one is the build time: it moves when a deploy actually
- * changes the pages, and not otherwise.
+ * about when a page changed and being believed. Each date here is the last
+ * commit to the files that page is made from — not the build time, which
+ * moved all 459 dates on every deploy and taught Google to ignore them.
  */
-const LASTMOD = __BUILT_AT__
-
-function urlEntry(path: string, priority: string) {
-  return `  <url><loc>${SITE_URL}${path}</loc><lastmod>${LASTMOD}</lastmod>` +
+function urlEntry(path: string, priority: string, lastmod: string) {
+  return `  <url><loc>${SITE_URL}${path}</loc><lastmod>${lastmod}</lastmod>` +
     `<priority>${priority}</priority></url>`
 }
 
 function sitemap() {
   const entries = [
-    ...PAGES.map(([path, priority]) => urlEntry(path, priority)),
-    ...ALL_DISHES.map((dish) => urlEntry(`/eat/${dish.slug}`, '0.4')),
+    ...PAGES.map(([path, priority]) => urlEntry(path, priority, __PAGE_DATES__[path] ?? __PAGE_DATES__['/'])),
+    ...ALL_DISHES.map((dish) => urlEntry(`/eat/${dish.slug}`, '0.4', __PAGE_DATES__.dish)),
   ]
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
