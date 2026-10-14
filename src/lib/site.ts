@@ -413,7 +413,7 @@ export const THE_JOBS: { name: string; blurb: string }[] = [
 
 export const SITE_TITLE = 'morsels45 — your food hub: decide, plan, cook'
 export const SITE_DESCRIPTION =
-  `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner, food TV and radio are free with an account; Premium adds the shopping list, nutrition, budget, your own recipes, recipes from websites, a food scanner that says how healthy something is, and more.`
+  `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner and TV and radio to cook and eat to are free with an account; Premium adds the shopping list, nutrition, budget, your own recipes, recipes from websites, a food scanner that says how healthy something is, and more.`
 
 declare global {
   interface Window {
@@ -511,13 +511,17 @@ export const STANDARD = [
  * scripts/tv-lineup.mjs), so this line cannot go on promising a channel that
  * stopped playing and was dropped from it.
  */
-const TV_NAMES = tvLineup.channels.map((c) => c.name)
+type LineupGroup = { id: string; name: string; channels: { name: string }[] }
+const TV_GROUPS = (tvLineup as { categories: LineupGroup[] }).categories
+const TV_NAMES = (TV_GROUPS.find((g) => g.id === 'food')?.channels ?? []).map((c) => c.name)
 const TV_EXAMPLES = TV_NAMES.slice(0, 3).join(', ')
+const TV_TOTAL = TV_GROUPS.reduce((n, g) => n + g.channels.length, 0)
+const TV_OTHER_GROUPS = TV_GROUPS.filter((g) => g.id !== 'food' && g.channels.length).map((g) => g.name.toLowerCase())
 
 export const ACCOUNT = [
   'Meal-prep calendar — breakfast, lunch, dinner and a snack for every day of the week, synced to your account, with a calendar AI that fills the gaps, plans your prep session and checks the balance',
-  `Food TV — ${TV_NAMES.length} free food channels, live, with what is on now and next: ${TV_EXAMPLES} and more — each checked from your own browser before it is listed`,
-  'Food radio — a dozen stations made for the kitchen and the table. It keeps playing while you look up the recipe',
+  `TV to cook and eat to — ${TV_TOTAL} free live channels in groups: food (${TV_EXAMPLES} and more), then ${TV_OTHER_GROUPS.slice(0, -1).join(', ')} and ${TV_OTHER_GROUPS.at(-1)}. What is on now and next, and each channel checked from your own browser before it is listed`,
+  'Radio to cook and eat to — food and dining stations, plus jazz, chill and lounge, lo-fi, classical, soul, oldies, acoustic, bossa nova and feel-good hits, about ten in each. It keeps playing while you look up the recipe',
   'Kitchen timers and converter — several named timers at once that ring wherever you are in the app, plus cups to grams, ounces, °F and gas marks',
   'In season — what is at its best this month, and the dishes that use it',
   'The daily three — a mood check-in, one good thing, and a food question everybody gets the same day, with streaks that follow you between devices',

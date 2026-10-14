@@ -395,7 +395,7 @@
       <button class="plain landing-plain" type="button" data-landing-view="planner">Plan the week</button>
       <button class="plain landing-plain" type="button" data-landing-view="kitchen">Your recipes &mdash; your own, and from any website</button>
       <button class="plain landing-plain" type="button" data-landing-view="scan">Scan food &mdash; is it healthy?</button>
-      <button class="plain landing-plain" type="button" data-landing-view="radio">Food TV &amp; radio</button>
+      <button class="plain landing-plain" type="button" data-landing-view="radio">TV &amp; radio to cook and eat to</button>
       <button class="plain landing-plain" id="landing-invite">Decide with a friend</button>
       <button class="plain landing-plain" type="button" data-landing-view="help">New here? How to use morsels45</button>
     </div>
@@ -672,7 +672,7 @@
 <audio id="radio-audio" preload="none"></audio>
 <div class="radio-bar" id="radio-bar" role="region" aria-label="Radio player" hidden>
   <span class="radio-bar-art" id="radio-bar-art" aria-hidden="true"></span>
-  <button class="radio-bar-info" id="radio-bar-info" type="button" title="Open Food radio">
+  <button class="radio-bar-info" id="radio-bar-info" type="button" title="Open the radio">
     <span class="radio-bar-status" id="radio-bar-status">Tuning in&hellip;</span>
     <span class="radio-bar-name" id="radio-bar-name"></span>
   </button>
@@ -1864,12 +1864,13 @@
 
     <!-- ------------------------- TV & RADIO ------------------------- -->
     <!-- ===============================================================
-         FOOD TV AND FOOD RADIO — free with an account, like the daily
-         three. lib/tv.ts and lib/radio.ts say where each comes from.
+         TV AND RADIO — free with an account, like the daily three.
+         lib/tv.ts and lib/radio.ts say where each comes from.
 
-         Twelve of each at most, and food only. The first radio had a
-         hundred and twenty stations in twelve channels; a list that long is
-         a list nobody chooses from.
+         In groups, a dozen at most in each: food first, then what people
+         have on while they cook and eat. The first radio had a hundred and
+         twenty stations in one list; a list that long is a list nobody
+         chooses from, so it is one group at a time, chosen with a tap.
 
          The names are drawn for everybody, signed in or not: "sign in for
          TV" with nothing to look at is an ask, and BBC Food and Hell's
@@ -1881,13 +1882,14 @@
          stays here — a picture nobody can see is just noise — and pauses
          when you leave, unless it is in picture-in-picture.
          =============================================================== -->
-    <section class="view" id="view-radio" aria-label="Food TV and radio">
+    <section class="view" id="view-radio" aria-label="TV and radio">
       <header class="head">
         <p class="mechanic">Free with an account</p>
-        <h1 class="head-title">Food TV &amp; radio</h1>
-        <p class="head-sub">Free food channels with what&rsquo;s on now and next, and a dozen
-        radio stations made for the kitchen and the table. The radio keeps playing while you
-        look up the recipe.</p>
+        <h1 class="head-title">TV &amp; radio</h1>
+        <p class="head-sub">Something to watch or listen to while you cook and eat. Free
+        channels and stations in groups &mdash; food shows first, then music, comedy, travel,
+        calm and more &mdash; with what&rsquo;s on now and next. Tap a group to see what is in it.
+        The radio keeps playing while you look up the recipe.</p>
       </header>
 
       <div class="radio-signin" id="radio-signedout" hidden>
@@ -1900,8 +1902,8 @@
       </div>
 
       <div class="filters media-tabs" role="tablist" aria-label="TV or radio">
-        <button class="filter" id="tab-tv" data-tab="tv" role="tab" type="button">&#x1F4FA; Food TV</button>
-        <button class="filter" id="tab-radio" data-tab="radio" role="tab" type="button">&#x1F4FB; Food radio</button>
+        <button class="filter" id="tab-tv" data-tab="tv" role="tab" type="button">&#x1F4FA; TV</button>
+        <button class="filter" id="tab-radio" data-tab="radio" role="tab" type="button">&#x1F4FB; Radio</button>
       </div>
 
       <!-- ---------- TV ---------- -->
@@ -1920,6 +1922,9 @@
           </div>
           <ol class="tv-later" id="tv-later"></ol>
         </div>
+
+        <!-- The groups, filled from /api/tv: food first, then the rest. -->
+        <div class="media-cats" id="tv-cats" role="group" aria-label="Kinds of TV"></div>
 
         <div class="out-loading" id="tv-loading" hidden>
           <div class="bone bone-row"></div>
@@ -1941,7 +1946,9 @@
         <p class="fine radio-foot">Channels from
         <a href="https://github.com/iptv-org/iptv" target="_blank" rel="noopener noreferrer">iptv-org</a>,
         the open database of free TV, read fresh every hour — and each one is tried from your own
-        browser before it is listed, so you only see the food channels that actually play where you are. What&rsquo;s
+        browser before it is listed, so you only see the channels that actually play where you are.
+        Each group is picked by hand from iptv-org&rsquo;s own categories, with nothing grim
+        for the dinner table. What&rsquo;s
         on comes from each channel&rsquo;s published listings, found through
         <a href="https://github.com/iptv-org/epg" target="_blank" rel="noopener noreferrer">iptv-org/epg</a>;
         a channel can run a few minutes off them. They are free, ad-supported channels &mdash;
@@ -1955,6 +1962,9 @@
         <p class="radio-resume" id="radio-resume-wrap" hidden>
           <button class="quiet" id="radio-resume" type="button"></button>
         </p>
+
+        <!-- The groups, filled from /api/radio: food and dining, then music. -->
+        <div class="media-cats" id="radio-cats" role="group" aria-label="Kinds of radio"></div>
 
         <div class="out-loading" id="radio-loading" hidden>
           <div class="bone bone-row"></div>
@@ -1976,10 +1986,11 @@
 
         <p class="fine radio-foot">Stations come from
         <a href="https://www.radio-browser.info/" target="_blank" rel="noopener noreferrer">Radio Browser</a>,
-        a free community directory, and every one is named for eating &mdash; dinner lounges,
-        restaurant and coffee-bar channels, a barbecue station. Each streams straight from its own
-        broadcaster to you; morsels45 hosts none of them and puts nothing over them, though a
-        station may run its own adverts.</p>
+        a free community directory. The food and dining group is stations named for eating &mdash;
+        dinner lounges, restaurant and coffee-bar channels, a barbecue station; the others are music
+        to cook and eat to, about ten of the best-loved stations in each, with no talk, news or
+        sport. Each streams straight from its own broadcaster to you; morsels45 hosts none of them
+        and puts nothing over them, though a station may run its own adverts.</p>
       </div>
     </section>
 

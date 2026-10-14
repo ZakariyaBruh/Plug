@@ -39,7 +39,20 @@ export function signInContext(request: Request) {
     dest: request.headers.get('sec-fetch-dest') ?? '',
     site: request.headers.get('sec-fetch-site') ?? '',
     app: /median/i.test(ua) ? 'android-app' : /; wv\)|FBAN|FBAV|Instagram|Whop/i.test(ua) ? 'in-app-browser' : 'browser',
+    browser: browserKind(ua),
   }
+}
+
+// The kind of browser, by name only — never the whole user-agent string.
+function browserKind(ua: string): string {
+  if (/whop/i.test(ua)) return 'Whop app'
+  if (/median/i.test(ua)) return 'morsels45 Android app'
+  if (/headless/i.test(ua)) return 'headless (automated)'
+  if (/bot|crawl|spider|preview/i.test(ua)) return 'bot'
+  if (/CriOS|Chrome\//.test(ua)) return /Android/.test(ua) ? 'Chrome (Android)' : /iPhone|iPad/.test(ua) ? 'Chrome (iOS)' : 'Chrome'
+  if (/FxiOS|Firefox\//.test(ua)) return 'Firefox'
+  if (/Safari\//.test(ua)) return /iPhone|iPad/.test(ua) ? 'Safari (iOS)' : 'Safari'
+  return ua ? 'other' : 'none'
 }
 
 /*

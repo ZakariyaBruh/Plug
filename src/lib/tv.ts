@@ -1,12 +1,16 @@
 import lineup from './tv-lineup.json'
 
 /*
- * FOOD TV — free, live food channels with what's on, free with an account.
+ * THE TV — free, live channels to watch while you cook and eat, with what's
+ * on, free with an account. Food & cooking first, then groups of the rest:
+ * music, calm, travel, comedy, documentaries, movies, TV favourites, family,
+ * home & lifestyle.
  *
  * THE CHANNELS come from iptv-org (github.com/iptv-org/iptv), the public
  * database of free-to-air and free ad-supported channels, and are chosen by
- * scripts/tv-lineup.mjs: food only, official streams only, and only the ones
- * a web player on this site can actually read — at most twelve. The reason
+ * scripts/tv-lineup.mjs: official streams only, nothing grim for the dinner
+ * table, and only the ones a web player on this site can actually read — a
+ * dozen at most per group. The reason
  * that is a script and not a request at runtime is written at the top of it.
  * Nothing here relays a stream; the viewer's browser plays it straight from
  * the channel's own servers.
@@ -31,8 +35,30 @@ export type TvChannel = {
 
 export type Programme = { title: string; subtitle: string; start: number; stop: number }
 
-export const TV_CHANNELS = lineup.channels as TvChannel[]
+/*
+ * THE GROUPS. Food & cooking first, then what people have on while they cook
+ * and eat — music, calm, travel, comedy and the rest — each one or more of
+ * iptv-org's own categories, picked and played by scripts/tv-lineup.mjs.
+ */
+export type TvCategory = { id: string; name: string; emoji: string; iptv: string[]; channels: TvChannel[] }
+
+export const TV_CATEGORIES = (lineup as { categories: TvCategory[] }).categories
+export const TV_CHANNELS = TV_CATEGORIES.flatMap((c) => c.channels)
+export const FOOD_CHANNELS = TV_CATEGORIES.find((c) => c.id === 'food')?.channels ?? []
 export const TV_GENERATED = lineup.generated
+
+export function isTvCategory(id: unknown): id is string {
+  return typeof id === 'string' && TV_CATEGORIES.some((c) => c.id === id)
+}
+
+function categoryOf(id: string): TvCategory {
+  return TV_CATEGORIES.find((c) => c.id === id) ?? TV_CATEGORIES[0]
+}
+
+/** The groups as the page lists them: no streams, just names and counts. */
+export function tvCategoryList() {
+  return TV_CATEGORIES.map(({ id, name, emoji, channels }) => ({ id, name, emoji, count: channels.length }))
+}
 
 /*
  * THE LIST, CHECKED ON THE FLY.
@@ -50,12 +76,15 @@ export const TV_GENERATED = lineup.generated
  * which is the only check that can know about the viewer's country, network
  * and browser — and lists the first twelve that answer.
  */
-const PLAYLIST = 'https://iptv-org.github.io/iptv/categories/cooking.m3u'
+const playlistFor = (iptvCategory: string) => `https://iptv-org.github.io/iptv/categories/${iptvCategory}.m3u`
 // Restreams of paid channels by bare IP or re-hosts, and hosts that only
 // allow their own site (Pluto TV). Same list as scripts/tv-lineup.mjs.
 const BLOCKED_HOST = /^\d+\.\d+\.\d+\.\d+$|freeott|mcquack|freem3u|techtraveleat|cinerama|skygo|tangotv|smartplaytv|onetv\.app|fasttvcdn|catcast|alpaca|mjunoon|pishow|bitred|uplink\.kz|jmp2\.uk|pluto\.tv/i
 // Filed under cooking, but not food.
 const NOT_FOOD = new Set(['Boligkjopiblinde.se', 'Boligkobiblinde.se', 'BuyingBlindDenmark.se', 'Skonneombygninger.se', 'StugfixarnaNorge.se'])
+// Same as the script: never listed, whatever group they are filed in.
+const NEVER_GROUP = /religious|news|legislative|shop|xxx|politics/i
+const NOT_AT_DINNER = /crime|murder|kill|deadly|homicide|forensic|court|dateline|48 hours|cops|justice|prison|fright|horror|scream|terror|paranormal|ghost|zombie|slasher/i
 export const MAX_CANDIDATES = 20
 
 export type Candidate = { id: string; name: string; logo: string; website: string; streams: string[]; hasGuide: boolean }
@@ -72,7 +101,7 @@ export function parsePlaylist(text: string): Entry[] {
     const attr = (name: string) => new RegExp(`${name}="([^"]*)"`).exec(line)?.[1] ?? ''
     const group = attr('group-title')
     const label = line.slice(line.lastIndexOf(',') + 1)
-    if (/geo-blocked/i.test(label) || /shop/i.test(group)) continue
+    if (/geo-blocked/i.test(label) || NEVER_GROUP.test(group) || NOT_AT_DINNER.test(label)) continue
     if (!url.startsWith('https://')) continue
     let host = ''
     try { host = new URL(url).hostname } catch { continue }
@@ -86,29 +115,45 @@ export function parsePlaylist(text: string): Entry[] {
 }
 
 const PLAYLIST_TTL_MS = 60 * 60 * 1000
-let playlistMemo: { at: number; entries: Promise<Entry[]> } | null = null
+const playlistMemo = new Map<string, { at: number; entries: Promise<Entry[]> }>()
 
-function liveEntries(): Promise<Entry[]> {
-  if (playlistMemo && Date.now() - playlistMemo.at < PLAYLIST_TTL_MS) return playlistMemo.entries
-  const entries = fetch(PLAYLIST, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'morsels45/1.0 (+https://morsels45-app.whop.site)' } })
+function liveEntries(iptvCategory: string): Promise<Entry[]> {
+  const hit = playlistMemo.get(iptvCategory)
+  if (hit && Date.now() - hit.at < PLAYLIST_TTL_MS) return hit.entries
+  const entries = fetch(playlistFor(iptvCategory), { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'morsels45/1.0 (+https://morsels45-app.whop.site)' } })
     .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`playlist ${r.status}`))))
     .then(parsePlaylist)
   const memo = { at: Date.now(), entries }
-  playlistMemo = memo
+  playlistMemo.set(iptvCategory, memo)
   // A failed fetch is not kept, and the verified list still answers.
-  entries.catch(() => { if (playlistMemo === memo) playlistMemo = null })
+  entries.catch(() => { if (playlistMemo.get(iptvCategory) === memo) playlistMemo.delete(iptvCategory) })
   return entries
 }
 
-export async function candidates(): Promise<Candidate[]> {
-  const live = await liveEntries().catch((err) => {
-    console.error('tv: live playlist unavailable, using the verified list alone', err)
-    return [] as Entry[]
-  })
+/*
+ * One group's candidates. Every group gets its verified channels with every
+ * stream address iptv-org lists for them right now. Food — the reason this
+ * app has a TV at all, and a small category — also takes any food channel
+ * that has appeared since the lineup was built; the big groups do not, since
+ * a music category of six hundred channels would bring in whatever happened
+ * to be first rather than what was picked.
+ */
+export async function candidates(categoryId = 'food'): Promise<Candidate[]> {
+  const category = categoryOf(categoryId)
+  const live = (
+    await Promise.all(
+      category.iptv.map((k) =>
+        liveEntries(k).catch((err) => {
+          console.error(`tv: live ${k} playlist unavailable, using the verified list alone`, err)
+          return [] as Entry[]
+        }),
+      ),
+    )
+  ).flat()
   const byId = new Map<string, Entry[]>()
   for (const e of live) byId.set(e.id, [...(byId.get(e.id) ?? []), e])
 
-  const out: Candidate[] = TV_CHANNELS.map((c) => ({
+  const out: Candidate[] = category.channels.map((c) => ({
     id: c.id,
     name: c.name,
     logo: c.logo || byId.get(c.id)?.[0]?.logo || '',
@@ -116,16 +161,16 @@ export async function candidates(): Promise<Candidate[]> {
     streams: [...new Set([c.stream, ...(byId.get(c.id) ?? []).map((e) => e.url)])],
     hasGuide: !!c.guide,
   }))
-  for (const [id, entries] of byId) {
-    if (out.some((c) => c.id === id)) continue
+  for (const [id, entries] of category.id === 'food' ? byId : new Map<string, Entry[]>()) {
+    if (out.some((c) => c.id === id) || TV_CHANNELS.some((c) => c.id === id)) continue
     out.push({ id, name: entries[0].name, logo: entries[0].logo.startsWith('https://') ? entries[0].logo : '', website: '', streams: [...new Set(entries.map((e) => e.url))], hasGuide: false })
   }
   return out.slice(0, MAX_CANDIDATES)
 }
 
 /** What a signed-out visitor sees: the names, not the streams. */
-export function tvTeaser() {
-  return TV_CHANNELS.map(({ id, name, logo }) => ({ id, name, logo }))
+export function tvTeaser(categoryId = 'food') {
+  return categoryOf(categoryId).channels.map(({ id, name, logo }) => ({ id, name, logo }))
 }
 
 const AGENT = 'morsels45/1.0 (+https://morsels45-app.whop.site)'
@@ -227,10 +272,10 @@ function guideFor(channel: TvChannel, now: number): Promise<Programme[]> {
 
 /** Every channel's listings that could be had, by channel id. A guide that
  * fails is simply absent; the channel still plays. */
-export async function whatsOn(): Promise<Record<string, Programme[]>> {
+export async function whatsOn(categoryId = 'food'): Promise<Record<string, Programme[]>> {
   const now = Date.now()
   const entries = await Promise.all(
-    TV_CHANNELS.filter((c) => c.guide).map(async (channel) => {
+    categoryOf(categoryId).channels.filter((c) => c.guide).map(async (channel) => {
       try {
         return [channel.id, upcoming(await guideFor(channel, now), now)] as const
       } catch (err) {

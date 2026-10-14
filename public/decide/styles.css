@@ -5585,10 +5585,13 @@ details.hub-prep:not([open]) > summary::after { content: ' \25B8'; }
 .hub-camera-hint { margin: 0; min-height: 3.2em; color: var(--ink); font-weight: 600; line-height: 1.5; }
 .hub-camera-tools { gap: var(--s2); }
 .hub-torch[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }
+/* White in every theme, with a dark edge either side: it sits on the camera
+   picture, not on the page, so it has to show up against any packet — and the
+   words call it "the white box", which a theme colour would make untrue. */
 .hub-camera-box {
   position: absolute; inset: 30% 12%;
-  border: 3px solid var(--amber); border-radius: .5rem;
-  box-shadow: 0 0 0 999px rgb(0 0 0 / .35);
+  border: 3px solid #fff; border-radius: .5rem;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / .55), 0 0 0 1px rgb(0 0 0 / .55), 0 0 0 999px rgb(0 0 0 / .35);
   pointer-events: none;
 }
 
@@ -5755,3 +5758,17 @@ html.text-xl { font-size: 130%; }
 .signin-failed-text { margin: 0; line-height: 1.55; color: var(--ink); }
 .signin-failed-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); }
 .signin-failed-actions .go { text-decoration: none; }
+
+/* --- TV and radio groups: a row of pills above each list ---
+   Wrapping, not a sideways-scrolling strip: every group is in sight, and
+   nobody has to discover that the row moves. Full tap height. */
+.media-cats { display: flex; flex-wrap: wrap; gap: var(--s2); margin: 0 0 var(--s4); }
+.media-cats:empty { display: none; }
+.media-cat {
+  min-height: var(--tap); padding: .35rem .85rem;
+  border: 1px solid var(--hair-lit); border-radius: 999px; background: none;
+  color: var(--ink-2); font: inherit; font-size: var(--t-sm); cursor: pointer;
+  transition: border-color var(--fast) var(--ease), color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.media-cat:hover { border-color: var(--amber); color: var(--ink); }
+.media-cat.is-on { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 16%, transparent); color: var(--ink); font-weight: 600; }

@@ -8814,7 +8814,7 @@
    * (see /api/radio). The last tab and station are remembered on this device
    * only, so opening it again is one tap back to your radio, not the menu.
    */
-  var media = { tab: null };
+  var media = { tab: null, tvCat: null, radioCat: null };
   var MEDIA_KEY = 'morsels45-radio';
 
   function mediaMemory() {
@@ -8849,6 +8849,56 @@
     });
     if (tab === 'tv') renderTv();
     else renderRadioList();
+  }
+
+  /*
+   * THE GROUPS. Each tab is one group at a time — food first, then what
+   * people have on while they cook and eat — chosen from a row of chips above
+   * the list. The server says which groups there are (/api/tv, /api/radio);
+   * the one each tab was last on is remembered on this device. Changing group
+   * changes the list, not what is playing.
+   */
+  function mediaCat(kind) {
+    var key = kind + 'Cat';
+    if (!media[key]) media[key] = mediaMemory()[key] || 'food';
+    return media[key];
+  }
+
+  function setMediaCat(kind, id) {
+    media[kind + 'Cat'] = id;
+    var patch = {};
+    patch[kind + 'Cat'] = id;
+    rememberMedia(patch);
+  }
+
+  function paintCats(kind, cats, onPick) {
+    var row = $(kind + '-cats');
+    if (!row || !cats || !cats.length) return;
+    if (row.dataset.ids !== cats.map(function (c) { return c.id; }).join()) {
+      row.dataset.ids = cats.map(function (c) { return c.id; }).join();
+      row.innerHTML = '';
+      cats.forEach(function (c) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'media-cat';
+        btn.dataset.cat = c.id;
+        btn.textContent = (c.emoji ? c.emoji + ' ' : '') + c.name;
+        btn.addEventListener('click', function () {
+          if (mediaCat(kind) === c.id) return;
+          Sound.tick();
+          setMediaCat(kind, c.id);
+          paintCats(kind, cats, onPick);
+          onPick(c.id);
+        });
+        row.appendChild(btn);
+      });
+    }
+    var current = mediaCat(kind);
+    $$('#' + kind + '-cats .media-cat').forEach(function (btn) {
+      var on = btn.dataset.cat === current;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
   }
 
   // Something tapped while signed out: the answer is the sign-in button, so
@@ -8893,9 +8943,12 @@
   /* ------------------------------------------------------------ radio -- */
 
   var radio = {
-    stations: null,   // from /api/radio
+    stations: null,   // the group showing, from /api/radio
     withStreams: null,// whether that list came signed in, with the streams
-    loading: false,
+    byCat: {},        // every group fetched this visit: { stations, withStreams }
+    cats: null,       // the groups, as the server lists them
+    queue: null,      // the group the playing station came from, for "next"
+    loadingCat: null,
     dead: {},         // stations that would not play this visit
     playing: null,    // the station in the player, playing or not
     state: 'idle',    // idle | tuning | live | paused | broken
@@ -8910,22 +8963,31 @@
   var RADIO_TUNE_MS = 15000;
 
   function renderRadioList() {
+    var cat = mediaCat('radio');
+    if (radio.cats) paintCats('radio', radio.cats, renderRadioList);
     // A list fetched signed out has no streams in it, so signing in since
     // means asking again.
-    if (radio.stations && radio.withStreams !== premiumApi.status.signedIn) radio.stations = null;
+    var cached = radio.byCat[cat];
+    if (cached && cached.withStreams !== premiumApi.status.signedIn) { delete radio.byCat[cat]; cached = null; }
     paintRadioResume();
-    if (radio.stations && $$('#radio-list .station').length === radio.stations.length) return paintStationStates();
-    if (radio.stations) return paintStations();
-    loadRadio();
+    $('radio-error').hidden = true;
+    if (!cached) { radio.stations = null; return loadRadio(); }
+    radio.stations = cached.stations;
+    radio.withStreams = cached.withStreams;
+    $('radio-loading').hidden = true;
+    if ($('radio-list').dataset.cat === cat && $$('#radio-list .station').length === radio.stations.length) return paintStationStates();
+    paintStations();
   }
 
   function loadRadio() {
-    if (radio.loading) return;
-    radio.loading = true;
+    var cat = mediaCat('radio');
+    if (radio.loadingCat === cat) return;
+    radio.loadingCat = cat;
     $('radio-error').hidden = true;
     $('radio-list').innerHTML = '';
+    $('radio-list').dataset.cat = '';
     $('radio-loading').hidden = false;
-    fetch('/api/radio', { headers: { Accept: 'application/json' } })
+    fetch('/api/radio?cat=' + encodeURIComponent(cat), { headers: { Accept: 'application/json' } })
       .then(function (r) {
         return r.json().then(function (data) {
           if (!r.ok || !data.stations) throw new Error(data.error || 'radio ' + r.status);
@@ -8933,18 +8995,28 @@
         });
       })
       .then(function (data) {
-        radio.loading = false;
-        radio.stations = data.stations;
+        if (radio.loadingCat === cat) radio.loadingCat = null;
+        if (data.categories) radio.cats = data.categories;
+        var group = '';
+        (data.categories || []).forEach(function (c) { if (c.id === cat) group = c.name; });
+        // Each station knows its group: the bar says it, and "next" stays in it.
+        var stations = data.stations.map(function (st) { st.group = group; st.groupId = cat; return st; });
+        radio.byCat[cat] = { stations: stations, withStreams: !!data.signedIn };
+        // Another group was chosen while this one loaded: keep it for later.
+        if (mediaCat('radio') !== cat) return;
+        radio.stations = stations;
         radio.withStreams = !!data.signedIn;
         $('radio-loading').hidden = true;
         if (view === 'radio' && media.tab === 'radio') {
           $('radio-signedout').hidden = !!data.signedIn;
+          paintCats('radio', radio.cats, renderRadioList);
           paintStations();
           paintRadioResume();
         }
       })
       .catch(function () {
-        radio.loading = false;
+        if (radio.loadingCat === cat) radio.loadingCat = null;
+        if (mediaCat('radio') !== cat) return;
         $('radio-loading').hidden = true;
         if (view === 'radio' && media.tab === 'radio') $('radio-error').hidden = false;
       });
@@ -8968,10 +9040,11 @@
     var list = $('radio-list');
     var stations = radio.stations || [];
     list.innerHTML = '';
+    list.dataset.cat = mediaCat('radio');
     if (!stations.length) {
       var none = document.createElement('li');
       none.className = 'fine';
-      none.textContent = 'No food stations are on air right now. Try again in a little while.';
+      none.textContent = 'No stations in this group are on air right now. Try another group, or again in a little while.';
       list.appendChild(none);
       return;
     }
@@ -9057,7 +9130,7 @@
     bar.classList.toggle('is-broken', radio.state === 'broken');
     $('radio-bar-status').textContent = {
       tuning: 'Tuning in…',
-      live: '● Live · Food radio',
+      live: '● Live · ' + (st.group || 'Radio'),
       paused: 'Paused',
       broken: 'Not answering — try another station',
     }[radio.state] || '';
@@ -9091,6 +9164,9 @@
   function playStation(st) {
     var audio = $('radio-audio');
     pauseTv();
+    // "Next" stays in the group this station was chosen from.
+    if (radio.stations && radio.stations.indexOf(st) !== -1) radio.queue = radio.stations;
+    else if (st.groupId && radio.byCat[st.groupId]) radio.queue = radio.byCat[st.groupId].stations;
     radio.playing = st;
     radio.state = 'tuning';
     audio.src = st.url;
@@ -9152,7 +9228,7 @@
   function nextStation() {
     var current = radio.playing;
     if (!current) return;
-    var list = (radio.stations || []).filter(function (st) { return st.url; });
+    var list = (radio.queue || radio.stations || []).filter(function (st) { return st.url; });
     var at = -1;
     for (var i = 0; i < list.length; i++) if (list[i].id === current.id) at = i;
     var pick = null;
@@ -9202,7 +9278,7 @@
     try {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: st.name,
-        artist: 'Food radio',
+        artist: st.group ? st.group + ' radio' : 'Radio',
         album: 'morsels45',
         artwork: st.favicon ? [{ src: st.favicon }] : [],
       });
@@ -9223,9 +9299,12 @@
   var TV_GUIDE_MS = 5 * 60 * 1000;
 
   var tv = {
-    channels: null,
+    channels: null,   // the group showing, checked from this browser
     withStreams: null,
-    loading: false,
+    byCat: {},        // every group checked this visit: { channels, withStreams, checked }
+    cats: null,       // the groups, as the server lists them
+    loadingCat: null,
+    guideCat: null,   // the group the listings were last fetched for
     guide: {},        // channel id -> [{title, subtitle, start, stop}]
     guideAt: 0,
     guideLoading: false,
@@ -9245,24 +9324,41 @@
     catch (err) { return new Date(ms).toTimeString().slice(0, 5); }
   }
 
+  // Groups with nothing in them (none played when the lineup was built)
+  // are not offered.
+  function tvCats() {
+    return (tv.cats || []).filter(function (c) { return c.count !== 0; });
+  }
+
   function renderTv() {
-    if (tv.channels && tv.withStreams !== premiumApi.status.signedIn) tv.channels = null;
+    var cat = mediaCat('tv');
+    if (tv.cats) paintCats('tv', tvCats(), renderTv);
+    var cached = tv.byCat[cat];
+    if (cached && cached.withStreams !== premiumApi.status.signedIn) { delete tv.byCat[cat]; cached = null; }
     startTvTicker();
-    if (!tv.channels) return loadTv();
+    $('tv-error').hidden = true;
+    if (!cached) { tv.channels = null; return loadTv(); }
+    tv.channels = cached.channels;
+    tv.withStreams = cached.withStreams;
+    tv.checked = cached.checked;
+    $('tv-loading').hidden = true;
     // Already drawn (this runs again on every window focus, from
     // syncPremium): bring it up to date in place rather than redraw it.
-    if ($$('#tv-list .tv-row').length === tv.channels.length) paintTvGuide();
+    if ($('tv-list').dataset.cat === cat && $$('#tv-list .tv-row').length === tv.channels.length) { paintTvChecked(); paintTvGuide(); }
     else paintTv();
-    if (tv.withStreams && Date.now() - tv.guideAt > TV_GUIDE_MS) loadGuide();
+    if (tv.withStreams && (tv.guideCat !== cat || Date.now() - tv.guideAt > TV_GUIDE_MS)) loadGuide();
   }
 
   function loadTv() {
-    if (tv.loading) return;
-    tv.loading = true;
+    var cat = mediaCat('tv');
+    if (tv.loadingCat === cat) return;
+    tv.loadingCat = cat;
     $('tv-error').hidden = true;
     $('tv-list').innerHTML = '';
+    $('tv-list').dataset.cat = '';
+    $('tv-checked').hidden = true;
     $('tv-loading').hidden = false;
-    fetch('/api/tv', { headers: { Accept: 'application/json' } })
+    fetch('/api/tv?cat=' + encodeURIComponent(cat), { headers: { Accept: 'application/json' } })
       .then(function (r) {
         return r.json().then(function (data) {
           if (!r.ok || !data.channels) throw new Error(data.error || 'tv ' + r.status);
@@ -9270,14 +9366,20 @@
         });
       })
       .then(function (data) {
-        if (!data.signedIn) return { data: data, channels: data.channels };
+        if (data.categories) tv.cats = data.categories;
+        if (mediaCat('tv') === cat && view === 'radio' && media.tab === 'tv') paintCats('tv', tvCats(), renderTv);
+        if (!data.signedIn) return { data: data, channels: data.channels, checked: null };
         $('radio-signedout').hidden = true;
-        return checkChannels(data.channels).then(function (channels) { return { data: data, channels: channels }; });
+        return checkChannels(data.channels, cat).then(function (got) { return { data: data, channels: got.channels, checked: got.checked }; });
       })
       .then(function (got) {
-        tv.loading = false;
+        if (tv.loadingCat === cat) tv.loadingCat = null;
+        tv.byCat[cat] = { channels: got.channels, withStreams: !!got.data.signedIn, checked: got.checked };
+        // Another group was chosen while this one was checked: keep it for later.
+        if (mediaCat('tv') !== cat) return;
         tv.channels = got.channels;
         tv.withStreams = !!got.data.signedIn;
+        tv.checked = got.checked;
         $('tv-loading').hidden = true;
         if (view === 'radio' && media.tab === 'tv') {
           $('radio-signedout').hidden = !!got.data.signedIn;
@@ -9286,7 +9388,8 @@
         if (tv.withStreams) loadGuide();
       })
       .catch(function () {
-        tv.loading = false;
+        if (tv.loadingCat === cat) tv.loadingCat = null;
+        if (mediaCat('tv') !== cat) return;
         $('tv-loading').hidden = true;
         if (view === 'radio' && media.tab === 'tv') $('tv-error').hidden = false;
       });
@@ -9333,13 +9436,13 @@
     return next();
   }
 
-  function checkChannels(candidates) {
+  function checkChannels(candidates, cat) {
     var results = new Array(candidates.length);
     var done = 0;
     var at = 0;
     var note = document.querySelector('#tv-loading .fine');
     function paintProgress() {
-      if (note) note.textContent = 'Checking which channels play for you\u2026 ' + done + ' of ' + candidates.length;
+      if (note && mediaCat('tv') === cat) note.textContent = 'Checking which channels play for you\u2026 ' + done + ' of ' + candidates.length;
     }
     paintProgress();
     function worker() {
@@ -9355,28 +9458,32 @@
     var pool = [];
     for (var w = 0; w < Math.min(6, candidates.length); w++) pool.push(worker());
     return Promise.all(pool).then(function () {
-      if (note) note.textContent = 'Finding what\u2019s on\u2026';
+      if (note && mediaCat('tv') === cat) note.textContent = 'Finding what\u2019s on\u2026';
       var working = results.filter(Boolean);
-      tv.checked = { at: Date.now(), tried: candidates.length, playing: working.length };
-      return working.slice(0, TV_MAX);
+      return {
+        channels: working.slice(0, TV_MAX),
+        checked: { at: Date.now(), tried: candidates.length, playing: working.length },
+      };
     });
   }
 
   function loadGuide() {
-    if (tv.guideLoading) return;
-    tv.guideLoading = true;
-    fetch('/api/tv?guide=1', { headers: { Accept: 'application/json' } })
+    var cat = mediaCat('tv');
+    if (tv.guideLoading === cat) return;
+    tv.guideLoading = cat;
+    fetch('/api/tv?guide=1&cat=' + encodeURIComponent(cat), { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        tv.guideLoading = false;
+        if (tv.guideLoading === cat) tv.guideLoading = false;
         if (!data || !data.guide) return;
-        tv.guide = data.guide;
-        tv.guideAt = Date.now();
+        // Added to, not replaced: the channel playing may be from another group.
+        Object.keys(data.guide).forEach(function (id) { tv.guide[id] = data.guide[id]; });
+        if (mediaCat('tv') === cat) { tv.guideAt = Date.now(); tv.guideCat = cat; }
         // Listings are in real time and this device's clock may not be.
         if (typeof data.now === 'number') tv.offset = data.now - Date.now();
         paintTvGuide();
       })
-      .catch(function () { tv.guideLoading = false; });
+      .catch(function () { if (tv.guideLoading === cat) tv.guideLoading = false; });
   }
 
   // Keeps "now" moving while the list is open, and asks for fresh listings
@@ -9417,17 +9524,18 @@
     line.hidden = !(c && tv.withStreams);
     if (!c) return;
     $('tv-checked-text').textContent = 'Checked from your browser just now: ' + c.playing + ' of ' + c.tried +
-      ' food channels play where you are' + (c.playing > TV_MAX ? ', showing the first ' + TV_MAX : '') + '.';
+      ' channels in this group play where you are' + (c.playing > TV_MAX ? ', showing the first ' + TV_MAX : '') + '.';
   }
 
   function paintTv() {
     paintTvChecked();
     var list = $('tv-list');
     list.innerHTML = '';
+    list.dataset.cat = mediaCat('tv');
     if (tv.withStreams && !(tv.channels || []).length) {
       var none = document.createElement('li');
       none.className = 'fine';
-      none.textContent = 'None of the free food channels answered from here just now. They come and go \u2014 check again in a little while.';
+      none.textContent = 'None of the channels in this group answered from here just now. They come and go \u2014 try another group, or check again in a little while.';
       list.appendChild(none);
     }
     (tv.channels || []).forEach(function (ch, i) {
@@ -9728,11 +9836,12 @@
     });
 
     $('tv-close').addEventListener('click', closeTv);
-    $('tv-retry').addEventListener('click', function () { tv.channels = null; loadTv(); });
+    $('tv-retry').addEventListener('click', function () { tv.channels = null; delete tv.byCat[mediaCat('tv')]; loadTv(); });
     $('tv-recheck').addEventListener('click', function () {
       if (tv.current) closeTv();
       tv.channels = null;
       tv.dead = {};
+      delete tv.byCat[mediaCat('tv')];
       loadTv();
     });
 
@@ -9742,12 +9851,15 @@
     $('radio-bar-info').addEventListener('click', function () {
       leaveEndless();
       hideLanding();
+      // To the group that is playing, not whichever was last looked at.
+      if (radio.playing && radio.playing.groupId) setMediaCat('radio', radio.playing.groupId);
       if (view === 'radio') return showMediaTab('radio');
       media.tab = 'radio';
       setView('radio');
     });
     $('radio-retry').addEventListener('click', function () {
       radio.stations = null;
+      delete radio.byCat[mediaCat('radio')];
       loadRadio();
     });
     $('radio-resume').addEventListener('click', function () {

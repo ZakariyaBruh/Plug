@@ -41,10 +41,35 @@
  */
 import { writeFileSync } from 'node:fs'
 
+/*
+ * THE GROUPS. Food first — this is a food app — and then the things people
+ * actually have on while they cook and eat: music, something funny, somewhere
+ * else, something calm. Each is one or more of iptv-org's own categories, and
+ * each gets at most MAX channels, so no group is a list nobody chooses from.
+ */
+const CATEGORIES = [
+  { id: 'food', name: 'Food & cooking', emoji: '\u{1F373}', iptv: ['cooking'], max: 12 },
+  { id: 'music', name: 'Music', emoji: '\u{1F3B5}', iptv: ['music'] },
+  { id: 'calm', name: 'Calm & nature', emoji: '\u{1F33F}', iptv: ['relax'] },
+  { id: 'travel', name: 'Travel', emoji: '\u{2708}\uFE0F', iptv: ['travel'] },
+  { id: 'comedy', name: 'Comedy', emoji: '\u{1F602}', iptv: ['comedy'] },
+  { id: 'docs', name: 'Documentaries', emoji: '\u{1F30D}', iptv: ['documentary', 'science'] },
+  { id: 'movies', name: 'Movies', emoji: '\u{1F3AC}', iptv: ['movies'] },
+  { id: 'shows', name: 'TV favourites', emoji: '\u{1F4FA}', iptv: ['classic', 'series'] },
+  { id: 'family', name: 'Family & kids', emoji: '\u{1F9F8}', iptv: ['family', 'kids', 'animation'] },
+  { id: 'home', name: 'Home & lifestyle', emoji: '\u{1F3E1}', iptv: ['lifestyle'] },
+]
+// Never in any group, whatever else a channel is filed under.
+const NEVER = ['religious', 'news', 'legislative', 'shop', 'xxx', 'politics', 'business', 'weather']
+// Not what anybody wants on over dinner, whichever group it is filed in.
+const NOT_AT_DINNER = /crime|murder|kill|deadly|homicide|forensic|court|dateline|48 hours|cops|justice|prison|fright|horror|scream|terror|paranormal|ghost|zombie|slasher/i
+// How many to try per group before settling for fewer than MAX.
+const MAX_TRIES = 70
+
 const API = 'https://iptv-org.github.io/api'
 const ORIGIN = 'https://morsels45-app.whop.site'
 const OUT = new URL('../src/lib/tv-lineup.json', import.meta.url)
-const MAX = 12
+const MAX = 10
 const WRITE = process.argv.includes('--write')
 
 // Restreams of paid channels, and hosts that only allow their own site.
@@ -94,7 +119,9 @@ async function playable(url) {
     if (!segUrl) return 'no segments'
     const seg = await get(new URL(segUrl, base).href)
     if (!seg.ok || !corsOk(seg)) return `segment ${seg.status}`
-    await seg.arrayBuffer()
+    // The first bytes are proof enough it plays; the whole segment is megabytes.
+    const reader = seg.body?.getReader()
+    if (reader) { await reader.read(); await reader.cancel().catch(() => {}) }
     return null
   } catch (err) {
     return String(err?.message ?? err).slice(0, 60)
@@ -127,68 +154,79 @@ async function guideNow(guide) {
   return null
 }
 
-const [channels, streams, guides, logos] = await Promise.all(['channels', 'streams', 'guides', 'logos'].map(json))
+const [channels, streams, guides, logos, feeds] = await Promise.all(['channels', 'streams', 'guides', 'logos', 'feeds'].map(json))
 const streamsOf = Map.groupBy(streams, (s) => s.channel)
 const guidesOf = Map.groupBy(guides, (g) => g.channel)
 const logosOf = Map.groupBy(logos, (l) => l.channel)
+// English first: the language of each channel's main feed.
+const english = new Set(feeds.filter((f) => f.is_main && (f.languages ?? []).includes('eng')).map((f) => f.channel))
 
-const food = channels.filter(
-  (c) => (c.categories ?? []).includes('cooking') && !(c.categories ?? []).includes('shop') && !NOT_FOOD.has(c.id) && !c.is_nsfw,
-)
-console.log(`${food.length} channels in iptv-org's cooking category`)
-
-const passed = []
-for (const channel of food) {
+async function verify(channel) {
   const candidates = (streamsOf.get(channel.id) ?? []).filter((s) => {
     if (!s.url.startsWith('https://')) return false
     if (BLOCKED_HOST.test(new URL(s.url).hostname)) return false
-    if ((s.labels ?? []).some((l) => /geo-blocked/i.test(l))) return false
+    if ((s.labels ?? []).some((l) => /geo-blocked|not 24\/7/i.test(l))) return false
     // A stream that needs a spoofed referrer or user agent cannot be played
     // honestly from a browser on this site.
     return !s.referrer && !s.user_agent
   })
-  if (!candidates.length) continue
-
   let stream = null
-  for (const candidate of candidates) {
+  for (const candidate of candidates.slice(0, 3)) {
     const why = await playable(candidate.url)
     if (!why) { stream = candidate; break }
-    console.log(`  ✗ ${channel.id}: ${why} — ${candidate.url.slice(0, 70)}`)
   }
-  if (!stream) continue
+  if (!stream) return null
 
   let guide = null
   for (const g of (guidesOf.get(channel.id) ?? []).filter((g) => GUIDE_SITES.includes(g.site))) {
     const candidate = { site: g.site, id: g.site_id }
-    const on = await guideNow(candidate)
-    if (on) { guide = candidate; console.log(`  ✓ ${channel.id} guide ${g.site}: now "${on}"`); break }
+    if (await guideNow(candidate)) { guide = candidate; break }
   }
-
   const logo = (logosOf.get(channel.id) ?? [])
     .filter((l) => l.url.startsWith('https://') && !l.feed)
     .sort((a, b) => (b.width ?? 0) - (a.width ?? 0))[0]?.url ?? ''
-
-  passed.push({
-    id: channel.id,
-    name: DISPLAY_NAME[channel.id] ?? channel.name,
-    country: channel.country,
-    website: channel.website ?? '',
-    logo,
-    stream: stream.url,
-    guide,
-  })
-  console.log(`  ✓ ${channel.id} plays: ${stream.url.slice(0, 70)}`)
+  return { id: channel.id, name: DISPLAY_NAME[channel.id] ?? channel.name, country: channel.country, website: channel.website ?? '', logo, stream: stream.url, guide }
 }
 
-const rank = (c) => (ENGLISH.has(c.country) ? 0 : 2) + (c.guide ? 0 : 1)
-passed.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name))
-const lineup = passed.slice(0, MAX)
-
-console.log(`\n${passed.length} playable, keeping ${lineup.length}:`)
-for (const c of lineup) console.log(`  ${c.name} (${c.country})${c.guide ? ` — guide: ${c.guide.site}` : ''}`)
+const rank = (c) => (english.has(c.id) || ENGLISH.has(c.country) ? 0 : 2)
+const hasGuide = (c) => ((guidesOf.get(c.id) ?? []).some((g) => GUIDE_SITES.includes(g.site)) ? 1 : 0)
+const hasLogo = (c) => ((logosOf.get(c.id) ?? []).some((l) => l.url.startsWith('https://')) ? 1 : 0)
+const taken = new Set()
+const groups = []
+for (const cat of CATEGORIES) {
+  const pool = channels
+    .filter((c) => !c.is_nsfw && !c.closed && !NOT_FOOD.has(c.id) && !taken.has(c.id))
+    .filter((c) => (c.categories ?? []).some((k) => cat.iptv.includes(k)) && !(c.categories ?? []).some((k) => NEVER.includes(k)))
+    .filter((c) => !NOT_AT_DINNER.test(c.name))
+    .filter((c) => (streamsOf.get(c.id) ?? []).some((s) => s.url.startsWith('https://') && !BLOCKED_HOST.test(new URL(s.url).hostname)))
+    // Tried in this order, since a big group is only tried so far: English,
+    // then channels with a published guide — the established free channels,
+    // mostly — then ones with a logo, and only then the alphabet.
+    .sort((a, b) => rank(a) - rank(b) || hasGuide(b) - hasGuide(a) || hasLogo(b) - hasLogo(a) || a.name.localeCompare(b.name))
+    .slice(0, MAX_TRIES)
+  // Eight at a time: a slow stream should not hold up the rest.
+  const passed = []
+  let at = 0
+  await Promise.all(Array.from({ length: 8 }, async () => {
+    while (at < pool.length && passed.length < (cat.max ?? MAX) * 2) {
+      const channel = pool[at++]
+      const ok = await verify(channel)
+      if (ok) passed.push({ ...ok, order: pool.indexOf(channel) })
+    }
+  }))
+  // Within a group: English first, a working guide next, then the order tried.
+  const lineup = passed
+    .sort((a, b) => (rank(a) - rank(b)) || ((a.guide ? 0 : 1) - (b.guide ? 0 : 1)) || a.order - b.order)
+    .slice(0, cat.max ?? MAX)
+    .map(({ order, ...c }) => c)
+  for (const c of lineup) taken.add(c.id)
+  groups.push({ id: cat.id, name: cat.name, emoji: cat.emoji, iptv: cat.iptv, channels: lineup })
+  console.log(`${cat.name}: tried ${Math.min(at, pool.length)} of ${pool.length}, ${passed.length} play, keeping ${lineup.length}`)
+  for (const c of lineup) console.log(`  ${c.name} (${c.country})${c.guide ? ` — guide: ${c.guide.site}` : ''}`)
+}
 
 if (WRITE) {
-  const body = { generated: new Date().toISOString().slice(0, 10), source: 'iptv-org', channels: lineup }
+  const body = { generated: new Date().toISOString().slice(0, 10), source: 'iptv-org', categories: groups }
   writeFileSync(OUT, JSON.stringify(body, null, 2) + '\n')
   console.log(`\nwrote ${OUT.pathname}`)
 }

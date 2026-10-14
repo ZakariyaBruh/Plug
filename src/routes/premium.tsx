@@ -66,7 +66,7 @@ function PremiumPage() {
                 line naming two of them sat above a control showing a third. */}
             <p className="mt-4 text-[var(--text-dim)]">
               Deciding is free, and so is telling it what you do not eat. A free account adds the
-              meal calendar, food TV and radio. Premium is everything else: a shopping list,
+              meal calendar, and TV and radio to cook and eat to. Premium is everything else: a shopping list,
               nutrition and a budget for your week, a dinner-party planner, your own recipes (even
               copied from a photo of a handwritten card), recipes from any website, a food scanner
               that tells you how healthy something is, dinner from a photo of your fridge,

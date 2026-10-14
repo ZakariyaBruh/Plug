@@ -1,6 +1,9 @@
 /*
- * FOOD RADIO — live stations made for the kitchen and the table, free with
- * an account.
+ * THE RADIO — live stations to cook and eat to, free with an account, in
+ * groups: the food and dining stations first, then the music people actually
+ * have on in a kitchen (jazz, chill, lo-fi, classical, soul, oldies, acoustic,
+ * bossa nova, feel-good hits). The genre groups are further down; what
+ * follows first is the food group, which is the one that needs explaining.
  *
  * WHERE THE STATIONS COME FROM. Radio Browser (radio-browser.info), a free,
  * community-run directory of about fifty thousand internet radio stations
@@ -8,7 +11,7 @@
  * relay: this asks the directory for a list, and the listener's own browser
  * plays the station's stream straight from the station.
  *
- * FOOD ONLY, AND NEVER MORE THAN TWELVE. The first version had twelve
+ * THE FOOD GROUP: FOOD ONLY, NEVER MORE THAN TWELVE. The first version had twelve
  * channels of ten stations each, half of them a country's pop radio to cook
  * that country's food to — a hundred and twenty rows, most of them not about
  * food at all. A list that long is a list nobody chooses from. So: one list,
@@ -72,6 +75,38 @@ function namedForFood(name: string) {
   return FOOD_WORD.test(name.split('|')[0])
 }
 
+/*
+ * THE OTHER GROUPS — music to have on while you cook and eat, which is what
+ * most kitchen radio actually is. Each is a few of the directory's own tags,
+ * searched exactly; and because stations pad their tags ("pop, rock, jazz,
+ * classical, news…"), a station only counts when its name says the genre or
+ * the genre is near the front of a short tag list. `english` prefers stations
+ * from English-speaking countries, for the groups where the words matter.
+ */
+export type RadioCategory = { id: string; name: string; emoji: string }
+/*
+ * `strict`: the name has to say it — for genres whose tag is used loosely (a
+ * dozen pop and talk stations call themselves "classical"). `english`: English-
+ * speaking stations first, the rest only to fill up. `not`: names that do not
+ * belong whatever the tags say.
+ */
+type Genre = RadioCategory & { tags: string[]; names?: string[]; word: RegExp; english?: boolean; strict?: boolean; not?: RegExp }
+
+export const FOOD_CATEGORY: RadioCategory = { id: 'food', name: 'Food & dining', emoji: '\u{1F37D}\uFE0F' }
+const GENRES: Genre[] = [
+  { id: 'jazz', name: 'Jazz', emoji: '\u{1F3B7}', tags: ['jazz', 'smooth jazz'], word: /jazz/i },
+  { id: 'chill', name: 'Chill & lounge', emoji: '\u{1F319}', tags: ['chillout', 'lounge', 'chill'], word: /chill|lounge|caf[eé]|relax/i, not: /club|charts|dance|techno|party|rave/i },
+  { id: 'lofi', name: 'Lo-fi', emoji: '\u2615', tags: ['lofi', 'lo-fi'], word: /lo-?\s?fi/i },
+  { id: 'classical', name: 'Classical', emoji: '\u{1F3BB}', tags: ['classical', 'baroque'], names: ['classic', 'klassik'], word: /classical|klassik|cl[aá]sica|classique|classic(?!\s*(rock|hits|country|vinyl|soul|rap|hip|80|90|70|60|gold|dance|r&b))|baroque|barock|mozart|bach|symphon|\bopera\b|chamber/i, strict: true, not: /jazz|lounge|rock|hits|pop/i },
+  { id: 'soul', name: 'Soul & funk', emoji: '\u{1F57A}', tags: ['soul', 'funk', 'motown'], word: /soul|funk|motown|r&b|rnb/i, english: true },
+  { id: 'oldies', name: 'Oldies', emoji: '\u{1F4FB}', tags: ['oldies', '60s', '70s'], word: /oldies|60s|70s|sixties|seventies|gold|vinyl|retro/i, english: true },
+  { id: 'acoustic', name: 'Acoustic & folk', emoji: '\u{1FA95}', tags: ['acoustic', 'folk', 'singer-songwriter'], word: /acoustic|ac[uú]stic|folk|unplugged|songwriter|celtic/i, english: true },
+  { id: 'latin', name: 'Bossa nova & Latin', emoji: '\u{1F334}', tags: ['bossa nova', 'latin jazz', 'salsa'], word: /bossa|latin|salsa|samba|brasil/i },
+  { id: 'hits', name: 'Feel-good hits', emoji: '\u{1F3A4}', tags: ['top 40', 'hits', 'pop', 'adult contemporary'], word: /hits|top ?40|top ?100|pop|kiss|capital|heart/i, english: true, not: /country|club|dance/i },
+]
+export const RADIO_CATEGORIES: RadioCategory[] = [FOOD_CATEGORY, ...GENRES.map(({ id, name, emoji }) => ({ id, name, emoji }))]
+export const MAX_PER_GENRE = 10
+
 export const MAX_STATIONS = 12
 // One from any one broadcaster. Three German stream networks each run a
 // dinner lounge, a restaurant lounge and a coffee lounge, and at two apiece
@@ -120,6 +155,7 @@ type Raw = {
   favicon?: string
   homepage?: string
   country?: string
+  countrycode?: string
   tags?: string
   codec?: string
   bitrate?: number
@@ -196,10 +232,12 @@ function nameKey(name: string) {
  * a French one a conservative talk channel, both tagged with the language as
  * well as with what they actually are.
  */
-const NOT_MUSIC = new Set(['news', 'talk', 'news talk', 'talk radio', 'sport', 'sports', 'politics', 'business', 'religion', 'catholic', 'christian'])
+const NOT_MUSIC = new Set(['news', 'talk', 'news talk', 'talk radio', 'sport', 'sports', 'football', 'politics', 'business', 'religion', 'religious', 'catholic', 'christian', 'islam', 'islamic', 'quran', 'koran', 'gospel', 'church', 'bible', 'adult', 'erotic', 'sex'])
+// Names that give a station away whatever its tags say.
+const NOT_MUSIC_NAME = /quran|qur'an|koran|bible|gospel|church|islam|christian|catholic|sermon|news|talk|sport|erotic|sexy/i
 
 function talkStation(raw: Raw) {
-  return (raw.tags ?? '')
+  return NOT_MUSIC_NAME.test(raw.name ?? '') || (raw.tags ?? '')
     .split(',')
     .some((tag) => NOT_MUSIC.has(tag.trim().toLowerCase()))
 }
@@ -261,6 +299,67 @@ export async function searchFoodStations(): Promise<Station[]> {
   return out
 }
 
+async function searchTag(tag: string): Promise<Raw[]> {
+  const params = new URLSearchParams({
+    tag,
+    tagExact: 'true',
+    hidebroken: 'true',
+    is_https: 'true',
+    order: 'votes',
+    reverse: 'true',
+    limit: '60',
+  })
+  const found = await ask(`/json/stations/search?${params}`)
+  return Array.isArray(found) ? (found as Raw[]) : []
+}
+
+const ENGLISH_SPEAKING = new Set(['US', 'GB', 'CA', 'AU', 'IE', 'NZ'])
+
+export async function searchGenre(genre: Genre): Promise<Station[]> {
+  const settled = await Promise.allSettled([...genre.tags.map(searchTag), ...(genre.names ?? []).map(search)])
+  if (settled.every((r) => r.status === 'rejected')) throw new Error(`radio: every ${genre.id} search failed`)
+  const scored: { raw: Required<Raw>; score: number }[] = []
+  for (const r of settled) {
+    if (r.status !== 'fulfilled') continue
+    for (const raw of r.value) {
+      if (!playable(raw) || talkStation(raw)) continue
+      const tags = (raw.tags ?? '').toLowerCase().split(',').map((t) => t.trim()).filter(Boolean)
+      const name = raw.name.split('|')[0]
+      if (genre.not?.test(name)) continue
+      const named = genre.word.test(name)
+      const at = tags.findIndex((t) => genre.tags.includes(t))
+      // Named for it, or filed under it near the front of a short list; for a
+      // strict genre, named for it and filed under it as well.
+      if (genre.strict ? !(named && tags.some((t) => genre.tags.some((g) => t.includes(g)))) : !named && !(at >= 0 && at < 3 && tags.length <= 10)) continue
+      // Christmas stations play all year; they are only listed in December.
+      if (/christmas|xmas|weihnacht|navidad|no[eë]l\b/i.test(name) && new Date().getMonth() !== 11) continue
+      // English-speaking stations ahead of every other, not merely weighted.
+      const english = genre.english && ENGLISH_SPEAKING.has((raw.countrycode ?? '').toUpperCase())
+      scored.push({ raw, score: (raw.votes ?? 0) * (named ? 2 : 1) + (english ? 1e9 : 0) })
+    }
+  }
+  scored.sort((a, b) => b.score - a.score)
+  const seenUrl = new Set<string>()
+  const seenName = new Set<string>()
+  const seenHost = new Set<string>()
+  const out: Station[] = []
+  // Only reach past English-speaking stations when there are too few of them.
+  const englishCount = genre.english ? scored.filter((x) => x.score >= 1e9).length : 0
+  for (const { raw, score } of scored) {
+    if (out.length >= MAX_PER_GENRE) break
+    if (genre.english && englishCount >= 6 && score < 1e9) break
+    const key = nameKey(raw.name)
+    let host = ''
+    try { host = new URL(raw.url_resolved).hostname } catch {}
+    if (seenUrl.has(raw.url_resolved) || (key && seenName.has(key)) || seenHost.has(host)) continue
+    seenUrl.add(raw.url_resolved)
+    if (key) seenName.add(key)
+    seenHost.add(host)
+    out.push(toStation(raw, genre.emoji))
+  }
+  return out
+}
+
 /*
  * Kept for six hours per worker. Station lists move on the scale of weeks,
  * and twenty people opening the radio in an afternoon should be one round of
@@ -268,15 +367,26 @@ export async function searchFoodStations(): Promise<Station[]> {
  * next person to open it asks again.
  */
 const TTL_MS = 6 * 60 * 60 * 1000
-let memo: { at: number; stations: Promise<Station[]> } | null = null
+const memo = new Map<string, { at: number; stations: Promise<Station[]> }>()
+
+export function isRadioCategory(id: unknown): id is string {
+  return typeof id === 'string' && RADIO_CATEGORIES.some((c) => c.id === id)
+}
+
+/** One group's stations: the food ones, or a genre's. Six hours per worker. */
+export function categoryStations(id: string): Promise<Station[]> {
+  const hit = memo.get(id)
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.stations
+  const genre = GENRES.find((g) => g.id === id)
+  const stations = genre ? searchGenre(genre) : searchFoodStations()
+  const entry = { at: Date.now(), stations }
+  memo.set(id, entry)
+  stations.catch(() => { if (memo.get(id) === entry) memo.delete(id) })
+  return stations
+}
 
 export function foodStations(): Promise<Station[]> {
-  if (memo && Date.now() - memo.at < TTL_MS) return memo.stations
-  const stations = searchFoodStations()
-  const entry = { at: Date.now(), stations }
-  memo = entry
-  stations.catch(() => { if (memo === entry) memo = null })
-  return stations
+  return categoryStations(FOOD_CATEGORY.id)
 }
 
 /*

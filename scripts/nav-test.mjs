@@ -57,6 +57,7 @@ const NOT_NAVIGABLE = {
   'eat.index': 'the hub itself — linked as "/eat"',
   'decide': 'the app, served from public/decide and linked as "/decide/"',
   'experiences.$experienceId': 'a Whop iframe entry point, not a page on this site',
+  'oauth.authorize': 'a redirect on to Whop sign-in, for app shells that resolve its path here',
   'robots[.]txt': 'for crawlers',
   'sitemap[.]xml': 'for crawlers',
 }

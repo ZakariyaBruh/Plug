@@ -2149,7 +2149,7 @@
   }
 
   /*
-   * The part of the frame to read: a little more than the orange box, which
+   * The part of the frame to read: a little more than the white box, which
    * covers the middle 76% x 40% of the 4:3 picture shown — worked out on the
    * full frame the camera sends, which is wider than what is shown.
    */
@@ -2263,7 +2263,7 @@
 
     body.appendChild(howTo([
       'Tap “Scan with my camera”. If your phone asks to use the camera, tap Allow.',
-      'Hold the barcode (the black stripes) inside the orange box, with the phone about 15 cm (6 inches) away — roughly the length of your hand. Hold it still for a moment.',
+      'Hold the barcode (the black stripes) inside the white box on the screen, with the phone about 15 cm (6 inches) away — roughly the length of your hand. Hold it still for a moment.',
       'It does not need to look sharp: it reads blurry barcodes too. The answer appears by itself.',
       'If the camera will not work, tap “Take a photo of the barcode” instead.'
     ]));
@@ -2309,7 +2309,7 @@
     ]);
     // What to try next, said while it looks, for anybody it is not reading for.
     var HINTS = [
-      [0, 'Hold the barcode inside the orange box…'],
+      [0, 'Hold the barcode inside the white box…'],
       [5000, 'Still looking. Move the phone a little further away, and hold it still.'],
       [12000, 'Make sure the whole barcode is inside the box, and that there is no shine on it. In a dim room, turn the light on.'],
       [22000, 'Still no luck? Tap “Stop the camera” and “Take a photo of the barcode” instead, or type the numbers under it.']
@@ -2990,7 +2990,7 @@
     { view: 'news', icon: '\u{1F4F0}', name: 'News', tier: 'free', extra: 'Premium adds a short summary of the day’s food news at the top.',
       what: 'The latest food stories from newspapers and food websites.' },
     { view: 'radio', icon: '\u{1F4FA}', name: 'TV & radio', tier: 'account',
-      what: 'Free food TV channels — cooking shows and more — with what is on now and next. And radio stations to listen to while you cook.' },
+      what: 'Something to watch or listen to while you cook and eat, free. Tap a group — cooking shows, music, comedy, travel, calm nature and more on the TV; jazz, classical, oldies, lo-fi and more on the radio.' },
     { view: 'daily', icon: '☀️', name: 'Daily', tier: 'account',
       what: 'A one-minute check-in each day: how you are feeling, one good thing, and a food question everybody gets the same day.' },
     { view: 'profile', icon: '\u{1F464}', name: 'Profile', tier: 'free',
