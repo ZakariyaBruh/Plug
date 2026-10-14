@@ -1,10 +1,11 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { useEffect } from 'react'
 
 import { JsonLd } from '#/components/JsonLd'
 import { PageShell } from '#/components/PageShell'
 import { dishBySlug, relatedTo } from '#/lib/dishes'
+import { photoFor, photoPath } from '#/lib/dish-photos'
 import { isoDuration, quickest, recipesFor, type Recipe } from '#/lib/recipes'
 import { DISH_COUNT, SITE_NAME, SITE_URL, pageHead, track } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
@@ -17,7 +18,7 @@ import { loadViewer } from '#/lib/viewer'
  * receive it was right: somebody sent you "morsels45 said Ramen", and this
  * names the dish in its own card and offers you a go. As a thing to find, it
  * was eighty-four words — a name, a one-line blurb and a button — repeated
- * across 112 URLs. Thin near-duplicates like that are what Google calls
+ * across every dish URL. Thin near-duplicates like that are what Google calls
  * doorway pages: it crawls them and declines to index them, which is why this
  * site had 117 pages in its sitemap and no organic traffic at all.
  *
@@ -33,11 +34,22 @@ const loadDish = createServerFn({ method: 'GET' })
   .handler(({ data }) => {
     const dish = dishBySlug(data.slug)
     if (!dish) return null
+    const photo = photoFor(dish.slug)
     return {
       ...dish,
       recipes: recipesFor(dish.name),
       quickest: quickest(dish.name),
       related: relatedTo(dish),
+      photo: photo
+        ? {
+            ...photo,
+            path: photoPath(dish.slug, photo),
+            // Phones get a lighter copy; Google and shared links get the full one.
+            srcSet: photo.src.includes('/1280px-')
+              ? `${photoPath(dish.slug, photo, 500)} 500w, ${photoPath(dish.slug, photo, 960)} 960w, ${photoPath(dish.slug, photo)} 1280w`
+              : undefined,
+          }
+        : null,
     }
   })
 
@@ -47,6 +59,12 @@ export const Route = createFileRoute('/eat/$dish')({
       loadViewer(),
       loadDish({ data: { slug: params.dish } }),
     ])
+    /*
+     * A dish that does not exist is a 404, not a page saying so with a 200.
+     * Google calls the second a "soft 404" and lists it as an error in Search
+     * Console; it also had to be told noindex on every one of them.
+     */
+    if (!dish) throw notFound()
     return { viewer, dish }
   },
   head: ({ loaderData }) => {
@@ -87,37 +105,94 @@ export const Route = createFileRoute('/eat/$dish')({
       // message, and "morsels45 said: Ramen" is the right thing to arrive.
       ogTitle: `morsels45 said: ${dish.name}`,
       ogDescription: `${dish.blurb} A handful of either-ors and you have your own answer.`,
+      // The dish's own photograph on a shared link, where there is one.
+      image: dish.photo
+        ? { url: `${SITE_URL}${dish.photo.path}`, width: dish.photo.width, height: dish.photo.height, alt: dish.name }
+        : undefined,
     })
   },
   component: EatPage,
+  notFoundComponent: DishNotFound,
 })
 
+function DishNotFound() {
+  return (
+    <PageShell user={null}>
+      <main className="px-6 py-16 text-center fade-in-up sm:py-24">
+        <h1 className="text-4xl font-bold sm:text-5xl">That one is not on the menu</h1>
+        <p className="mx-auto mt-4 max-w-md text-lg text-[var(--text-dim)]">
+          There are {DISH_COUNT} dishes in here, though, and about twenty seconds between you and one of them.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+          <a href="/decide/" className="inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90">
+            Play morsels45
+          </a>
+          <Link to="/eat" className="text-sm text-[var(--amber)] underline underline-offset-4">
+            See all {DISH_COUNT} dishes
+          </Link>
+        </div>
+      </main>
+    </PageShell>
+  )
+}
+
 /*
- * Recipe schema, and the one thing deliberately left out of it.
+ * Recipe schema.
  *
  * Every field here is read off the recipe the app itself serves, so the markup
  * and the page cannot disagree — which is the actual rule, not a style choice:
  * structured data that describes something the reader cannot see is a manual
  * penalty waiting to happen.
  *
- * There is no `image`, because there are no photographs of these dishes. Google
- * wants one for a recipe rich result, so leaving it out means no card with a
- * picture — and putting the site's own share card there instead would be
- * claiming a photograph of ramen that is not a photograph of ramen. Valid
- * markup with a missing optional beats a rich result built on a small lie.
+ * `image` is the photograph shown at the top of the page: a real photo of the
+ * dish from Wikimedia Commons, credited under it (scripts/dish-photos.mjs).
+ * It used to be left out, because the only picture to hand was the site's own
+ * share card, and that is not a photograph of ramen. Without it Google will
+ * not show a recipe as a rich result, so a dish with no photo still has none.
+ * The cuisine is the one Wikipedia's article names; the category is read off
+ * the dish's own tags.
  */
-function recipeSchema(dish: { name: string; blurb: string; slug: string }, recipe: Recipe) {
+type SchemaDish = { name: string; blurb: string; slug: string; tags: string[]; photo: { path: string; cuisine: string | null } | null }
+
+function recipeCategory(tags: string[]) {
+  if (tags.includes('drink')) return 'Drink'
+  if (tags.includes('breakfast')) return 'Breakfast'
+  if (tags.includes('sweet') && !tags.includes('meat')) return 'Dessert'
+  if (tags.includes('soupy')) return 'Soup'
+  return 'Main course'
+}
+
+const KEYWORD_TAGS: Record<string, string> = { quick: 'quick', healthy: 'healthy', spicy: 'spicy', comfort: 'comfort food', cheap: 'budget', handheld: 'street food' }
+
+function recipeSchema(dish: SchemaDish, recipe: Recipe) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Recipe',
     name: `${dish.name} — ${recipe.name}`,
     description: dish.blurb,
     url: `${SITE_URL}/eat/${dish.slug}`,
+    ...(dish.photo ? { image: [`${SITE_URL}${dish.photo.path}`] } : {}),
     totalTime: isoDuration(recipe.time),
     recipeYield: `${recipe.serves} ${recipe.serves === 1 ? 'serving' : 'servings'}`,
+    recipeCategory: recipeCategory(dish.tags),
+    ...(dish.photo?.cuisine ? { recipeCuisine: dish.photo.cuisine } : {}),
+    keywords: [dish.name.toLowerCase(), ...dish.tags.filter((t) => KEYWORD_TAGS[t]).map((t) => KEYWORD_TAGS[t])].join(', '),
     recipeIngredient: recipe.ingredients,
     recipeInstructions: recipe.steps.map((step) => ({ '@type': 'HowToStep', text: step })),
     author: { '@type': 'Organization', name: SITE_NAME, url: SITE_URL },
+  }
+}
+
+// Home › All dishes › this one, as search results show it under the title.
+function breadcrumbSchema(dish: { name: string; slug: string }) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: SITE_NAME, item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'All dishes', item: `${SITE_URL}/eat` },
+      { '@type': 'ListItem', position: 3, name: dish.name, item: `${SITE_URL}/eat/${dish.slug}` },
+    ],
   }
 }
 
@@ -171,11 +246,46 @@ function EatPage() {
               <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
                 morsels45 said
               </p>
-              <div className="mt-6 text-7xl leading-none" aria-hidden="true">
-                {dish.icon}
-              </div>
-              <h1 className="mt-5 text-4xl font-bold sm:text-5xl">{dish.name}</h1>
+              <h1 className="mt-5 text-4xl font-bold sm:text-5xl">
+                <span aria-hidden="true">{dish.icon} </span>
+                {dish.name}
+              </h1>
               <p className="mt-4 text-lg text-[var(--text-dim)]">{dish.blurb}</p>
+              {dish.photo ? (
+                <figure className="mt-8">
+                  <img
+                    src={dish.photo.path}
+                    srcSet={dish.photo.srcSet}
+                    sizes="(max-width: 720px) 100vw, 672px"
+                    width={dish.photo.width}
+                    height={dish.photo.height}
+                    alt={dish.name}
+                    fetchPriority="high"
+                    className="mx-auto h-auto w-full rounded-2xl object-cover"
+                    style={{ aspectRatio: `${dish.photo.width} / ${dish.photo.height}` }}
+                  />
+                  {/* The credit each photo's licence asks for. */}
+                  <figcaption className="mt-2 text-xs text-[var(--text-dim)]">
+                    Photo:{' '}
+                    <a href={dish.photo.page} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+                      {dish.photo.credit}
+                    </a>
+                    {', '}
+                    {dish.photo.licenseUrl ? (
+                      <a href={dish.photo.licenseUrl} target="_blank" rel="noopener noreferrer license" className="underline underline-offset-2">
+                        {dish.photo.license}
+                      </a>
+                    ) : (
+                      dish.photo.license
+                    )}
+                    , via Wikimedia Commons. A photo of the dish, not of these exact recipes.
+                  </figcaption>
+                </figure>
+              ) : (
+                <div className="mt-6 text-7xl leading-none" aria-hidden="true">
+                  {dish.icon}
+                </div>
+              )}
               <p className="mx-auto mt-10 max-w-md text-[var(--text-dim)]">
                 That was somebody else’s answer. Yours takes about twenty seconds: a handful of
                 either-ors, then one dish.
@@ -230,6 +340,7 @@ function EatPage() {
             </div>
 
             {dish.quickest ? <JsonLd data={recipeSchema(dish, dish.quickest)} /> : null}
+            <JsonLd data={breadcrumbSchema(dish)} />
           </div>
         ) : null}
 

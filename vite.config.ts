@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -36,8 +37,9 @@ import { cloudflare } from '@cloudflare/vite-plugin'
 const SHELL = [
   'index.html', 'styles.css', 'manifest.webmanifest', 'icon.svg', 'icon-maskable.svg',
   'js/app.js', 'js/confetti.js', 'js/config.js', 'js/data.js', 'js/engine.js',
-  'js/flavor.js', 'js/i18n.js', 'js/mapview.js', 'js/places.js', 'js/premium.js',
-  'js/progress.js', 'js/recipes.js', 'js/sound.js', 'js/taste.js',
+  'js/flavor.js', 'js/i18n.js', 'js/mapview.js', 'js/places.js', 'js/premium.js', 'js/progress.js',
+  'js/recipes.js', 'js/sound.js',
+  'js/taste.js', 'js/hub.js',
 ]
 
 /*
@@ -116,6 +118,40 @@ function buildId(): Plugin {
   }
 }
 
+/*
+ * The session-replay id, read out of lib/site.ts rather than imported.
+ *
+ * This file cannot import from src/ — it is the config that sets up the
+ * aliases — so the value is read the same way DISH_COUNT is checked further
+ * down: by looking at the source. One constant still governs the script on
+ * every page and both sentences on the privacy page, which is the whole
+ * point of it. See the long note over CLARITY_ID.
+ */
+function clarityId(): string {
+  try {
+    const site = readFileSync(join(process.cwd(), 'src', 'lib', 'site.ts'), 'utf8')
+    return /export const CLARITY_ID = '([^']*)'/.exec(site)?.[1] ?? ''
+  } catch {
+    return ''
+  }
+}
+
+/*
+ * The GA4 measurement id, read the same way and for the same reason.
+ *
+ * This file cannot import from src/, so the value is taken out of the source.
+ * One constant still governs the tag on every page, the events mirrored to
+ * it, and what the privacy page says about it. See the long note over GA4_ID.
+ */
+function ga4Id(): string {
+  try {
+    const site = readFileSync(join(process.cwd(), 'src', 'lib', 'site.ts'), 'utf8')
+    return /export const GA4_ID = '([^']*)'/.exec(site)?.[1] ?? ''
+  } catch {
+    return ''
+  }
+}
+
 function stampServiceWorker(): Plugin {
   return {
     name: 'morsels45-stamp-sw',
@@ -170,7 +206,44 @@ function stampServiceWorker(): Plugin {
        */
       const page = join(dir, 'index.html')
       try {
-        writeFileSync(page, stampUrls(readFileSync(page, 'utf8'), id, '"'))
+        /*
+         * SESSION REPLAY GOES IN HERE, NOT IN THE ROUTE.
+         *
+         * routes/decide/$.ts also builds a copy of this page and also
+         * injects the snippet — and in production nothing ever sees it,
+         * because the static file written right here is served by the asset
+         * handler before any request reaches the worker. Two hours went into
+         * finding that out: the route's stamps and this file's stamps are
+         * identical, so the served page looked like the route's output and
+         * was not.
+         *
+         * Whatever the page needs has to be written HERE, at build time.
+         * Same constant as everywhere else — empty id, nothing injected, and
+         * the privacy page says nothing about replay. See CLARITY_ID.
+         */
+        let html = stampUrls(readFileSync(page, 'utf8'), id, '"')
+        const replayId = clarityId()
+        if (replayId) {
+          const tag =
+            '<script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};' +
+            't=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;' +
+            'y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);' +
+            `})(window,document,"clarity","script",${JSON.stringify(replayId)});</script>`
+          html = html.replace('</head>', `${tag}\n</head>`)
+        }
+        // And GA4, on the same terms. Written here for the same reason the
+        // replay tag is: this file's output is the page that gets served.
+        const gaId = ga4Id()
+        if (gaId) {
+          const tag =
+            `<script async src="https://www.googletagmanager.com/gtag/js?id=${gaId}"></script>` +
+            `<script>window.dataLayer=window.dataLayer||[];` +
+            `function gtag(){dataLayer.push(arguments);}` +
+            `gtag('js',new Date());` +
+            `gtag('config',${JSON.stringify(gaId)},{anonymize_ip:true});</script>`
+          html = html.replace('</head>', `${tag}\n</head>`)
+        }
+        writeFileSync(page, html)
       } catch {
         this.warn('stamp-sw: no index.html to version')
       }
@@ -255,29 +328,417 @@ function recipeBook(): Plugin {
       if (dishCount !== claimed) {
         throw new Error(
           `recipe-book: the site says ${claimed} dishes, data.js has ${dishCount}. ` +
-            'Update DISH_COUNT in src/lib/site.ts (and the two counts in public/decide/index.html).',
+            'Update DISH_COUNT in src/lib/site.ts. The other places that print it are checked below.',
         )
       }
       if (count !== dishCount) {
-        throw new Error(`recipe-book: ${dishCount} dishes but ${count} recipes — they must be 1:1`)
+        throw new Error(`recipe-book: ${dishCount} dishes but ${count} of them have recipes — must be 1:1`)
       }
 
-      this.info(`recipe-book: ${count} dishes, ${count} recipes`)
+      /*
+       * 1:1 IS NOT THE SAME AS "HAS A RECIPE".
+       *
+       * The count above is satisfied by `recipes('Ramen', [])`, and by a
+       * version with a name and nothing else. Both would pass every check in
+       * this file and then hand somebody who tapped through to cook an empty
+       * page — which is a worse outcome than the missing-recipe case this
+       * plugin was written for, because nothing anywhere would look wrong.
+       *
+       * So the shape is checked as well as the key. Deliberately low bars:
+       * one ingredient and one step, because a two-line variant that leans on
+       * the one above it ("Gyudon as above", "Leftover polenta") is a real
+       * entry and this must not start rejecting them. What it catches is
+       * empty, which is the failure that actually happens when a batch of
+       * dishes is added faster than the recipes for them.
+       */
+      const hollow: string[] = []
+      for (const [dish, versions] of Object.entries(book as Record<string, unknown>)) {
+        if (!Array.isArray(versions) || versions.length === 0) {
+          hollow.push(`${dish}: no versions at all`)
+          continue
+        }
+        versions.forEach((version, at) => {
+          const v = version as { name?: string; ingredients?: unknown[]; steps?: unknown[] }
+          const where = `${dish} (${v.name ?? `version ${at + 1}`})`
+          if (!v.name) hollow.push(`${where}: no name`)
+          const ingredients = (v.ingredients ?? []).filter((x) => typeof x === 'string' && x.trim())
+          const steps = (v.steps ?? []).filter((x) => typeof x === 'string' && x.trim())
+          if (!ingredients.length) hollow.push(`${where}: nothing to buy`)
+          if (!steps.length) hollow.push(`${where}: nothing to do`)
+        })
+      }
+      if (hollow.length) {
+        throw new Error(
+          'recipe-book: a dish has a recipe entry with nothing in it —\n  ' + hollow.join('\n  '),
+        )
+      }
+
+      /*
+       * And every OTHER place the app writes one of these numbers down.
+       *
+       * The error above used to tell whoever hit it to "update DISH_COUNT (and
+       * the two counts in public/decide/index.html)" — an instruction nothing
+       * enforced, on a file this plugin never opened. So the shell's counts
+       * happened to be right and the web manifest, which nobody thinks of as
+       * copy, sat on "All 112 dishes" through three batches of new ones. It is
+       * the shortcut menu you get from long-pressing the installed icon: as
+       * user-visible as the front page and a great deal easier to forget.
+       *
+       * Checked by anchor rather than by sweeping for "N dishes", because the
+       * page legitimately says "8 dishes enter a bracket" and "0 dishes tried"
+       * and neither is a claim about the catalogue.
+       */
+      const recipeTotal = Object.values(book as Record<string, unknown[]>)
+        .reduce((n, list) => n + list.length, 0)
+
+      const shell = readFileSync(join(process.cwd(), 'public', 'decide', 'index.html'), 'utf8')
+      const manifest = readFileSync(join(process.cwd(), 'public', 'decide', 'manifest.webmanifest'), 'utf8')
+
+      const claims: [string, RegExpMatchArray | null, number][] = [
+        ['index.html landing stat', /<b id="landing-dishes">(\d+)<\/b>/.exec(shell), dishCount],
+        ['index.html landing stat', /<b id="landing-recipes">(\d+)<\/b>/.exec(shell), recipeTotal],
+      ]
+      for (const label of ['og:description', 'twitter:description']) {
+        const meta = new RegExp(`(?:property|name)="${label}" content="([^"]*)"`).exec(shell)
+        claims.push([`index.html ${label}`, /(\d+) dishes/.exec(meta?.[1] ?? ''), dishCount])
+      }
+      for (const m of manifest.matchAll(/(\d+) dishes/g)) {
+        claims.push(['manifest.webmanifest', m, dishCount])
+      }
+
+      for (const [where, match, want] of claims) {
+        if (!match) throw new Error(`recipe-book: could not find the count in ${where}`)
+        if (Number(match[1]) !== want) {
+          throw new Error(
+            `recipe-book: ${where} says ${match[1]}, but there are ${want}. Update it.`,
+          )
+        }
+      }
+
+      this.info(`recipe-book: ${dishCount} dishes, ${recipeTotal} recipes`)
       return `export default ${JSON.stringify(book)}`
     },
   }
 }
 
+/*
+ * THE PREVIEW'S COPY OF THE CATALOGUE, checked against the real one.
+ *
+ * lib/preview.ts writes out twenty-four dishes by hand, because importing
+ * ALL_DISHES would bundle a hundred and thirty-three into the landing page to
+ * show one. That is the right trade and it comes with the obvious hazard: a
+ * second list of dishes is a list that drifts, and this one is in the shop
+ * window. A preview offering something the app no longer has, or describing it
+ * differently from the page it links to, is worse than no preview.
+ *
+ * So every entry is checked against data.js: the name has to exist, and the
+ * icon, the blurb and the level of each of the five tags it claims have to
+ * match exactly. A dish renamed, retagged or rewritten in the catalogue fails
+ * the build here rather than going quietly out of date.
+ */
+/*
+ * THE DIETARY PROMISE, CHECKED AT BUILD TIME.
+ *
+ * "Everything you don't eat, off the menu" is the one claim on this site that
+ * somebody could be harmed by trusting, and until now nothing checked it. The
+ * invariants live in item() in data.js and throw when a dish is built — but
+ * data.js is only ever EXECUTED in the browser. lib/dishes.ts reads it with a
+ * regex, so a catalogue that would throw on load still shipped, and the first
+ * thing to notice would have been a vegetarian being offered a chicken curry.
+ *
+ * That is not hypothetical. Khao soi was tagged chicken:1, and because
+ * "chicken" is not a diet tag and implied nothing, it derived veg:1 and was
+ * served to every vegetarian, Jain, Sattvic, Buddhist, Sikh and Ital profile
+ * in the app. It had been that way for as long as the tag existed.
+ *
+ * So the catalogue is executed here, which runs every check in item(), and
+ * then two things are asserted that item() cannot see on its own because they
+ * are facts about the whole catalogue rather than about one dish:
+ *
+ *   - nothing counts as vegetarian while carrying an animal tag, at any
+ *     strength; and
+ *   - every diet preset still has something to offer, because a rule that
+ *     empties the menu is a rule the engine quietly stops enforcing, and a
+ *     silently unenforced dietary rule is the worst outcome available.
+ */
+function dietCheck(): Plugin {
+  return {
+    name: 'morsels45-diet-check',
+    buildStart() {
+      const load = (file: string) => {
+        const source = readFileSync(join(process.cwd(), 'public', 'decide', 'js', file), 'utf8')
+        const shim = { exports: {} as Record<string, unknown> }
+        new Function('module', 'exports', source)(shim, shim.exports)
+        return shim.exports
+      }
+
+      // Executing it is most of the test: every per-dish invariant in item()
+      // throws from here, and a throw fails the build.
+      const data = load('data.js') as { ITEMS?: { name: string; tags: Record<string, number> }[] }
+      const progress = load('progress.js') as {
+        DIETS?: { id: string; label: string; tags: string[] }[]
+      }
+
+      const items = data.ITEMS
+      const diets = progress.DIETS
+      if (!Array.isArray(items) || !items.length) throw new Error('diet-check: no dishes')
+      if (!Array.isArray(diets) || !diets.length) throw new Error('diet-check: no diets')
+
+      const ANIMAL = ['meat', 'seafood', 'chicken', 'pork', 'beef', 'shellfish']
+      for (const item of items) {
+        const veg = item.tags.veg ?? 0
+        if (veg <= 0) continue
+        const worst = Math.max(0, ...ANIMAL.map((tag) => item.tags[tag] ?? 0))
+        if (veg > 1 - worst) {
+          throw new Error(
+            `diet-check: ${item.name} counts as vegetarian (veg ${veg}) while carrying ` +
+              ANIMAL.filter((tag) => (item.tags[tag] ?? 0) > 0)
+                .map((tag) => `${tag} ${item.tags[tag]}`)
+                .join(', '),
+          )
+        }
+      }
+
+      /*
+       * AND THE RECIPES HAVE TO KEEP THE DISH'S PROMISE TOO.
+       *
+       * The tags say what is in a dish and the dietary rules are applied to
+       * them. The recipe underneath is prose and nothing was reading it — so
+       * a dish tagged without egg could carry a recipe whose sauce is
+       * mayonnaise, and somebody avoiding egg would be handed it by a rule
+       * they set precisely so they would not have to read the ingredients.
+       *
+       * This is a word search, which means it is crude, and crude is the
+       * right shape here: a false positive costs a tag or a reworded line,
+       * and a false negative costs somebody their dietary rule. EXCEPT is
+       * for the compounds that contain an animal word and are not the animal
+       * — coconut milk, oat milk, butternut, eggplant — and it is checked
+       * before the words are, so "coconut milk" never reads as milk.
+       */
+      const WORDS: [string, string[]][] = [
+        ['dairy', ['milks?', 'butter', 'buttermilk', 'creams?', 'cheeses?', 'yogh?urt',
+                   'parmesan', 'mozzarella', 'pecorino', 'gruyère', 'cheddar', 'ghee',
+                   'mascarpone', 'provolone', 'curd', 'cotija', 'feta']],
+        ['egg', ['eggs?', 'mayonnaise', 'mayo', 'meringues?', 'hollandaise']],
+        ['meat', ['beef', 'pork', 'bacon', 'hams?', 'lamb', 'chicken', 'ducks?', 'sausages?',
+                  'chorizo', 'pancetta', 'guanciale', 'lard', 'minces?', 'brisket', 'ribeye',
+                  'sirloin', 'pâté', 'gelatine']],
+        ['seafood', ['fish', 'prawns?', 'crab', 'salmon', 'tuna', 'anchov\\w*', 'sardines?',
+                     'mussels?', 'squid', 'haddock', 'cod', 'bonito', 'dashi', 'oysters?']],
+        ['alcohol', ['wine', 'whisk(?:y|ey)', 'beer', 'rum', 'sherry', 'shaoxing', 'vodka',
+                     'brandy', 'amaretto', 'tej']],
+      ]
+
+      /*
+       * Matched on whole words, because the first run of this said gomen was
+       * cooked in lard (collard greens), risotto contained mince (a minced
+       * shallot) and gazpacho was alcoholic (sherry vinegar). A check that
+       * cries wolf gets switched off, so it matches \b...\b and nothing else.
+       */
+      const EXCEPT = [
+        'coconut milk', 'coconut cream', 'coconut yoghurt', 'oat milk', 'almond milk',
+        'soy milk', 'rice milk', 'plant milk', 'cream of tartar', 'peanut butter',
+        'nut butter', 'butter bean', 'butternut', 'eggplant', 'sherry vinegar',
+        'wine vinegar', 'vegetarian oyster sauce', 'creamed corn', 'collard',
+        'minced', 'cocoa butter', 'shea butter',
+      ]
+
+      const book = load('recipes.js') as {
+        BOOK?: Record<string, { name?: string; ingredients?: string[]; steps?: string[] }[]>
+      }
+      const recipes = book.BOOK ?? {}
+      const byName = new Map(items.map((item) => [item.name, item]))
+      const smuggled: string[] = []
+
+      for (const [dish, versions] of Object.entries(recipes)) {
+        const item = byName.get(dish)
+        if (!item) continue
+        for (const version of versions) {
+          // Ingredients only. A step may mention a thing it is served WITH,
+          // and the ingredient list is what actually goes in.
+          let text = (version.ingredients ?? []).join(' ; ').toLowerCase()
+          for (const safe of EXCEPT) text = text.split(safe).join(' ')
+          for (const [tag, words] of WORDS) {
+            if ((item.tags[tag] ?? 0) > 0) continue
+            const hit = words.find((word) => new RegExp(`\\b${word}\\b`).test(text))
+            if (hit) smuggled.push(`${dish} ("${version.name ?? '?'}") uses "${hit}" but is not tagged ${tag}`)
+          }
+        }
+      }
+
+      if (smuggled.length) {
+        throw new Error(
+          'diet-check: a recipe reaches past its dish\'s tags —\n  ' +
+            smuggled.join('\n  ') +
+            '\nTag the dish for it, or take it out of the recipe.',
+        )
+      }
+
+      /*
+       * A rule bites on anything above zero — a dish that MIGHT have pork in
+       * it is not an answer you can give somebody who does not eat pork, so
+       * the menu left to a diet is counted the same strict way the engine
+       * counts it (see countBans in engine.js).
+       */
+      const starved = diets
+        .map((diet) => ({
+          diet,
+          left: items.filter((item) => !diet.tags.some((tag) => (item.tags[tag] ?? 0) > 0)).length,
+        }))
+        .filter((row) => row.left < 10)
+
+      if (starved.length) {
+        throw new Error(
+          'diet-check: too little left to offer — ' +
+            starved.map((row) => `${row.diet.label} has ${row.left}`).join('; ') +
+            '. Add dishes they can eat, or the rule stops being enforced.',
+        )
+      }
+    },
+  }
+}
+
+function previewCheck(): Plugin {
+  const PREVIEW_TAGS = ['sweet', 'hot', 'quick', 'handheld', 'crunchy']
+
+  return {
+    name: 'morsels45-preview-check',
+    buildStart() {
+      const data = readFileSync(join(process.cwd(), 'public', 'decide', 'js', 'data.js'), 'utf8')
+      const preview = readFileSync(join(process.cwd(), 'src', 'lib', 'preview.ts'), 'utf8')
+
+      /*
+       * item('Name', '\u{1F355}', 'blurb…', 'yes tags', 'maybe tags')
+       *
+       * The same shape lib/dishes.ts reads, and for the same reason: data.js is
+       * a plain script with no module to import from, and this runs at build
+       * time so nothing is parsed at request time.
+       */
+      const ITEM =
+        /item\('((?:[^'\\]|\\.)*)',\s*'((?:[^'\\]|\\.)*)',\s*'((?:[^'\\]|\\.)*)'(?:,\s*'((?:[^'\\]|\\.)*)')?(?:,\s*'((?:[^'\\]|\\.)*)')?/g
+
+      const decode = (literal: string) =>
+        literal
+          .replace(/\\u\{([0-9a-fA-F]+)\}/g, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)))
+          .replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(Number.parseInt(hex, 16)))
+          .replace(/\\'/g, "'")
+
+      type Real = { icon: string; blurb: string; level: Record<string, number> }
+      const real = new Map<string, Real>()
+      for (const [, name, icon, blurb, yes, maybe] of data.matchAll(ITEM)) {
+        const level: Record<string, number> = {}
+        for (const tag of (yes ?? '').split(/\s+/).filter(Boolean)) level[tag] = 1
+        for (const tag of (maybe ?? '').split(/\s+/).filter(Boolean)) level[tag] = 0.5
+        real.set(decode(name), { icon: decode(icon), blurb: decode(blurb), level })
+      }
+      if (real.size < 100) throw new Error('preview-check: could not read the catalogue from data.js')
+
+      // { name: 'Pizza', icon: '…', blurb: '…', tags: { hot: 1, quick: 0.5 } },
+      const ROW = /\{ name: '((?:[^'\\]|\\.)*)', icon: '([^']*)', blurb: '((?:[^'\\]|\\.)*)', tags: \{([^}]*)\} \}/g
+      const rows = [...preview.matchAll(ROW)]
+      if (!rows.length) throw new Error('preview-check: no preview dishes found in lib/preview.ts')
+
+      for (const [, rawName, icon, rawBlurb, tagList] of rows) {
+        const name = rawName.replace(/\\'/g, "'")
+        const blurb = rawBlurb.replace(/\\'/g, "'")
+        const dish = real.get(name)
+        if (!dish) {
+          throw new Error(`preview-check: the preview offers "${name}", which is not in the catalogue`)
+        }
+        if (dish.icon !== icon) {
+          throw new Error(`preview-check: ${name} is ${dish.icon} in the catalogue, ${icon} in the preview`)
+        }
+        if (dish.blurb !== blurb) {
+          throw new Error(`preview-check: ${name}'s blurb does not match the catalogue`)
+        }
+
+        const claimed: Record<string, number> = {}
+        for (const pair of tagList.split(',')) {
+          const [tag, value] = pair.split(':').map((x) => x.trim())
+          if (tag) claimed[tag] = Number(value)
+        }
+        for (const tag of PREVIEW_TAGS) {
+          const mine = claimed[tag] ?? 0
+          const theirs = dish.level[tag] ?? 0
+          if (mine !== theirs) {
+            throw new Error(
+              `preview-check: ${name} is ${theirs} on "${tag}" in the catalogue, ${mine} in the preview`,
+            )
+          }
+        }
+      }
+
+      /*
+       * And the one number the preview writes down about the real game.
+       *
+       * The answer screen tells people this is five questions out of the real
+       * bank's twenty-eight. Nothing on this side can count that bank, so it
+       * is a literal — and an unchecked literal on this site is how "112
+       * dishes" survived three batches of new ones.
+       */
+      /*
+       * Counted inside the QUESTIONS array and at its own indent only. A sweep
+       * of the whole file counted 44: every question may carry two or three
+       * alternative wordings, which are objects of the same shape nested one
+       * level in, and the tag lists below look similar again.
+       */
+      const bank = data.slice(data.indexOf('var QUESTIONS = ['), data.indexOf('\n  ];', data.indexOf('var QUESTIONS = [')))
+      const asked = (bank.match(/^ {4}\{ /gm) ?? []).length
+      const claimed = Number(/export const REAL_QUESTIONS = (\d+)/.exec(preview)?.[1])
+      if (!asked || !claimed) {
+        throw new Error('preview-check: could not read the question count from data.js or preview.ts')
+      }
+      if (asked !== claimed) {
+        throw new Error(
+          `preview-check: the preview says the game asks ${claimed} questions, data.js has ${asked}`,
+        )
+      }
+
+      this.info(
+        `preview-check: ${rows.length} preview dishes match the catalogue, ${asked} questions`,
+      )
+    },
+  }
+}
+
+/*
+ * When each page last changed, for the sitemap's <lastmod>: the date of the
+ * last commit that touched the files the page is made from. It was the build
+ * time, which moved every page's date on every deploy — several a day — so
+ * the dates said "everything changed" when almost nothing had, and a sitemap
+ * whose dates are always new has them ignored. Baked in at build time,
+ * because the worker has no git and no memory of what changed.
+ */
+function lastChanged(...files: string[]): string {
+  try {
+    const out = execFileSync('git', ['log', '-1', '--format=%cI', '--', ...files], { encoding: 'utf8' }).trim()
+    if (out) return new Date(out).toISOString()
+  } catch {}
+  return new Date().toISOString()
+}
+const DISH_SOURCES = ['public/decide/js/data.js', 'public/decide/js/recipes.js', 'src/routes/eat.$dish.tsx', 'src/lib/recipes.ts', 'src/lib/dishes.ts', 'src/lib/dish-photos.json']
+const PAGE_DATES = {
+  '/': lastChanged('src/routes/index.tsx', 'src/lib/site.ts'),
+  '/decide/': lastChanged('public/decide/index.html', 'public/decide/js', 'public/decide/styles.css'),
+  '/eat': lastChanged('src/routes/eat.index.tsx', 'public/decide/js/data.js'),
+  '/premium': lastChanged('src/routes/premium.tsx', 'src/lib/site.ts'),
+  '/info': lastChanged('src/routes/info.tsx', 'src/lib/site.ts'),
+  '/how-it-works': lastChanged('src/routes/how-it-works.tsx'),
+  '/faq': lastChanged('src/routes/faq.tsx'),
+  '/honesty': lastChanged('src/routes/honesty.tsx'),
+  '/privacy': lastChanged('src/routes/privacy.tsx'),
+  dish: lastChanged(...DISH_SOURCES),
+}
+
 const config = defineConfig({
   resolve: { tsconfigPaths: true },
-  // When this build was made, for the sitemap's <lastmod>. It has to be baked
-  // in at build time: the worker has no memory of when it was deployed, and
-  // reading the clock at request time would report the moment of the request —
-  // a sitemap claiming every page changed seconds ago, every time it is read,
-  // which is exactly the pattern that gets lastmod ignored.
-  define: { __BUILT_AT__: JSON.stringify(new Date().toISOString()) },
+  define: {
+    __PAGE_DATES__: JSON.stringify(PAGE_DATES),
+  },
   plugins: [
     recipeBook(),
+    dietCheck(),
+    previewCheck(),
     buildId(),
     whop({ disableTanstackDevtools: true }),
     devtools(),

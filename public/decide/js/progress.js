@@ -69,14 +69,151 @@
 
   // Standing dietary rules. Each one bans a tag outright, so those dishes never
   // come up and the matching question is never asked.
+  /*
+   * ONE TAG EACH, and that is what separates this list from DIETS below.
+   *
+   * A rule here is a single thing somebody does not want, named the way they
+   * would name it. A diet is a set of them under one word. Both are free, both
+   * end up in the same place, and the only reason they are two lists is that
+   * "I am vegan" and "no mushrooms, thanks" are different sentences and ought
+   * to be different controls.
+   *
+   * It started at six and is now thirteen, because the diets need the parts
+   * they are built from to be reachable on their own. Somebody who keeps halal
+   * but drinks is better served by turning Halal on and No alcohol off than by
+   * being told the shortcut does not fit them.
+   */
   var RULES = [
-    { tag: 'meat',     label: 'No meat',        note: 'Nothing with meat in it' },
-    { tag: 'seafood',  label: 'No seafood',     note: 'No fish, no shellfish' },
-    { tag: 'cheesy',   label: 'No cheese',      note: 'Skip anything cheese-led' },
-    { tag: 'spicy',    label: 'Nothing spicy',  note: 'Keep the heat off' },
-    { tag: 'fried',    label: 'Nothing fried',  note: 'No deep-fried anything' },
-    { tag: 'caffeine', label: 'No caffeine',    note: 'Decaf life' }
+    { tag: 'meat',      label: 'No meat',          note: 'Nothing with meat in it' },
+    { tag: 'seafood',   label: 'No seafood',       note: 'No fish, no shellfish' },
+    { tag: 'pork',      label: 'No pork',          note: 'Bacon, ham and sausage included' },
+    { tag: 'beef',      label: 'No beef',          note: 'Nothing with beef in it' },
+    { tag: 'shellfish', label: 'No shellfish',     note: 'Prawns, crab, lobster, mussels' },
+    { tag: 'dairy',     label: 'No dairy',         note: 'Milk, cream, butter and cheese' },
+    { tag: 'egg',       label: 'No egg',           note: 'Including egg in the batter' },
+    { tag: 'cheesy',    label: 'No cheese',        note: 'Skip anything cheese-led' },
+    { tag: 'allium',    label: 'No onion or garlic', note: 'Leeks, shallots and chives too' },
+    { tag: 'root',      label: 'Nothing from underground', note: 'Potato, carrot, ginger, turmeric' },
+    { tag: 'alcohol',   label: 'No alcohol',       note: 'Including wine cooked into a sauce' },
+    { tag: 'spicy',     label: 'Nothing spicy',    note: 'Keep the heat off' },
+    { tag: 'fried',     label: 'Nothing fried',    note: 'No deep-fried anything' },
+    { tag: 'caffeine',  label: 'No caffeine',      note: 'Coffee, tea, and the rest of it' }
   ];
+
+  /*
+   * THE THINGS SOMEBODY DOES NOT EAT, named the way they would name them.
+   *
+   * RULES above are single tags, and they work because "no cheese" is one
+   * idea. Almost nothing anybody actually says about their diet is one idea:
+   * "I keep halal" is two, "I am vegan" is four, and "I am Jain" is five. So a
+   * diet is a name with a set of tags behind it, picked once, and the tags are
+   * an implementation detail nobody has to see.
+   *
+   * FREE, all of them, and that is not a pricing oversight — see the comment
+   * on the standing rules in app.js. An app that keeps serving a Muslim pork
+   * until they pay is not running a clever funnel. It is being deleted.
+   *
+   * THEY STACK, which is what stops this list having to hold every combination
+   * anybody lives by. Hindu and Vegetarian together is an ordinary thing to
+   * be, and so is Halal and No alcohol off; the union of whatever is switched
+   * on is the answer. That is why the faith entries below are the distinct
+   * RULES of a tradition rather than a guess at one person's whole practice,
+   * and why the ones that are commonly kept alongside vegetarianism say so
+   * instead of assuming it.
+   *
+   * WHAT THIS LIST IS NOT. It is not a ruling, and it is not a census. Every
+   * tradition here contains people who keep it differently, which is said out
+   * loud in the caveats rather than smoothed over: the entries that name a
+   * vegetarian form say "vegetarian" in the label so nothing here reads as the
+   * app telling somebody what their religion requires of them.
+   *
+   * WHAT THE `caveat` IS FOR. Several of these cannot be honoured by a tag,
+   * and pretending otherwise would be the worst thing in here. No catalogue
+   * knows whether an animal was slaughtered to a rite, whether a kitchen keeps
+   * meat and dairy pans apart, or whether the oil the chips went in had fish
+   * in it this morning. What this can do is keep the obvious things off the
+   * menu. The caveat says which part is which, and it is shown wherever the
+   * diet is offered rather than buried in a policy page — an honest limit
+   * stated up front is worth more to somebody who keeps a rule than a
+   * confident claim they will catch us out on by Thursday.
+   */
+  var DIETS = [
+    /* ---- by faith ---------------------------------------------------- */
+    { id: 'halal', group: 'faith', label: 'Halal', note: 'No pork, no alcohol',
+      tags: ['pork', 'alcohol'],
+      caveat: 'Keeps pork and alcohol off your menu. It cannot tell you whether ' +
+        'meat is zabiha or a kitchen is certified \u2014 only the kitchen can.' },
+
+    { id: 'kosher', group: 'faith', label: 'Kosher',
+      note: 'No pork or shellfish, never meat with dairy',
+      tags: ['pork', 'shellfish', 'meatdairy'],
+      caveat: 'Keeps pork, shellfish and meat-with-dairy off your menu. Kashrut ' +
+        'is a kitchen and a hechsher, and no app can stand in for either.' },
+
+    { id: 'hindu', group: 'faith', label: 'Hindu', note: 'Nothing with beef in it',
+      tags: ['beef'],
+      caveat: 'Beef is the rule most widely kept. Many Hindus are vegetarian as ' +
+        'well \u2014 add Vegetarian, or use Sattvic below, if that is how you eat.' },
+
+    { id: 'sattvic', group: 'faith', label: 'Sattvic',
+      note: 'Vegetarian, and no onion, garlic, alcohol or caffeine',
+      tags: ['meat', 'seafood', 'allium', 'alcohol', 'caffeine'] },
+
+    { id: 'jain', group: 'faith', label: 'Jain',
+      note: 'No meat, fish or egg, and nothing grown underground',
+      tags: ['meat', 'seafood', 'egg', 'allium', 'root'],
+      caveat: 'The strictest thing in this list, and this catalogue is short on ' +
+        'Jain cooking \u2014 expect mostly sweet things and drinks. Honey, and ' +
+        'food kept overnight, are past what a tag can see.' },
+
+    { id: 'buddhist', group: 'faith', label: 'Buddhist, vegetarian',
+      note: 'No meat or fish, no onion or garlic',
+      tags: ['meat', 'seafood', 'allium'],
+      caveat: 'Practice varies enormously and a great many Buddhists eat meat. ' +
+        'This is the Mahayana vegetarian form, pungent roots and all.' },
+
+    { id: 'sikh', group: 'faith', label: 'Sikh, vegetarian', note: 'No meat or fish',
+      tags: ['meat', 'seafood'],
+      caveat: 'Sikhi does not require vegetarianism, but langar always is and many ' +
+        'Sikhs eat this way. The rule that does apply either way \u2014 no kutha ' +
+        'meat \u2014 is about how an animal was killed, which nothing here can see.' },
+
+    { id: 'adventist', group: 'faith', label: 'Seventh-day Adventist',
+      note: 'No pork or shellfish, no alcohol or caffeine',
+      tags: ['pork', 'shellfish', 'alcohol', 'caffeine'],
+      caveat: 'Many Adventists keep a vegetarian diet as well \u2014 add Vegetarian ' +
+        'on top if you do.' },
+
+    { id: 'wordofwisdom', group: 'faith', label: 'Word of Wisdom',
+      note: 'No alcohol, coffee or tea',
+      tags: ['alcohol', 'caffeine'],
+      caveat: 'The Latter-day Saint health code. Where exactly caffeine ends is ' +
+        'something members decide for themselves; this takes coffee, tea and the ' +
+        'caffeinated drinks off and leaves the rest to you.' },
+
+    { id: 'ital', group: 'faith', label: 'Ital',
+      note: 'No meat, fish, dairy, egg or alcohol',
+      tags: ['meat', 'seafood', 'dairy', 'egg', 'alcohol'],
+      caveat: 'Rastafari livity. Ital also turns on salt and on how processed a ' +
+        'thing is, neither of which this catalogue records.' },
+
+    /* ---- by diet ------------------------------------------------------ */
+    { id: 'vegetarian', group: 'diet', label: 'Vegetarian', note: 'No meat, no fish',
+      tags: ['meat', 'seafood'] },
+
+    { id: 'vegan', group: 'diet', label: 'Vegan', note: 'No meat, fish, dairy or egg',
+      tags: ['meat', 'seafood', 'dairy', 'egg'],
+      caveat: 'Tagged by how a dish is normally made. Honey, gelatine and what the ' +
+        'bread was brushed with are past what the catalogue knows.' },
+
+    { id: 'pescatarian', group: 'diet', label: 'Pescatarian', note: 'Fish yes, meat no',
+      tags: ['meat'] }
+  ];
+
+  // The two entries that were single tags pretending to be diets. They are
+  // ordinary rules now — see RULES — so a profile that picked one before this
+  // split keeps exactly what it asked for rather than silently losing it.
+  var RETIRED_DIETS = { nobeef: 'beef', nopork: 'pork' };
 
   // The axes shown on the profile screen, drawn from how you tend to answer.
   var AXES = [
@@ -102,6 +239,9 @@
       streak: 0,
       streakBest: 0,
       lastPlayed: null,       // YYYY-MM-DD
+      plan: null,             // { id, hour, phrase, at } — see PLAN_CUES
+      resume: null,           // { code, at } — half a decide game, see app.js
+      whyAnswered: null,      // which option was tapped on the one-question ask
       nightOwl: false,
       earlyBird: false,
       badges: [],
@@ -110,6 +250,10 @@
       recent: [],             // [{ name, icon }], newest first
       favourites: [],         // [{ name, icon }] the player saved, newest first
       rules: [],              // tags never to be served, e.g. ['meat']
+      diets: [],              // DIETS ids picked on the way in, e.g. ['halal']
+      onboarded: false,       // has the first-run walkthrough been seen through
+      keep: '',               // '' | 'no' | 'done' — the home-screen offer
+      seen: null,             // YYYY-MM-DD of the visit before this one
 
       // --- morsels45 Premium ---
       plus: false,            // is the paid tier switched on
@@ -151,6 +295,9 @@
       endlessDay: null,       // YYYY-MM-DD the tally below belongs to
       endlessUsed: 0,         // picks taken today, against the free allowance
       endlessBest: 0,         // best score ever, kept for good
+      // 0 means "set under a balance nobody recorded" — every profile written
+      // before this field existed. See endlessRulesAre.
+      endlessRules: 0,
       endlessRuns: 0,         // runs finished, ever
       /*
        * The best run's shape, not just its total — score banked at every tenth
@@ -173,10 +320,6 @@
        * question, and asking a second time is not a survey, it is nagging.
        * 'later' is a dismissal — it comes back, but not soon.
        */
-      earn: '',               // '' | 'no' — whether the affiliate offer was declined
-      earnAt: 0,              // decisions at the last showing
-      earnShown: 0,           // times it has been shown, ever
-
       enjoy: '',              // '' | 'yes' | 'no' | 'later'
       enjoyAt: 0,             // when it was last put to them
       enjoyShown: 0,          // how many times it has been shown, ever
@@ -185,27 +328,30 @@
       shareAt: 0,             // decisions at the last showing
       shareShown: 0,          // times it has been shown, ever
 
-      /*
-       * The rotating offers (see ADS in app.js). `plusAd` and `earn` are the
-       * two final refusals — 'no' on either silences that whole kind of offer
-       * for good, not just the card that was on screen. `adAt` is where the
-       * rotation got to, saved so a new game opens on the next card rather
-       * than the same one every time.
-       */
-      plusAd: '',             // '' | 'no' — whether the Premium pitch was ended
-      adAt: 0,                // rotation cursor into ADS
-      adShown: 0,             // offers shown, ever — for the record, not a cap
+      // Said once, ever, on a genuine later-day return — see maybeShowComeback
+      // in app.js. There used to be a whole rotating roster of unsolicited
+      // Premium offers here (ambient timer, per-game budget, milestone and
+      // first-decision cards); all of it is gone, and this one flag is what
+      // replaced the state it used to need.
+      comebackShown: false,
 
-      // Decisions at the last prompt shown to a paying member. They only ever
-      // see the affiliate one, and only once every PLUS_PROMPT_EVERY.
-      plusPromptAt: 0,
+      // Whoever's invite link this profile arrived on — see the referral
+      // section in app.js. Set at most once, from the first ?ref= this
+      // profile ever saw, and never overwritten by a later one: it decides
+      // who a friend's ten minutes of play is worth a day of Premium to.
+      referredBy: null,
+      // The server's own running total for this profile's referral, in
+      // seconds — mirrored here only so the invite card has something to
+      // show between heartbeats. The ten-minute threshold is decided
+      // server-side; this number never counts anything on its own.
+      referralSeconds: 0,
 
       /*
        * What a Standard profile has used up of the AI features.
        *
-       * chatAsks is a lifetime count of questions put to the assistant, not a
-       * daily one: the free three are a trial of the thing, and a trial that
-       * refills every morning is not a trial, it is the product.
+       * chatAsks is a lifetime count of questions the assistant answered,
+       * kept for the record only. The free allowance is three a day and is
+       * counted by the server, not here — see lib/allowance.ts.
        *
        * menuAt is a timestamp rather than a count, because the meal creator
        * is one go every couple of days and the only thing worth storing is
@@ -283,6 +429,25 @@
         if (saved[k] !== undefined && saved[k] !== null) this.state[k] = saved[k];
       }, this);
     }
+
+    /*
+     * A diet that has since become an ordinary rule keeps working.
+     *
+     * dietTags() looks a diet up by id and skips one it does not recognise,
+     * which is the right thing to do with a stored id from the future and
+     * quite the wrong thing to do with one from the past: somebody who chose
+     * "No pork" would have had it silently stop applying on the morning the
+     * list was reorganised, with the row still showing nothing at all. A
+     * dietary rule failing open and saying nothing is the one outcome this
+     * whole area exists to prevent, so the id is translated instead.
+     */
+    var rules = this.state.rules || (this.state.rules = []);
+    this.state.diets = (this.state.diets || []).filter(function (id) {
+      var tag = RETIRED_DIETS[id];
+      if (!tag) return true;
+      if (rules.indexOf(tag) === -1) rules.push(tag);
+      return false;
+    });
   };
 
   Progress.prototype.save = function () {
@@ -415,7 +580,7 @@
   // either. Saving a dish is now something Premium does, whole, and the button
   // says so before it is pressed rather than after the third one.
   //
-  // Everything else free keeps: the game, all 112 dishes, the browser, the
+  // Everything else free keeps: the game, the whole catalogue, the browser, the
   // search, XP, levels, streaks and badges.
   var FREE_SAVES = 0;
 
@@ -531,6 +696,32 @@
 
   // Bank a finished run. Answers whether it was a personal best, which is the
   // only part of it worth saying out loud.
+  /*
+   * WHICH BALANCE THE STORED BEST WAS SET UNDER.
+   *
+   * A score is only a target if the next run is playing the same game. When
+   * the clock, the buy-back curve or the events change, every stored best
+   * becomes a number nobody can reach — and the pace marker, which races the
+   * saved curve the whole way down, would tell every run for the rest of time
+   * that it was losing. That is not a challenge, it is a locked door with a
+   * scoreboard on it.
+   *
+   * So the balance carries a number, and a best set under a different one is
+   * retired rather than kept. Returns true only when there was actually a
+   * score to lose, so nobody is told their record has gone when it was zero.
+   */
+  var ENDLESS_RULES = 2;
+
+  Progress.prototype.endlessRulesAre = function (rules) {
+    if (this.state.endlessRules === rules) return false;
+    var had = (this.state.endlessBest || 0) > 0;
+    this.state.endlessRules = rules;
+    this.state.endlessBest = 0;
+    this.state.endlessCurve = [];
+    this.save();
+    return had;
+  };
+
   Progress.prototype.recordEndless = function (score, curve) {
     this.state.endlessRuns = (this.state.endlessRuns || 0) + 1;
     if (score > (this.state.endlessBest || 0)) {
@@ -720,6 +911,216 @@
     return bucket;
   };
 
+  /* ------------------------------------------------------------ the plan */
+  /*
+   * AN IF-THEN PLAN, WHICH IS THE BEST-EVIDENCED THING IN THIS FILE.
+   *
+   * Gollwitzer's implementation intentions — binding a behaviour to a named
+   * cue, "after I X, I will Y" — run at about d = 0.65 across 94 studies,
+   * roughly a doubling of follow-through. Almost nothing else in behavioural
+   * science is both that well replicated and that cheap to build.
+   *
+   * It is also the one lever here that is unambiguously the user's own. The
+   * plan is written by them, in their words, about a thing they already want
+   * to happen; the app's entire role is to remember it and say it back at the
+   * right hour. Nothing is sent, nothing is scheduled without being asked for,
+   * and forgetting it is one tap.
+   *
+   * WHY A CUE AND NOT A TIME. "At 6pm" is a reminder and a reminder is a
+   * prompt somebody can ignore. "When I get in" is an anchor to something
+   * that already happens, which is the whole mechanism — the hour is only
+   * carried so the landing screen knows roughly when to expect them and so a
+   * calendar file has something to put in it.
+   */
+  var PLAN_CUES = [
+    { id: 'home',  label: 'When I get in',  hour: 18, phrase: 'when you get in' },
+    { id: 'six',   label: 'Around six',     hour: 18, phrase: 'around six' },
+    { id: 'seven', label: 'Around seven',   hour: 19, phrase: 'around seven' },
+    { id: 'eight', label: 'Around eight',   hour: 20, phrase: 'around eight' }
+  ];
+
+  Progress.prototype.plan = function () { return this.state.plan || null; };
+
+  Progress.prototype.setPlan = function (id, now) {
+    var cue = null;
+    for (var i = 0; i < PLAN_CUES.length; i++) if (PLAN_CUES[i].id === id) cue = PLAN_CUES[i];
+    if (!cue) return null;
+    this.state.plan = {
+      id: cue.id, hour: cue.hour, phrase: cue.phrase,
+      at: (now ? new Date(now) : new Date()).getTime()
+    };
+    this.save();
+    return this.state.plan;
+  };
+
+  Progress.prototype.clearPlan = function () {
+    this.state.plan = null;
+    this.save();
+  };
+
+  /** Already decided something today, so there is nothing to remind anybody of. */
+  Progress.prototype.decidedToday = function (now) {
+    return !!this.state.lastPlayed && this.state.lastPlayed === this.today(now);
+  };
+
+  /*
+   * Is this roughly the hour they named, and have they not done it yet?
+   *
+   * An hour either side, because "around seven" is not 19:00:00 and a window
+   * that only opens on the hour would miss most of the people it is for. It
+   * closes once they have decided today: the plan is for getting them fed,
+   * not for getting them back into the app.
+   */
+  Progress.prototype.planIsDue = function (now) {
+    var plan = this.plan();
+    if (!plan) return false;
+    if (this.decidedToday(now)) return false;
+    var hour = (now ? new Date(now) : new Date()).getHours();
+    var gap = Math.abs(hour - plan.hour);
+    return Math.min(gap, 24 - gap) <= 1;
+  };
+
+  /* ------------------------------------------------------------- noticing */
+  /*
+   * ONE TRUE THING ABOUT YOU, SAID AT THE END.
+   *
+   * The reward screen had elevation — confetti, a sound, XP — and nothing
+   * else. Of the four families of defining moment (elevation, insight, pride,
+   * connection), insight is the one a piece of software can actually deliver
+   * cheaply, because it already holds the evidence: sixty decisions with
+   * timestamps, a count per dish, and a yes/no tally per axis.
+   *
+   * So this returns a single sentence that is TRUE OF THE PERSON READING IT
+   * and that they did not say out loud. "That is the fourth time you have
+   * landed on ramen." Nobody tracks that about themselves. Being told it is
+   * the moment a profile stops being settings and starts being a thing that
+   * knows you — which is also, not coincidentally, the thing Premium is for.
+   *
+   * THE RULES.
+   *
+   * Everything here is counted, never inferred and never flattering. "You
+   * love spicy food" is a guess; "you have asked for heat nine times and
+   * turned it down once" is a fact with the arithmetic attached. If the
+   * numbers do not support a sentence, this returns null and the screen says
+   * nothing, which is a perfectly good outcome and happens often early on.
+   *
+   * DETERMINISTIC, on purpose. No shuffling, no random pick between several
+   * true things: the most specific applicable observation wins, always, so the
+   * same history produces the same sentence. An unpredictable reward on a
+   * screen somebody sees every night is a slot machine, and this app does not
+   * build those (see docs/persuasion.md).
+   */
+
+  /*
+   * How to say an axis out loud. Only the axes worth noticing are here — an
+   * observation about how often somebody wanted something handheld is true and
+   * boring, and a screen that says something boring every night trains people
+   * to stop reading it.
+   */
+  var LEANS = {
+    spicy:    { yes: 'asked for heat',            no: 'turned the heat down' },
+    sweet:    { yes: 'gone sweet',                no: 'gone savoury' },
+    hot:      { yes: 'wanted something hot',      no: 'wanted something cold' },
+    quick:    { yes: 'wanted it fast',            no: 'been happy to wait' },
+    comfort:  { yes: 'gone for comfort',          no: 'passed on comfort' },
+    light:    { yes: 'wanted something light',    no: 'wanted something heavier' },
+    fresh:    { yes: 'gone fresh',                no: 'gone the other way' },
+    indulgent:{ yes: 'gone indulgent',            no: 'kept it plain' },
+    cheap:    { yes: 'kept it cheap',             no: 'not minded the cost' }
+  };
+
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+
+  function ordinal(n) {
+    var rest = n % 100;
+    if (rest >= 11 && rest <= 13) return n + 'th';
+    // Indices 4..9 and 0 are absent from the list, so `|| 'th'` is the
+    // default — and it has to be applied to the SUFFIX, not to the whole
+    // string, or 4 concatenates to "4undefined" and that is truthy.
+    return n + (['th', 'st', 'nd', 'rd'][n % 10] || 'th');
+  }
+
+  /*
+   * Returns { text } or null. `item` is the dish just accepted; it has not
+   * been written to history yet when the reward screen asks, so the counts
+   * here are read AFTER recordDecision and include it.
+   */
+  Progress.prototype.noticing = function (item, now) {
+    var s = this.state;
+    var when = now ? new Date(now) : new Date();
+
+    /*
+     * 1. THE SAME DISH AGAIN. The most specific thing that can be said, and
+     *    the one people react to, because it is the one they half-knew.
+     */
+    var times = (s.picks || {})[item.name] || 0;
+    if (times >= 3) {
+      return { text: 'That is the ' + ordinal(times) + ' time you have landed on ' +
+        item.name.toLowerCase() + '. At this point it is just your dish.' };
+    }
+
+    /*
+     * 2. A SETTLED OPINION. Five or more on one side of an axis and at least
+     *    four to one — below that it is a run, not a preference, and calling
+     *    a run a preference is exactly the overclaiming this app is trying
+     *    not to do.
+     */
+    var best = null;
+    Object.keys(LEANS).forEach(function (tag) {
+      var bucket = (s.taste || {})[tag];
+      if (!bucket) return;
+      ['yes', 'no'].forEach(function (side) {
+        var mine = bucket[side] || 0;
+        var other = bucket[side === 'yes' ? 'no' : 'yes'] || 0;
+        if (mine < 5 || mine < other * 4) return;
+        if (!best || mine > best.mine) best = { tag: tag, side: side, mine: mine, other: other };
+      });
+    });
+    if (best) {
+      return { text: 'You have ' + LEANS[best.tag][best.side] + ' ' + plural(best.mine, 'time', 'times') +
+        ' and gone the other way ' + plural(best.other, 'time', 'times') + '. That is not a phase.' };
+    }
+
+    /*
+     * 3. THE SAME HOUR. Four decisions inside the same two-hour window is a
+     *    routine, and naming somebody's routine back to them is the cheapest
+     *    true surprise in the file.
+     */
+    var hour = when.getHours();
+    var sameHour = (s.history || []).filter(function (entry) {
+      var h = new Date(entry.at).getHours();
+      var gap = Math.abs(h - hour);
+      return Math.min(gap, 24 - gap) <= 1;
+    }).length;
+    if (sameHour >= 4) {
+      return { text: plural(sameHour, 'time', 'times') + ' now you have worked this out at ' +
+        'around this hour. Whatever else is going on, dinner has a slot.' };
+    }
+
+    /*
+     * 4. BREADTH. The one people are most pleased to be told, because the
+     *    fear behind "what should I eat" is usually that the answer is always
+     *    the same four things.
+     */
+    var distinct = Object.keys(s.picks || {}).length;
+    if (distinct >= 10 && s.decisions >= distinct) {
+      return { text: plural(distinct, 'different dish', 'different dishes') + ' so far, across ' +
+        plural(s.decisions, 'decision', 'decisions') + '. You are not in a rut.' };
+    }
+
+    /*
+     * 5. A ROUND NUMBER. Last, because it is about the app rather than about
+     *    them — but a count of decisions is a count of arguments that did not
+     *    happen, and that is worth one line every tenth time.
+     */
+    if (s.decisions >= 10 && s.decisions % 10 === 0) {
+      return { text: plural(s.decisions, 'decision', 'decisions') + ' made here. That is ' +
+        plural(s.decisions, 'evening', 'evenings') + ' you did not spend arguing about it.' };
+    }
+
+    return null;
+  };
+
   // How much a tap on a chip is worth, in games.
   var LOVE_WEIGHT = 3;
 
@@ -772,6 +1173,57 @@
     this.state.favourites = [{ name: item.name, icon: item.icon }].concat(list).slice(0, 60);
     this.save();
     return 'saved';
+  };
+
+  // The diets in one group, in the order they are written. The UI asks for a
+  // group rather than filtering the list itself, so adding one never means
+  // remembering to update a screen.
+  Progress.prototype.dietsIn = function (group) {
+    return DIETS.filter(function (d) { return d.group === group; });
+  };
+
+  Progress.prototype.hasDiet = function (id) {
+    return (this.state.diets || []).indexOf(id) !== -1;
+  };
+
+  // Set rather than flip, because the place that writes these is a list of
+  // choices being read back off a screen, not a switch being pressed.
+  Progress.prototype.setDiet = function (id, on) {
+    if (!DIETS.some(function (d) { return d.id === id; })) return false;
+    var list = this.state.diets || (this.state.diets = []);
+    var has = list.indexOf(id) !== -1;
+    if (on === has) return has;
+    this.state.diets = on
+      ? list.concat([id])
+      : list.filter(function (d) { return d !== id; });
+    this.save();
+    return !!on;
+  };
+
+  Progress.prototype.toggleDiet = function (id) {
+    return this.setDiet(id, !this.hasDiet(id));
+  };
+
+  // Every tag the chosen diets rule out, flattened and deduplicated. More than
+  // one can be on at once and they overlap freely — halal and vegetarian
+  // together is a perfectly ordinary thing to be, and the union is the answer.
+  Progress.prototype.dietTags = function () {
+    var out = [];
+    (this.state.diets || []).forEach(function (id) {
+      DIETS.forEach(function (diet) {
+        if (diet.id !== id) return;
+        diet.tags.forEach(function (tag) {
+          if (out.indexOf(tag) === -1) out.push(tag);
+        });
+      });
+    });
+    return out;
+  };
+
+  // The diets in force, as objects, for anything that has to name them.
+  Progress.prototype.dietsChosen = function () {
+    var self = this;
+    return DIETS.filter(function (d) { return self.hasDiet(d.id); });
   };
 
   Progress.prototype.hasRule = function (tag) { return (this.state.rules || []).indexOf(tag) !== -1; };
@@ -845,8 +1297,11 @@
     BADGES: BADGES,
     AXES: AXES,
     RULES: RULES,
+    DIETS: DIETS,
+    ENDLESS_RULES: ENDLESS_RULES,
     FREE_SAVES: FREE_SAVES,
     LOVE_WEIGHT: LOVE_WEIGHT,
+    PLAN_CUES: PLAN_CUES,
     XP: XP,
     blank: blank,
     dayKey: dayKey,

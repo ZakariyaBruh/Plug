@@ -13,15 +13,19 @@
     "deploy": "whop apps deploy",
     "typecheck": "tsc --noEmit",
     "indexnow": "node scripts/indexnow.mjs",
-    "test": "bun run scripts/whop-token-test.mjs"
+    "test": "bun run scripts/whop-token-test.mjs && bun run scripts/diet-test.mjs && bun run scripts/honesty-test.mjs && bun run scripts/nav-test.mjs && bun run scripts/accuracy-test.mjs && bun run scripts/mood-test.mjs && bun run scripts/allowance-test.mjs && bun run scripts/hooks-test.mjs && bun run scripts/gemini-test.mjs",
+    "drive": "node scripts/play-drive.mjs",
+    "retention": "node scripts/retention-drive.mjs"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-router": "latest",
     "@tanstack/react-router-devtools": "latest",
     "@tanstack/react-start": "latest",
-    "@whop/checkout": "^0.6.0",
+    "@whop/elements": "1.9.0",
+    "@whop/elements-react": "1.9.0",
     "@whop/sdk": "^1.1.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

@@ -3,100 +3,96 @@ import { useEffect } from 'react'
 
 import { PageShell } from '#/components/PageShell'
 import { loadViewer } from '#/lib/viewer'
-import { PREMIUM_PLAN_ID } from '#/lib/products'
-import { InstallApp } from '#/components/InstallApp'
 import { JsonLd } from '#/components/JsonLd'
-import {
-  DISH_COUNT,
-  OFFER,
-  OFFER_SHORT,
-  PRICE,
-  PRICE_MONTHLY,
-  PRICE_VALUE,
-  PREMIUM_SECTIONS,
-  SITE_CARD,
-  SITE_DESCRIPTION,
-  SITE_NAME,
-  SITE_TITLE,
-  SITE_URL,
-  STANDARD,
-  TRIAL_DAYS,
-  pageHead,
-  track,
-} from '#/lib/site'
+import { DISH_COUNT, OFFER, SITE_NAME, SITE_TITLE, SITE_META_DESCRIPTION, SITE_URL, pageHead, track } from '#/lib/site'
 
 export const Route = createFileRoute('/')({
   loader: () => loadViewer(),
-  head: () =>
-    pageHead({
+  head: () => ({
+    ...pageHead({
       path: '/',
       title: SITE_TITLE,
-      description: SITE_DESCRIPTION,
+      description: SITE_META_DESCRIPTION,
     }),
+    meta: [
+      ...(pageHead({
+        path: '/',
+        title: SITE_TITLE,
+        description: SITE_META_DESCRIPTION,
+      }).meta || []),
+      {
+        name: '8c05a9c7e728a9bdcd859b116fa7b4d7c713ac2c',
+        content: '8c05a9c7e728a9bdcd859b116fa7b4d7c713ac2c',
+      },
+    ],
+  }),
   component: HomePage,
 })
 
-// No rating is claimed here. There is no honest number to put in one yet, and
-// an invented one is the sort of thing that gets structured data ignored.
 /*
- * The site's own name.
- *
- * A result for this site showed "whop.site" where the name should be, because
- * that is the registrable domain and nothing here had ever said otherwise.
- * The name in a search result comes from WebSite structured data on the
- * homepage — a different entity from the WebApplication below, which describes
- * what the thing does rather than what the site is called.
+ * The site and who is behind it. Organization with a logo is what search
+ * engines use for the name and icon beside results from this site.
  */
-const SITE_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: SITE_NAME,
-  alternateName: 'morsels45 — what should you eat?',
-  url: SITE_URL,
-}
-
-const APP_SCHEMA = {
-  '@context': 'https://schema.org',
-  '@type': 'WebApplication',
-  name: SITE_NAME,
-  url: SITE_URL,
-  description: SITE_DESCRIPTION,
-  image: SITE_CARD,
-  applicationCategory: 'LifestyleApplication',
-  operatingSystem: 'Any',
-  browserRequirements: 'Requires JavaScript.',
-  // A search result draws the little site icon from the favicon and the
-  // organisation's logo from here. They are different slots and this one was
-  // empty, so there was nothing to draw. Square PNG, as the guidance asks.
-  publisher: {
+const SITE_SCHEMA = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE_NAME,
+    url: SITE_URL,
+  },
+  {
+    '@context': 'https://schema.org',
     '@type': 'Organization',
     name: SITE_NAME,
     url: SITE_URL,
-    logo: {
-      '@type': 'ImageObject',
-      url: `${SITE_URL}/icon-512.png`,
-      width: 512,
-      height: 512,
-    },
+    logo: `${SITE_URL}/icon-512.png`,
   },
-  offers: [
-    {
-      '@type': 'Offer',
-      name: 'Standard',
-      price: '0',
-      priceCurrency: 'USD',
-      description: `The Decide game, all ${DISH_COUNT} dishes, browse and search, XP and streaks.`,
-    },
-    {
-      '@type': 'Offer',
-      name: 'Premium',
-      price: String(PRICE_VALUE),
-      priceCurrency: 'USD',
-      description: `Always avoid, the extra modes, cook mode, the shared browser, unlimited saves. ${OFFER}.`,
-      url: `${SITE_URL}/premium`,
-    },
-  ],
-}
+]
+
+const HOME_TIERS: { name: string; note: string; premium?: boolean; items: [string, string][] }[] = [
+  {
+    name: 'Free',
+    note: 'No sign-up.',
+    items: [
+      ['Decide', 'answer a few either-ors, get one dish; seven ways to play'],
+      [`${DISH_COUNT} dishes`, 'with recipes and shopping lists'],
+      ['Your food rules', 'halal, kosher, vegetarian, an allergy — never offered again'],
+      ['Ask the AI', 'three food questions a day'],
+      ['Food news', 'the day’s headlines from eight publishers'],
+      ['Nearby', 'somewhere close that actually serves it'],
+    ],
+  },
+  {
+    name: 'Free with an account',
+    note: 'Just sign in with Whop — same on every device.',
+    items: [
+      ['Meal-prep calendar', 'plan the week; its AI fills the gaps and plans your prep'],
+      ['TV to cook and eat to', 'one group free every day (food shows, music, comedy, travel and more); every group with Premium'],
+      ['Radio to cook and eat to', 'one group free every day (food and dining, jazz, classical, oldies and more); every group with Premium'],
+      ['Kitchen timers & converter', 'several timers at once; cups, ounces, gas marks'],
+      ['In season', 'what is good this month, and what to cook with it'],
+      ['The daily three', 'a mood, one good thing, a food question'],
+    ],
+  },
+  {
+    name: 'Premium',
+    note: `${OFFER}.`,
+    premium: true,
+    items: [
+      ['Shopping list', 'your whole week, merged and sorted by aisle'],
+      ['Nutrition & budget', 'your week counted and costed, with cheaper swaps'],
+      ['Dinner party planner', 'a menu every guest can eat, and a timeline'],
+      ['Your own recipes', 'type them, photograph them, or paste them in'],
+      ['Recipes from websites', 'just the recipe, from almost any site'],
+      ['Scan food', 'how healthy is it? a plain answer and a score'],
+      ['Fridge photo', 'snap the fridge, get dinner'],
+      ['Hands-free cook mode', 'steps read aloud; say “next”'],
+      ['Daily AI briefing', 'the food news in a minute'],
+      ['Shared browser', 'order, shop or cook along together, a cursor each'],
+      ['Learns your taste', 'stops repeating itself; six more ways to play'],
+    ],
+  },
+]
 
 function HomePage() {
   const viewer = Route.useLoaderData()
@@ -108,205 +104,92 @@ function HomePage() {
   return (
     <PageShell user={viewer.user}>
       <JsonLd data={SITE_SCHEMA} />
-      <JsonLd data={APP_SCHEMA} />
       <main>
         <section className="relative overflow-hidden">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 opacity-40"
+            className="pointer-events-none absolute inset-0"
             style={{
               background:
-                'radial-gradient(ellipse 70% 50% at 50% -10%, #e0a34033, transparent 60%)',
+                'radial-gradient(ellipse 70% 50% at 50% -10%, #e0a34014, transparent 60%)',
             }}
           />
-          <div className="relative mx-auto max-w-5xl px-6 pt-16 pb-20 text-center fade-in-up sm:pt-24">
+          <div className="relative mx-auto max-w-3xl px-6 pt-16 pb-24 text-center">
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
               morsels45
             </p>
-            <h1 className="mt-4 text-4xl font-bold leading-[1.1] sm:text-6xl">
-              You&rsquo;re hungry.
+            <h1 className="mt-6 text-4xl font-bold leading-tight sm:text-6xl">
+              Everything food,
               <br />
-              You don&rsquo;t know what you want.
-              <br />
-              <em className="font-semibold text-[var(--amber)]">That&rsquo;s alright — I might.</em>
+              <em className="font-semibold text-[var(--amber)]">in one place.</em>
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-lg text-[var(--text-dim)]">
-              A few easy either-ors — sweet or savoury, hot or cold, hands or cutlery — and
-              we&rsquo;ll work out what you actually feel like. Usually in about eight questions.
+              Decide what to eat in a few taps. Plan the week and let AI fill the gaps. Shop it,
+              cook it hands-free, and catch up on food news, TV and radio &mdash; all built around
+              what you do and don&rsquo;t eat.
             </p>
-            {/* "Play free", not "Decide for me".
-                This page and the app's own opening screen looked like the same
-                screen and said the same words: the same headline, the same
-                either-ors paragraph, the same counts — and the same button. So
-                the button here read as the thing that does the deciding, when
-                it is a link to somewhere else that does it, and there was no
-                way to tell from looking which of the two pages was the app.
-                "Decide for me" still exists, once, on the screen where it is
-                literally true. Here it is an invitation in, and says so — and
-                says the price, because the whole decide game really is free and
-                a stranger has no way of knowing that from a page with a
-                Premium button next to it. */}
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <a
                 href="/decide/"
-                className="inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
+                onClick={() => track('go_to_game', { from: 'home' })}
+                className="rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
               >
-                Play free
+                Open morsels45
               </a>
               <Link
-                to="/premium"
-                className="inline-block rounded-full border border-[var(--border)] px-8 py-3 font-semibold hover:border-[var(--amber)]"
+                to="/info"
+                className="text-sm text-[var(--amber)] underline underline-offset-4 hover:text-[var(--amber-dark)]"
               >
-                See Premium — {OFFER_SHORT}
+                See everything in it
               </Link>
             </div>
-            <p className="mt-6 text-sm text-[var(--text-dim)]">No account. No email. Free to play. Premium is extra.</p>
-
-            {/* Android or iOS only, decided in the browser — see InstallApp. */}
-            <InstallApp />
-
-            <ul className="mx-auto mt-14 grid max-w-2xl grid-cols-3 gap-4 text-center">
-              {[
-                [String(DISH_COUNT), 'dishes'],
-                ['8', 'questions to an answer'],
-                [PRICE, `a month, after ${TRIAL_DAYS} free days`],
-              ].map(([n, label]) => (
-                <li key={label} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-raised)] px-3 py-5">
-                  <b className="block text-2xl font-bold sm:text-3xl">{n}</b>
-                  <span className="mt-1 block text-xs text-[var(--text-dim)] sm:text-sm">{label}</span>
-                </li>
-              ))}
-            </ul>
           </div>
         </section>
 
+        {/*
+          WHAT IT IS, BY WHAT IT COSTS YOU.
+          The homepage sold one thing — a game that decides dinner — and the
+          price next to it read as $3.45 a month for a questionnaire. What is
+          actually here is a food hub, and the honest way to show a hub is all
+          of it at once, sorted by what each part asks of you: nothing, a
+          sign-in, or Premium. Short lines; /info and /premium have the detail.
+        */}
         <section className="border-t border-[var(--border)] py-16">
           <div className="mx-auto max-w-5xl px-6">
-            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">How it works</p>
-            <h2 className="mt-2 text-3xl font-bold">Three beats. Dinner.</h2>
-            <ol className="mt-10 grid gap-6 sm:grid-cols-3">
-              {[
-                ['01', 'Answer either-ors', 'There are no wrong ones. Skip with “either” if you honestly do not mind.'],
-                ['02', 'Watch it narrow', 'The catalogue shrinks as you go. You can see it happening.'],
-                ['03', 'Get one answer', 'And a way to actually get it — cook it, or find it nearby (Premium).'],
-              ].map(([n, title, body]) => (
-                <li key={n} className="rounded-2xl border border-[var(--border)] p-6">
-                  <p className="text-sm font-semibold text-[var(--amber)]">{n}</p>
-                  <h3 className="mt-2 text-xl font-semibold">{title}</h3>
-                  <p className="mt-2 text-sm text-[var(--text-dim)]">{body}</p>
-                </li>
-              ))}
-            </ol>
-            <Link to="/how-it-works" className="mt-8 inline-block text-sm text-[var(--amber)] underline underline-offset-4">
-              The full walkthrough
-            </Link>
-          </div>
-        </section>
-
-        <section className="border-t border-[var(--border)] bg-[var(--bg-raised)] py-16">
-          <div className="mx-auto max-w-5xl px-6">
-            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Play it as a game</p>
-            <h2 className="mt-2 text-3xl font-bold">Six modes. Premium only.</h2>
-            <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              Standard is the questions. Premium is Knockout, Blitz, This or that, Shortlist,
-              Together and Swipe &mdash; plus Always avoid, so the free game stops asking you about
-              food you never eat.
-            </p>
-            <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {[
-                ['🥊', 'This or that', 'One champion, endless challengers. Winner stays on until something knocks it off.'],
-                ['🏆', 'Knockout', '8 dishes enter a bracket. Round of 8, semifinal, final. One walks out dinner.'],
-                ['⚡', 'Blitz', 'Thirty seconds, and rounds that keep changing the rules. However many picks you get through is the score.'],
-                ['🎲', 'Shortlist', 'Eight dishes from what you like. One of them lands. No questions.'],
-                ['👥', 'Together', 'Up to six of you, one phone. Five either-ors each, then one dish the whole table can live with.'],
-                ['💘', 'Swipe', 'One dish at a time. Right for yes, left for no — and every no sharpens what comes next.'],
-              ].map(([icon, name, hook]) => (
-                <div key={name} className="rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-6">
-                  <p className="text-2xl" aria-hidden="true">
-                    {icon}
+            <h2 className="text-center text-3xl font-bold">What&rsquo;s inside</h2>
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              {HOME_TIERS.map((tier) => (
+                <div
+                  key={tier.name}
+                  className={
+                    'rounded-2xl border p-7 ' +
+                    (tier.premium ? 'border-[var(--amber)] bg-[var(--amber-soft)]' : 'border-[var(--border)]')
+                  }
+                >
+                  <p className={'text-sm font-semibold uppercase tracking-widest ' + (tier.premium ? 'text-[var(--amber)]' : 'text-[var(--text-dim)]')}>
+                    {tier.name}
                   </p>
-                  <h3 className="mt-3 font-semibold">{name}</h3>
-                  <p className="mt-2 text-sm text-[var(--text-dim)]">{hook}</p>
+                  <p className="mt-1 text-sm text-[var(--text-dim)]">{tier.note}</p>
+                  <ul className="mt-5 space-y-3 text-sm">
+                    {tier.items.map(([title, line]) => (
+                      <li key={title}>
+                        <span className="font-semibold">{title}</span>{' '}
+                        <span className="text-[var(--text-dim)]">&mdash; {line}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-
-        <section className="border-t border-[var(--border)] py-16">
-          <div className="mx-auto max-w-5xl px-6">
-            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Standard vs Premium</p>
-            <h2 className="mt-2 text-3xl font-bold">Always avoid is not on Standard.</h2>
-            <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              The free game is the whole decide loop. Dietary bans, cook mode, saved dishes and the
-              extra game modes stay behind Premium — they do not quietly run on a free profile.
-            </p>
-            <div className="mt-10 grid gap-6 md:grid-cols-2">
-              <div className="rounded-2xl border border-[var(--border)] p-8">
-                <p className="text-sm font-semibold uppercase tracking-widest text-[var(--text-dim)]">Standard</p>
-                <p className="mt-1 text-3xl font-bold">Free</p>
-                <ul className="mt-6 space-y-3 text-sm text-[var(--text-dim)]">
-                  {STANDARD.map((line) => (
-                    <li key={line}>— {line}</li>
-                  ))}
-                </ul>
-                <a
-                  href="/decide/"
-                  className="mt-8 inline-block rounded-full border border-[var(--border)] px-6 py-3 text-sm font-semibold hover:border-[var(--amber)]"
-                >
-                  Play free
-                </a>
-              </div>
-              <div className="rounded-2xl border border-[var(--amber)] bg-[var(--amber-soft)] p-8">
-                <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Premium</p>
-                <p className="mt-1 text-3xl font-bold">{OFFER_SHORT}</p>
-                <p className="text-sm text-[var(--text-dim)]">then {PRICE_MONTHLY}</p>
-                <ul className="mt-6 space-y-3 text-sm">
-                  {PREMIUM_SECTIONS.map((section) => (
-                    <li key={section.name}>
-                      <span className="font-semibold">{section.name}.</span>{' '}
-                      <span className="text-[var(--text-dim)]">
-                        {section.items.map(([title]) => title).join(', ')}.
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                {viewer.hasPremium ? (
-                  <a
-                    href="/decide/"
-                    className="mt-8 inline-block rounded-full bg-[var(--amber)] px-6 py-3 text-sm font-semibold text-black hover:opacity-90"
-                  >
-                    Play now
-                  </a>
-                ) : (
-                  <Link
-                    to="/checkout/$planId"
-                    params={{ planId: PREMIUM_PLAN_ID }}
-                    onClick={() => track('add_to_cart', { value: PRICE_VALUE, currency: 'USD' })}
-                    className="mt-8 inline-block rounded-full bg-[var(--amber)] px-6 py-3 text-sm font-semibold text-black hover:opacity-90"
-                  >
-                    Start {TRIAL_DAYS} days free
-                  </Link>
-                )}
-              </div>
+            <div className="mt-10 flex flex-col items-center gap-3 text-center">
+              <Link
+                to="/premium"
+                className="rounded-full border border-[var(--amber)] px-6 py-3 text-sm font-semibold text-[var(--amber)] hover:bg-[var(--amber-soft)]"
+              >
+                See Premium &mdash; {OFFER}
+              </Link>
+              <p className="text-xs text-[var(--text-dim)]">Deciding and your food rules stay free, whatever you choose.</p>
             </div>
-          </div>
-        </section>
-
-        <section className="border-t border-[var(--border)] py-16 text-center">
-          <div className="mx-auto max-w-3xl px-6 fade-in-up">
-            <h2 className="text-3xl font-bold">Hungry. Undecided. Sorted.</h2>
-            <p className="mt-3 text-[var(--text-dim)]">Twenty seconds. One answer. Then go eat it.</p>
-            {/* Same words as the button at the top of this page. Two buttons
-                doing the same thing on one page should not disagree about what
-                the thing costs. The Premium column above keeps "Play now",
-                because somebody who has paid is not playing free. */}
-            <a
-              href="/decide/"
-              className="mt-8 inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
-            >
-              Play free
-            </a>
           </div>
         </section>
       </main>

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { AFFILIATES_URL, SITE_URL, pageHead } from '#/lib/site'
+import { GA4_ON, REPLAY_ON, SITE_URL, WHOP_PAGE_URL, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
@@ -27,27 +27,41 @@ export const Route = createFileRoute('/privacy')({
 })
 
 /** Last time the wording was reviewed against the code. */
-const REVIEWED = '17 September 2026'
+const REVIEWED = '14 October 2026'
 
-type Section = { heading: string; body: string[] }
+/*
+ * `lede` is the section's answer, in one sentence, at full brightness. `body`
+ * is the detail underneath it in dim text.
+ *
+ * WHY THE SPLIT EXISTS. This page was eleven headings and about fifteen
+ * hundred words, every paragraph the same size and the same grey. Everything
+ * on it was true and none of it was obvious: somebody who wanted to know
+ * whether the app tracks them had to read three sections to find out that it
+ * mostly cannot, because the thing that answers them was in the middle of a
+ * paragraph about local storage. A policy nobody can skim is a policy nobody
+ * reads, and an unread policy protects nobody — which for a product with a
+ * standards page is worse than an ordinary one, because it was supposed to be
+ * the part you could check.
+ *
+ * So every section now leads with its own answer and `id` is its anchor, so
+ * the contents at the top can jump straight to it.
+ */
+type Section = { id: string; heading: string; lede: string; body: string[] }
 
 const SECTIONS: Section[] = [
   {
-    heading: 'The short version',
-    body: [
-      'You can play the whole game without an account, and nothing you do in it is sent to us. Your picks, ratings, streaks, XP, dietary rules and saved dishes are written to your own browser and stay there.',
-      'You only hand over anything when you sign in with Whop to buy Premium, or when you use a feature that needs an outside service to work — the AI, the shared browser, or finding somewhere to eat nearby. Each of those is named below.',
-    ],
-  },
-  {
+    id: 'your-browser',
     heading: 'What is stored in your browser',
+    lede: 'One entry in your browser, which we cannot read and which is not tied to your name.',
     body: [
-      'One entry in your browser’s local storage, called whatShouldIEat.v1. It holds everything the game knows about you: which dishes you have picked and rated, how often, your level, XP, streak and badges, any dietary rules you have set, dishes you have saved or struck off, and today’s five suggestions so a second visit does not have to fetch them again.',
+      'One entry in your browser’s local storage, called whatShouldIEat.v1. It holds everything the game knows about you: which dishes you have picked and rated, how often, your level, XP, streak and badges, the diets and rules you have set — including any faith you picked one under — dishes you have saved or struck off, your settings, the date you last opened it so it can say \u201cwelcome back\u201d, and today\u2019s suggestions so a second visit does not have to fetch them again.',
       'It never leaves your device. We cannot read it, it is not backed up anywhere, and it is not tied to a name. Clearing your browser data for this site deletes it permanently — there is no copy to restore from, which is the trade for not having to make an account.',
     ],
   },
   {
+    id: 'signing-in',
     heading: 'If you sign in or subscribe',
+    lede: 'Two cookies, and Whop holds everything else — this app never sees your card, your email or your name.',
     body: [
       'Signing in is handled by Whop. When you do, two cookies are set on this site — wa and wr — which hold the tokens that prove to this app that you are signed in and whether your subscription is active. They are how Premium follows you to another device instead of being locked to one browser.',
       'Payments happen on Whop, not here. This app never sees your card, and it does not store your email or your name — when it needs to know who you are or whether you have paid, it asks Whop and uses the answer.',
@@ -55,58 +69,210 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    id: 'ai',
     heading: 'The AI features',
+    lede: 'Three features send what you type to Google, with nothing attached that says who you are.',
     body: [
       'Ask anything, the menu builder and the five daily suggestions are answered by Google’s Gemini. What you type into the chat box, or the situation you describe to the menu builder, is sent to Google to be answered, along with a short list of dishes you have liked and avoided so the answer is worth having.',
       'Nothing identifying goes with it: no name, no email, no account number, no location. Google’s own terms govern what they do with it, and if that is not something you want, those three features are the only ones that use them — the decide game itself never calls out anywhere.',
     ],
   },
   {
+    id: 'nearby',
     heading: 'Nearby, and your location',
+    lede: 'Only if you allow it, only to the map services, and never to us.',
     body: [
       'Nearby asks your browser for your location, and your browser asks you first. Say no and the feature simply does not run; nothing else in the app is affected.',
       'If you say yes, your coordinates are sent to the map services that can answer the question — OpenStreetMap’s Overpass and Nominatim, and Photon — to look up places around you. They are not sent to us, and they are not stored anywhere by this app.',
     ],
   },
   {
+    id: 'local-price',
+    heading: 'The price, in your currency',
+    lede: 'Two lookups by your IP, with no prompt first, because that is all an IP address is good for here.',
+    body: [
+      'The Premium price is quoted in US dollars, because that is the currency the plan is actually priced in. On the pricing page, your browser separately asks two public services what that comes to where you are: freeipapi.com, for which currency your country uses, and open.er-api.com, for today’s exchange rate. Neither is told anything beyond the request itself, and neither is us — this app’s own server is not involved and stores nothing from either answer.',
+      'Unlike Nearby, this runs without asking first, the same way any website knows roughly where to send a page before you click anything on it. If either service cannot answer, or answers with a currency this browser does not know how to print, nothing is shown — there is no second, guessed version of the number.',
+      'It is also only ever an estimate. What you are actually charged is set at checkout, by Whop, which handles tax and currency itself — see the note above the price on that page.',
+    ],
+  },
+  {
+    id: 'shared-browser',
     heading: 'The shared browser',
+    lede: 'Treat it as a shared screen, because that is exactly what it is.',
     body: [
       'Order it together, cook along and shop the list together run a real browser on a service called Hyperbeam, which both of you drive. Anything you type in that browser — including anything you type into somebody else’s checkout — goes to Hyperbeam and to the site you are visiting, exactly as it would in a normal browser.',
       'Treat it as a shared screen, because that is what it is: whoever has the link can see what is on it.',
     ],
   },
   {
+    id: 'news',
     heading: 'The news page',
+    lede: 'Our server fetches the headlines, so the publishers never see you at all.',
     body: [
       'Headlines are fetched by this site’s own server, not by your browser. That means the publishers never see you: no request from your device reaches the Guardian, Eater, NYT Dining, The Kitchn, Smitten Kitchen, Saveur or King Arthur Baking unless you tap through to read the article, at which point you are on their site under their rules.',
     ],
   },
   {
-    heading: 'Analytics, and what counts as one',
+    id: 'hub',
+    heading: 'The planner and the kitchen',
+    lede: 'Your week and your cookbook are kept against your Whop account so they follow you between devices. Photos and voice are never kept.',
     body: [
-      'This app is hosted by Whop, which adds its own analytics to every page it serves — that is the platform’s, not ours, and it is covered by Whop’s privacy policy. The one thing this app tells it directly is that somebody reached an answer and accepted it. No dish name, no profile, nothing about who.',
-      'There is no Google Analytics here, no advertising pixel of our own, and nothing that follows you to other sites.',
+      'If you use the meal planner, each week you plan is stored in our database (Turso) against your Whop user id: the dishes, recipes and notes in each slot, which shopping-list lines you ticked, your household size and the prep plan. If you are on Premium and save recipes to your cookbook, each one is stored the same way. Delete a recipe and it is deleted; tell us and we will delete the lot. We also count how many AI requests each account makes per feature per day, so one account cannot run up the bill; those counts are deleted every day.',
+      'The planner’s AI, the dinner-party planner and the nutrition and cost estimates send Google’s Gemini the dish names involved and the food rules that apply — never your name, and for a dinner party only how many guests there are, not who. Nutrition and cost estimates are worked out per dish and shared by everyone (a lasagne’s nutrition does not depend on who asked), so they are not linked to you.',
+      'A fridge photo, or a photo of a recipe you are copying, is shrunk on your device, sent once to Gemini to read, and not stored by us anywhere — not in the database, not in a log; only the recipe you choose to save is kept. A recipe you paste in is sent to Gemini to be tidied up. When you get a recipe from a website, our server fetches the page you gave it, so that website sees our server and not you; if the page has no recipe card, the page’s text (not anything about you) is sent to Gemini to read the recipe out of it.',
+      'When you scan food, the barcode is read on your device — by your browser, or by an open-source reader (ZXing) that your browser downloads from the jsDelivr CDN the first time you scan. Our server then asks Open Food Facts about that barcode and nothing else, and keeps the product’s details for a week for everybody. Your recent scans are remembered in this browser only.',
+      'Hands-free cook mode reads the steps aloud on your device. Its voice commands use your browser’s own speech recognition, which in Chrome sends what the microphone hears to Google to be transcribed — that is your browser’s doing, under its own privacy terms, and we never receive the audio. Timers, nutrition targets, your budget, dinner-party drafts and recent scans stay in this browser only.',
     ],
   },
   {
-    heading: 'Server logs',
+    id: 'tv',
+    heading: 'TV',
+    lede: 'The channel hears you watch it, the way any website hears you visit it. The guide is fetched by us, so the listing services never see you.',
     body: [
-      'The AI features limit how often one person can call them, which means the server briefly holds the IP address your request arrived from. It is kept in memory only, for as long as the limit window lasts, and is never written to a database or attached to anything else about you.',
+      'The channels are free, ad-supported channels listed in iptv-org, an open database of free TV — food channels, and groups of others to watch while you cook and eat. Our server reads iptv-org’s list once an hour, so iptv-org sees our server, never your device. What is on now and next is fetched by our server from the guide services each channel publishes its listings to — Plex and Pluto TV — so those services do not see you either.',
+      'When you open a TV group, your browser checks each candidate channel in it before listing it, with one small request to that channel’s own stream server (up to about twenty of them), so you only see the channels that actually play where you are. Those servers see your IP address when it checks, as any website would.',
+      'When you press play, your browser streams the channel straight from that channel’s own servers, which see your IP address and your browser, exactly as any website does, and may count the view for their adverts. The video player code is a well-known open-source library (hls.js), loaded from the jsDelivr CDN the first time you press play, so jsDelivr sees that request too. morsels45 does not relay, record or keep a history of what you watch.',
+    ],
+  },
+  {
+    id: 'radio',
+    heading: 'Radio',
+    lede: 'The station hears you play it, the way any website hears you visit it. Nobody else does.',
+    body: [
+      'The list of stations comes from Radio Browser (radio-browser.info), a free community directory. This site’s server asks it for the list, so the directory never sees your device. When you play a station, the server also tells the directory which station was played — the station’s id and nothing else, no account and no address — because counting plays is how the directory ranks stations and its terms ask every app to do it.',
+      'The music itself streams straight from the station to your browser. That means the station sees your IP address and your browser, exactly as any website you visit does, and its own privacy policy applies to that. morsels45 does not relay, record or keep a history of what you listen to; the last channel and station are remembered in this browser only, so the radio can pick up where you left off.',
+    ],
+  },
+  {
+    id: 'daily',
+    heading: 'The daily three',
+    lede: 'Your mood, your one good thing and your trivia answer, kept against your Whop account so they follow you between devices.',
+    body: [
+      'If you use the daily check-in, the one-line journal or the daily question, what you enter is stored in our database against your Whop user id, one row a day for each: the mood you tapped, the line you wrote, the answer you picked. That is what lets your streak and yesterday’s line be there when you sign in on another device. It is used for nothing else and shown to nobody else.',
+    ],
+  },
+  {
+    /*
+     * REWRITTEN BECAUSE IT WAS WRONG.
+     *
+     * It said the one thing reported was that somebody reached an answer,
+     * "no dish name" — and the event had carried the dish name since the day
+     * it was written. Then the funnel events were added and it became wronger.
+     * A privacy page that describes less than the product sends is the only
+     * kind of inaccuracy here that actually matters, so this now lists every
+     * event by name and says what rides on each.
+     */
+    id: 'analytics',
+    heading: 'Analytics, and what counts as one',
+    lede: 'Seventeen events, listed by name, and none of them carries anything about you.',
+    body: [
+      'This app is hosted by Whop, which adds its own analytics to every page it serves — that is the platform’s, not ours, and it is covered by Whop’s privacy policy.',
+      ...(GA4_ON
+        ? [
+            'Google Analytics 4 is also on. It counts page views and receives the same short list of events below — the same names and the same payloads, not a second, richer copy. It is set up without Google Signals, without advertising features, without a user id and without demographics, so what it knows is what happened on this site rather than who did it. Google’s own terms cover what they do with that.',
+          ]
+        : []),
+      'What this app tells them directly is a short list, and here is all of it: that a decision started, that it reached an answer, that an answer was accepted, that a Premium card was shown, that somebody tapped through to pay, and — if you answer the one-tap question that comes up after five decisions — which of the four options you tapped. Three more about coming back: that somebody returned on a later day and how many days it had been, that the home-screen offer was shown, and that it was taken. One more after an answer: which of the free things on the “while you’re here” row was tapped. The site’s own pages around the game add six: that a page was viewed, that a checkout button was pressed, that somebody tapped “pick for me” on the homepage, and — on the homepage’s five-question preview — that it reached an answer, that the answer was pointed somewhere, and that somebody went through to the app. Seventeen in total, and every one goes to both places or to neither. Along with those go the number of questions it took, how many dishes were turned down, which Premium card it was, and, on the accepted one only, the name of the dish.',
+      'The question has four buttons and no text box, so what is recorded is which button — there is nothing else for it to carry.',
+      'What does not go: your dietary rules, your saved dishes, your ratings, your taste profile, anything you type, and anything that identifies you. The reason those are safe is not a promise, it is where they live — see the section above.',
+      'There is no Google Analytics here, no advertising pixel of our own, and nothing that follows you to other sites.',
+      /*
+       * Appears only while session replay is actually switched on. The
+       * sentence and the script are driven by the same constant, so this page
+       * cannot describe a world the product is not in — in either direction.
+       */
+      ...(REPLAY_ON
+        ? [
+            'One exception, and it is on right now: Microsoft Clarity records anonymised replays of sessions on this site — where a cursor went, what was tapped, where somebody got stuck — so we can see why people stop rather than guessing. It masks text content by default, it is not tied to your name or your account, and it is covered by Microsoft’s privacy policy. It is here to find broken screens, and it will be taken out again when it has.',
+          ]
+        : []),
+    ],
+  },
+  {
+    id: 'logs',
+    heading: 'Server logs',
+    lede: 'Your IP is never stored. A scrambled, one-day version of it counts your free AI questions, and is deleted the next day.',
+    body: [
+      'The AI features limit how often one person can call them. For the burst limit — no more than a dozen questions a minute — the server holds the IP address your request arrived from in memory only, for that minute, and never writes it down.',
+      'The free allowance — three assistant questions a day — has to survive a server restart, so it is counted in a database (Turso). What is stored is not your IP address: it is a keyed hash of it, made with a secret that changes every day, next to a number from 0 to 3 and the date. Tomorrow the same address makes a different hash, so days cannot be joined into a history, and the hash cannot be turned back into an address without our secret. Rows from earlier days are deleted as soon as the next question is counted. Nothing else about you is attached to it.',
+      'If you are a Premium member you are not counted against it. A household sharing one internet connection shares one allowance — the price of not asking anybody to sign in.',
+      'When a sign-in does not finish, the server notes the step it stopped at and the kind of browser or app it happened in — “Safari (iOS)”, say — and the site you came from, but nothing that identifies you. Those notes are kept for seven days, so a broken sign-in can be found and fixed.',
       'Ordinary request logs are handled by Cloudflare, which serves this site.',
     ],
   },
   {
+    id: 'children',
     heading: 'Children',
+    lede: 'No chat, no profiles, no posts, nothing to upload.',
     body: [
       'This is a food app with no chat between users, no profiles, no public posts and nothing to upload. Buying Premium goes through Whop, whose own terms set the minimum age for having an account and paying.',
     ],
   },
   {
+    id: 'your-data',
     heading: 'Getting your data, or getting rid of it',
+    lede: 'It is in your browser, so you can delete all of it yourself in one tap.',
     body: [
       'Everything the game knows about you is in your own browser, so deleting it is a matter of clearing this site’s data — or using "Wipe this profile" on the profile screen, which empties it from inside the app.',
       'For anything held by Whop — your account, your subscription, your payment history — ask Whop directly, since that is where it lives.',
     ],
+  },
+]
+
+/*
+ * THE FOUR THINGS PEOPLE ACTUALLY CAME TO FIND OUT.
+ *
+ * Answer first, in the largest type on the page, before any of the detail.
+ * Somebody who reads only this has the truth; somebody who wants to check it
+ * has eleven sections underneath saying how it works and one list naming
+ * everybody involved.
+ *
+ * The replay line is conditional on the same constant as the script itself
+ * and the paragraph in the analytics section, so this cannot advertise a
+ * world the product is not in — and, more to the point, cannot quietly fail
+ * to advertise one it is. When it is on, it is on the first screen.
+ */
+const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
+  {
+    q: 'Do you need an account?',
+    a: 'No',
+    note: 'No email, no password, no card. The whole game works signed out.',
+  },
+  {
+    q: 'Does what I do in the game leave my device?',
+    a: 'No',
+    note: 'Picks, ratings, streaks, diets and saved dishes are written to your browser and stay there. We cannot read them.',
+  },
+  ...(REPLAY_ON
+    ? [
+        {
+          q: 'Is anything recording this session?',
+          a: 'Yes',
+          note: 'Microsoft Clarity is recording anonymised replays right now — where a cursor went and what was tapped, with text masked. It is here to find broken screens.',
+          loud: true,
+        },
+      ]
+    : []),
+  {
+    q: 'Is there advertising or cross-site tracking?',
+    a: 'No',
+    /*
+     * There have been two third-party ad networks here, briefly, and both
+     * were removed rather than fixed — HilltopAds for the reason given
+     * below, and Adsterra afterwards for the same reason plus a practical
+     * one on top: every placement rendered at the right size and showed
+     * nothing, no fill, the whole time it ran. What the free tier shows
+     * instead is this app's own Premium pitch — not a third party, nothing
+     * served by an exchange, nothing that shares a visitor's IP or browser
+     * with anybody. The note changes with GA4_ON and the answer does not,
+     * for the same reason as always: Google Analytics set up the way this
+     * one is — no Signals, no advertising features, no user id — counts
+     * what happens on this site and does not follow anybody off it.
+     */
+    note: GA4_ON
+      ? 'No advertising pixel, and nothing that follows you to other sites. Google Analytics is here, counting pages and the seventeen events listed below — with none of its advertising features switched on.'
+      : 'No Google Analytics, no advertising pixel of our own, and nothing that follows you to other sites.',
   },
 ]
 
@@ -117,9 +283,29 @@ const SECTIONS: Section[] = [
  */
 const THIRD_PARTIES: [string, string][] = [
   ['Whop', 'Sign-in, payments, subscription status, and the analytics on every page it serves.'],
-  ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions.'],
+  // Driven by the same constant as the script and the paragraph above, so
+  // this list cannot fall out of step with what is actually loaded.
+  ...(REPLAY_ON
+    ? ([['Microsoft Clarity', 'Anonymised session replay, while we work out where people get stuck.']] as [string, string][])
+    : []),
+  // Driven by GA4_ID, the same way the Clarity row above is driven by
+  // CLARITY_ID, so this list cannot fall out of step with what is loaded.
+  ...(GA4_ON
+    ? ([['Google Analytics', 'Counts page views and the seventeen events named above. No advertising features.']] as [string, string][])
+    : []),
+  ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions; fills and balances the meal planner; plans dinner parties; estimates nutrition and cost per dish; writes the daily briefing; reads recipes from pasted text, from photos and from web pages with no recipe card; and reads a fridge photo once, which is not kept.'],
+  ['Open Food Facts', 'The product database behind Scan food. Asked by our server with the barcode only.'],
   ['Hyperbeam', 'Runs the shared browser, when you open one.'],
   ['OpenStreetMap and Photon', 'Look up places near you, when you use Nearby and allow location.'],
+  ['freeipapi.com', 'Looks up which currency your country uses, by your IP, on the Premium page.'],
+  ['open.er-api.com', 'Today’s exchange rate, to show the Premium price in that currency.'],
+  ['TV channels', 'Each channel you watch streams straight to you from its own servers, which see your IP address as any website would.'],
+  ['Plex and Pluto TV', 'Publish the TV listings for what is on now and next. Asked by our server, never by your device.'],
+  ['jsDelivr', 'Serves two open-source tools when they are first needed: the video player (hls.js) for the TV, and the barcode reader (ZXing) for Scan food.'],
+  ['Wikimedia Commons', 'Where the dish pages’ photographs come from, each credited under it. Our server fetches them and the page shows them from this site, so your browser never contacts Wikimedia.'],
+  ['Radio Browser', 'The directory the radio’s stations come from. Asked by our server, never by your device.'],
+  ['Radio stations', 'Each station you play streams straight to you from its own broadcaster, which sees your IP address as any website would.'],
+  ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day — and, if you use them, your daily check-in, journal line and trivia answer, your planned weeks, your cookbook and your daily AI request counts, against your Whop user id.'],
   ['Cloudflare', 'Serves this site.'],
 ]
 
@@ -134,14 +320,67 @@ function PrivacyPage() {
         </p>
         <h1 className="mt-3 text-4xl font-bold sm:text-5xl">Privacy</h1>
         <p className="mt-4 text-lg text-[var(--text-dim)]">
-          What this app stores, what it does not, and every outside service it talks to. Written
-          from what the code actually does, and checked against it on {REVIEWED}.
+          The four answers first, then how each one works, then everybody this app talks to.
+          Written from what the code actually does and checked against it on {REVIEWED}.
         </p>
+
+        {/* The answers, before anything that has to be read. */}
+        <div className="mt-10 grid gap-4 sm:grid-cols-2">
+          {ANSWERS.map((item) => (
+            <div
+              key={item.q}
+              className={`rounded-2xl border px-5 py-5 ${
+                item.loud
+                  ? 'border-[var(--amber)] bg-[var(--amber-soft)]'
+                  : 'border-[var(--border)] bg-[var(--bg-raised)]'
+              }`}
+            >
+              <p className="text-sm text-[var(--text-dim)]">{item.q}</p>
+              <p
+                className={`mt-1 text-3xl font-bold ${
+                  item.loud ? 'text-[var(--amber)]' : 'text-[var(--text)]'
+                }`}
+              >
+                {item.a}
+              </p>
+              <p className="mt-2 text-sm text-[var(--text-dim)]">{item.note}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* THE ONE LINE THE ANSWERS ABOVE DO NOT CARRY.
+            This was the second half of a "short version" section, which the
+            four cards had otherwise made into the same sentence three times
+            in the first screen and a half. The cards are the short version
+            now; this is the bit they cannot fit, and it is the sentence that
+            sets up every section below. */}
+        <p className="mt-8 text-lg text-[var(--text)]">
+          You only hand over anything when you sign in with Whop to buy Premium, or when you use a
+          feature that needs an outside service to work — the AI, the shared browser, or finding
+          somewhere to eat nearby. Each of those is named below.
+        </p>
+
+        {/* And a way to reach the one section somebody came for, without
+            scrolling past the nine they did not. */}
+        <nav className="mt-10 flex flex-wrap gap-2" aria-label="On this page">
+          {SECTIONS.map((section) => (
+            <a
+              key={section.id}
+              href={`#${section.id}`}
+              className="rounded-full border border-[var(--border)] px-4 py-2 text-sm text-[var(--text-dim)] hover:border-[var(--amber)] hover:text-[var(--text)]"
+            >
+              {section.heading}
+            </a>
+          ))}
+        </nav>
 
         <div className="mt-12 space-y-10">
           {SECTIONS.map((section) => (
-            <section key={section.heading}>
+            <section key={section.heading} id={section.id} className="scroll-mt-8">
               <h2 className="text-2xl font-bold">{section.heading}</h2>
+              {/* The section's own answer, at full brightness, above the
+                  detail. Everything below it is the working. */}
+              <p className="mt-2 text-lg text-[var(--text)]">{section.lede}</p>
               {section.body.map((line) => (
                 <p key={line.slice(0, 40)} className="mt-3 text-[var(--text-dim)]">
                   {line}
@@ -152,8 +391,12 @@ function PrivacyPage() {
 
           <section>
             <h2 className="text-2xl font-bold">Everyone this app talks to</h2>
-            <p className="mt-3 text-[var(--text-dim)]">
-              The whole list. Nothing else is contacted on your behalf.
+            {/* The number, because "how many companies is this" is the
+                question the list is really being asked, and counting them
+                yourself is work. It is computed, so it cannot go stale when
+                one is added or replay is switched off. */}
+            <p className="mt-2 text-lg text-[var(--text)]">
+              {THIRD_PARTIES.length} of them, named. Nothing else is contacted on your behalf.
             </p>
             <ul className="mt-5 space-y-3">
               {THIRD_PARTIES.map(([name, why]) => (
@@ -174,7 +417,7 @@ function PrivacyPage() {
               Questions about your account, a payment or a refund go to Whop, where that
               information is held — reach it from the{' '}
               <a
-                href={AFFILIATES_URL.replace('/affiliates', '')}
+                href={WHOP_PAGE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--amber)] hover:underline"

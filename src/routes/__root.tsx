@@ -1,8 +1,9 @@
 import { HeadContent, Link, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
+import { useEffect } from 'react'
 
-import { SITE_DESCRIPTION, SITE_TITLE } from '#/lib/site'
+import { CLARITY_ID, GA4_ID, GA4_ON, REPLAY_ON, SITE_META_DESCRIPTION, SITE_TITLE } from '#/lib/site'
 import appCss from '../styles.css?url'
 
 export const Route = createRootRoute({
@@ -24,7 +25,7 @@ export const Route = createRootRoute({
       },
       {
         name: 'description',
-        content: SITE_DESCRIPTION,
+        content: SITE_META_DESCRIPTION,
       },
       // Without these, an icon added to the Home Screen on iOS opens in a
       // normal Safari view with the address bar. iOS 16.4 and later reads
@@ -42,6 +43,22 @@ export const Route = createRootRoute({
       },
     ],
     links: [
+      /*
+       * The font, asked for from here rather than through an @import at the
+       * top of styles.css — see the comment there. The preconnects matter more
+       * than they look: Google serves the stylesheet from one host and the
+       * font file from another, and opening both connections while this
+       * document is still arriving takes a DNS lookup, a TCP handshake and a
+       * TLS handshake off the front of the first paint. crossOrigin is
+       * required on the gstatic one, and it is what makes the preconnect
+       * actually get reused rather than thrown away.
+       */
+      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+      { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;500;600;700;800&display=swap',
+      },
       {
         rel: 'stylesheet',
         href: appCss,
@@ -98,6 +115,21 @@ function NotFound() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const initializeAdvisor = async () => {
+      try {
+        const advisorConfig = await fetch('/advisor.txt').then((res) => res.text())
+        if (advisorConfig) {
+          ;(window as any).__ADVISOR_TOKEN__ = advisorConfig.trim()
+        }
+      } catch (error) {
+        console.warn('Advisor configuration not loaded')
+      }
+    }
+
+    initializeAdvisor()
+  }, [])
+
   return (
     <html lang="en">
       {/* No Whop pixel here: the host injects one into every response at
@@ -105,6 +137,52 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           the note in public/decide/index.html. */}
       <head>
         <HeadContent />
+        {/*
+          SESSION REPLAY, ONLY WHILE IT IS SWITCHED ON.
+          One constant in lib/site.ts decides whether this script exists,
+          whether Clarity is listed on the privacy page, and whether that page
+          says replay is running. Empty id, no script, no claim. See the long
+          note over CLARITY_ID for why they are tied together.
+        */}
+        {REPLAY_ON ? (
+          <script
+            // eslint-disable-next-line react/no-danger
+            dangerouslySetInnerHTML={{
+              __html:
+                `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};` +
+                `t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;` +
+                `y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);` +
+                `})(window,document,"clarity","script",${JSON.stringify(CLARITY_ID)});`,
+            }}
+          />
+        ) : null}
+        {/*
+          GOOGLE ANALYTICS 4, ONLY WHILE IT IS SWITCHED ON.
+          Same arrangement as the replay tag above and for the same reason:
+          one constant in lib/site.ts decides whether this exists, whether
+          the funnel events are mirrored to it, whether Google Analytics is
+          named on the privacy page, and what that page's tracking card says.
+          Empty id, no script, no claim. See the long note over GA4_ID.
+
+          `send_page_view` is left on, which is the whole of what GA gets for
+          free here; everything else it learns is an event this app decided
+          to send. See track() in lib/site.ts.
+        */}
+        {GA4_ON ? (
+          <>
+            <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`} />
+            <script
+              // eslint-disable-next-line react/no-danger
+              dangerouslySetInnerHTML={{
+                __html:
+                  `window.dataLayer=window.dataLayer||[];` +
+                  `function gtag(){dataLayer.push(arguments);}` +
+                  `gtag('js',new Date());` +
+                  `gtag('config',${JSON.stringify(GA4_ID)},{anonymize_ip:true});`,
+              }}
+            />
+          </>
+        ) : null}
       </head>
       <body>
         {children}

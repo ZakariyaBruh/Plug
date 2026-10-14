@@ -10,7 +10,7 @@ import book from 'virtual:recipe-book'
  * WHY THE SERVER NEEDS IT AT ALL, when the game already renders recipes in the
  * browser. A dish page was 84 words: a name, a one-line blurb and a button.
  * That is a fine thing to receive in a message and a poor thing to offer a
- * search engine — 112 near-identical pages that thin read as doorway pages,
+ * search engine — a hundred-odd near-identical pages that thin read as doorway pages,
  * which get crawled and then not indexed. The recipes were already written;
  * they were just never on the page a crawler sees.
  */

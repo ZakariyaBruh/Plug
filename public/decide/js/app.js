@@ -112,19 +112,30 @@
   /*
    * WHAT THIS PROFILE IS ACTUALLY AVOIDING, in one place.
    *
-   * The six standing dietary rules are free; everything layered over them —
-   * custom tag bans, a guest's avoids, the heat dial — is Premium.
+   * The chosen diets and the six standing dietary rules are free; everything
+   * layered over them — custom tag bans, a guest's avoids, the heat dial — is
+   * Premium.
    *
-   * It lives here because THREE places need the answer: the game's own bans,
-   * the ranked pool every shortcut draws from, and tonight's pick. Only two of
+   * It lives here because everything that puts a dish in front of somebody
+   * needs the answer: the game's own bans, the ranked pool every shortcut
+   * draws from, tonight's pick, the week plan, the mood shortcuts, the knobs
+   * on the front door and deciding straight off the saved list. Only two of
    * them ever knew. tonightDish filtered on named never-agains and the time of
    * day and nothing else, so it served a vegetarian with "No meat" on a
    * chicken satay — and had been doing it to paying subscribers all along,
    * where it was rarer and so never reported. A rule that holds on most
-   * screens is not a rule, it is a coin toss with extra steps.
+   * screens is not a rule, it is a coin toss with extra steps. Nothing outside
+   * this function should read state.rules or allRules() to decide what to
+   * serve; that is how the last four of those came to be missing one.
    */
   function effectiveRules() {
     var tags = (progress.state.rules || []).slice();
+    // A diet is answered once, on the way in, and then never again — which is
+    // the entire promise, so it is folded in here before the tier is even
+    // looked at rather than anywhere a lapsed subscription could reach it.
+    progress.dietTags().forEach(function (tag) {
+      if (tags.indexOf(tag) === -1) tags.push(tag);
+    });
     if (!isPlus()) return tags;
     progress.allRules().forEach(function (tag) {
       if (tags.indexOf(tag) === -1) tags.push(tag);
@@ -136,9 +147,44 @@
     return tags;
   }
 
-  /* Does this dish break any of them? */
+  /*
+   * Does this dish break any of them?
+   *
+   * A maybe counts. See countBans in engine.js for why — the short version is
+   * that a dish which might have pork in it is not an answer you can give
+   * somebody who does not eat pork, and every surface that applies a rule has
+   * to agree about that or the rule holds on one screen and not the next.
+   */
   function breaksRules(dish, tags) {
-    return tags.some(function (tag) { return (dish.tags[tag] || 0) === 1; });
+    return tags.some(function (tag) { return (dish.tags[tag] || 0) > 0; });
+  }
+
+  /*
+   * WHAT A MODEL SUGGESTED, MINUS WHAT YOU DO NOT EAT.
+   *
+   * Both AI surfaces — "Something new" and the menu builder — ask for dish
+   * names, look each one up in the catalogue, and painted it straight to the
+   * screen. Neither consulted the rules, so a profile with Halal on could be
+   * handed a three-course menu with pork in the middle of it, and a vegetarian
+   * could be told the thing "worth a try" tonight was a steak. The offline
+   * fallback that builds a menu without the model has always filtered properly
+   * (it draws from favouredDishes), so the two halves of one feature disagreed
+   * about whether somebody's diet counted.
+   *
+   * FILTERED HERE RATHER THAN ASKED FOR UP THERE, on purpose. Telling the
+   * model "no pork, no alcohol" would work, and would also mean posting a fair
+   * inference about somebody's religion to a third party every time they asked
+   * for a menu. The privacy page says this profile stays on the device; it is
+   * cheaper to keep that true and drop a suggestion or two than to have to
+   * write the footnote. The model picks from the catalogue, the catalogue is
+   * tagged, and everything needed to check is already on this device.
+   */
+  function allowedDishes(list, nameOf) {
+    var rules = effectiveRules();
+    return list.filter(function (entry) {
+      var dish = dishByName(nameOf(entry));
+      return !!dish && !breaksRules(dish, rules);
+    });
   }
   var spinTimer = null;
 
@@ -227,10 +273,49 @@
   // switch on the profile screen first. Opens in a new tab, so a game in
   // progress here is never lost; coming back to this tab re-checks Premium
   // on its own (see the boot section).
+  /*
+   * `what` is a noun phrase and the sentence must not care whether it is
+   * singular. It read "<what> comes with Premium", which made "Recipes comes
+   * with Premium" and "Nearby places comes with Premium" out of two of the
+   * five things that call this. The title already says it is part of Premium,
+   * so the body does not need to say it again — and once it stops saying it,
+   * there is no verb left to disagree with anything.
+   */
+  /*
+   * THE MOMENT SOMEBODY REACHES FOR A LOCKED THING.
+   *
+   * This used to fire a toast and open the Whop checkout immediately, in the
+   * same gesture. Two things were wrong with that, and the second is the one
+   * that matters.
+   *
+   * It converts worse. The strongest moment to make an offer is the one where
+   * somebody has just demonstrated they want the thing — and the way to use
+   * that moment is to name what they reached for, not to skip straight past
+   * it to a card form. A checkout that arrives before an explanation is
+   * answering a question nobody has asked yet.
+   *
+   * And it fails the test this product sets itself: an influence you can see,
+   * and can decline at the same cost. Being moved to a payment page by a tap
+   * you thought would open a recipe is neither. There is now a sheet with the
+   * feature named on it and a "not now" the same size as the yes.
+   *
+   * The card is built here rather than as a standing fixture because it
+   * names the specific thing that was tapped, and appears only because
+   * somebody asked for it — openAd's one and only caller now.
+   */
   function goPremium(what) {
-    toast('\u{2728}', 'Part of Premium',
-      what + ' comes with Premium — seven days free, opening checkout\u2026');
-    premiumApi.openUpgrade();
+    var named = what || 'This';
+    openAd({
+      id: 'desire',
+      icon: '\u2728',
+      title: named + ' is part of Premium',
+      body: 'Seven days free, and it switches on everything marked Premium — not just this ' +
+            'one thing. Nothing is charged until the week is up, and cancelling is one link ' +
+            'on your account page.',
+      fine: 'Deciding stays free. Every dish, every recipe and everything you do not eat are ' +
+            'free permanently, whatever you do here.',
+      cta: 'Seven days free'
+    });
   }
 
   // Paid content is shown blurred rather than removed. An empty pane says
@@ -243,10 +328,36 @@
    * A lock over an empty panel is not a paywall, it is a bug that asks for
    * money.
    */
+  /*
+   * A vault is locked only when locking it withholds something — and it has to
+   * STAY that way, which is what this remembers.
+   *
+   * Whether there is anything behind a vault is a fact about the dish on
+   * screen, and it is known only where the panel was filled. The lock, though,
+   * is repainted from somewhere else entirely every time the tier is
+   * re-checked: on load, on a profile reset, and on every single window focus
+   * (see syncPremium). Those repaints have no dish in hand and passed no third
+   * argument, which read as "there is content" and put a Premium lock over the
+   * one panel with nothing behind it.
+   *
+   * Which is exactly the bug the long comment in openSheet says was fixed. It
+   * was — in openSheet — and then undone a few hundred milliseconds later by
+   * the first focus event, so a free reader tapping one of today's five got
+   * the honest "nobody has written this up yet, here is a search for it", and
+   * then got "Recipes are part of Premium" over the top of it the moment they
+   * glanced at another tab. Locked or not locked depending on nothing they did.
+   *
+   * So the answer is written onto the element when somebody knows it, and read
+   * back when nobody does. The emptiness of a panel does not change when a
+   * subscription does, and now the lock does not pretend otherwise.
+   */
   function paintVault(vaultId, lockId, hasContent) {
     var vault = $(vaultId);
     if (!vault) return;
-    var open = isPlus() || hasContent === false;
+    if (hasContent !== undefined) vault.dataset.filled = hasContent ? 'yes' : 'no';
+    // Unknown counts as filled: every vault that never says is one that always
+    // has something behind it, and a lock that fails open is a giveaway.
+    var open = isPlus() || vault.dataset.filled === 'no';
     var body = vault.querySelector('.vault-body');
     vault.classList.toggle('is-locked', !open);
     $(lockId).hidden = open;
@@ -344,7 +455,7 @@
     var now = Date.now();
     var pool = Data.ITEMS.filter(function (dish) {
       if (progress.isBanned(dish.name)) return false;
-      if (rules.some(function (tag) { return (dish.tags[tag] || 0) === 1; })) return false;
+      if (rules.some(function (tag) { return (dish.tags[tag] || 0) > 0; })) return false;
       if (!options.keepSnoozed && progress.isSnoozed(dish.name, now)) return false;
       return true;
     });
@@ -401,7 +512,51 @@
   // setPanel('home') leaves behind.
   var panel = 'home';
 
+  /*
+   * THE BRIDGE TO hub.js — the planner, the kitchen tools, the briefing and
+   * hands-free cooking live in their own file, and this is everything of
+   * this one they are allowed to use. Functions, not copies: effectiveRules
+   * is read fresh every time, so a rule changed in Profile holds in the
+   * planner the moment it is changed. See js/hub.js.
+   */
+  window.M45 = {
+    $: function (id) { return $(id); },
+    $$: function (sel) { return $$(sel); },
+    premium: premiumApi,
+    isPlus: function () { return isPlus(); },
+    signedIn: function () { return !!premiumApi.status.signedIn; },
+    goPremium: function (what) { goPremium(what); },
+    toast: function (icon, title, text) { toast(icon, title, text); },
+    setView: function (name) { hideLanding(); setView(name); },
+    currentView: function () { return view; },
+    openDish: function (name) {
+      var dish = dishByName(name);
+      if (dish) openSheet(dish);
+      return !!dish;
+    },
+    dishByName: function (name) { return dishByName(name); },
+    openCookMode: function (recipe, serves, dish) { openCookMode(recipe, serves, dish); },
+    openBeam: function (kind, label) { openBeam(kind, label); },
+    beamHelp: function () { openBeamHelp(); },
+    effectiveRules: function () { return effectiveRules(); },
+    breaksRules: function (dish) { return breaksRules(dish, effectiveRules()); },
+    likedNames: function () {
+      try {
+        var ratings = progress.state.ratings || {};
+        return Object.keys(ratings).filter(function (n) { return ratings[n] === 'loved'; }).slice(0, 20);
+      } catch (err) { return []; }
+    },
+    Sound: Sound,
+    Data: Data,
+    Recipes: Recipes
+  };
+
   function setView(name) {
+    // Leaving the menu tab is a decision about the menu, so it is taken here,
+    // before `view` moves on and the old one is unknowable. See leaveMenu.
+    if (view === 'menu' && name !== 'menu') leaveMenu();
+    // Same for the TV: leaving it pauses it, unless it is in picture-in-picture.
+    if (view === 'radio' && name !== 'radio') leaveTv();
     view = name;
     $$('.view').forEach(function (el) {
       el.classList.toggle('is-current', el.id === 'view-' + name);
@@ -417,8 +572,10 @@
     if (name === 'menu') renderMenuView();
     if (name === 'nearby') renderNearby();
     if (name === 'news') renderNews();
+    if (name === 'radio') renderRadio();
+    if (name === 'daily') renderDaily();
+    if (window.M45Hub) window.M45Hub.onView(name);
     if (name === 'chat') renderChat();
-    if (name === 'language') paintLangLists();
     // A half-written answer left running in a section nobody is looking at
     // keeps scrolling it into view from somewhere else in the app.
     else stopTyping();
@@ -555,7 +712,7 @@
    * Hello, for somebody who has been here before.
    *
    * The landing already opens with the best line in the app — "You're hungry.
-   * You don't know what you want. That's alright, I might." — and a first-timer
+   * You don't know what you want. That's what I'm for." — and a first-timer
    * should get that with nothing in front of it. Somebody on their ninth visit
    * has read it eight times, and a word that knows what time it is and that
    * they kept a streak going is worth more to them than the pitch is.
@@ -598,10 +755,227 @@
     var band = HELLOS.filter(function (h) { return hour < h.until; })[0] || HELLOS[HELLOS.length - 1];
     var line = band.lines[Math.floor(Math.random() * band.lines.length)];
 
+    /*
+     * THEIR OWN PLAN, READ BACK AT THE HOUR THEY NAMED.
+     *
+     * This is the payoff for the if-then plan and the whole of what the app
+     * does with it: no notification, no email, nothing that arrives
+     * uninvited. If they open this screen within an hour of the moment they
+     * chose, and have not sorted dinner yet today, the greeting is the thing
+     * they told themselves — which is also the moment their motivation and
+     * their ability to act are both at their highest.
+     *
+     * It beats the time-of-day line because it is more specific and it is
+     * theirs. Everything else about the screen is unchanged: one button, and
+     * no suggestion that they are late for anything.
+     */
+    var plan = progress.plan();
+    if (plan && progress.planIsDue()) {
+      el.textContent = 'You said you would work this out ' + plan.phrase + '. Here I am.';
+      return;
+    }
+
+    /*
+     * PROOF THAT IT REMEMBERED THEM, WITHOUT AN ACCOUNT.
+     *
+     * "Last time: ramen." is one line and it does more work than anything
+     * else on this screen. It is the difference between a website somebody
+     * arrives at and something that knows them, and it costs nothing to say
+     * because it is true and already on their device — the honest version of
+     * what an account would have bought.
+     *
+     * Only on a later day than the last one. Said on the same evening it
+     * reads as the app having forgotten the last ten minutes, which is the
+     * opposite of the point.
+     */
+    var back = returningDay();
+    var last = (state.history || [])[0];
+    if (back && last && last.name) {
+      el.textContent = 'Welcome back. Last time: ' + last.name + '.';
+      return;
+    }
+
     // A streak is the one fact about somebody that is worth saying out loud
     // here: it is theirs, it took effort, and it is the reason they came back.
     var streak = state.streak || 0;
     el.textContent = streak > 1 ? line + ' ' + streak + ' days running, by the way.' : line;
+  }
+
+  /*
+   * Is this a different day from the last time they were here?
+   *
+   * READ OFF A VARIABLE, NOT OFF THE PROFILE, and that is the whole of this
+   * function's history. `seen` is stamped to today the moment this file
+   * loads, which is long before the greeting paints — so asking the profile
+   * "is seen different from today" always answered no, and the welcome-back
+   * line never appeared for anybody. The stamp keeps the old value here
+   * instead, where it survives for the rest of the visit.
+   */
+  var cameBackFrom = null;
+
+  function returningDay() {
+    return !!cameBackFrom;
+  }
+
+  /*
+   * Stamp the visit, once, and report the gap.
+   *
+   * This is the whole of the retention measurement and the only new thing it
+   * writes: one date. Day-1-to-day-7 return rate is the number that says
+   * whether any of this works, and without accounts the only place it can be
+   * computed is here — so the event carries how many days it has been and
+   * how long the streak is, and nothing else.
+   */
+  (function stampVisit() {
+    var st = progress.state;
+    var today = ProgressLib.dayKey(new Date());
+    if (st.seen === today) return;
+    var previous = st.seen;
+    cameBackFrom = previous && previous !== today ? previous : null;
+    st.seen = today;
+    progress.save();
+    if (previous && (st.decisions || 0) > 0) {
+      var days = Math.round((Date.parse(today) - Date.parse(previous)) / 864e5);
+      // On the next tick: this runs while the file is still being read, and
+      // the pixels it reports to are script tags that may not have run yet.
+      setTimeout(function () {
+        beacon('returned', { days: days, decisions: st.decisions || 0, streak: st.streak || 0 });
+      }, 0);
+    }
+  })();
+
+  /* ------------------------------------------------------- the comeback */
+  /*
+   * SAID ONCE, EVER, TO SOMEBODY ACTUALLY COMING BACK.
+   *
+   * This is what replaced the old ad rotation's job of telling a free
+   * profile something is new — but only the one honest version of that
+   * sentence: it fires at most once in a profile's whole lifetime, only on
+   * a genuine later-day return (see returningDay() above), and it is not a
+   * pitch. Nothing here asks for money, and there is nothing to refuse
+   * twice or silence for good, because there is no second one coming.
+   *
+   * FIVE SECONDS BEFORE THE WAY OUT, not an instant close. Not a dark
+   * pattern — the delay is short and the reason is the opposite of one: a
+   * message said exactly once in somebody's whole time here is worth the
+   * length of two sentences, and the hold is shown two ways at once rather
+   * than left to a digit nobody is watching: a solid bar under the button
+   * that visibly drains over the same five seconds, as one CSS transition
+   * set going below rather than a width recomputed on every tick, so the
+   * motion reads as continuous — and the count, printed on the button
+   * itself, alongside it.
+   */
+  var COMEBACK_HOLD = 5;
+  var comebackTimer = null;
+
+  function openComeback(preview) {
+    if (!preview) {
+      progress.state.comebackShown = true;
+      progress.save();
+    }
+
+    $('comeback-title').textContent = 'Something new, since you were last here';
+    $('comeback-body').textContent =
+      'You can now invite a friend and earn a free day of Premium once they sign in and ' +
+      'play for ten minutes — no limit on how many friends. Invite three and you get two ' +
+      'extra days on top; invite ten and you get five more. It is tied to your account, ' +
+      'not this browser, so it is already on wherever you sign in next.';
+    // What the button actually does differs by whether there is already a
+    // link to show — "Take a look" was true of neither case and told
+    // nobody what tapping it would do.
+    $('comeback-go').textContent = premiumApi.status.signedIn
+      ? 'See my invite link'
+      : 'Sign in for my link';
+    $('comeback-play').textContent = 'Play the game';
+
+    var skip = $('comeback-skip');
+    var fill = $('comeback-skip-fill');
+    var left = COMEBACK_HOLD;
+    skip.disabled = true;
+    skip.textContent = 'Skip (' + left + ')';
+
+    // The fill: snapped to full with no transition, then — after the browser
+    // has actually painted that frame — eased down to empty over the whole
+    // hold in one go. Setting the end state in the same tick as the start
+    // state is the classic way this silently does nothing: the browser
+    // coalesces both and there is no transition to see, only the final value.
+    fill.style.transition = 'none';
+    fill.style.transform = 'scaleX(1)';
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        fill.style.transition = 'transform ' + COMEBACK_HOLD + 's linear';
+        fill.style.transform = 'scaleX(0)';
+      });
+    });
+
+    clearInterval(comebackTimer);
+    comebackTimer = setInterval(function () {
+      left -= 1;
+      if (left > 0) { skip.textContent = 'Skip (' + left + ')'; return; }
+      clearInterval(comebackTimer);
+      skip.disabled = false;
+      skip.textContent = 'Skip';
+    }, 1000);
+
+    var dlg = $('comeback-sheet');
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+  }
+
+  function closeComeback() {
+    clearInterval(comebackTimer);
+    var dlg = $('comeback-sheet');
+    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+  }
+
+  $('comeback-skip').addEventListener('click', function () {
+    if ($('comeback-skip').disabled) return;
+    Sound.tick();
+    closeComeback();
+  });
+
+  $('comeback-go').addEventListener('click', function () {
+    closeComeback();
+    // Signed in already: the link is a tap away, no need to leave. Not
+    // signed in: there is no link to show yet, so this goes to the one
+    // place that can make one — real sign-in, not the profile view, which
+    // would only show the same "sign in for your own link" note again.
+    if (premiumApi.status.signedIn) {
+      setView('profile');
+      highlightInvite();
+    } else {
+      // window.location.href would only move the iframe: this page is
+      // always inside Whop's own frame when opened from an experience (see
+      // `framed` above), and Whop's sign-in page refuses to render inside
+      // one — so the click would look like it did nothing at all. Writing
+      // to the TOP frame's location is allowed even across origins
+      // specifically so a page like this one can break out for sign-in.
+      var url = '/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile';
+      try { window.top.location.href = url; } catch (err) { window.location.href = url; }
+    }
+  });
+
+  $('comeback-play').addEventListener('click', function () {
+    closeComeback();
+    hideLanding();
+    setView('decide');
+    restart();
+  });
+
+  // ESC is refused while the countdown still holds the button — the one
+  // other way most dialogs close, and it would otherwise skip the count
+  // entirely.
+  $('comeback-sheet').addEventListener('cancel', function (e) {
+    if ($('comeback-skip').disabled) { e.preventDefault(); return; }
+    closeComeback();
+  });
+
+  function maybeShowComeback() {
+    if (progress.state.comebackShown) return;
+    if (!returningDay()) return;
+    var last = (progress.state.history || [])[0];
+    if (!last || !last.name) return;
+    if (anySheetOpen()) return;
+    openComeback();
   }
 
   function renderIntro() {
@@ -609,6 +983,7 @@
     var played = state.decisions > 0;
     var favourites = state.favourites || [];
 
+    paintResume();
     $('intro-fav-wrap').hidden = favourites.length === 0;
 
     /*
@@ -635,10 +1010,11 @@
      * reach by deciding, and that is where it still is — done-again-btn on
      * the reward panel, where it is true by construction.
      */
-    // Through the dictionary, because this one is written by JS on every
-    // render and would otherwise overwrite whatever I18n.apply just put there.
     label('landing-start', I18n.t('landing.start', 'Decide for me'));
     paintHello(state, played);
+    // After the landing has actually painted, so it never competes with the
+    // entrance animation for the one thing somebody looks at first.
+    setTimeout(maybeShowComeback, 1200);
     paintEndlessCard();
 
     // "Surprise me" and the week plan need a profile worth shortcutting to:
@@ -750,8 +1126,9 @@
 
     // A rule already answers its own question, so a mood must not contradict
     // one — "give it a kick" against "nothing spicy" would be the app arguing
-    // with itself.
-    var banned = progress.allRules();
+    // with itself. effectiveRules() rather than allRules(), because a diet is
+    // a rule too and two of them ban `meat`, which several moods ask for.
+    var banned = effectiveRules();
     mood.answers.forEach(function (pair) {
       if (banned.indexOf(pair[0]) !== -1) return;
       sessionXp += progress.recordAnswer(pair[0], pair[1]);
@@ -921,7 +1298,7 @@
   // plainly does not. Anything blurrier is noise, and at most three a round so
   // a single tap cannot flood the profile.
   function votesFrom(winner, loser) {
-    return shuffled(Taste.decisiveTags(winner, loser, Data.TAGS))
+    return shuffled(Taste.decisiveTags(winner, loser, Data.LEARNABLE))
       .slice(0, 3)
       .map(function (q) {
         return { tag: q.tag, value: (winner.tags[q.tag] || 0) === 1 ? 'yes' : 'no' };
@@ -1339,6 +1716,13 @@
     openBeam('order', shownItem ? shownItem.name : '');
   });
 
+  // Same thing, offered again on the reward screen — see the markup comment
+  // over #reward-together. shownItem is still the accepted dish here; a
+  // decision does not clear it, it only confirms it.
+  $('reward-order-btn').addEventListener('click', function () {
+    openBeam('order', shownItem ? shownItem.name : '');
+  });
+
   // In cook mode: the recipe is on this screen, the technique is on a video,
   // and the other person is in a different kitchen.
   //
@@ -1361,6 +1745,64 @@
   });
 
   $('beam-close').addEventListener('click', closeBeam);
+
+  /*
+   * TEXT SIZE. Normal, large, larger — one tap each, round again to normal.
+   * Remembered on this device; applied before first paint by the line in
+   * <head>. It scales rem, which is what nearly everything is sized in, so
+   * the layout grows with the text rather than the text spilling out of it.
+   */
+  var TEXT_SIZES = ['', 'lg', 'xl'];
+  var TEXT_NAMES = { '': 'normal', lg: 'large', xl: 'larger' };
+  function paintTextSize(size) {
+    var btn = $('topbar-text');
+    if (!btn) return;
+    btn.setAttribute('aria-label', 'Text size: ' + TEXT_NAMES[size] + '. Tap for ' + (size === 'xl' ? 'normal' : 'bigger') + ' text.');
+    btn.classList.toggle('is-on', !!size);
+  }
+  (function () {
+    var current = '';
+    try { current = localStorage.getItem('m45-text') || ''; } catch (err) {}
+    if (TEXT_SIZES.indexOf(current) === -1) current = '';
+    paintTextSize(current);
+    var btn = $('topbar-text');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var next = TEXT_SIZES[(TEXT_SIZES.indexOf(current) + 1) % TEXT_SIZES.length];
+      document.documentElement.classList.remove('text-lg', 'text-xl');
+      if (next) document.documentElement.classList.add('text-' + next);
+      try { if (next) localStorage.setItem('m45-text', next); else localStorage.removeItem('m45-text'); } catch (err) {}
+      current = next;
+      paintTextSize(next);
+      Sound.tick();
+      toast('Aa', next ? 'Bigger text' : 'Normal text', next ? 'Tap Aa again for ' + (next === 'lg' ? 'even bigger' : 'normal size') + '.' : 'Tap Aa any time to make it bigger.');
+      measureStack();
+    });
+  })();
+
+  // The hub's sections, straight from the landing screen.
+  $$('[data-landing-view]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      hideLanding();
+      setView(btn.dataset.landingView);
+    });
+  });
+
+  // "What's this?" beside every shared-browser button — see #beam-help.
+  var beamHelp = $('beam-help');
+  function openBeamHelp() {
+    if (!beamHelp) return;
+    if (beamHelp.showModal) beamHelp.showModal();
+    else beamHelp.setAttribute('open', '');
+  }
+  document.addEventListener('click', function (e) {
+    var link = e.target && e.target.closest ? e.target.closest('.beam-help-link') : null;
+    if (link) { e.preventDefault(); openBeamHelp(); }
+  });
+  if (beamHelp) {
+    $('beam-help-close').addEventListener('click', function () { beamHelp.close(); });
+    beamHelp.addEventListener('click', function (e) { if (e.target === beamHelp) beamHelp.close(); });
+  }
 
   // Taking the way out. The new tab is the same session, so the frame in here
   // has to go: two connections to one browser is two streams billed as one,
@@ -1482,6 +1924,93 @@
       out.push({ tag: Data.QUESTIONS[at].tag, value: value });
     }
     return out.length ? out : null;
+  }
+
+  /*
+   * HALF A DECISION, KEPT.
+   *
+   * People pulled away from a task show a strong tendency to go back and
+   * finish it — the Ovsiankina half of the Zeigarnik effect, and the half
+   * that came through the 2025 meta-analysis intact (the memory claim did
+   * not). Four answers given and a phone call arriving is exactly that, and
+   * until now the only thing on offer afterwards was the first question
+   * again, which is not a resumption, it is a punishment for being
+   * interrupted.
+   *
+   * Costs nothing to keep: the same two-characters-per-answer packing the
+   * Together links use, in the profile that is already being written to
+   * disk on every answer anyway.
+   *
+   * IT EXPIRES, and the expiry is the honest part. What somebody felt like
+   * at lunchtime is not what they feel like at eight, and handing back stale
+   * answers as though they still counted would be worse than losing them —
+   * the app would be confidently wrong rather than merely forgetful.
+   *
+   * ORDINARY GAMES ONLY. Knockout, Blitz, Together and the rest have their
+   * own running order and their own live state; half of one of those is not
+   * a thing five characters can describe.
+   */
+  var RESUME_HOURS = 6;
+  var RESUME_MIN = 2;   // one answer back is not worth an offer
+
+  function saveResume() {
+    if (shortcut || together.live) return;
+    var answers = game.answers || [];
+    if (answers.length < RESUME_MIN || panel !== 'question') return;
+    progress.state.resume = { code: packAnswers(answers), at: Date.now() };
+    progress.save();
+  }
+
+  function clearResume() {
+    if (!progress.state.resume) return;
+    progress.state.resume = null;
+    progress.save();
+  }
+
+  /** The saved game if there is a live one, otherwise null. */
+  function liveResume() {
+    var saved = progress.state.resume;
+    if (!saved || !saved.code) return null;
+    var age = Date.now() - (saved.at || 0);
+    if (age < 0 || age > RESUME_HOURS * 3600000) { clearResume(); return null; }
+    var answers = unpackAnswers(saved.code);
+    if (!answers || answers.length < RESUME_MIN) { clearResume(); return null; }
+    return { answers: answers, at: saved.at };
+  }
+
+  function resumeGame() {
+    var saved = liveResume();
+    if (!saved) return;
+    hideLanding();
+    together.live = false;
+    together.sets = [];
+    together.sending = false;
+    resetGame();
+    applyKnobs();
+    setView('decide');
+
+    /*
+     * Replayed through the engine rather than assigned, so the weights, the
+     * faults and the question bank all end up exactly where they would have
+     * been had nobody been interrupted. An answer whose tag has since left
+     * the catalogue is dropped by unpackAnswers before it gets here.
+     */
+    saved.answers.forEach(function (a) { game.answer(a.tag, a.value); });
+    clearResume();
+    step();
+  }
+
+  function paintResume() {
+    var wrap = $('landing-resume');
+    if (!wrap) return;
+    var saved = liveResume();
+    wrap.hidden = !saved;
+    if (!saved) return;
+
+    var n = saved.answers.length;
+    $('resume-btn').textContent = 'Pick up where you left off';
+    $('resume-note').textContent = n + ' ' + (n === 1 ? 'answer' : 'answers') +
+      ' in already. Or start again below — nothing is lost either way.';
   }
 
   function inviteUrl(code) {
@@ -2358,7 +2887,7 @@
   function buildWeek() {
     var dishes = Taste.week(progress.state, Data.ITEMS, {
       now: Date.now(),
-      exclude: progress.allRules()
+      exclude: effectiveRules()
     });
     progress.state.plan = {
       at: Date.now(),
@@ -2505,8 +3034,7 @@
     fetch('/api/suggest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ liked: history.liked, avoid: history.avoid, answers: picks.answers,
-        lang: I18n.get() })
+      body: JSON.stringify({ liked: history.liked, avoid: history.avoid, answers: picks.answers, lang: I18n.get() })
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
         return { ok: res.ok, body: body };
@@ -2516,14 +3044,18 @@
     }).then(function (answer) {
       picks.busy = false;
       $('picks-waiting').hidden = true;
-      if (answer.ok && answer.body && answer.body.picks && answer.body.picks.length) {
-        return paintPicks(answer.body.picks, history.liked.length);
-      }
+      var offered = (answer.ok && answer.body && answer.body.picks) || [];
+      var safe = allowedDishes(offered, function (pick) { return pick.name; });
+      if (safe.length) return paintPicks(safe, history.liked.length);
+
       $('picks-step').textContent = 'No luck';
       $('picks-error').hidden = false;
-      $('picks-error-text').textContent = answer.body && answer.body.error === 'busy'
-        ? 'The suggester is busy — that one is on us, not you.'
-        : 'That did not come back. It usually works second time.';
+      $('picks-error-text').textContent = offered.length
+        ? 'Everything it came back with is ruled out by what you do not eat. Try again — '
+          + 'it draws from a different corner each time.'
+        : answer.body && answer.body.error === 'busy'
+          ? 'The suggester is busy — that one is on us, not you.'
+          : 'That did not come back. It usually works second time.';
     });
   }
 
@@ -2580,7 +3112,30 @@
   // `word` is how the course is named when it is being agreed to, because
   // "That's it" three times running tells nobody which it they just agreed
   // to. The labels are the table's order; the words are the plate's name.
+  /*
+   * FIVE COURSES, IN THE ORDER THEY ARE EATEN.
+   *
+   * It was three — starter, main, pudding. The two added at the ends are the
+   * ones a real meal actually has and a three-course template leaves out: the
+   * thing people pick at before anybody sits down, and the thing that ends
+   * the evening after the plates are cleared.
+   *
+   * THE LIKES AND DISLIKES ARE THE FALLBACK'S SCORING, not the model's. When
+   * the model does not answer, pickCourse ranks the catalogue on these tags
+   * and the run carries on — so every course has to be describable in tags
+   * that really exist, or its fallback would be a random dish with a course
+   * label on it.
+   *
+   * THE LAST ONE IS A DRINK, which the catalogue supports properly: the
+   * drinks were an intake of their own and carry `drink`, `caffeine` and the
+   * rest. It also means the standing rules reach it — somebody who has ruled
+   * out caffeine or alcohol gets the course filtered like any other, rather
+   * than a coffee they told us they do not drink.
+   */
   var COURSES = [
+    { id: 'nibble', label: 'To pick at', word: 'the nibble',
+      likes: ['shareable', 'crunchy', 'handheld', 'cheap', 'fried'],
+      dislikes: ['filling', 'sweet', 'soupy'] },
     { id: 'starter', label: 'To start', word: 'the starter',
       likes: ['light', 'fresh', 'shareable', 'soupy', 'crunchy'],
       dislikes: ['filling', 'indulgent', 'carby'] },
@@ -2589,7 +3144,10 @@
       dislikes: ['light', 'breakfast'] },
     { id: 'pudding', label: 'And after', word: 'pudding',
       likes: ['sweet', 'indulgent', 'soft', 'fruity'],
-      dislikes: [] }
+      dislikes: [] },
+    { id: 'nightcap', label: 'To finish', word: 'something to finish',
+      likes: ['drink', 'hot', 'caffeine', 'sweet'],
+      dislikes: ['filling', 'meat', 'fried'] }
   ];
 
   // What a course must never be, whatever it scores.
@@ -2805,6 +3363,21 @@
   var menuWrapped = false;
 
   /*
+   * Which way in is half-finished: 'questions', 'prompt', or nothing.
+   *
+   * WHAT THIS IS FOR. Coming back to the menu tab should land wherever you
+   * actually were, and "where you were" is three different places with three
+   * different right answers. Mid-run and mid-questions are work in progress
+   * and have to survive being left — nobody wants to answer five questions
+   * twice because they went to look something up. A menu that is finished is
+   * not work in progress; it is a result, and it kept being served back as
+   * though it were the screen, days later, with no obvious way past it. So
+   * that one is cleared on the way out (leaveMenu) and this tab opens where it
+   * should: at the start.
+   */
+  var menuStage = null;
+
+  /*
    * A RUN HAS TO SURVIVE THE TAB CLOSING.
    *
    * The go is spent the moment the model answers, and the menu is then agreed
@@ -2871,6 +3444,7 @@
   }
 
   function startRun(menu) {
+    menuStage = null;
     menuRun = { menu: menu, step: 0, used: 0, refused: {} };
     menuWrapped = false;
     progress.state.menuDone = null;
@@ -3161,6 +3735,14 @@
   }
 
   function renderMenuView() {
+    // Say which tier is reading before anything else on the screen does. The
+    // heading used to carry a Premium badge over a feature a free profile can
+    // use, which is the same lie in the other direction as a paywall over an
+    // empty panel.
+    $('menu-blurb').textContent = isPlus()
+      ? 'Five courses that actually go together \u2014 something to pick at, a starter, a main, a pudding and something to finish. Not five heavy things, and not five from the same kitchen unless that is the point of it. As many as you like.'
+      : 'Five courses that actually go together \u2014 something to pick at, a starter, a main, a pudding and something to finish. Not five heavy things, and not five from the same kitchen unless that is the point of it. One every couple of days on Standard.';
+
     /*
      * A RUN IN PROGRESS OUTRANKS EVERYTHING BELOW.
      *
@@ -3180,6 +3762,33 @@
     if (menuRun) { menuPanels('menu-run'); paintRun(false); return; }
     if (menuWrapped) { menuPanels('menu-wrap-view'); paintMenu(menuNow); return; }
 
+    /*
+     * HALF-ANSWERED OUTRANKS THE ALLOWANCE, for the same reason a run does.
+     *
+     * Somebody four questions in has not spent anything yet — the go goes when
+     * the model answers — so the allowance cannot have run out underneath
+     * them. Checking it first would only matter if it had, and the honest
+     * thing to do in that case is still to let them finish the sentence they
+     * were in the middle of.
+     */
+    if (menuStage === 'questions' && menuQ.list && menuQ.at < menuQ.list.length) {
+      menuPanels('menu-ask');
+      $('menu-ways').hidden = true;
+      $('menu-prompt').hidden = true;
+      $('menu-questions').hidden = false;
+      paintMenuQuestion();
+      return;
+    }
+    if (menuStage === 'prompt') {
+      // Whatever was typed is still in the input: the view is hidden by a
+      // class rather than rebuilt, so the box keeps its value.
+      menuPanels('menu-ask');
+      $('menu-ways').hidden = true;
+      $('menu-questions').hidden = true;
+      $('menu-prompt').hidden = false;
+      return;
+    }
+
     if (!menuAllowed()) {
       menuPanels('menu-spent');
       $('menu-spent-line').textContent =
@@ -3189,8 +3798,33 @@
     menuAsk();
   }
 
+  /*
+   * LEAVING THE MENU TAB.
+   *
+   * A menu being written stays exactly where it is — mid-run or mid-question,
+   * come back and carry on. A menu that is FINISHED does not: it is cleared,
+   * so the tab opens at the start next time rather than handing back a meal
+   * that was decided on Tuesday.
+   *
+   * This is the whole of the difference. The finished menu used to be saved
+   * against the profile and restored on every visit, which is right for a
+   * reload — "what am I cooking tonight" gets asked again at six o'clock on a
+   * reloaded tab — and wrong for a tab change, where somebody has just walked
+   * away from it on purpose. So the save survives a reload and not a
+   * deliberate exit, which is the distinction the code could not previously
+   * draw because nothing told it one had happened.
+   */
+  function leaveMenu() {
+    if (!menuWrapped) return;
+    menuWrapped = false;
+    menuNow = [];
+    progress.state.menuDone = null;
+    progress.save();
+  }
+
   /* Back to the two ways in. */
   function menuAsk() {
+    menuStage = null;
     menuRun = null;
     menuWrapped = false;
     progress.state.menuRun = null;
@@ -3237,13 +3871,62 @@
      * for anybody whose answer is more complicated than these.
      */
     { key: 'avoid', text: 'Anything off the table?',
-      options: ['Nothing, all good', 'No meat', 'No fish or seafood', 'Nothing too spicy'] }
+      options: ['Nothing, all good', 'No meat', 'No fish or seafood', 'Nothing too spicy'],
+      // Which reply is already a standing rule. See menuQuestions().
+      covers: { 'No meat': 'meat', 'No fish or seafood': 'seafood', 'Nothing too spicy': 'spicy' } }
   ];
 
-  var menuQ = { at: 0, answers: {} };
+  /*
+   * THE QUESTIONS AS THEY WILL ACTUALLY BE PUT, for this profile.
+   *
+   * The last one asked whether to keep meat, fish or spice off the table —
+   * three things somebody may well have answered once already, on the way in,
+   * under "what you don't eat". Asking again is not harmless. It is the app
+   * saying it was not listening the first time, on the screen directly after
+   * the one that promised nothing here is asked twice, and a reply of "no
+   * meat" typed into a menu is weaker than the rule they already set: it lasts
+   * one menu.
+   *
+   * So a reply already covered by a standing rule is dropped. If that leaves
+   * only "nothing, all good" there is nothing left to ask and the question
+   * goes with it — the rules still apply to the menu, they are applied in
+   * allowedDishes and in the fallback builder, and this was never what made
+   * them work.
+   *
+   * Built fresh each run rather than once at load, because a rule can be
+   * turned on between two menus.
+   */
+  function menuQuestions() {
+    var rules = effectiveRules();
+    var out = [];
+    MENU_QUESTIONS.forEach(function (q) {
+      if (!q.covers) return out.push(q);
+
+      var left = q.options.filter(function (opt) {
+        var tag = q.covers[opt];
+        return !tag || rules.indexOf(tag) === -1;
+      });
+      if (left.length < 2) return;            // only "nothing" survived
+
+      var asked = {};
+      Object.keys(q).forEach(function (k) { asked[k] = q[k]; });
+      asked.options = left;
+      // Different sentence when some of it is already handled, so the shorter
+      // list reads as the app having remembered rather than having forgotten.
+      if (left.length < q.options.length) {
+        asked.text = 'Anything else off the table, just for this one?';
+        asked.note = 'What you don\u2019t eat is already on \u2014 this is for tonight only.';
+      }
+      out.push(asked);
+    });
+    return out;
+  }
+
+  var menuQ = { at: 0, answers: {}, list: MENU_QUESTIONS };
 
   function menuStartQuestions() {
-    menuQ = { at: 0, answers: {} };
+    menuStage = 'questions';
+    menuQ = { at: 0, answers: {}, list: menuQuestions() };
     menuPanels('menu-ask');
     $('menu-ways').hidden = true;
     $('menu-prompt').hidden = true;
@@ -3252,9 +3935,11 @@
   }
 
   function paintMenuQuestion() {
-    var q = MENU_QUESTIONS[menuQ.at];
-    $('menu-q-step').textContent = 'Question ' + (menuQ.at + 1) + ' of ' + MENU_QUESTIONS.length;
+    var q = menuQ.list[menuQ.at];
+    $('menu-q-step').textContent = 'Question ' + (menuQ.at + 1) + ' of ' + menuQ.list.length;
     $('menu-q-title').textContent = q.text;
+    $('menu-q-note').textContent = q.note || '';
+    $('menu-q-note').hidden = !q.note;
     var wrap = $('menu-q-options');
     wrap.innerHTML = '';
     q.options.forEach(function (opt) {
@@ -3266,7 +3951,7 @@
         Sound.tick();
         menuQ.answers[q.key] = opt;
         menuQ.at += 1;
-        if (menuQ.at < MENU_QUESTIONS.length) return paintMenuQuestion();
+        if (menuQ.at < menuQ.list.length) return paintMenuQuestion();
         askMenu({ answers: menuQ.answers });
       });
       wrap.appendChild(btn);
@@ -3274,6 +3959,7 @@
   }
 
   function menuStartPrompt() {
+    menuStage = 'prompt';
     menuPanels('menu-ask');
     $('menu-ways').hidden = true;
     $('menu-questions').hidden = true;
@@ -3320,8 +4006,6 @@
         answers: ask.answers || null,
         liked: liked.liked,
         avoid: liked.avoid,
-        // The model writes in whatever language the app is in. Free, and far
-        // better than anything this app could translate after the fact.
         lang: I18n.get()
       })
     }).then(function (res) {
@@ -3335,12 +4019,15 @@
       if (!courses || !courses.length) return menuFellBack();
 
       var menu = [];
-      courses.forEach(function (c) {
+      allowedDishes(courses, function (c) { return c.name; }).forEach(function (c) {
         var course = COURSES.filter(function (x) { return x.id === c.course; })[0];
         var dish = dishByName(c.name);
         if (course && dish) menu.push({ course: course, dish: dish, why: c.why || '' });
       });
-      if (menu.length < 2) return menuFellBack();
+      // A menu cut down to one course by the rules is not a menu. The offline
+      // builder draws from favouredDishes, which has the rules applied already,
+      // so falling back to it is the one route that cannot come back wrong.
+      if (menu.length < 2) return menuFellBack(courses.length > 0);
 
       // Eating order, whatever order the answer came back in — the run walks
       // this list, so the starter has to actually be first.
@@ -3357,19 +4044,28 @@
   }
 
   /*
-   * The model did not answer, so the app answers. Says so, because a menu
-   * that ignores what somebody just typed and does not admit it is worse than
-   * an error — they would think it had read them and disagreed.
+   * The model did not answer, or answered with food this profile does not
+   * eat. Either way the app answers instead, and says so — a menu that
+   * ignores what somebody just typed and does not admit it is worse than an
+   * error; they would think it had read them and disagreed.
    */
-  function menuFellBack() {
+  function menuFellBack(answered) {
     var menu = buildMenu({ keep: {} });
     if (!menu.length) return menuPanels('menu-empty');
     startRun(menu);
     // Said on the course in hand rather than at the end, because at the end it
     // is too late to matter and they have already agreed to two courses on the
     // strength of something they think the model wrote.
-    $('menu-now-why').textContent = 'Chosen from what you like rather than from what you ' +
-      'said \u2014 the model did not answer, and this has not used up your go.';
+    //
+    // The two reasons to be here are not the same admission, and only one of
+    // them is a failure. Saying "the model did not answer" about a menu thrown
+    // out for having pork in it would be a lie told to cover a rule being
+    // kept, which is the last thing this part of the app should be doing.
+    $('menu-now-why').textContent = answered
+      ? 'Chosen from what you like rather than from what you said \u2014 what came ' +
+        'back was ruled out by what you do not eat, and this has not used up your go.'
+      : 'Chosen from what you like rather than from what you said \u2014 the model did ' +
+        'not answer, and this has not used up your go.';
   }
 
   $('menu-way-questions').addEventListener('click', function () { Sound.tick(); menuStartQuestions(); });
@@ -3496,7 +4192,42 @@
     $('meter-fill').style.width = Math.round(confidence * 100) + '%';
     $('hunch').textContent = game.answers.length ? Flavor.hunch(confidence) : 'Wide open';
 
+    /*
+     * HOW MANY ARE STILL STANDING, as a number rather than as a mood.
+     *
+     * shortlist() is the dishes contradicting nothing the player has said —
+     * the same list the reveal picks from — so this is not a progress bar
+     * dressed as a count, it is the count. Effort towards a goal rises as the
+     * goal gets closer, and three hundred falling to six does that where
+     * "getting warmer" does not.
+     *
+     * Said in words rather than as a bare integer, because "6" alone beside a
+     * question reads as a score. Hidden on question one: a number that has not
+     * moved yet is not evidence of anything.
+     */
+    var standing = game.shortlist().length;
+    $('still').textContent = game.answers.length && standing ? stillSaying(standing) : '';
+
     replay($('q-text'));
+  }
+
+  /*
+   * The count, in words.
+   *
+   * The same three phrasings the landing preview uses, deliberately: somebody
+   * who played the trailer and then tapped through should meet the sentence
+   * they already met. A bare integer beside a question also reads as a score
+   * rather than as progress, which is the opposite of what it is for.
+   *
+   * It goes static near the end — the engine keeps asking after the field is
+   * down to two, to break the tie between them — and "Down to 2" repeated
+   * reads as an achievement holding, where "2 left" repeated reads as a
+   * counter that has jammed.
+   */
+  function stillSaying(left) {
+    if (left === 1) return 'One left';
+    if (left <= 3) return 'Down to ' + left;
+    return left + ' left';
   }
 
   function step() {
@@ -3506,6 +4237,10 @@
     if (!next) return reveal();
     renderQuestion(next.question);
     setPanel('question');
+    if (!funnelStarted) {
+      funnelStarted = true;
+      beacon('decide_started', { mode: shortcut ? 'shortcut' : quickMode ? 'quick' : 'questions' });
+    }
   }
 
   function answer(value, source) {
@@ -3518,28 +4253,68 @@
     if (value === 'either') Sound.shrug(); else Sound.tick();
     floatXp(gained, source);
 
-    var asked = game.answers.length;
     game.answer(current.tag, value);
     step();
+    saveResume();
 
     // After step(), so the new question's render doesn't clear it.
     $('reaction').textContent = line;
     replay($('reaction'));
-
-    /*
-     * The one prompt allowed inside the question flow, and only when this
-     * game's budget is a big one.
-     *
-     * Four answers in is the quietest point in a run: past the broad strokes,
-     * not yet close enough to an answer to be worth hurrying. It still costs
-     * a beat in the middle of a game, so it is only taken when the budget is
-     * more than the reward screen can comfortably spend on its own — at two
-     * or three prompts they all go at the end, where nothing is waiting.
-     */
-    if (asked === 4 && gameBudget >= 4 && panel === 'question') {
-      setTimeout(function () { if (panel === 'question') fillSlot(false); }, 900);
-    }
   }
+
+  /* ---------------------------------------------------------- the funnel */
+  /*
+   * WHERE PEOPLE STOP.
+   *
+   * For a long time this app reported exactly one event — "decided" — which
+   * is the bottom of the funnel and tells you nothing about the way down.
+   * Five days of ad traffic made the cost of that obvious: 513 people opened
+   * this screen, 34 reached the Premium page and a handful reached a
+   * checkout. Nothing in between was measured, so "where did the other 479
+   * go" had no answer at all, and every possible fix was a guess.
+   *
+   * So: started, answered, revealed, accepted. Four points, and the gaps
+   * between them are the whole diagnosis — somebody who never starts is a
+   * landing-page problem, somebody who starts and never reveals is a
+   * question-flow problem, and somebody who reveals and never accepts got an
+   * answer they did not want.
+   *
+   * WHAT IS NOT SENT. No dish names on anything but the accept (where it is
+   * the one fact worth having), no answers, no profile, nothing that
+   * describes a person rather than a step. The privacy page says what leaves
+   * this browser and this has to keep that sentence true.
+   *
+   * Guarded, silent and never load-bearing: the pixel is a third-party
+   * script that can be blocked, fail, or be absent entirely when this file is
+   * opened from somewhere that is not the real site. A measurement is never
+   * worth an exception.
+   */
+  function beacon(name, data) {
+    try {
+      if (typeof whop !== 'undefined' && whop && typeof whop.track === 'function') {
+        whop.track(name, data || {});
+      }
+    } catch (err) { /* never */ }
+    /*
+     * And to GA4, when the tag is on the page. There is no constant to read
+     * here — this is a static app that cannot import from lib/site.ts — so
+     * the presence of gtag IS the switch, which is the same switch by a
+     * shorter route: the tag is only ever injected when GA4_ID is set.
+     *
+     * Same names and same payloads as above. One list of events, described
+     * once on the privacy page, going to both places.
+     */
+    try {
+      if (typeof gtag === 'function') gtag('event', name, data || {});
+    } catch (err) { /* analytics never breaks the game */ }
+  }
+
+  /*
+   * One "started" per game, not one per question. step() is called on every
+   * answer, and a funnel where the top is counted once per tap is a funnel
+   * that cannot be read.
+   */
+  var funnelStarted = false;
 
   /* ---------------------------------------------------------------- reveal */
   // `rankedItems` is fixed for the life of one result panel; `shownItem` is
@@ -3550,6 +4325,13 @@
   var shownItem = null;
 
   function reveal() {
+    // The task is no longer interrupted — it has an answer on it. Anything
+    // after this point is a different kind of unfinished.
+    clearResume();
+    // The middle of the funnel: they got all the way to an answer. How many
+    // questions it took is the one number that says whether the flow is too
+    // long, so it rides along.
+    beacon('decide_revealed', { questions: game.answers.length });
     rankedItems = game.shortlist();
     var top = rankedItems[0];
 
@@ -3562,6 +4344,7 @@
     $('result-blurb').textContent = '';
     $('reasons').innerHTML = '';
     $('alternates').hidden = true;
+    if ($('steer')) $('steer').hidden = true;
     $('result-name').textContent = '…';
 
     var art = $('result-icon');
@@ -3585,9 +4368,7 @@
       // The verdict is on screen and the game has stopped of its own accord,
       // so this is a slot. After the reveal has been read, and only if the
       // reader is still on it.
-      if (gameBudget >= 3) {
-        setTimeout(function () { if (panel === 'result') fillSlot(false); }, 2200);
-      }
+      setTimeout(function () { if (panel === 'result') fillSlot(); }, 2200);
     }
 
     if (!spins) return land();
@@ -3671,6 +4452,9 @@
 
     fillAlternates(item);
     paintPair(item);
+    // Which directions are worth offering depends on what is on screen, so
+    // this is repainted with the dish rather than once per game.
+    paintSteers(item);
   }
 
   // Every alternate is a real button: tapping one swaps it into the result
@@ -3796,18 +4580,18 @@
 
   // Straight from the saved list to a result, no questions at all.
   $('fav-decide-btn').addEventListener('click', function () {
-    var rules = progress.state.rules || [];
+    var rules = effectiveRules();
     var favourites = (progress.state.favourites || [])
       .map(function (f) { return dishByName(f.name); })
       .filter(Boolean)
       .filter(function (dish) {
-        return !rules.some(function (tag) { return (dish.tags[tag] || 0) === 1; });
+        return !rules.some(function (tag) { return (dish.tags[tag] || 0) > 0; });
       });
 
     if (!favourites.length) {
       Sound.reject();
       return toast('\u{1F914}', 'Nothing to pick from',
-        'Everything you have saved is ruled out by your Always avoid list.');
+        'Everything you have saved is ruled out by what you do not eat.');
     }
 
     // With a profile, even this short a list gets ordered rather than shuffled.
@@ -3864,11 +4648,11 @@
      * something other than the real site. Nothing here is allowed to take the
      * game down over a metric.
      */
-    try {
-      if (typeof whop !== 'undefined' && whop && typeof whop.track === 'function') {
-        whop.track('decided', { dish: item.name });
-      }
-    } catch (err) { /* a measurement is never worth an exception */ }
+    beacon('decided', {
+      dish: item.name,
+      questions: game.answers.length,
+      rejections: rejections,
+    });
 
     $('done-icon').textContent = item.icon;
     $('done-name').textContent = item.name + '.';
@@ -3882,6 +4666,19 @@
      * not peppy. Nothing here congratulates anybody on tapping a button.
      */
     $('done-text').textContent = DONE_LINES[Math.floor(Math.random() * DONE_LINES.length)];
+
+    /*
+     * AND ONE TRUE THING ABOUT THEM.
+     *
+     * The closing line above is written by us and is the same for everybody
+     * on the same roll of the dice. This one is theirs: counted from their own
+     * sixty decisions, never inferred, and absent entirely when the numbers do
+     * not carry it. Read AFTER recordDecision so the dish just accepted is
+     * included in its own count — "the fourth time" should mean this one.
+     */
+    var notice = progress.noticing(item);
+    $('done-notice').hidden = !notice;
+    if (notice) $('done-notice').textContent = notice.text;
 
     /*
      * The end of the game, and the last and largest of the prompt slots.
@@ -3899,7 +4696,10 @@
      * the first commit. The ids inside the panel are done-icon and done-name,
      * which is where the wrong word came from and why it never looked wrong.
      */
-    setTimeout(function () { if (panel === 'reward') fillSlot(true); }, 1400);
+    setTimeout(function () {
+      if (panel !== 'reward') return;
+      fillSlot();
+    }, 1400);
     $('xp-total').textContent = '+' + outcome.total;
 
     var list = $('awards');
@@ -3921,6 +4721,10 @@
     }
 
     renderRating(item);
+    paintKeep();
+    paintNext();
+    paintWhy();
+    paintPlan(item);
     setPanel('reward');
     paintStreak();
     Sound.win();
@@ -3928,6 +4732,432 @@
 
     if (outcome.leveledUp) setTimeout(function () { Sound.levelUp(); }, 700);
     queueToasts(outcome.badges);
+  }
+
+  /* ------------------------------------------------------- keep it to hand */
+  /*
+   * THE ONLY RETURN MECHANISM THIS APP IS ALLOWED.
+   *
+   * No account, no email, no notification — /honesty rules all three out, and
+   * they are the whole of the usual retention toolkit. What is left is an
+   * icon on a home screen, which works precisely because the person put it
+   * there themselves. It is the one thing that makes opening this tomorrow
+   * cost one tap instead of remembering a URL.
+   *
+   * TWO ROUTES, BECAUSE BROWSERS DIFFER, AND ONE OF THEM IS MOST OF THE
+   * AUDIENCE. Chromium fires beforeinstallprompt and hands over an event we
+   * can spend later; Safari on iOS never fires it and never will, so there is
+   * nothing to click and the honest thing is to say where the button is. The
+   * landing screen has offered the Chromium route for a while, which quietly
+   * meant the iPhone half of the traffic was offered nothing at all.
+   *
+   * AFTER A DECISION, NOT BEFORE ONE. Asking somebody to keep a thing they
+   * have not used yet is asking them to take it on trust; asking the moment
+   * it has just told them what to eat is asking while the answer is on the
+   * screen. It is earned, it is once, and "not now" is final.
+   */
+  var KEEP_AFTER = 1;   // decisions before it is worth asking at all
+
+  function standalone() {
+    try {
+      if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+      if (navigator.standalone) return true;   // iOS, added to the home screen
+    } catch (err) { /* never */ }
+    return false;
+  }
+
+  function iosSafari() {
+    var ua = navigator.userAgent || '';
+    var ios = /iPad|iPhone|iPod/.test(ua) ||
+      // iPadOS 13+ reports itself as a Mac; the touch points give it away.
+      (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    return ios && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+  }
+
+  function keepDue() {
+    var st = progress.state;
+    if (st.keep === 'no' || st.keep === 'done') return false;
+    if (standalone()) return false;
+    if ((st.decisions || 0) < KEEP_AFTER) return false;
+    // Something to offer: either a real prompt, or instructions worth giving.
+    return !!installPrompt || iosSafari();
+  }
+
+  function paintKeep() {
+    var wrap = $('keep-strip');
+    if (!wrap) return;
+    if (!keepDue()) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var note = $('keep-note');
+    var go = $('keep-go');
+    if (installPrompt) {
+      note.textContent = 'Put it on your home screen and it opens straight into a question ' +
+        'tomorrow \u2014 no address to remember, and it works with no signal.';
+      go.textContent = 'Add it to my home screen';
+      go.hidden = false;
+    } else {
+      // Nothing to click on iOS: the button lives in Safari, not in the page.
+      note.innerHTML = '';
+      note.appendChild(document.createTextNode('Tap '));
+      var icon = document.createElement('i');
+      icon.className = 'keep-icon';
+      icon.textContent = '\u2191';
+      icon.setAttribute('aria-label', 'Share');
+      note.appendChild(icon);
+      note.appendChild(document.createTextNode(
+        ' at the bottom of Safari, then \u201cAdd to Home Screen\u201d. It opens straight ' +
+        'into a question tomorrow \u2014 no address to remember, and it works with no signal.'));
+      go.hidden = true;
+    }
+
+    if (!keepShown) {
+      keepShown = true;
+      beacon('install_shown', { how: installPrompt ? 'prompt' : 'ios' });
+    }
+  }
+  var keepShown = false;
+
+  (function wireKeep() {
+    var go = $('keep-go');
+    var no = $('keep-no');
+    if (go) go.addEventListener('click', function () {
+      if (!installPrompt) return;
+      beacon('install_taken', { how: 'prompt' });
+      installPrompt.prompt();
+      installPrompt.userChoice.then(function (choice) {
+        installPrompt = null;
+        if (choice && choice.outcome === 'accepted') {
+          progress.state.keep = 'done';
+          progress.save();
+          toast('\u{1F4F1}', 'Added', 'It opens from your home screen now, signal or not.');
+        }
+        paintKeep();
+      });
+    });
+    if (no) no.addEventListener('click', function () {
+      // Final. Somebody who does not want an icon will not want one in a
+      // fortnight either, and asking again is the nagging this app refuses.
+      progress.state.keep = 'no';
+      progress.save();
+      Sound.tick();
+      $('keep-strip').hidden = true;
+    });
+  })();
+
+  /* ------------------------------------------------------- what else is here */
+  /*
+   * THE REWARD SCREEN WAS A DEAD END, AND MOST PEOPLE LEFT FROM IT.
+   *
+   * The funnel is clear about it: somebody gets an answer, says yes, and
+   * closes the tab — having seen the decide game and nothing else in an app
+   * with Endless, an assistant, a news page and 450 dishes to browse. They
+   * are not choosing against those things; they never learn they exist.
+   *
+   * So three of them, all free, picked by what this profile has not tried
+   * yet — the unfamiliar first, because a suggestion to do the thing you
+   * already do is noise. And one line about tomorrow that lists only what
+   * genuinely refills each day. That is the whole hook: real reasons to come
+   * back, stated once, with nothing counting down and nothing withheld.
+   */
+  function nextChoices() {
+    var st = progress.state;
+    var out = [];
+    var runs = st.endlessRuns || 0;
+    out.push({
+      to: 'endless',
+      fresh: runs === 0,
+      label: runs === 0
+        ? '\u{267E}\u{FE0F} Endless — two dishes and a clock'
+        : '\u{267E}\u{FE0F} Endless — beat your ' + (st.endlessBest || 0)
+    });
+    var left = chatLeft();
+    out.push({
+      to: 'ask',
+      fresh: !(st.chatAsks > 0),
+      label: isPlus() || left === null
+        ? '\u{1F4AC} Ask it anything'
+        : left > 0
+          ? '\u{1F4AC} Ask it anything — ' + left + ' free today'
+          : null
+    });
+    out.push({ to: 'browse', fresh: true, label: '\u{1F4D6} Browse all ' + Data.ITEMS.length + ' dishes' });
+    out.push({ to: 'news', fresh: true, label: '\u{1F4F0} Today’s food news' });
+    // Untried first, then the rest, each group in the order above.
+    var usable = out.filter(function (c) { return c.label; });
+    return usable.filter(function (c) { return c.fresh; })
+      .concat(usable.filter(function (c) { return !c.fresh; }))
+      .slice(0, 3);
+  }
+
+  function paintNext() {
+    var wrap = $('next-strip');
+    if (!wrap) return;
+    var row = $('next-row');
+    row.innerHTML = '';
+    nextChoices().forEach(function (choice) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'plan-cue';
+      btn.textContent = choice.label;
+      btn.addEventListener('click', function () {
+        Sound.tick();
+        beacon('explored', { to: choice.to });
+        goNext(choice.to);
+      });
+      row.appendChild(btn);
+    });
+    $('next-tomorrow').textContent = isPlus()
+      ? 'Tomorrow: five new dishes on the shelf and fresh headlines. It is all here next time you are hungry.'
+      : 'Tomorrow: five new dishes on the shelf, fresh headlines, three more free questions and ' +
+        ENDLESS_DAY + ' Endless picks. It is all here next time you are hungry.';
+    wrap.hidden = !row.childNodes.length;
+  }
+
+  function goNext(to) {
+    if (to === 'endless') { setView('decide'); return startEndless(); }
+    if (to === 'ask') return setView('chat');
+    if (to === 'browse') return setView('dishes');
+    if (to === 'news') return setView('news');
+  }
+
+  /* ------------------------------------------------------------ asking why */
+  /*
+   * THE ONE THING A FUNNEL CANNOT TELL YOU.
+   *
+   * Counts say 513 people opened the app and 34 reached the Premium page.
+   * They do not say whether the other 479 did not want it, did not see it,
+   * or wanted something it does not do — and those three have completely
+   * different fixes. The only cheap way to tell them apart is to ask.
+   *
+   * FOUR OPTIONS AND A TAP. No free text: a text box at the end of deciding
+   * dinner is a text box nobody fills in, and the answers that do arrive
+   * come from the least representative people on the list. The options are
+   * written as things somebody might actually want rather than as features,
+   * and one of them is "nothing" — an option a survey leaves out is an
+   * answer it has decided not to hear.
+   *
+   * ASKED ONCE, AFTER IT IS EARNED. Five decisions in, so the person has
+   * something to judge. Answered or dismissed, it never appears again;
+   * nothing about it is stored beyond which option was tapped, and that goes
+   * to the same pixel as the funnel, with no dish, no profile and no id.
+   */
+  var WHY_AFTER = 5;
+
+  var WHY_OPTIONS = [
+    { id: 'remember', label: 'Remembering what I like' },
+    { id: 'cook',     label: 'Getting me from the answer to the table' },
+    { id: 'together', label: 'Settling it with somebody else' },
+    { id: 'nothing',  label: 'Nothing \u2014 I am not going to pay' }
+  ];
+
+  function whyDue() {
+    var st = progress.state;
+    if (st.whyAnswered) return false;
+    return (st.decisions || 0) >= WHY_AFTER;
+  }
+
+  function paintWhy() {
+    var wrap = $('why-strip');
+    if (!wrap) return;
+    if (!whyDue()) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var box = $('why-options');
+    box.innerHTML = '';
+    WHY_OPTIONS.forEach(function (option) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'plan-cue';
+      btn.textContent = option.label;
+      btn.addEventListener('click', function () {
+        progress.state.whyAnswered = option.id;
+        progress.save();
+        beacon('premium_why', { answer: option.id, decisions: progress.state.decisions || 0 });
+        Sound.tick();
+        $('why-title').textContent = 'Noted, and thank you';
+        $('why-note').textContent = option.id === 'nothing'
+          ? 'Fair enough. The deciding stays free either way, and you will not be asked again.'
+          : 'That is genuinely useful, and it is the whole of what was recorded. You will not be asked again.';
+        box.innerHTML = '';
+      });
+      box.appendChild(btn);
+    });
+  }
+
+  /* ----------------------------------------------------------- the plan */
+  /*
+   * "When do you usually need this?"
+   *
+   * The whole of the mechanism is in progress.js — this is the screen for it.
+   * Three rules about where it appears and how loud it is:
+   *
+   * NOT ON THE FIRST DECISION. Asking somebody to commit to a nightly habit
+   * the first time they use a thing is asking them to predict a life they
+   * have not started. Two decisions in, they know whether this is for them.
+   *
+   * NOT A PROMPT. It does not open a dialog, and it never covers anything.
+   * It sits on the one screen where nothing is waiting, and a reader who
+   * never looks at it is never asked again by anything else.
+   *
+   * NOT A CONTRACT. Forgetting it is one tap and the tap is right next to it.
+   * A commitment device you cannot leave is not a commitment device, it is a
+   * subscription to feeling bad.
+   */
+  var PLAN_CUES = ProgressLib.PLAN_CUES;
+
+  /*
+   * PUT IT IN YOUR WEEK — what this strip is now.
+   *
+   * It used to ask "When do you usually need this?" and change the home
+   * screen's greeting at that hour: an implementation intention, in the
+   * literature's words, and in a reader's words a question that made no
+   * sense. Its replacement is the thing people actually want to do after
+   * saying yes to a dish — put it in the week — which is what the meal
+   * planner (js/hub.js) is for. Free with an account, like the planner.
+   * Any old greeting a profile still carries is cleared on load (see boot).
+   */
+  var planStripItem = null;
+
+  function paintPlan(item) {
+    var wrap = $('plan-strip');
+    if (!wrap) return;
+    if (item) planStripItem = item;
+    var dish = planStripItem;
+    if (!dish) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+
+    var cues = $('plan-cues');
+    $('plan-done').hidden = true;
+    cues.hidden = false;
+    cues.innerHTML = '';
+    $('plan-title').textContent = 'Put it in your week';
+
+    if (!premiumApi.status.signedIn) {
+      $('plan-note').textContent = 'The meal planner comes free with an account: plan the week, let its AI fill the gaps, and it is on every device you sign in on.';
+      var link = document.createElement('a');
+      link.className = 'plan-cue';
+      link.href = '/api/oauth/login?redirect_to=' + encodeURIComponent('/decide/?go=planner');
+      // target="_top": see the note on #invite-signin.
+      link.target = '_top';
+      link.textContent = 'Sign in and plan it';
+      cues.appendChild(link);
+      return;
+    }
+
+    $('plan-note').textContent = 'Drop ' + dish.name + ' into the meal planner, and let it plan the rest of the week around it.';
+    var meal = dish.tags && dish.tags.breakfast > 0 ? 'breakfast' : 'dinner';
+    [['Tonight', 0], ['Tomorrow', 1]].forEach(function (choice) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'plan-cue';
+      btn.textContent = choice[0] + (meal === 'breakfast' ? ' (breakfast)' : '');
+      btn.addEventListener('click', function () {
+        if (!window.M45Hub || !window.M45Hub.addDish) return;
+        var date = new Date();
+        date.setDate(date.getDate() + choice[1]);
+        btn.disabled = true;
+        window.M45Hub.addDish(dish.name, date, meal).then(function (ok) {
+          Sound.tick();
+          btn.textContent = ok ? 'Added \u2713' : 'Could not add it \u2014 try the planner';
+          if (ok) toast('\u{1F4C5}', 'In your week', dish.name + ' is on ' + (choice[1] ? 'tomorrow' : 'tonight') + '\u2019s ' + meal + '.');
+        });
+      });
+      cues.appendChild(btn);
+    });
+    var open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'plan-cue';
+    open.textContent = 'Open the planner';
+    open.addEventListener('click', function () { setView('planner'); });
+    cues.appendChild(open);
+  }
+
+  /*
+   * THE CALENDAR FILE, WHICH IS THE ONLY REMINDER THIS APP CAN HONESTLY OFFER.
+   *
+   * A web app cannot schedule a notification for tomorrow evening: the
+   * Notification Triggers API is one browser behind a flag, and anything
+   * server-side would mean an account, a push subscription and a backend that
+   * knows when you eat. A calendar entry needs none of that, works offline,
+   * fires when the phone is asleep, and is deleted by the person who owns it
+   * without asking us.
+   *
+   * Floating local time on purpose — no Z, no TZID. "Around seven" means seven
+   * wherever they are, which is what somebody who travels actually wants and
+   * is the one case a fixed UTC stamp gets wrong.
+   */
+  function planIcs(plan) {
+    function two(n) { return (n < 10 ? '0' : '') + n; }
+    var now = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), plan.hour, 0, 0);
+    // If today's slot has been and gone, start tomorrow rather than putting a
+    // past event in somebody's calendar.
+    if (start.getTime() < now.getTime()) start.setDate(start.getDate() + 1);
+
+    function local(d) {
+      return d.getFullYear() + two(d.getMonth() + 1) + two(d.getDate()) +
+        'T' + two(d.getHours()) + two(d.getMinutes()) + '00';
+    }
+    function utc(d) {
+      return d.getUTCFullYear() + two(d.getUTCMonth() + 1) + two(d.getUTCDate()) +
+        'T' + two(d.getUTCHours()) + two(d.getUTCMinutes()) + two(d.getUTCSeconds()) + 'Z';
+    }
+
+    return [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//morsels45//decide//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      'UID:morsels45-plan-' + plan.at + '@morsels45',
+      'DTSTAMP:' + utc(now),
+      'DTSTART:' + local(start),
+      'DURATION:PT15M',
+      'RRULE:FREQ=DAILY',
+      'SUMMARY:What am I eating?',
+      'DESCRIPTION:You said you would work this out ' + plan.phrase +
+        '. Takes about twenty seconds.\\n\\nhttps://morsels45-app.whop.site/decide/',
+      'URL:https://morsels45-app.whop.site/decide/',
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      'TRIGGER:PT0S',
+      'DESCRIPTION:What am I eating?',
+      'END:VALARM',
+      'END:VEVENT',
+      // The trailing empty string is not a typo: RFC 5545 wants the last line
+      // terminated too, and a handful of parsers drop the final component
+      // without it.
+      'END:VCALENDAR',
+      ''
+    ].join('\r\n');
+  }
+
+  function downloadPlan() {
+    var plan = progress.plan();
+    if (!plan) return;
+    try {
+      var blob = new Blob([planIcs(plan)], { type: 'text/calendar;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'morsels45.ics';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+      Sound.tick();
+      toast('\u{1F4C5}', 'Saved', 'Open it and your calendar will ask once, then repeat daily.');
+    } catch (err) {
+      /*
+       * Downloads can be refused outright — a sandboxed frame, a locked-down
+       * browser. Saying so is better than a button that looks like it worked.
+       */
+      Sound.reject();
+      toast('\u{1F937}', 'Your browser said no',
+        'It would not let me hand over a file. The plan is still saved here.');
+    }
   }
 
   /* -------------------------------------------------------------- ratings */
@@ -4161,11 +5391,11 @@
      * A number on its own is an abstraction; a takeaway is not. The comparison
      * is only worth making because it is TRUE, so it changed when the price
      * did: at $3.45 this said "less than one cup of coffee", which was fair
-     * then and is not at $4.99 — a coffee is about five dollars, so that claim
-     * would now ride on a penny, and a pitch that needs rounding in its favour
-     * is not one to make. A single takeaway is fifteen to twenty-five, so a
-     * month of this is under one by a wide margin, and it is the spend this app
-     * is actually about.
+     * then, became a penny-thin claim when the price briefly moved to $4.99,
+     * and the price is back at $3.45 now — but the comparison was already
+     * moved to takeaway and there is no reason to move it back. A single
+     * takeaway is fifteen to twenty-five, so a month of this is under one by a
+     * wide margin either way, and it is the spend this app is actually about.
      *
      * Written as "a whole month of it" rather than a bare price so it cannot
      * be read as a one-off charge.
@@ -4225,159 +5455,8 @@
     'Locked in. Enjoy the bit that comes next.'
   ];
 
-  /* --------------------------------------------------------- earn with it */
-  /*
-   * The affiliate offer, on the same terms as the enjoy prompt.
-   *
-   * Never in the same sitting as it: being asked whether you like something
-   * and then asked to go and sell it, one after the other, is two asks in a
-   * row and reads as a sales funnel rather than an app. So this only comes up
-   * when the other prompt is not what is due — which is the rule that still
-   * holds now the two are only a few decisions apart rather than twenty.
-   *
-   * "Not for me" is final. There is no later on this one — somebody who does
-   * not want to sell your app is not going to want to in a fortnight, and
-   * asking again would just be nagging with extra steps. That refusal is the
-   * ceiling on this prompt, not EARN_MAX_SHOWS.
-   */
-  var EARN_AFTER = 8;         // decisions before it is offered at all, and between showings
-  var EARN_MAX_SHOWS = 4;     // times it may ever appear
-
-  function earnDue() {
-    var st = progress.state;
-    if (st.earn === 'no') return false;
-    if ((st.earnShown || 0) >= EARN_MAX_SHOWS) return false;
-    // Never on top of the other prompt, and never in the same run as one.
-    if (enjoyDue()) return false;
-    var decisions = st.decisions || 0;
-    if (decisions < EARN_AFTER) return false;
-    // A second showing costs another full run of decisions.
-    if ((st.earnShown || 0) > 0 && decisions < (st.earnAt || 0) + EARN_AFTER) return false;
-    return true;
-  }
-
-  function openEarn(preview) {
-    var st = progress.state;
-    if (!preview) {
-      st.earnShown = (st.earnShown || 0) + 1;
-      st.earnAt = st.decisions || 0;
-      progress.save();
-    }
-
-    /*
-     * Open with what they have actually done here.
-     *
-     * The line was "if you like morsels45, you can get paid for telling
-     * people about it" — a pitch that begins by admitting it does not know
-     * whether you like it. Somebody twenty-five decisions deep has answered
-     * that question with their thumbs. The streak is only mentioned from
-     * three days, because two days is not a streak.
-     */
-    var decisions = st.decisions || 0;
-    var streak = st.streak || 0;
-    var lead = 'You have settled ' + decisions + ' ' +
-      (decisions === 1 ? 'dinner' : 'dinners') + ' in here';
-    if (streak >= 3) lead += ', ' + streak + ' days running';
-    lead += '. If it is worth that to you, it is worth something to whoever you tell.';
-    $('earn-lead').textContent = lead;
-
-    earnOpener = document.activeElement;
-    var dlg = $('earn-sheet');
-    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
-    focusQuietly($('earn-go'));
-  }
-
-  function closeEarn() {
-    var dlg = $('earn-sheet');
-    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
-    focusQuietly(earnOpener);
-  }
-
-  var earnOpener = null;
-
-  /* ------------------------------------------------------- the prompt budget */
-  /*
-   * HOW MANY PROMPTS ONE GAME IS ALLOWED, and where they are allowed to land.
-   *
-   * A game is one play-through: from starting a decision to accepting one.
-   * On Standard that game gets a budget of between two and five prompts,
-   * drawn once when the game starts so the pace varies between games instead
-   * of being the same every time. A Premium member gets one: they have
-   * already bought the thing two of these are selling, and the affiliate
-   * offer is worth making once.
-   *
-   * WHERE THEY LAND, and why not mid-question. Three modal dialogs thrown
-   * across the question flow would hit the budget and wreck the game: every
-   * one of them steals focus in the middle of a train of thought that takes
-   * about a minute to finish. So the slots are the two places the game has
-   * already stopped — the verdict and the reward screen — plus one quiet
-   * point in the middle, and the reward screen then spends whatever is left
-   * over, one prompt after the next, each waiting for the one before it to be
-   * closed. Same count, and nothing interrupted.
-   *
-   * WHAT FILLS A SLOT, in order. The three bespoke prompts first, when they
-   * are due: they are about a specific thing, they keep their own state and
-   * they are rare by design. Then the ads, which are what makes a budget of
-   * five reachable at all — an offer with nothing behind it but "not now"
-   * comes back, where a survey answered is answered forever.
-   */
-  var GAME_BUDGET_MIN = 2;
-  var GAME_BUDGET_MAX = 5;
-
-  /*
-   * A MEMBER GETS ONE KIND OF PROMPT, RARELY.
-   *
-   * One per game was already a tenth of what Standard sees, and it was still
-   * wrong: one every game is every game. Somebody paying has bought the thing
-   * two thirds of this roster is selling, and what they bought includes not
-   * being sold to. So the only prompt they are ever shown is the affiliate
-   * one — the only one that might pay them something back rather than ask
-   * them for something — and it waits a dozen decisions between showings.
-   *
-   * Not asked at all until the first dozen, either. A prompt on the day
-   * somebody pays reads as the app having been waiting for the money to clear.
-   */
-  var GAME_BUDGET_PLUS = 1;
-  var PLUS_PROMPT_EVERY = 12;  // decisions between money prompts for a member
-
-  function plusPromptDue() {
-    var st = progress.state;
-    // The same refusal that ends the affiliate offers for everybody. A member
-    // who has said "not for me" is then done with prompts entirely, which is
-    // the quietest this app can be and is exactly right.
-    if (st.earn === 'no') return false;
-    var decisions = st.decisions || 0;
-    return decisions >= (st.plusPromptAt || 0) + PLUS_PROMPT_EVERY;
-  }
-
-  /*
-   * HOW MANY SWAPS A MENU IS WORTH ON STANDARD.
-   *
-   * Swapping is local and free — it re-scores from the catalogue rather than
-   * asking the model — and with three courses, three swaps is a brand new
-   * menu for nothing. That made the one-every-two-days allowance a formality:
-   * take your menu, then swap every course until you like it.
-   *
-   * Two is the number because two is what the feature is actually for: "the
-   * main is right, the other two are not". Changing all three is not
-   * adjusting a menu, it is asking for a different one, and that is what the
-   * allowance covers. Premium swaps as much as it likes.
-   */
-
-  var gameBudget = 0;
-  var gameSpent = 0;
-  var gameAds = [];   // ad ids already used this game, so none repeats in it
-
-  function startGameBudget() {
-    gameSpent = 0;
-    gameAds = [];
-    gameBudget = isPlus()
-      ? GAME_BUDGET_PLUS
-      : GAME_BUDGET_MIN + Math.floor(Math.random() * (GAME_BUDGET_MAX - GAME_BUDGET_MIN + 1));
-  }
-
   function anySheetOpen() {
-    var ids = ['enjoy-sheet', 'earn-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet'];
+    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet', 'comeback-sheet'];
     for (var i = 0; i < ids.length; i++) {
       var dlg = document.getElementById(ids[i]);
       if (dlg && dlg.open) return true;
@@ -4386,251 +5465,44 @@
   }
 
   /*
-   * Spend one prompt, if there is budget and something worth showing.
-   *
-   * `chain` keeps going after each one is closed until the budget is gone —
-   * only used on the reward screen, where nothing is waiting. Returns whether
-   * anything was shown, so a caller can tell a spent budget from an empty
-   * roster.
+   * The two bespoke prompts, tried in order, at the verdict and the reward
+   * screen — the two places the game has already stopped on its own, so
+   * nothing is interrupted mid-thought. There used to be a rotating roster of
+   * Premium ads filled in here as well, spaced by a per-game budget; it is
+   * gone — see the note over the "invite a friend" section for what replaced
+   * it. What is left are two real things, each with its own frequency rule
+   * and each answered forever once somebody actually answers it.
    */
-  function fillSlot(chain) {
-    // Capped live rather than trusting the number drawn at the start of the
-    // game: Premium is settled by a request to the server, so the very first
-    // game of a session can begin before the answer is back. Reading isPlus()
-    // here means a member never spends a Standard-sized budget.
-    var plus = isPlus();
-    var cap = plus ? Math.min(gameBudget, GAME_BUDGET_PLUS) : gameBudget;
-    if (gameSpent >= cap) return false;
+  function fillSlot() {
     if (anySheetOpen()) return false;
-    if (plus && !plusPromptDue()) return false;
-
-    /*
-     * enjoyDue and shareDue already refuse a member on their own, so the two
-     * of them could be left in the chain and would simply never fire. They
-     * are guarded here as well because this is the line that has to be read
-     * to answer "what does a member see?", and the answer should be legible
-     * from it rather than from three functions in other places.
-     */
-    var shown = null;
-    if (!plus && enjoyDue()) { openEnjoy(); shown = 'enjoy-sheet'; }
-    else if (earnDue()) { openEarn(); shown = 'earn-sheet'; }
-    else if (!plus && shareDue()) { openShare(); shown = 'share-sheet'; }
-    else if (openAd(nextAd())) { shown = 'ad-sheet'; }
-
-    if (!shown) return false;
-    gameSpent += 1;
-
-    if (plus) {
-      progress.state.plusPromptAt = progress.state.decisions || 0;
-      progress.save();
-    }
-
-    if (chain) {
-      var dlg = $(shown);
-      // The dialog's own close event, so the next one waits for this one to be
-      // dealt with however it was dealt with. Two prompts on screen at once is
-      // not two chances, it is one person closing two things.
-      dlg.addEventListener('close', function once() {
-        dlg.removeEventListener('close', once);
-        setTimeout(function () { if (panel === 'reward') fillSlot(true); }, 500);
-      });
-    }
-    return true;
-  }
-
-  /* --------------------------------------------------------------- the ads */
-  /*
-   * The rotating prompts, and the one place a new offer is added.
-   *
-   * ADD AN AFFILIATE HERE. One entry, and it joins the rotation: it will be
-   * shown, spaced, counted against the per-game budget and silenced by the
-   * same refusal as the rest, with nothing else to wire up. `kind` decides
-   * who sees it and which refusal ends it — 'plus' is the upgrade pitch and
-   * is never shown to somebody already paying; 'aff' is an affiliate offer
-   * and is ended for good by the same "not for me" that ends all of them.
-   *
-   * NO NUMBERS THAT ARE NOT KNOWN HERE. None of these name a commission rate
-   * or an amount, because this file does not know them and a made-up figure
-   * in a money pitch is the one kind of wrong that costs somebody something
-   * real. They say what the deal is and let the page at the other end say
-   * what it pays.
-   */
-  var AFFILIATES_URL = 'https://whop.com/morsels45/affiliates';
-
-  var ADS = [
-    /*
-     * This used to be titled "Cheaper than a cup of coffee", which was true at
-     * $3.45 and is not worth saying at $4.99 (the price is $3.45 again, and the
-     * takeaway line below is true at either) — a coffee is about five dollars,
-     * so the claim would hang on a single penny. A pitch that needs rounding in
-     * its own favour is the kind of wrong worth being careful about, so the
-     * comparison moved to a takeaway: fifteen to twenty-five dollars, which a
-     * month of this is comfortably under, and it is the spend this app is
-     * actually competing with.
-     */
-    {
-      id: 'plus-takeaway',
-      kind: 'plus',
-      icon: '✨',
-      title: 'Less than one takeaway',
-      body: 'Premium is the other six ways to play, cook mode, the menu builder, ' +
-            'and rules it never asks you about twice. A whole month of it costs less ' +
-            'than a single delivery order.',
-      fine: 'Seven days free first. The game you are playing stays free either way.',
-      cta: 'Seven days free'
-    },
-    {
-      id: 'plus-modes',
-      kind: 'plus',
-      icon: '\u{1F3C6}',
-      title: 'There are six more games in here',
-      body: 'Knockout, Blitz, This or that, Shortlist, Swipe and Together are all ' +
-            'sitting behind one switch. Same catalogue, six different ways to argue ' +
-            'with it.',
-      fine: 'Seven days free, then $3.45 a month.',
-      cta: 'Have a look'
-    },
-    {
-      id: 'aff-tell',
-      kind: 'aff',
-      icon: '\u{1F4B8}',
-      title: 'Get paid for telling people',
-      body: 'morsels45 has an affiliate programme. Share your own link, and when ' +
-            'somebody signs up through it you take a cut — for as long as they stay.',
-      fine: 'Free to join, nothing to pay, and it costs the people you send nothing extra.',
-      cta: 'Show me how'
-    },
-    {
-      id: 'aff-already',
-      kind: 'aff',
-      icon: '\u{1F4E3}',
-      title: 'You are already recommending it',
-      body: 'Every time you settle an argument about dinner with this, somebody else ' +
-            'hears about it. With a link in your hand, that is worth something to you ' +
-            'as well as to them.',
-      fine: 'Takes a minute to set up and there is nothing to pay.',
-      cta: 'Get my link'
-    },
-    {
-      id: 'aff-recurring',
-      kind: 'aff',
-      icon: '\u{1F501}',
-      title: 'It pays for as long as they stay',
-      body: 'The cut is not a one-off finder’s fee. Sign somebody up and you keep ' +
-            'earning from them every month they keep using it.',
-      fine: 'Nothing to pay, nothing to ship, and no minimum.',
-      cta: 'See the terms'
-    },
-    {
-      id: 'aff-nothing-to-sell',
-      kind: 'aff',
-      icon: '\u{1F4E6}',
-      title: 'Nothing to buy, nothing to post',
-      body: 'This is not one of those where you have to buy a kit or put anything on ' +
-            'social media. It is a link. You send it to people who cannot decide what ' +
-            'to eat, which is everybody.',
-      fine: 'Free to join and you can stop at any point.',
-      cta: 'Get my link'
-    },
-    {
-      id: 'aff-group',
-      kind: 'aff',
-      icon: '\u{1F465}',
-      title: 'One link works for a whole group chat',
-      body: 'The same link does not run out and does not care how many people use it. ' +
-            'Put it somewhere a few people will see it once, rather than sending it ' +
-            'over and over.',
-      fine: 'Free to join, and it costs the people you send nothing extra.',
-      cta: 'Show me how'
-    },
-    {
-      id: 'aff-cancel',
-      kind: 'aff',
-      icon: '\u{1F513}',
-      title: 'You keep your link if you stop paying',
-      body: 'The affiliate programme is not part of Premium. Join it on the free ' +
-            'version, keep it if you cancel, and keep earning either way.',
-      fine: 'Nothing to pay, ever, to be an affiliate.',
-      cta: 'Join it'
-    }
-  ];
-
-  /*
-   * Which ads this profile is allowed to see at all.
-   *
-   * Nothing here is about timing — that is the budget's job below. This is
-   * only the question of whether an offer makes sense for this person and
-   * whether they have told us to stop.
-   */
-  function adAllowed(ad) {
-    var st = progress.state;
-    if (ad.kind === 'plus') return !isPlus() && st.plusAd !== 'no';
-    if (ad.kind === 'aff') return st.earn !== 'no';
-    return true;
+    if (enjoyDue()) { openEnjoy(); return true; }
+    if (shareDue()) { openShare(); return true; }
+    return false;
   }
 
   /*
-   * The rotation cursor, saved.
-   *
-   * Held in progress rather than in a variable so the rotation carries across
-   * games and across days. Without that, every game would open with the same
-   * ad, which is how a roster of five ends up being one ad with four spares.
+   * THE PREMIUM EXPLAIN SHEET. Used to also be where a rotating roster of
+   * unsolicited Premium pitches lived — a card roughly every two minutes,
+   * everywhere in the app, plus a budgeted two or three a game. All of that
+   * is gone, removed rather than slowed down further: this project stopped
+   * wanting to be a thing that interrupts you to ask for money. What is left
+   * is purely reactive — it opens only because somebody tapped a locked
+   * feature or a "try it free" link, via goPremium() above, and says what
+   * that one thing is.
    */
-  function nextAd() {
-    var st = progress.state;
-    var start = st.adAt || 0;
-    for (var i = 0; i < ADS.length; i++) {
-      var ad = ADS[(start + i) % ADS.length];
-      if (!adAllowed(ad)) continue;
-      // Never the same card twice in one game. With most of the roster
-      // refused the cursor wraps inside a single game, and it did: a profile
-      // that had ended the affiliate offers got "six more games in here",
-      // then the takeaway line, then both again, in one sitting. The same pitch
-      // twice in five minutes is the exact thing that makes somebody leave.
-      // Nothing new to say means the slot goes unfilled and the budget simply
-      // is not spent — fewer prompts for somebody who has refused most of
-      // them is the right answer, not a repeat.
-      if (gameAds.indexOf(ad.id) !== -1) continue;
-      st.adAt = (start + i + 1) % ADS.length;
-      progress.save();
-      gameAds.push(ad.id);
-      return ad;
-    }
-    return null;
-  }
-
   var adOpener = null;
-  var adShowing = null;
 
-  function openAd(ad, preview) {
+  function openAd(ad) {
     if (!ad) return false;
-    // adShowing keeps the English card: what ends it is its kind and id, which
-    // translation never touches. Only what is painted is translated.
-    adShowing = ad;
-    var shown = I18n.ad(ad);
 
-    $('ad-art').textContent = shown.icon;
-    $('ad-title').textContent = shown.title;
-    $('ad-body').textContent = shown.body;
-    $('ad-fine').textContent = shown.fine;
-    $('ad-go').textContent = shown.cta;
-    $('ad-go').href = ad.kind === 'aff' ? AFFILIATES_URL : premiumApi.upgradeUrl();
-    // The final refusal is named after what it ends, not after this one card:
-    // "not for me" on an affiliate offer ends every affiliate offer, and it
-    // should not take somebody three refusals to discover that.
-    // The buttons follow the card: a language with no ads of its own gets the
-    // English card AND the English buttons, never half of each.
-    var own = I18n.hasAds();
-    $('ad-never').textContent = ad.kind === 'aff'
-      ? (own ? I18n.t('ad.never.aff', 'Not for me') : 'Not for me')
-      : (own ? I18n.t('ad.never.plus', 'Not interested') : 'Not interested');
-    $('ad-later').textContent = own ? I18n.t('ad.later', 'Not now') : 'Not now';
+    $('ad-art').textContent = ad.icon;
+    $('ad-title').textContent = ad.title;
+    $('ad-body').textContent = ad.body;
+    $('ad-fine').textContent = ad.fine;
+    $('ad-go').textContent = ad.cta;
+    $('ad-go').href = premiumApi.upgradeUrl();
 
-    if (!preview) {
-      var st = progress.state;
-      st.adShown = (st.adShown || 0) + 1;
-      progress.save();
-    }
+    beacon('premium_seen', { card: ad.id });
 
     adOpener = document.activeElement;
     var dlg = $('ad-sheet');
@@ -4645,23 +5517,27 @@
     focusQuietly(adOpener);
   }
 
-  $('ad-later').addEventListener('click', function () { Sound.tick(); closeAd(); });
-  $('ad-close').addEventListener('click', closeAd);
-  $('ad-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeAd(); });
-
-  // Final, and for the whole kind rather than this one card.
-  $('ad-never').addEventListener('click', function () {
-    var st = progress.state;
-    if (adShowing && adShowing.kind === 'aff') st.earn = 'no';
-    if (adShowing && adShowing.kind === 'plus') st.plusAd = 'no';
-    progress.save();
-    Sound.tick();
+  // The bottom of the in-app funnel: they tapped through to pay. Whop's own
+  // membership data says whether it finished, so this is the last thing this
+  // side needs to report.
+  $('ad-go').addEventListener('click', function () {
+    beacon('premium_clicked', { from: 'card' });
     closeAd();
   });
 
-  // Tapping the offer is an answer too: it should not be put to them again in
-  // the same breath, and the sheet is a change of context anyway.
-  $('ad-go').addEventListener('click', function () { closeAd(); });
+  $('ad-close').addEventListener('click', closeAd);
+  $('ad-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeAd(); });
+
+  // The other way out of the app towards paying: the strip on the profile
+  // screen, which is somebody who went looking rather than being asked.
+  (function trackProfileBuy() {
+    var buy = $('buy-btn');
+    if (buy) buy.addEventListener('click', function () { beacon('premium_clicked', { from: 'profile' }); });
+    var strip = $('plus-toggle');
+    if (strip) strip.addEventListener('click', function () { beacon('premium_clicked', { from: 'profile-strip' }); });
+    var top = $('topbar-premium');
+    if (top) top.addEventListener('click', function () { beacon('premium_clicked', { from: 'topbar' }); });
+  })();
 
   /* ----------------------------------------------------------- send it on */
   /*
@@ -4698,7 +5574,7 @@
     // This is the last real throttle on this prompt; the numbers are not.
     if (st.enjoy !== 'yes') return false;
     // Never on top of, or in the same run as, one of the other prompts.
-    if (enjoyDue() || earnDue()) return false;
+    if (enjoyDue()) return false;
     var decisions = st.decisions || 0;
     if (decisions < SHARE_AFTER) return false;
     if ((st.shareShown || 0) > 0 && decisions < (st.shareAt || 0) + SHARE_AFTER) return false;
@@ -4808,29 +5684,203 @@
   $('share-close').addEventListener('click', closeShare);
   $('share-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeShare(); });
 
-  $('earn-no').addEventListener('click', function () {
-    progress.state.earn = 'no';
-    progress.save();
-    Sound.tick();
-    closeEarn();
-  });
 
   // The link is a real anchor with a real href, so it works on a middle click,
   // a long press and with the keyboard — and still goes somewhere if the
   // JavaScript on this page ever fails. Closing behind it just tidies up.
-  $('earn-go').addEventListener('click', function () {
-    progress.state.earn = 'seen';
-    progress.save();
-    setTimeout(closeEarn, 0);
-  });
 
-  $('earn-close').addEventListener('click', closeEarn);
-  $('earn-sheet').addEventListener('cancel', function (e) { e.preventDefault(); closeEarn(); });
+
+  /* ------------------------------------------------------------- steering */
+
+  /*
+   * WHICH WAY, RATHER THAN NO.
+   *
+   * The verdict had one thing to say about a dish you did not want, and that
+   * was "not quite". You could veto the answer but you could not point at
+   * anything, so the app guessed again from the same information and you
+   * declined again — which is why a session of it felt like refusing things
+   * rather than being helped.
+   *
+   * A steer is an ANSWER, given after the dish instead of before it. It goes
+   * into game.answer() exactly as a question's answer does, the whole
+   * catalogue is re-weighted, and the next dish is genuinely different in the
+   * direction asked. Nothing here is a filter bolted on the side: it is the
+   * same engine, told one more thing.
+   *
+   * `when` decides whether a direction is worth offering for the dish on
+   * screen. Offering "milder" for cereal or "quicker" for toast is the app
+   * not paying attention, and four sensible buttons beat eight thorough ones
+   * on a screen whose whole promise is that you do not have to think.
+   */
+  var STEERS = [
+    { id: 'lighter',  tag: 'light',   value: 'yes', label: 'Lighter',       said: 'Lighter, then.',
+      when: function (d) { return (d.tags.filling || 0) > 0 || (d.tags.indulgent || 0) > 0 || (d.tags.light || 0) === 0; } },
+    { id: 'heartier', tag: 'filling', value: 'yes', label: 'More filling',  said: 'Something with more to it.',
+      when: function (d) { return (d.tags.filling || 0) < 1; } },
+    { id: 'spicier',  tag: 'spicy',   value: 'yes', label: 'Spicier',       said: 'Turning the heat up.',
+      when: function (d) { return (d.tags.spicy || 0) < 1; } },
+    { id: 'milder',   tag: 'spicy',   value: 'no',  label: 'Less spicy',    said: 'Calmer, then.',
+      when: function (d) { return (d.tags.spicy || 0) > 0; } },
+    { id: 'quicker',  tag: 'quick',   value: 'yes', label: 'Quicker',       said: 'Something faster.',
+      when: function (d) { return (d.tags.quick || 0) < 1; } },
+    { id: 'warmer',   tag: 'hot',     value: 'yes', label: 'Something hot', said: 'Hot it is.',
+      when: function (d) { return (d.tags.hot || 0) < 1; } },
+    { id: 'fresher',  tag: 'fresh',   value: 'yes', label: 'Fresher',       said: 'Something fresher.',
+      when: function (d) { return (d.tags.fresh || 0) < 1 && (d.tags.drink || 0) < 1; } },
+    { id: 'comfort',  tag: 'comfort', value: 'yes', label: 'More comforting', said: 'Comfort, then.',
+      when: function (d) { return (d.tags.comfort || 0) < 1; } },
+    { id: 'cheaper',  tag: 'cheap',   value: 'yes', label: 'Cheaper',       said: 'Keeping it cheap.',
+      when: function (d) { return (d.tags.cheap || 0) < 1 && (d.tags.indulgent || 0) > 0; } }
+  ];
+
+  /* How many directions get offered at once. Four including the veto. */
+  var STEER_SHOWN = 3;
+
+  /*
+   * A tag already answered is not a direction any more — offering "spicier"
+   * to somebody who has just been asked about heat and said yes is the app
+   * forgetting the conversation it is in.
+   */
+  function steerAvailable(dish) {
+    var asked = {};
+    game.answers.forEach(function (a) { if (a.value !== 'either') asked[a.tag] = true; });
+
+    /*
+     * ONE DIRECTION PER AXIS. A dish tagged 0.5 for heat satisfies both
+     * "spicier" (it is not spicy) and "less spicy" (it is not un-spicy), so
+     * momos came up offering both at once — the app visibly arguing with
+     * itself and spending two of its three slots doing it. First match per
+     * tag wins, which is the one written earliest in STEERS.
+     */
+    var taken = {};
+    return STEERS.filter(function (steer) {
+      if (asked[steer.tag] || taken[steer.tag]) return false;
+      if (!steer.when(dish)) return false;
+      taken[steer.tag] = true;
+      return true;
+    });
+  }
+
+  function paintSteers(dish) {
+    var wrap = $('steer');
+    var row = $('steer-row');
+    if (!wrap || !row) return;
+
+    /*
+     * Shortcut modes — Knockout, Blitz, Shortlist and the rest — have no
+     * questions behind them and so nothing for an answer to change. They keep
+     * the plain "not quite", which there walks their own running order.
+     */
+    if (shortcut || !dish) {
+      wrap.hidden = true;
+      // A mode with no questions behind it keeps the plain veto, which there
+      // walks that mode's own running order.
+      $('reject-btn').hidden = false;
+      return;
+    }
+
+    /*
+     * The old "Not quite" comes out of the quiet list while steering is up.
+     * The steer row ends with the same veto, and two buttons that do exactly
+     * the same thing, eight lines apart, is the screen telling somebody to
+     * stop and read it — on the screen whose whole promise is that they do
+     * not have to.
+     */
+    $('reject-btn').hidden = true;
+
+    row.innerHTML = '';
+    var offered = steerAvailable(dish).slice(0, STEER_SHOWN);
+
+    offered.forEach(function (steer) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'steer-btn';
+      btn.textContent = steer.label;
+      btn.addEventListener('click', function () { applySteer(steer); });
+      row.appendChild(btn);
+    });
+
+    // The veto, still here, and now the quietest thing in the row.
+    var no = document.createElement('button');
+    no.type = 'button';
+    no.className = 'steer-btn is-plain';
+    no.textContent = offered.length ? 'Just something else' : 'Show me another';
+    no.addEventListener('click', rejectCurrent);
+    row.appendChild(no);
+
+    $('steer-lead').textContent = offered.length
+      ? 'Close? Point me somewhere.'
+      : 'Not it?';
+    wrap.hidden = false;
+  }
+
+  /*
+   * Take the direction, and land on something new.
+   *
+   * The dish on screen is struck off first: a steer that hands back the same
+   * dish because it still scores best reads as the app ignoring you, which is
+   * the exact complaint this is here to answer.
+   */
+  function applySteer(steer) {
+    if (busy) return;
+    var from = shownItem || game.best().item;
+
+    Sound.next();
+    game.reject(from.name);
+    game.answer(steer.tag, steer.value);
+
+    /*
+     * EVERYTHING TURNED DOWN STAYS DOWN. ranking() deliberately keeps rejected
+     * dishes in it — a rejection is "not that one, now", and shortlist() is
+     * what filters them. Skipping only the dish just steered away from meant
+     * the second steer could hand back the one the first steer rejected:
+     * masala chai, lighter, matcha latte, more filling, masala chai. Steering
+     * that walks you in a circle is worse than no steering.
+     */
+    var ranked = game.ranking().filter(function (r) {
+      return !game.rejected[r.item.name] && r.item.name !== from.name;
+    });
+
+    /*
+     * AND THE DIRECTION IS THE POINT. The new answer already faults anything
+     * that flatly contradicts it, so the top of the ranking usually honours
+     * the steer on its own — but a dish tagged 0.5 contradicts nothing and can
+     * outrank one tagged 1, and then "spicier" lands on something merely not
+     * un-spicy. Among the dishes tied on faults, prefer one that plainly goes
+     * the way it was pointed; fall back to the best of the rest.
+     */
+    var next = null;
+    for (var i = 0; i < ranked.length; i++) {
+      var has = ranked[i].item.tags[steer.tag] || 0;
+      var plain = steer.value === 'yes' ? has === 1 : has === 0;
+      if (plain) { next = ranked[i].item; break; }
+    }
+    if (!next && ranked.length) next = ranked[0].item;
+
+    if (!next) {
+      // Nothing left that fits. Say so rather than silently doing nothing.
+      Sound.reject();
+      return toast('\u{1F937}', 'Nothing left that way',
+        'That is everything I have in that direction. Try another.');
+    }
+
+    rankedItems = ranked.slice(0, 8).map(function (r) { return r.item; });
+    // The one that won the direction leads the alternates, wherever it placed.
+    rankedItems = [next].concat(rankedItems.filter(function (x) { return x !== next; }));
+
+    showResult(next);
+    // Said out loud so the change is legible: somebody who asked for lighter
+    // and got a different dish should be told that is why.
+    $('steer-lead').textContent = steer.said;
+  }
 
   function rejectCurrent() {
     if (busy) return;
     rejections++;
-    Sound.reject();
+    // Sound.next, not Sound.reject. See sound.js: this is the player
+    // steering, not the player getting something wrong, and it is the most
+    // common tap in the app.
+    Sound.next();
     // Reject whichever dish is actually on screen — the top pick, or an
     // alternate the player swapped to — not necessarily game.best().
     var dropped = shownItem || game.best().item;
@@ -4930,7 +5980,11 @@
     if (cooking) renderRecipes();
     else resetPlaces();
 
-    paintVault('cook-vault', 'cook-lock');
+    // Same reasoning as the sheet: a dish nobody has written up has nothing
+    // behind the cook vault, so there is nothing there to sell. Eat out always
+    // has something — it is a search, not a book — so it says nothing and is
+    // treated as filled.
+    paintVault('cook-vault', 'cook-lock', Recipes.has(planDish.name));
     paintVault('out-vault', 'out-lock');
   }
 
@@ -5654,7 +6708,7 @@
     'Give me a tip for today'
   ];
 
-  var chat = { turns: [], busy: false, typing: null };
+  var chat = { turns: [], busy: false, typing: null, left: null };
 
   /*
    * The answer arriving as it is written, rather than all at once.
@@ -5713,6 +6767,7 @@
   function renderChat() {
     paintChatSeeds();
     paintChatLeft();
+    fetchChatLeft();
     // Deliberately not focused: on a phone, focus throws the keyboard up over
     // half the screen, including the chips that mean you need not type at all.
   }
@@ -5751,33 +6806,46 @@
   }
 
   /*
-   * THE FREE THREE.
+   * THE FREE THREE, EVERY DAY.
    *
-   * The assistant costs money per question — a real model behind a real API
-   * — and it was the one thing in here a Standard profile could use without
-   * limit. Three is a trial: enough to find out whether it answers anything
-   * useful, not enough to be the product.
+   * The assistant costs money per question — a real model behind a real API.
+   * Three a day free, counted by the server (routes/api/chat.ts and
+   * lib/allowance.ts), so clearing this browser does not refill it and the
+   * number here is the true one rather than a guess kept locally.
    *
-   * Counted for life rather than per day, deliberately. Three a day is not a
-   * trial, it is a free tier, and somebody who wants this every day is
-   * somebody the paid version is for.
+   * chat.left is null until the server has said, and stays null if it cannot
+   * — in which case nothing is shown and nothing is refused here; the server
+   * is the one that decides.
    */
   var CHAT_FREE = 3;
 
   function chatLeft() {
-    return Math.max(0, CHAT_FREE - (progress.state.chatAsks || 0));
+    return chat.left;
+  }
+
+  function fetchChatLeft() {
+    if (isPlus()) return;
+    fetch('/api/chat', { headers: { Accept: 'application/json' } })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (body) {
+        if (body && typeof body.left === 'number') {
+          chat.left = body.left;
+          paintChatLeft();
+        }
+      })
+      .catch(function () {});
   }
 
   /* Said before the last one is spent, not after it. */
   function paintChatLeft() {
     var el = $('chat-left');
-    if (isPlus()) { el.hidden = true; return; }
     var left = chatLeft();
+    if (isPlus() || left === null) { el.hidden = true; return; }
     el.hidden = false;
     el.textContent = left > 0
-      ? left + (left === 1 ? ' free question left' : ' of ' + CHAT_FREE + ' free questions left') +
+      ? left + (left === 1 ? ' free question left today' : ' of ' + CHAT_FREE + ' free questions left today') +
         '. Premium asks as many as you like.'
-      : 'That is the three free questions used. Premium asks as many as you like.';
+      : 'That is today\u2019s three free questions used \u2014 three more tomorrow. Premium asks as many as you like.';
   }
 
   function askChat() {
@@ -5787,8 +6855,8 @@
     if (!text) return;
 
     // Checked before the question is sent, so nothing is spent on a request
-    // that is about to be refused.
-    if (!isPlus() && chatLeft() <= 0) {
+    // that is about to be refused. Only when the server has already said zero.
+    if (!isPlus() && chatLeft() === 0) {
       field.value = '';
       return goPremium('Asking anything');
     }
@@ -5816,11 +6884,6 @@
 
     chat.turns.push({ role: 'user', text: text });
 
-    if (!isPlus()) {
-      progress.state.chatAsks = (progress.state.chatAsks || 0) + 1;
-      progress.save();
-      paintChatLeft();
-    }
 
     fetch('/api/chat', {
       method: 'POST',
@@ -5838,7 +6901,14 @@
       chat.busy = false;
       $('chat-send').disabled = false;
 
+      if (answer.body && typeof answer.body.left === 'number') {
+        chat.left = answer.body.left;
+        paintChatLeft();
+      }
+
       if (answer.ok && answer.body && answer.body.reply) {
+        progress.state.chatAsks = (progress.state.chatAsks || 0) + 1;
+        progress.save();
         var reply = String(answer.body.reply);
         chat.turns.push({ role: 'model', text: reply });
         // Built empty, then written into. The dish buttons wait for the last
@@ -5857,6 +6927,11 @@
       // history either — leaving it there would send it again with the next one.
       chat.turns.pop();
       var why = (answer.body && answer.body.error) || '';
+      if (why === 'limit') {
+        waiting.replaceWith(chatRow('bot',
+          'That is today\u2019s three free questions. Three more tomorrow \u2014 or Premium asks as many as you like.', false));
+        return goPremium('Asking anything');
+      }
       var said = why === 'too_fast'
         ? 'That was a lot of questions at once'
         : why === 'busy'
@@ -6047,6 +7122,12 @@
     $('news-error').hidden = true;
     $('news-wrap').hidden = false;
 
+    // A filter set while Premium and lost mid-session (or restored from an
+    // older save) does not survive the downgrade — see the note above
+    // paintNewsSources. Without this, only the chip is locked; the feed
+    // behind it would still be narrowed.
+    if (!isPlus() && news.filter) news.filter = '';
+
     var shown = news.stories.filter(function (story) {
       return !news.filter || story.source === news.filter;
     });
@@ -6118,6 +7199,13 @@
         : held + ' more stories today, and the rest of every day, with Premium.';
     }
 
+    var foot = $('news-foot-go');
+    if (foot) {
+      foot.textContent = isPlus()
+        ? 'Tapping through opens their page.'
+        : 'Opening one of their pages is part of Premium.';
+    }
+
     paintNewsBar(shown.length);
   }
 
@@ -6155,6 +7243,12 @@
 
   // One chip per publisher, with how many they filed. Tapping the one that is
   // already on clears it, so there is always a way back to everything.
+  //
+  // STANDARD READS "EVERYTHING" ONLY. The per-publisher chips still show —
+  // hiding them would hide what Premium adds — but they are locked: the
+  // count is real, the tap is not a filter, it is the pitch. "Everything"
+  // itself is never locked, on either tier, because it is the one view a
+  // free profile is promised in full.
   function paintNewsSources() {
     var counts = {};
     var order = [];
@@ -6173,12 +7267,22 @@
 
   function newsChip(label, count, value) {
     var on = news.filter === value;
+    // Everything (value === '') is open to both tiers. Any one publisher is
+    // Premium — see the note above paintNewsSources.
+    var locked = value !== '' && !isPlus();
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'filter' + (on ? ' is-on' : '');
-    btn.textContent = label + ' ' + count;
+    btn.className = 'filter' + (on ? ' is-on' : '') + (locked ? ' is-locked' : '');
+    btn.appendChild(document.createTextNode(label + ' ' + count + ' '));
+    if (locked) {
+      var tag = document.createElement('span');
+      tag.className = 'tag-premium';
+      tag.textContent = 'Premium';
+      btn.appendChild(tag);
+    }
     btn.setAttribute('aria-pressed', on ? 'true' : 'false');
     btn.addEventListener('click', function () {
+      if (locked) { Sound.reject(); return goPremium('Reading one source at a time'); }
       news.filter = on ? '' : value;
       // Back to the newest of whatever was just picked. Landing on batch three
       // of a publisher because that is where you were in the merged feed is
@@ -6242,18 +7346,64 @@
     summary.className = 'story-sum';
     summary.textContent = story.summary || '';
 
-    var go = document.createElement('a');
-    go.className = 'go go-sm';
-    go.href = story.link;
-    go.target = '_blank';
-    go.rel = 'noopener noreferrer';
-    var label = document.createElement('span');
-    label.className = 'go-label';
-    label.textContent = 'Read the full article';
-    go.appendChild(label);
-
     inner.appendChild(summary);
-    inner.appendChild(go);
+
+    /*
+     * THE WAY OUT TO THE PUBLISHER — PREMIUM ONLY.
+     *
+     * Standard reads the headline, the source, when it was filed and the
+     * standfirst, and that is the end of the section: the link to the piece
+     * itself is part of what Premium is for.
+     *
+     * A LINE RATHER THAN A DEAD BUTTON. The link is not rendered and then
+     * disabled, it is not there — a greyed-out anchor is still a thing to
+     * poke at, and an anchor with no href is a trap for a keyboard. What is
+     * there instead says plainly where the wall is, so nobody is left
+     * wondering whether the row failed to load.
+     *
+     * The count-of-stories pitch under the list (#news-more) is about how many
+     * headlines there are, which is a different limit; this one is about how
+     * far into one of them you get. Both are true at once for a Standard
+     * reader, and this one only appears in a fold somebody opened on purpose,
+     * so the screen still never carries two pitches unprompted.
+     *
+     * Bound here rather than through the [data-unlock] sweep at boot: that
+     * sweep runs once over the markup in index.html, and these rows are built
+     * fresh on every repaint, so an attribute would be styling with nothing
+     * listening to it.
+     */
+    if (isPlus()) {
+      var go = document.createElement('a');
+      go.className = 'go go-sm';
+      go.href = story.link;
+      go.target = '_blank';
+      go.rel = 'noopener noreferrer';
+      var label = document.createElement('span');
+      label.className = 'go-label';
+      label.textContent = 'Read the full article';
+      go.appendChild(label);
+      inner.appendChild(go);
+    } else {
+      var locked = document.createElement('p');
+      locked.className = 'story-locked';
+      locked.appendChild(document.createTextNode(
+        'The summary is as far as this goes. '));
+      var open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'quiet';
+      open.textContent = 'Open the piece with Premium';
+      open.addEventListener('click', function (event) {
+        // The row's own click handler is on the head, not here, but the
+        // toast and the checkout sheet are enough to be getting on with
+        // without the fold shutting underneath them.
+        event.stopPropagation();
+        Sound.reject();
+        goPremium('The full article');
+      });
+      locked.appendChild(open);
+      inner.appendChild(locked);
+    }
+
     slot.appendChild(inner);
     body.appendChild(slot);
 
@@ -6594,144 +7744,6 @@
     { id: 'neon', name: 'Neon', note: 'Loud on purpose' }
   ];
 
-  /* ------------------------------------------------------------- language */
-  /*
-   * The app's language, and the one screen that sets it.
-   *
-   * I18n.apply() is what actually swaps the words; everything here is about
-   * when it runs and who asked for it. Applied before the first paint (see
-   * boot) so nobody sees English flash past on the way to Thai.
-   */
-  function applyLang() {
-    var code = I18n.set(progress.state.lang || 'en');
-    // Shown only when there is a translation to warn about. On English these
-    // words would be a warning about nothing, which teaches people to ignore
-    // the next one that matters.
-    ['lang-warn-view', 'lang-warn-gate'].forEach(function (id) {
-      var el = $(id);
-      if (el) el.hidden = code === 'en';
-    });
-    paintLangLists();
-    /*
-     * Anything written by JS rather than sitting in the markup has to be
-     * written again, because I18n.apply only walks the marked nodes and these
-     * were painted over the top of them. renderIntro is guarded because this
-     * runs at boot, before the landing exists.
-     */
-    if ($('landing-start')) renderIntro();
-    if (lastStatus) paintTopbar(lastStatus);
-  }
-
-  /*
-   * One row per language, in its own language, in both places that list them.
-   * Built rather than written out so the two lists cannot drift, and so adding
-   * a language is one entry in i18n.js and nothing here.
-   */
-  function langRow(entry, chosen, onPick) {
-    var li = document.createElement('li');
-    li.className = 'lang-row' + (chosen ? ' is-on' : '');
-
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'lang-btn';
-    btn.setAttribute('aria-pressed', chosen ? 'true' : 'false');
-
-    var flag = document.createElement('span');
-    flag.className = 'lang-flag';
-    flag.setAttribute('aria-hidden', 'true');
-    flag.textContent = entry.flag;
-
-    var name = document.createElement('span');
-    name.className = 'lang-name';
-    name.textContent = entry.native;
-
-    btn.appendChild(flag);
-    btn.appendChild(name);
-
-    // The English name underneath, for the reader who has landed in a language
-    // they did not choose and is looking for the way back out. Skipped where it
-    // would only repeat the line above it — "English / English" is noise, and
-    // the one row that needs no translating is the one in the reader's way.
-    if (entry.english !== entry.native) {
-      var sub = document.createElement('span');
-      sub.className = 'lang-sub';
-      sub.textContent = entry.english;
-      btn.appendChild(sub);
-    }
-    btn.addEventListener('click', function () { onPick(entry.id); });
-    li.appendChild(btn);
-    return li;
-  }
-
-  function paintLangLists() {
-    var now = I18n.get();
-
-    var list = $('lang-list');
-    if (list) {
-      list.innerHTML = '';
-      I18n.LANGS.forEach(function (entry) {
-        list.appendChild(langRow(entry, entry.id === now, pickLang));
-      });
-    }
-
-    var gate = $('lang-gate-list');
-    if (gate) {
-      gate.innerHTML = '';
-      I18n.LANGS.forEach(function (entry) {
-        gate.appendChild(langRow(entry, entry.id === now, function (id) {
-          // On the gate, picking only previews: the app switches so you can see
-          // you got the right one, and Continue is what commits it.
-          progress.state.lang = id;
-          applyLang();
-        }));
-      });
-    }
-  }
-
-  function pickLang(id) {
-    if (id === I18n.get()) return;
-    Sound.tick();
-    progress.state.lang = id;
-    progress.save();
-    applyLang();
-    renderProfile();
-  }
-
-  /*
-   * The first-run chooser.
-   *
-   * Asked once, before the landing, because every other screen is written in a
-   * language the reader may not have — including the one that would tell them
-   * where the language setting is. The browser's preference decides what starts
-   * selected and nothing more: switching somebody's app on a guess, with the
-   * way back written in the language they just failed to read, is the one
-   * failure here worth designing around.
-   */
-  function openLangGate() {
-    var gate = $('lang-gate');
-    if (!gate) return false;
-    /*
-     * The guess only applies to somebody who has never answered. Falling back
-     * on `lang || guess()` looked equivalent and was not: the stored default is
-     * 'en', which is truthy, so the browser's preference never got a look in
-     * and a Thai phone opened the chooser with English preselected.
-     */
-    if (!progress.state.langAsked) progress.state.lang = I18n.guess();
-    applyLang();
-    gate.hidden = false;
-    document.body.classList.add('is-lang-gate');
-    focusQuietly($('lang-gate-go'));
-    return true;
-  }
-
-  function closeLangGate() {
-    var gate = $('lang-gate');
-    if (gate) gate.hidden = true;
-    document.body.classList.remove('is-lang-gate');
-    progress.state.langAsked = true;
-    progress.save();
-  }
-
   function applyTheme() {
     // A theme is Premium, so a lapsed subscription goes back to the one the app
     // ships with rather than keeping a perk it is no longer paying for.
@@ -6834,6 +7846,7 @@
     buildFilters();
     var filter = FILTERS.filter(function (f) { return f.id === activeFilter; })[0];
     var needle = query.trim().toLowerCase();
+    var tried = progress.state.picks || {};
 
     var matches = Data.ITEMS.filter(function (dish) {
       return filter.test(dish) && (!needle || haystack(dish).indexOf(needle) !== -1);
@@ -6847,12 +7860,14 @@
       row.type = 'button';
       row.className = 'dish';
       row.innerHTML = '<span class="dish-art" aria-hidden="true"></span>' +
-        '<span class="dish-name"></span><span class="dish-note"></span>';
+        '<span class="dish-name"></span><span class="dish-tried" aria-hidden="true">✓</span>' +
+        '<span class="dish-note"></span>';
       row.querySelector('.dish-art').textContent = dish.icon;
       row.querySelector('.dish-name').textContent = dish.name;
       // Still browsable when struck off — you have to be able to find one to
       // bring it back — but plainly marked.
       row.classList.toggle('is-struck', progress.isBanned(dish.name));
+      row.classList.toggle('is-tried', !!tried[dish.name]);
       row.querySelector('.dish-note').textContent = progress.isBanned(dish.name)
         ? 'Struck off' : dish.blurb;
       row.addEventListener('click', function () { openSheet(dish); });
@@ -6864,6 +7879,10 @@
     $('dish-count-label').textContent = matches.length === Data.ITEMS.length
       ? Data.ITEMS.length + ' dishes'
       : matches.length + ' of ' + Data.ITEMS.length + ' dishes';
+
+    var distinct = Object.keys(tried).length;
+    $('collection-count').textContent = distinct + ' of ' + Data.ITEMS.length + ' tried';
+    $('collection-fill').style.width = Math.round((distinct / Data.ITEMS.length) * 100) + '%';
   }
 
   // Describe a dish in the same words the questions use.
@@ -6930,7 +7949,7 @@
      */
     /*
      * An empty list means the model made this dish up, not that the book has a
-     * hole in it: all 133 catalogue dishes have at least one recipe, so the
+     * hole in it: every catalogue dish has at least one recipe, so the
      * only dishes that land here are today's five and the suggestions the chat
      * invents. "No recipe written for this one" read as a failure, and it was
      * the most common thing a free reader saw on the new shelf.
@@ -7049,23 +8068,120 @@
   });
 
   /* --------------------------------------------------------------- profile */
+  /*
+   * WHAT YOU HAVE BUILT HERE, IN ONE PLACE.
+   *
+   * Everything in this list is already on this screen somewhere — the diets
+   * are nine strips down, the struck-off dishes are eleven, the plan is on
+   * the reward screen. Scattered like that they are settings, and settings
+   * are a chore somebody did once. Gathered up with a number attached they
+   * are an investment, and people value what they have put work into far
+   * beyond what the work was worth.
+   *
+   * Which is a real effect and also, here, a true description: a profile with
+   * four rules on it genuinely is better at this than one with none, and the
+   * last line says by how much, counted against the catalogue rather than
+   * asserted.
+   *
+   * NOTHING SPECULATIVE IN IT. No "you seem to like", no completeness meter,
+   * no empty rows inviting anybody to fill them in. A row appears when there
+   * is a number to put in it and the whole panel hides when there are none,
+   * because a list of zeroes is a to-do list and this is not one.
+   */
+  function renderKnown() {
+    var wrap = $('known-wrap');
+    if (!wrap) return;
+    var state = progress.state;
+    var rows = [];
+
+    function row(n, text) { if (n > 0) rows.push({ n: n, text: text }); }
+
+    /*
+     * Named rather than counted where the names are short enough to fit,
+     * because "Halal, vegetarian" is a thing somebody recognises about
+     * themselves and "2 diets" is an inventory line.
+     */
+    var diets = (state.diets || []).map(function (id) {
+      for (var i = 0; i < ProgressLib.DIETS.length; i++) {
+        if (ProgressLib.DIETS[i].id === id) return ProgressLib.DIETS[i].label;
+      }
+      return null;
+    }).filter(Boolean);
+    /*
+     * Ticked rather than counted. "2 diets" is an inventory line; "Halal,
+     * vegetarian" is a thing somebody recognises about themselves, and a
+     * number in front of it would be counting the labels rather than saying
+     * anything.
+     */
+    if (diets.length) rows.push({ text: diets.join(', '), plain: true });
+
+    var named = (state.rules || []).length;
+    row(named, named === 1 ? 'single thing you would rather not be handed'
+                           : 'single things you would rather not be handed');
+
+    var banned = Object.keys(state.banned || {}).length;
+    row(banned, banned === 1 ? 'dish struck off for good' : 'dishes struck off for good');
+
+    var loves = (state.loves || []).length;
+    row(loves, loves === 1 ? 'thing you said you like' : 'things you said you like');
+
+    var saved = (state.favourites || []).length;
+    row(saved, saved === 1 ? 'dish saved' : 'dishes saved');
+
+    var rated = Object.keys(state.ratings || {}).length;
+    row(rated, rated === 1 ? 'verdict after eating' : 'verdicts after eating');
+
+    var distinct = Object.keys(state.picks || {}).length;
+    row(distinct, distinct === 1 ? 'different dish landed on' : 'different dishes landed on');
+
+    var plan = progress.plan();
+    if (plan) rows.push({ text: 'A plan — ' + plan.phrase, plain: true });
+
+    wrap.hidden = rows.length === 0;
+    if (!rows.length) return;
+
+    var list = $('known-list');
+    list.innerHTML = '';
+    rows.forEach(function (r) {
+      var li = document.createElement('li');
+      var b = document.createElement('b');
+      b.textContent = r.plain ? '✓' : r.n;
+      var span = document.createElement('span');
+      span.textContent = r.text;
+      li.appendChild(b);
+      li.appendChild(span);
+      list.appendChild(li);
+    });
+
+    /*
+     * AND WHAT IT ACTUALLY CHANGES.
+     *
+     * Counted against the real catalogue with the real rule test — the same
+     * effectiveRules() and breaksRules() every screen that serves a dish
+     * uses, so this cannot claim a filter the game does not apply. Without
+     * this line the panel is a receipt; with it, it is the reason the receipt
+     * was worth keeping.
+     */
+    var rules = effectiveRules();
+    var off = rules.length
+      ? Data.ITEMS.filter(function (dish) { return breaksRules(dish, rules); }).length
+      : 0;
+    var note = $('known-effect');
+    if (off > 0) {
+      note.hidden = false;
+      note.textContent = 'That takes ' + off + ' of the ' + Data.ITEMS.length +
+        ' dishes off the table before I ask you anything, every time, on every screen. ' +
+        'All of it stays in this browser.';
+    } else {
+      note.hidden = false;
+      note.textContent = 'All of it stays in this browser. Nothing here is sent anywhere.';
+    }
+  }
+
   function renderProfile() {
     var level = progress.level();
     var state = progress.state;
 
-    /*
-     * The affiliate block's own line, grounded the same way the prompt's is.
-     *
-     * This screen already knows how much somebody has used the app, and that
-     * is the only honest argument for why they of all people should have a
-     * link. No rate and no amount: this file does not know them, and the page
-     * at the other end does.
-     */
-    var settled = state.decisions || 0;
-    $('earn-wrap-line').textContent = settled
-      ? 'You have settled ' + settled + ' ' + (settled === 1 ? 'dinner' : 'dinners') +
-        ' in here. Somebody you know has the same problem.'
-      : '';
 
     $('profile-name').textContent = level.name;
     $('profile-xp').textContent = state.xp;
@@ -7078,9 +8194,11 @@
     $('tile-streak').textContent = state.streak;
     $('tile-dishes').textContent = Object.keys(state.picks).length;
 
+    renderKnown();
     renderPlus();
+    renderInvite();
     renderFavourites();
-    renderRules();
+    renderDietGroups('diet-groups', 'diet-caveats');
     renderCustomRules();
     renderBanned();
     renderInsights();
@@ -7129,24 +8247,26 @@
   }
 
   /* ----------------------------------------------------------- the tier */
-  // The same five groups, in the same order, as the /premium page. A flat list
-  // of twenty-four lines reads as noise; grouped, it reads as five things you
-  // are buying. Each group is headed, and every head says Premium, because the
-  // one question this list has to answer is what is on the other side of the
-  // paywall.
+  // The same five groups, in the same order, as PREMIUM_SECTIONS on the
+  // /premium page. A flat list of twenty-odd lines reads as noise; grouped, it
+  // reads as five things you are buying. Each group is headed, and every head
+  // says Premium, because the one question this list has to answer is what is
+  // on the other side of the paywall.
+  //
+  // They are two lists because this is a separate static app and cannot import
+  // from lib/site.ts. That means they can drift, and they had: the first and
+  // last groups were swapped, under a comment asserting they were not. If you
+  // change one, open the other.
   var PERK_SECTIONS = [
     {
-      name: 'Ways to play',
+      name: 'It gets to know you',
       items: [
-        'Knockout: an 8-dish bracket, watch it fill in round by round',
-        'Blitz: thirty seconds, a streak to build, and rounds that change the rules',
-        'This or that: a running champion against whatever challenges it',
-        'Shortlist: eight dishes, tap out the ones you are not in the mood for',
-        'Together: up to six of you round one phone, one dish you can all live with',
-        'Swipe: like three out of the deck, then choose between the three',
-        'Endless with no daily count on it \u2014 free stops at ' + ENDLESS_DAY + ' picks a day',
-        'A second wind: one run-ending clock, survived, every run',
-        'Themed runs \u2014 an evening of nothing but quick, or comfort, or veg'
+        'Picks tuned to what you have actually liked',
+        'Something new: two questions, then dishes chosen from what you liked',
+        'Rate a dish and it changes what comes up next',
+        'Save as many dishes as you like \u2014 the free tier saves none',
+        'Streak freezes, so one missed day costs nothing',
+        'Six palettes to pick from'
       ]
     },
     {
@@ -7161,9 +8281,9 @@
     {
       name: 'Control what comes up',
       items: [
-        'Ban any tag you like \u2014 the six standing rules are free for everyone',
+        'Ban a whole style of food \u2014 what you do not eat is free for everyone',
         'Meal slot, heat dial, and mix-it-up on every decision',
-        'Guest at the table \u2014 extra avoids for this sitting only',
+        'Guest at the table \u2014 extra avoids for this sitting only, yours left alone',
         '\u201cNot today\u201d to shelve a dish, and don\u2019t repeat this week'
       ]
     },
@@ -7174,19 +8294,22 @@
         'Cook from what is already in your kitchen',
         'Scale any recipe and take a shopping list to the shop',
         'A side with that, and a planned week of seven dishes',
-        'Write me a menu: three courses that go together, with the recipes',
+        'Write me a menu whenever you like \u2014 Standard gets one every couple of days',
         'Mood shortcuts and instant picks \u2014 no questions at all'
       ]
     },
     {
-      name: 'It gets to know you',
+      name: 'Ways to play',
       items: [
-        'Picks tuned to what you have actually liked',
-        'Something new: two questions, then dishes chosen from what you liked',
-        'Rate a dish and it changes what comes up next',
-        'Save as many dishes as you like \u2014 the free tier saves none',
-        'Streak freezes, so one missed day costs nothing',
-        'Six palettes to pick from'
+        'Knockout: an 8-dish bracket, watch it fill in round by round',
+        'Blitz: thirty seconds, a streak to build, and rounds that change the rules',
+        'This or that: a running champion against whatever challenges it',
+        'Shortlist: eight dishes, tap out the ones you are not in the mood for',
+        'Together: up to six of you round one phone, one dish you can all live with',
+        'Swipe: like three out of the deck, then choose between the three',
+        'Endless with no daily count on it \u2014 free stops at ' + ENDLESS_DAY + ' picks a day',
+        'A second wind: one run-ending clock, survived, every run',
+        'Themed runs \u2014 an evening of nothing but quick, or comfort, or veg'
       ]
     }
   ];
@@ -7210,9 +8333,13 @@
     $('buy-note').textContent = on
       ? 'Cancel any time — you keep Premium until the period you already paid for ' +
         'runs out.'
-      : 'Free for seven days, then $3.45/month — cancel before it ends and you ' +
-        'are not charged. Tax may be added depending on where you are, so the ' +
-        'total can come to a little over that; checkout shows it before you pay. ' +
+      // Two plans, one trial. The yearly one is named first because it is the
+      // one the site recommends, and a note that only ever mentioned the
+      // monthly price would have been the app quietly disagreeing with the
+      // page it sends people to.
+      : 'Free for seven days, then $19.99/year or $3.45/month — cancel before it ' +
+        'ends and you are not charged. Tax may be added depending on where you are, ' +
+        'so the total can come to a little over that; checkout shows it before you pay. ' +
         'Sign in on any device and Premium is already on.';
 
     var list = $('perks');
@@ -7256,26 +8383,26 @@
   // The top bar is fixed above the whole page, landing included, so it is
   // the one place that always shows who is signed in — the same account
   // strip the rest of the site (home, /premium, /account) already carries.
-  /*
-   * The last answer from the premium check, kept so the top bar can be redrawn
-   * without asking again. Changing language has to repaint it — "Sign in" is
-   * written by JS, so I18n.apply cannot reach it — and re-running the whole
-   * status fetch to relabel one link would be a network round trip for a word.
-   */
-  var lastStatus = null;
-
+  var lastTopStatus = null;
   function paintTopbar(status) {
-    lastStatus = status;
+    lastTopStatus = status;
     var account = $('topbar-account');
     if (account) {
       account.classList.toggle('is-premium', !!status.hasPremium);
       if (status.signedIn) {
-        account.textContent = status.hasPremium
-          ? (status.username || 'Account') + ' · Premium'
-          : status.username || 'Account';
+        // In two parts so a phone can cut a long name short with "…" and
+        // still show it is Premium (see .topbar-account-name).
+        var name = document.createElement('span');
+        name.className = 'topbar-account-name';
+        name.textContent = status.username || 'Account';
+        account.textContent = '';
+        account.appendChild(name);
+        if (status.hasPremium) account.appendChild(document.createTextNode('\u00a0· Premium'));
+        account.title = (status.username || 'Account') + (status.hasPremium ? ' · Premium' : '');
         account.href = '/account';
       } else {
         account.textContent = I18n.t('top.signin', 'Sign in');
+        account.removeAttribute('title');
         account.href = '/api/oauth/login?redirect_to=%2Fdecide%2F';
       }
     }
@@ -7293,11 +8420,23 @@
       renderProfile();
       renderIntro();
       repaintVaults();
+      // Only when Daily is actually the open view, unlike the two calls
+      // above: renderDaily() fetches three endpoints, and this handler
+      // reruns on every window focus (see below), not just once at load.
+      // Needed at all for the one race this closes: landing here straight
+      // from ?go=daily's sign-in redirect, before this very refresh has
+      // resolved for the first time — see the identical note on
+      // ?go=profile, which this view copies.
+      if (view === 'daily') renderDaily();
+      // Same race, same fix: ?go=radio lands here from the sign-in redirect.
+      if (view === 'radio') renderRadio();
       // The news page reads isPlus() to decide how much of the feed to show
       // and whether to offer the rest of it. Somebody sitting on that page
       // when their status lands would otherwise keep the free six, and the
       // only way out of it was to leave the tab and come back.
       if (news.stories) paintNews();
+      // The planner, kitchen and briefing each depend on the tier too.
+      if (window.M45Hub) window.M45Hub.onStatus();
       if (announce && status.hasPremium && !was) {
         Sound.win();
         Confetti.burst({ y: window.innerHeight * 0.35 });
@@ -7308,6 +8447,1501 @@
   }
 
   window.addEventListener('focus', function () { syncPremium(true); });
+
+  /* --------------------------------------------------------- invite a friend */
+  /*
+   * EARN A DAY OF PREMIUM BY GETTING A FRIEND PLAYING.
+   *
+   * The code in the link is simply the referrer's own Whop user id (see
+   * lib/referrals.ts) — there is nothing to decode here and nothing this
+   * file invents. Captured at most once, from the first ?ref= this profile
+   * ever saw: a later link from somebody else never overwrites it, matching
+   * the server's own rule that whoever's row was created first is who a
+   * friend's play time counts for.
+   *
+   * THE HEARTBEAT only runs for someone who is both referred and signed in.
+   * Signing in is the "make an account" step this depends on, and it is what
+   * turns an anonymous visit into a play time worth paying a real day out
+   * on — an anonymous profile can be reset and replayed for free in a way a
+   * Whop account cannot. It stops once ten minutes are in, by the server's
+   * own reply, and there is nothing left to gain by continuing to ping.
+   */
+  var QUALIFY_SECONDS = 600;
+  var HEARTBEAT_MS = 20e3;
+
+  (function captureReferral() {
+    var params = new URLSearchParams(window.location.search);
+    var ref = params.get('ref');
+    if (ref && !progress.state.referredBy) {
+      progress.state.referredBy = ref;
+      progress.save();
+    }
+    if (params.has('ref')) {
+      params.delete('ref');
+      var rest = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''));
+    }
+  })();
+
+  /*
+   * SIGN-IN THAT DID NOT FINISH. The callback sends people back here with
+   * ?signin=failed rather than dropping them on the home page with nothing
+   * said (see lib/oauth.ts). A notice that stays until it is closed — a toast
+   * is gone in two seconds — saying what to do in words anybody can follow,
+   * with the button to try again right there.
+   */
+  (function signInFailed() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('signin') !== 'failed') return;
+    params.delete('signin');
+    var rest = params.toString(), back = window.location.pathname + (rest ? '?' + rest : '');
+    window.history.replaceState(null, '', back);
+    var box = document.createElement('div');
+    box.className = 'signin-failed';
+    box.setAttribute('role', 'alert');
+    box.innerHTML = '<p class="signin-failed-title"></p><p class="signin-failed-text"></p>' +
+      '<div class="signin-failed-actions"><a class="go go-sm" target="_top"><span class="go-label">Try again</span></a>' +
+      '<button class="quiet" type="button">Close</button></div>';
+    box.querySelector('.signin-failed-title').textContent = 'Sign-in did not finish';
+    box.querySelector('.signin-failed-text').textContent =
+      'Nothing is wrong with your account. Please try once more. If it stops again, open ' +
+      'morsels45-app.whop.site in your phone’s own web browser (Safari or Chrome) and sign in there.';
+    box.querySelector('a').href = '/api/oauth/login?redirect_to=' + encodeURIComponent(back);
+    box.querySelector('button').addEventListener('click', function () { box.remove(); });
+    document.body.appendChild(box);
+  })();
+
+  function inviteLink(userId) {
+    return window.location.origin + '/decide/?ref=' + encodeURIComponent(userId);
+  }
+
+  function renderInvite() {
+    var wrap = $('invite-wrap');
+    if (!wrap) return;
+    var status = premiumApi.status;
+    var signedOutWrap = $('invite-signedout');
+    var mineWrap = $('invite-mine');
+
+    if (!status.signedIn) {
+      signedOutWrap.hidden = false;
+      mineWrap.hidden = true;
+      $('invite-note').textContent = progress.state.referredBy
+        ? 'A friend invited you — sign in free and play for ten minutes to get them a day of Premium.'
+        : 'Sign in free to get your own invite link.';
+      return;
+    }
+
+    signedOutWrap.hidden = true;
+    mineWrap.hidden = false;
+    $('referral-link').textContent = status.userId ? inviteLink(status.userId) : '…';
+
+    var referredBy = progress.state.referredBy;
+    var progressLine = $('invite-progress');
+    if (referredBy && referredBy !== status.userId && (progress.state.referralSeconds || 0) < QUALIFY_SECONDS) {
+      var minutes = Math.min(10, Math.floor((progress.state.referralSeconds || 0) / 60));
+      progressLine.hidden = false;
+      progressLine.textContent = minutes + ' of 10 minutes played for whoever invited you.';
+    } else {
+      progressLine.hidden = true;
+    }
+
+    $('invite-stats').textContent = status.invited === 0
+      ? 'Nobody has used your link yet.'
+      : status.qualified + ' of ' + status.invited + ' invited friend' +
+        (status.invited === 1 ? '' : 's') + ' have played long enough to earn you a day.';
+
+    var bonus = $('invite-bonus');
+    if (status.bonusUntil) {
+      bonus.hidden = false;
+      bonus.textContent = 'Free Premium is active until ' +
+        new Date(status.bonusUntil).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) + '.';
+    } else {
+      bonus.hidden = true;
+    }
+  }
+
+  /*
+   * THE LINK, HANDED OVER RATHER THAN LEFT TO BE FOUND.
+   *
+   * Called once, right after a sign-in that was specifically for this —
+   * see ?go=profile above. Scrolling to the card and giving it a moment's
+   * glow is the honest version of "automatically give you a link": the
+   * actual link still has to come from the server once signed in, so this
+   * cannot hand over text that is not real yet, but it can make sure
+   * nobody has to go looking for where it landed.
+   */
+  function highlightInvite() {
+    var wrap = $('invite-wrap');
+    if (!wrap) return;
+    setTimeout(function () {
+      wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      wrap.classList.add('is-highlighted');
+      setTimeout(function () { wrap.classList.remove('is-highlighted'); }, 2600);
+    }, 300);
+  }
+
+  (function wireInvite() {
+    // Named referral-link rather than invite-link: that id already belonged
+    // to the Together feature's own share-link input (line ~1396), and
+    // getElementById silently returns whichever comes first in the
+    // document — which was never this one. A collision on an id does not
+    // throw; it just means two different features were quietly fighting
+    // over the same element, and this half of that fight always lost.
+    var link = $('referral-link');
+    if (link) link.addEventListener('click', function () {
+      var text = link.textContent;
+      var flash = function () {
+        var flag = $('invite-copied');
+        flag.hidden = false;
+        Sound.tick();
+        setTimeout(function () { flag.hidden = true; }, 1600);
+      };
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(flash, function () {});
+          return;
+        }
+      } catch (err) { /* falls through to the old way */ }
+      try {
+        var range = document.createRange();
+        range.selectNodeContents(link);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        flash();
+      } catch (err) { /* never */ }
+    });
+  })();
+
+  /* ------------------------------------------------------------ daily three */
+  /*
+   * THREE SMALL, FREE, ACCOUNT-ONLY THINGS THAT HAVE NOTHING TO DO WITH
+   * DINNER. See the markup comment above #view-daily and lib/habits.ts for
+   * why: deciding what to eat is episodic, so there was nothing here worth
+   * coming back for on a day with no decision to make.
+   *
+   * Each of the three fetches its own state the moment the view is opened
+   * and re-fetches after every write — there is no local cache to keep in
+   * sync, since the point of all three is that they are the same wherever
+   * you sign in, not whatever this one tab last saw.
+   */
+  var daily = { busy: false };
+  var MOOD_FACES = { great: '\u{1F525}', good: '\u{1F642}', okay: '\u{1F610}', rough: '\u{1F615}', bad: '\u{1F629}' };
+
+  function renderDaily() {
+    var signedIn = premiumApi.status.signedIn;
+    $('daily-signedout').hidden = signedIn;
+    $('daily-signedin').hidden = !signedIn;
+    if (!signedIn) return;
+    loadCheckin();
+    loadJournal();
+    loadTrivia();
+  }
+
+  function dayLabel(streak) {
+    return streak + ' day' + (streak === 1 ? '' : 's') + ' in a row.';
+  }
+
+  /* -- check-in -- */
+
+  function loadCheckin() {
+    fetch('/api/checkin', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data.signedIn) paintCheckin(data); })
+      .catch(function () {});
+  }
+
+  function paintCheckin(state) {
+    $$('#mood-row .mood-btn').forEach(function (btn) {
+      btn.classList.toggle('is-picked', btn.dataset.mood === state.today);
+    });
+    $('checkin-streak').textContent = state.streak > 0
+      ? dayLabel(state.streak)
+      : 'Tap one to start a streak.';
+    var hist = $('checkin-history');
+    hist.innerHTML = '';
+    (state.recent || []).forEach(function (row) {
+      var span = document.createElement('span');
+      span.className = 'checkin-dot';
+      span.textContent = MOOD_FACES[row.mood] || '•';
+      span.title = row.day;
+      hist.appendChild(span);
+    });
+  }
+
+  $$('#mood-row .mood-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      if (daily.busy) return;
+      daily.busy = true;
+      fetch('/api/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mood: btn.dataset.mood }),
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          daily.busy = false;
+          if (data.error) return;
+          paintCheckin(data);
+          Sound.tick();
+        })
+        .catch(function () { daily.busy = false; });
+    });
+  });
+
+  /* -- one good thing -- */
+
+  function loadJournal() {
+    fetch('/api/journal', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data.signedIn) paintJournal(data); })
+      .catch(function () {});
+  }
+
+  function paintJournal(state) {
+    var input = $('journal-input');
+    // Not disabled once written: the day's row is an upsert server-side (see
+    // lib/habits.ts), so editing today's line back is really just saving it
+    // again, and there is no reason to make that harder than writing it the
+    // first time.
+    if (document.activeElement !== input) input.value = state.today || '';
+    $('journal-save').textContent = state.today ? 'Update' : 'Save';
+    $('journal-streak').textContent = state.streak > 0
+      ? dayLabel(state.streak)
+      : 'Write one to start a streak.';
+
+    var list = $('journal-list');
+    list.innerHTML = '';
+    (state.entries || []).forEach(function (row) {
+      var li = document.createElement('li');
+      var day = document.createElement('b');
+      day.textContent = row.day;
+      li.appendChild(day);
+      li.appendChild(document.createTextNode(' — ' + row.entry));
+      list.appendChild(li);
+    });
+  }
+
+  $('journal-save').addEventListener('click', function () {
+    var input = $('journal-input');
+    var text = input.value.trim();
+    if (!text || daily.busy) return;
+    daily.busy = true;
+    fetch('/api/journal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry: text }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        daily.busy = false;
+        if (data.error) return;
+        paintJournal(data);
+        Sound.tick();
+      })
+      .catch(function () { daily.busy = false; });
+  });
+
+  /* -- trivia -- */
+
+  function loadTrivia() {
+    fetch('/api/trivia', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) { if (data.signedIn && data.question) paintTrivia(data); })
+      .catch(function () {});
+  }
+
+  function answerTrivia(index) {
+    if (daily.busy) return;
+    daily.busy = true;
+    fetch('/api/trivia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ choice: index }),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        daily.busy = false;
+        if (data.error) return;
+        paintTrivia(data);
+        Sound[data.correct ? 'win' : 'reject']();
+      })
+      .catch(function () { daily.busy = false; });
+  }
+
+  function paintTrivia(state) {
+    $('trivia-question').textContent = state.question;
+    $('trivia-stats').textContent = state.totalAnswered > 0
+      ? state.totalCorrect + ' of ' + state.totalAnswered + ' correct' +
+        (state.streak > 0 ? ' · ' + state.streak + ' day streak' : '') + '.'
+      : 'A new question every day, the same one for everybody.';
+
+    var wrap = $('trivia-choices');
+    wrap.innerHTML = '';
+    state.choices.forEach(function (choice, i) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'trivia-choice';
+      btn.textContent = choice;
+      if (state.answered) {
+        btn.disabled = true;
+        if (i === state.correctIndex) btn.classList.add('is-correct');
+        else if (i === state.choiceIndex) btn.classList.add('is-wrong');
+      } else {
+        btn.addEventListener('click', function () { answerTrivia(i); });
+      }
+      wrap.appendChild(btn);
+    });
+
+    var result = $('trivia-result');
+    result.hidden = !state.answered;
+    if (state.answered) {
+      result.textContent = state.correct
+        ? 'Correct.'
+        : 'Not quite — the right one is highlighted.';
+    }
+  }
+
+  /*
+   * FOOD TV AND FOOD RADIO. Free with an account — see #view-radio for the
+   * page, and lib/tv.ts and lib/radio.ts for where each comes from.
+   *
+   * Two tabs in one section. The radio is one <audio> element outside every
+   * view, so the music carries on wherever you go in here. The TV is a
+   * <video> inside the section, and pauses when you leave it unless it has
+   * been popped out into picture-in-picture. Starting either one pauses the
+   * other: two soundtracks at once is never what anybody meant.
+   *
+   * What is watched or played goes nowhere but the channel or station itself
+   * and, for the radio, a bare station id for the directory's play count
+   * (see /api/radio). The last tab and station are remembered on this device
+   * only, so opening it again is one tap back to your radio, not the menu.
+   */
+  var media = { tab: null, tvCat: null, radioCat: null };
+  var MEDIA_KEY = 'morsels45-radio';
+
+  function mediaMemory() {
+    try { return JSON.parse(localStorage.getItem(MEDIA_KEY) || '{}') || {}; } catch (err) { return {}; }
+  }
+
+  function rememberMedia(patch) {
+    try {
+      var mem = mediaMemory();
+      Object.keys(patch).forEach(function (key) { mem[key] = patch[key]; });
+      localStorage.setItem(MEDIA_KEY, JSON.stringify(mem));
+    } catch (err) {}
+  }
+
+  // The view's own render, named for the view (setView calls it).
+  function renderRadio() {
+    $('radio-signedout').hidden = premiumApi.status.signedIn;
+    showMediaTab(media.tab || mediaMemory().tab || 'tv');
+  }
+
+  function showMediaTab(tab) {
+    if (tab !== 'tv' && tab !== 'radio') tab = 'tv';
+    if (media.tab === 'tv' && tab !== 'tv') leaveTv();
+    media.tab = tab;
+    rememberMedia({ tab: tab });
+    ['tv', 'radio'].forEach(function (name) {
+      var on = name === tab;
+      var btn = $('tab-' + name);
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      $(name + '-pane').hidden = !on;
+    });
+    if (tab === 'tv') renderTv();
+    else renderRadioList();
+  }
+
+  /*
+   * THE GROUPS. Each tab is one group at a time — food first, then what
+   * people have on while they cook and eat — chosen from a row of chips above
+   * the list. The server says which groups there are (/api/tv, /api/radio);
+   * the one each tab was last on is remembered on this device. Changing group
+   * changes the list, not what is playing.
+   */
+  function mediaCat(kind) {
+    var key = kind + 'Cat';
+    if (!media[key]) media[key] = mediaMemory()[key] || 'food';
+    return media[key];
+  }
+
+  function setMediaCat(kind, id) {
+    media[kind + 'Cat'] = id;
+    var patch = {};
+    patch[kind + 'Cat'] = id;
+    rememberMedia(patch);
+  }
+
+  function paintCats(kind, cats, onPick) {
+    var row = $(kind + '-cats');
+    if (!row || !cats || !cats.length) return;
+    if (row.dataset.ids !== cats.map(function (c) { return c.id; }).join()) {
+      row.dataset.ids = cats.map(function (c) { return c.id; }).join();
+      row.innerHTML = '';
+      cats.forEach(function (c) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'media-cat';
+        btn.dataset.cat = c.id;
+        btn.textContent = (c.emoji ? c.emoji + ' ' : '') + c.name;
+        btn.addEventListener('click', function () {
+          if (mediaCat(kind) === c.id) return;
+          Sound.tick();
+          setMediaCat(kind, c.id);
+          paintCats(kind, cats, onPick);
+          onPick(c.id);
+        });
+        row.appendChild(btn);
+      });
+    }
+    var current = mediaCat(kind);
+    $$('#' + kind + '-cats .media-cat').forEach(function (btn) {
+      var on = btn.dataset.cat === current;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  // Today's one free group, said plainly above the list, so a locked row
+  // never has to be tapped to find out why. The same pick for TV and radio:
+  // the server chooses it (lib/free-channel.ts) and sends it with every list.
+  function paintFreeNote(free) {
+    var note = $('media-free-note');
+    if (!note) return;
+    if (!free || !free.name) { note.hidden = true; return; }
+    note.textContent = 'Today\u2019s free pick: ' + (free.emoji ? free.emoji + ' ' : '') + free.name +
+      ' (' + (free.medium === 'tv' ? 'TV' : 'radio') + '). Every other group is Premium, and the free one changes every day.';
+    note.hidden = false;
+  }
+
+  // Something tapped while signed out: the answer is the sign-in button, so
+  // take them to it rather than doing nothing.
+  function nudgeRadioSignin() {
+    var link = $('radio-signin');
+    if (!link) return;
+    $('radio-signedout').hidden = false;
+    try { link.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (err) {}
+    link.classList.remove('is-nudged');
+    void link.offsetWidth;
+    link.classList.add('is-nudged');
+    try { link.focus({ preventScroll: true }); } catch (err) {}
+  }
+
+  function shortCountry(name) {
+    var short = {
+      'The United States Of America': 'USA',
+      'The United Kingdom Of Great Britain And Northern Ireland': 'UK',
+      'The Russian Federation': 'Russia',
+      'The United Arab Emirates': 'UAE',
+    };
+    return short[name] || String(name).replace(/^The /, '');
+  }
+
+  // A logo if there is one on HTTPS, the fallback if not — and the fallback
+  // again if the logo turns out to be a dead link, which in a volunteer
+  // directory a good share of them are.
+  function mediaArt(el, src, fallback) {
+    el.innerHTML = '';
+    if (!src) { el.textContent = fallback; return el; }
+    var img = document.createElement('img');
+    img.alt = '';
+    img.loading = 'lazy';
+    img.referrerPolicy = 'no-referrer';
+    img.addEventListener('error', function () { el.textContent = fallback; });
+    img.src = src;
+    el.appendChild(img);
+    return el;
+  }
+
+  /* ------------------------------------------------------------ radio -- */
+
+  var radio = {
+    stations: null,   // the group showing, from /api/radio
+    withStreams: null,// whether that list came signed in, with the streams
+    byCat: {},        // every group fetched this visit: { stations, withStreams }
+    cats: null,       // the groups, as the server lists them
+    queue: null,      // the group the playing station came from, for "next"
+    loadingCat: null,
+    dead: {},         // stations that would not play this visit
+    playing: null,    // the station in the player, playing or not
+    state: 'idle',    // idle | tuning | live | paused | broken
+    skips: 0,
+    tuneTimer: null,
+  };
+  // Three dead stations in a row is the directory or the connection having a
+  // bad minute, not bad luck. Stop and say so rather than burn through the
+  // whole list skipping.
+  var RADIO_MAX_SKIPS = 3;
+  // A stream that has not started in this long is not going to.
+  var RADIO_TUNE_MS = 15000;
+
+  function renderRadioList() {
+    var cat = mediaCat('radio');
+    if (radio.cats) paintCats('radio', radio.cats, renderRadioList);
+    // A list fetched signed out has no streams in it, so signing in since
+    // means asking again.
+    var cached = radio.byCat[cat];
+    if (cached && cached.signedIn !== premiumApi.status.signedIn) { delete radio.byCat[cat]; cached = null; }
+    paintRadioResume();
+    $('radio-error').hidden = true;
+    if (!cached) { radio.stations = null; return loadRadio(); }
+    radio.stations = cached.stations;
+    radio.withStreams = cached.withStreams;
+    radio.locked = !!cached.locked;
+    paintFreeNote(cached.free);
+    $('radio-loading').hidden = true;
+    if ($('radio-list').dataset.cat === cat && $$('#radio-list .station').length === radio.stations.length) return paintStationStates();
+    paintStations();
+  }
+
+  function loadRadio() {
+    var cat = mediaCat('radio');
+    if (radio.loadingCat === cat) return;
+    radio.loadingCat = cat;
+    $('radio-error').hidden = true;
+    $('radio-list').innerHTML = '';
+    $('radio-list').dataset.cat = '';
+    $('radio-loading').hidden = false;
+    fetch('/api/radio?cat=' + encodeURIComponent(cat), { headers: { Accept: 'application/json' } })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          if (!r.ok || !data.stations) throw new Error(data.error || 'radio ' + r.status);
+          return data;
+        });
+      })
+      .then(function (data) {
+        if (radio.loadingCat === cat) radio.loadingCat = null;
+        if (data.categories) radio.cats = data.categories;
+        var group = '';
+        (data.categories || []).forEach(function (c) { if (c.id === cat) group = c.name; });
+        // Each station knows its group: the bar says it, and "next" stays in it.
+        var stations = data.stations.map(function (st) { st.group = group; st.groupId = cat; return st; });
+        radio.byCat[cat] = { stations: stations, withStreams: !!data.signedIn && !data.locked, signedIn: !!data.signedIn, locked: !!data.locked, free: data.free };
+        // Another group was chosen while this one loaded: keep it for later.
+        if (mediaCat('radio') !== cat) return;
+        radio.stations = stations;
+        radio.withStreams = !!data.signedIn && !data.locked;
+        radio.locked = !!data.locked;
+        paintFreeNote(data.free);
+        $('radio-loading').hidden = true;
+        if (view === 'radio' && media.tab === 'radio') {
+          $('radio-signedout').hidden = !!data.signedIn;
+          paintCats('radio', radio.cats, renderRadioList);
+          paintStations();
+          paintRadioResume();
+        }
+      })
+      .catch(function () {
+        if (radio.loadingCat === cat) radio.loadingCat = null;
+        if (mediaCat('radio') !== cat) return;
+        $('radio-loading').hidden = true;
+        if (view === 'radio' && media.tab === 'radio') $('radio-error').hidden = false;
+      });
+  }
+
+  function paintRadioResume() {
+    var mem = mediaMemory();
+    var show = premiumApi.status.signedIn && !radio.playing && mem.station && mem.station.url;
+    $('radio-resume-wrap').hidden = !show;
+    if (show) $('radio-resume').textContent = '▶ Pick up where you left off: ' + mem.station.name;
+  }
+
+  function stationMeta(st) {
+    var bits = [];
+    if (st.country) bits.push(shortCountry(st.country));
+    if (st.tags && st.tags.length) bits.push(st.tags.slice(0, 3).join(', '));
+    return bits.join(' · ');
+  }
+
+  function paintStations() {
+    var list = $('radio-list');
+    var stations = radio.stations || [];
+    list.innerHTML = '';
+    list.dataset.cat = mediaCat('radio');
+    if (!stations.length) {
+      var none = document.createElement('li');
+      none.className = 'fine';
+      none.textContent = 'No stations in this group are on air right now. Try another group, or again in a little while.';
+      list.appendChild(none);
+      return;
+    }
+    stations.forEach(function (st, i) {
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'station';
+      btn.style.animationDelay = Math.min(i, 8) * 30 + 'ms';
+      btn.dataset.station = st.id;
+
+      var art = document.createElement('span');
+      art.className = 'station-art';
+      art.setAttribute('aria-hidden', 'true');
+      mediaArt(art, st.favicon, st.emoji || '\u{1F4FB}');
+
+      var text = document.createElement('span');
+      text.className = 'station-text';
+      var name = document.createElement('span');
+      name.className = 'station-name';
+      name.textContent = st.name;
+      var meta = document.createElement('span');
+      meta.className = 'station-meta';
+      meta.textContent = stationMeta(st);
+      text.appendChild(name);
+      text.appendChild(meta);
+
+      var state = document.createElement('span');
+      state.className = 'station-state';
+
+      btn.appendChild(art);
+      btn.appendChild(text);
+      btn.appendChild(state);
+      btn.addEventListener('click', function () {
+        if (!st.url) { Sound.reject(); return radio.locked ? goPremium('This station') : nudgeRadioSignin(); }
+        if (radio.playing && radio.playing.id === st.id) return toggleRadio();
+        radio.skips = 0;
+        delete radio.dead[st.id];
+        playStation(st);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+    paintStationStates();
+  }
+
+  function paintStationStates() {
+    $$('#radio-list .station').forEach(function (btn) {
+      var id = btn.dataset.station;
+      var current = radio.playing && radio.playing.id === id;
+      var dead = !current && radio.dead[id];
+      btn.classList.toggle('is-playing', !!current);
+      btn.classList.toggle('is-dead', !!dead);
+      var state = btn.querySelector('.station-state');
+      state.innerHTML = '';
+      if (!radio.withStreams) {
+        state.textContent = radio.locked ? 'Premium' : 'Sign in';
+      } else if (current && radio.state === 'live') {
+        var dot = document.createElement('span');
+        dot.className = 'live-dot';
+        state.appendChild(dot);
+        state.appendChild(document.createTextNode('Live'));
+      } else if (current && radio.state === 'tuning') {
+        state.textContent = 'Tuning…';
+      } else if (current) {
+        state.textContent = radio.state === 'broken' ? 'Off air' : 'Paused';
+      } else {
+        state.textContent = dead ? 'Off air' : 'Play';
+      }
+      var name = btn.querySelector('.station-name').textContent;
+      btn.setAttribute('aria-label', (current && radio.state !== 'paused' ? 'Pause ' : 'Play ') + name);
+    });
+  }
+
+  function paintRadioBar() {
+    var bar = $('radio-bar');
+    var st = radio.playing;
+    bar.hidden = !st;
+    document.body.classList.toggle('has-radio', !!st);
+    if (!st) return;
+    bar.classList.toggle('is-live', radio.state === 'live');
+    bar.classList.toggle('is-paused', radio.state === 'paused' || radio.state === 'broken');
+    bar.classList.toggle('is-broken', radio.state === 'broken');
+    $('radio-bar-status').textContent = {
+      tuning: 'Tuning in…',
+      live: '● Live · ' + (st.group || 'Radio'),
+      paused: 'Paused',
+      broken: 'Not answering — try another station',
+    }[radio.state] || '';
+    $('radio-bar-name').textContent = st.name;
+    var art = $('radio-bar-art');
+    if (art.dataset.station !== st.id) {
+      art.dataset.station = st.id;
+      mediaArt(art, st.favicon, st.emoji || '\u{1F4FB}');
+    }
+    var on = radio.state === 'live' || radio.state === 'tuning';
+    $('radio-bar-toggle').setAttribute('aria-label', on ? 'Pause' : 'Play');
+  }
+
+  function paintRadio() {
+    paintRadioBar();
+    paintStationStates();
+    if (view === 'radio' && media.tab === 'radio') paintRadioResume();
+  }
+
+  function armTuneTimer() {
+    clearTimeout(radio.tuneTimer);
+    radio.tuneTimer = setTimeout(function () {
+      if (radio.playing && radio.state === 'tuning') radioFailed();
+    }, RADIO_TUNE_MS);
+  }
+
+  function radioOn() {
+    return !!radio.playing && (radio.state === 'live' || radio.state === 'tuning');
+  }
+
+  function playStation(st) {
+    var audio = $('radio-audio');
+    pauseTv();
+    // "Next" stays in the group this station was chosen from.
+    if (radio.stations && radio.stations.indexOf(st) !== -1) radio.queue = radio.stations;
+    else if (st.groupId && radio.byCat[st.groupId]) radio.queue = radio.byCat[st.groupId].stations;
+    radio.playing = st;
+    radio.state = 'tuning';
+    audio.src = st.url;
+    var attempt = audio.play();
+    if (attempt && attempt.catch) {
+      attempt.catch(function (err) {
+        // Refused for want of a tap is a pause, not a dead station. Anything
+        // else arrives through the element's own error event below.
+        if (err && err.name === 'NotAllowedError' && radio.playing && radio.playing.id === st.id) {
+          clearTimeout(radio.tuneTimer);
+          radio.state = 'paused';
+          paintRadio();
+        }
+      });
+    }
+    armTuneTimer();
+    rememberMedia({ station: st });
+    setRadioSession(st);
+    countRadioPlay(st.id);
+    paintRadio();
+  }
+
+  function toggleRadio() {
+    if (!radio.playing) return;
+    var audio = $('radio-audio');
+    if (radioOn()) {
+      clearTimeout(radio.tuneTimer);
+      audio.pause();
+      radio.state = 'paused';
+      paintRadio();
+      return;
+    }
+    // Back on air, not back where it stopped: a live stream resumed from its
+    // buffer is however many minutes behind it was paused for, for good.
+    pauseTv();
+    radio.skips = 0;
+    radio.state = 'tuning';
+    audio.src = radio.playing.url;
+    var attempt = audio.play();
+    if (attempt && attempt.catch) attempt.catch(function () {});
+    armTuneTimer();
+    paintRadio();
+  }
+
+  function stopRadio() {
+    var audio = $('radio-audio');
+    // Cleared before the source is, so the error some browsers raise for an
+    // emptied source is not taken for a dead station.
+    radio.playing = null;
+    radio.state = 'idle';
+    clearTimeout(radio.tuneTimer);
+    audio.pause();
+    audio.removeAttribute('src');
+    try { audio.load(); } catch (err) {}
+    try { if ('mediaSession' in navigator) navigator.mediaSession.metadata = null; } catch (err) {}
+    paintRadio();
+  }
+
+  function nextStation() {
+    var current = radio.playing;
+    if (!current) return;
+    var list = (radio.queue || radio.stations || []).filter(function (st) { return st.url; });
+    var at = -1;
+    for (var i = 0; i < list.length; i++) if (list[i].id === current.id) at = i;
+    var pick = null;
+    for (var step = 1; step <= list.length; step++) {
+      var cand = list[(at + step + list.length) % list.length];
+      if (cand.id !== current.id && !radio.dead[cand.id]) { pick = cand; break; }
+    }
+    if (!pick) {
+      radio.state = 'broken';
+      $('radio-audio').pause();
+      paintRadio();
+      return;
+    }
+    playStation(pick);
+  }
+
+  function radioFailed() {
+    var current = radio.playing;
+    if (!current) return;
+    clearTimeout(radio.tuneTimer);
+    radio.dead[current.id] = true;
+    radio.skips += 1;
+    if (radio.skips >= RADIO_MAX_SKIPS) {
+      radio.state = 'broken';
+      $('radio-audio').pause();
+      paintRadio();
+      return;
+    }
+    nextStation();
+  }
+
+  function countRadioPlay(id) {
+    try {
+      fetch('/api/radio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ station: id }),
+        keepalive: true,
+      }).catch(function () {});
+    } catch (err) {}
+  }
+
+  // The phone's lock screen and the headset buttons, so the radio can be
+  // paused with floury hands without unlocking anything.
+  function setRadioSession(st) {
+    if (!('mediaSession' in navigator) || typeof MediaMetadata === 'undefined') return;
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: st.name,
+        artist: st.group ? st.group + ' radio' : 'Radio',
+        album: 'morsels45',
+        artwork: st.favicon ? [{ src: st.favicon }] : [],
+      });
+    } catch (err) {}
+  }
+
+  /* --------------------------------------------------------------- tv -- */
+
+  /*
+   * hls.js, because the channels are HLS and only Safari plays HLS from a
+   * bare <video>. Fetched the first time somebody presses play rather than
+   * with the app: half a megabyte nobody who never opens the TV should pay
+   * for. Pinned to an exact version with its hash, so the file that runs is
+   * the file that was checked.
+   */
+  var HLS_SRC = 'https://cdn.jsdelivr.net/npm/hls.js@1.6.13/dist/hls.min.js';
+  var HLS_SRI = 'sha384-z+tuLqMWl1/cPv7O+39RO0EURSNvorimpcCaMgeNwU+qFBx+AlUIl7jaAwg0cYil';
+  var TV_GUIDE_MS = 5 * 60 * 1000;
+
+  var tv = {
+    channels: null,   // the group showing, checked from this browser
+    withStreams: null,
+    byCat: {},        // every group checked this visit: { channels, withStreams, checked }
+    cats: null,       // the groups, as the server lists them
+    loadingCat: null,
+    guideCat: null,   // the group the listings were last fetched for
+    guide: {},        // channel id -> [{title, subtitle, start, stop}]
+    guideAt: 0,
+    guideLoading: false,
+    offset: 0,        // the server's clock minus this one
+    dead: {},
+    current: null,
+    hls: null,
+    hlsLoading: null,
+    recovered: 0,
+    ticker: null,
+  };
+
+  function tvNow() { return Date.now() + tv.offset; }
+
+  function clockTime(ms) {
+    try { return new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); }
+    catch (err) { return new Date(ms).toTimeString().slice(0, 5); }
+  }
+
+  // Groups with nothing in them (none played when the lineup was built)
+  // are not offered.
+  function tvCats() {
+    return (tv.cats || []).filter(function (c) { return c.count !== 0; });
+  }
+
+  function renderTv() {
+    var cat = mediaCat('tv');
+    if (tv.cats) paintCats('tv', tvCats(), renderTv);
+    var cached = tv.byCat[cat];
+    if (cached && cached.signedIn !== premiumApi.status.signedIn) { delete tv.byCat[cat]; cached = null; }
+    startTvTicker();
+    $('tv-error').hidden = true;
+    if (!cached) { tv.channels = null; return loadTv(); }
+    tv.channels = cached.channels;
+    tv.withStreams = cached.withStreams;
+    tv.locked = !!cached.locked;
+    paintFreeNote(cached.free);
+    tv.checked = cached.checked;
+    $('tv-loading').hidden = true;
+    // Already drawn (this runs again on every window focus, from
+    // syncPremium): bring it up to date in place rather than redraw it.
+    if ($('tv-list').dataset.cat === cat && $$('#tv-list .tv-row').length === tv.channels.length) { paintTvChecked(); paintTvGuide(); }
+    else paintTv();
+    if (tv.withStreams && (tv.guideCat !== cat || Date.now() - tv.guideAt > TV_GUIDE_MS)) loadGuide();
+  }
+
+  function loadTv() {
+    var cat = mediaCat('tv');
+    if (tv.loadingCat === cat) return;
+    tv.loadingCat = cat;
+    $('tv-error').hidden = true;
+    $('tv-list').innerHTML = '';
+    $('tv-list').dataset.cat = '';
+    $('tv-checked').hidden = true;
+    $('tv-loading').hidden = false;
+    fetch('/api/tv?cat=' + encodeURIComponent(cat), { headers: { Accept: 'application/json' } })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          if (!r.ok || !data.channels) throw new Error(data.error || 'tv ' + r.status);
+          return data;
+        });
+      })
+      .then(function (data) {
+        if (data.categories) tv.cats = data.categories;
+        if (mediaCat('tv') === cat && view === 'radio' && media.tab === 'tv') paintCats('tv', tvCats(), renderTv);
+        if (!data.signedIn || data.locked) {
+          if (data.locked) $('radio-signedout').hidden = true;
+          return { data: data, channels: data.channels, checked: null };
+        }
+        $('radio-signedout').hidden = true;
+        return checkChannels(data.channels, cat).then(function (got) { return { data: data, channels: got.channels, checked: got.checked }; });
+      })
+      .then(function (got) {
+        if (tv.loadingCat === cat) tv.loadingCat = null;
+        tv.byCat[cat] = { channels: got.channels, withStreams: !!got.data.signedIn && !got.data.locked, signedIn: !!got.data.signedIn, locked: !!got.data.locked, free: got.data.free, checked: got.checked };
+        // Another group was chosen while this one was checked: keep it for later.
+        if (mediaCat('tv') !== cat) return;
+        tv.channels = got.channels;
+        tv.withStreams = !!got.data.signedIn && !got.data.locked;
+        tv.locked = !!got.data.locked;
+        paintFreeNote(got.data.free);
+        tv.checked = got.checked;
+        $('tv-loading').hidden = true;
+        if (view === 'radio' && media.tab === 'tv') {
+          $('radio-signedout').hidden = !!got.data.signedIn;
+          paintTv();
+        }
+        if (tv.withStreams) loadGuide();
+      })
+      .catch(function () {
+        if (tv.loadingCat === cat) tv.loadingCat = null;
+        if (mediaCat('tv') !== cat) return;
+        $('tv-loading').hidden = true;
+        if (view === 'radio' && media.tab === 'tv') $('tv-error').hidden = false;
+      });
+  }
+
+  /*
+   * CHECKED ON THE FLY, FROM THIS BROWSER.
+   *
+   * The server hands over candidates — the verified channels and anything
+   * new on iptv-org's live list, each with every stream address it has — and
+   * none of them is listed until this browser has asked the stream itself
+   * and been answered with a real playlist. That is the only check that
+   * knows about this viewer's country, network and browser: a channel that
+   * is geo-blocked here, or down this minute, simply does not appear, rather
+   * than sitting in the list waiting to fail. Six at a time, five seconds
+   * each, the first twelve that answer in the order the server ranked them.
+   */
+  var TV_MAX = 12;
+  var TV_CHECK_MS = 5000;
+
+  function streamAnswers(url) {
+    var control = 'AbortController' in window ? new AbortController() : null;
+    var timer = setTimeout(function () { if (control) control.abort(); }, TV_CHECK_MS);
+    return fetch(url, { mode: 'cors', cache: 'no-store', credentials: 'omit', signal: control ? control.signal : undefined })
+      .then(function (r) { return r.ok ? r.text() : ''; })
+      .then(function (text) { clearTimeout(timer); return text.slice(0, 7) === '#EXTM3U'; })
+      .catch(function () { clearTimeout(timer); return false; });
+  }
+
+  function checkChannel(ch) {
+    var streams = (ch.streams || (ch.stream ? [ch.stream] : [])).slice(0, 3);
+    var i = 0;
+    function next() {
+      if (i >= streams.length) return Promise.resolve(null);
+      var url = streams[i++];
+      return streamAnswers(url).then(function (ok) {
+        if (!ok) return next();
+        var out = {};
+        Object.keys(ch).forEach(function (k) { out[k] = ch[k]; });
+        out.stream = url;
+        return out;
+      });
+    }
+    return next();
+  }
+
+  function checkChannels(candidates, cat) {
+    var results = new Array(candidates.length);
+    var done = 0;
+    var at = 0;
+    var note = document.querySelector('#tv-loading .fine');
+    function paintProgress() {
+      if (note && mediaCat('tv') === cat) note.textContent = 'Checking which channels play for you\u2026 ' + done + ' of ' + candidates.length;
+    }
+    paintProgress();
+    function worker() {
+      if (at >= candidates.length) return Promise.resolve();
+      var index = at++;
+      return checkChannel(candidates[index]).then(function (ok) {
+        results[index] = ok;
+        done++;
+        paintProgress();
+        return worker();
+      });
+    }
+    var pool = [];
+    for (var w = 0; w < Math.min(6, candidates.length); w++) pool.push(worker());
+    return Promise.all(pool).then(function () {
+      if (note && mediaCat('tv') === cat) note.textContent = 'Finding what\u2019s on\u2026';
+      var working = results.filter(Boolean);
+      return {
+        channels: working.slice(0, TV_MAX),
+        checked: { at: Date.now(), tried: candidates.length, playing: working.length },
+      };
+    });
+  }
+
+  function loadGuide() {
+    var cat = mediaCat('tv');
+    if (tv.guideLoading === cat) return;
+    tv.guideLoading = cat;
+    fetch('/api/tv?guide=1&cat=' + encodeURIComponent(cat), { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (tv.guideLoading === cat) tv.guideLoading = false;
+        if (!data || !data.guide) return;
+        // Added to, not replaced: the channel playing may be from another group.
+        Object.keys(data.guide).forEach(function (id) { tv.guide[id] = data.guide[id]; });
+        if (mediaCat('tv') === cat) { tv.guideAt = Date.now(); tv.guideCat = cat; }
+        // Listings are in real time and this device's clock may not be.
+        if (typeof data.now === 'number') tv.offset = data.now - Date.now();
+        paintTvGuide();
+      })
+      .catch(function () { if (tv.guideLoading === cat) tv.guideLoading = false; });
+  }
+
+  // Keeps "now" moving while the list is open, and asks for fresh listings
+  // every few minutes. Does nothing at all when nobody is looking.
+  function startTvTicker() {
+    if (tv.ticker) return;
+    tv.ticker = setInterval(function () {
+      if (view !== 'radio' || media.tab !== 'tv' || document.hidden || !tv.channels) return;
+      if (tv.withStreams && Date.now() - tv.guideAt > TV_GUIDE_MS) loadGuide();
+      else paintTvGuide();
+    }, 30000);
+  }
+
+  function airing(id) {
+    var list = tv.guide[id] || [];
+    var now = tvNow();
+    var out = { now: null, next: null, later: [] };
+    for (var i = 0; i < list.length; i++) {
+      var p = list[i];
+      if (p.stop <= now) continue;
+      if (p.start <= now && !out.now) out.now = p;
+      else if (p.start > now) {
+        if (!out.next) out.next = p;
+        out.later.push(p);
+      }
+    }
+    return out;
+  }
+
+  function showLine(p) {
+    return p.title + (p.subtitle ? ' — ' + p.subtitle : '');
+  }
+
+  function paintTvChecked() {
+    var line = $('tv-checked');
+    if (!line) return;
+    var c = tv.checked;
+    line.hidden = !(c && tv.withStreams);
+    if (!c) return;
+    $('tv-checked-text').textContent = 'Checked from your browser just now: ' + c.playing + ' of ' + c.tried +
+      ' channels in this group play where you are' + (c.playing > TV_MAX ? ', showing the first ' + TV_MAX : '') + '.';
+  }
+
+  function paintTv() {
+    paintTvChecked();
+    var list = $('tv-list');
+    list.innerHTML = '';
+    list.dataset.cat = mediaCat('tv');
+    if (tv.withStreams && !(tv.channels || []).length) {
+      var none = document.createElement('li');
+      none.className = 'fine';
+      none.textContent = 'None of the channels in this group answered from here just now. They come and go \u2014 try another group, or check again in a little while.';
+      list.appendChild(none);
+    }
+    (tv.channels || []).forEach(function (ch, i) {
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'station tv-row';
+      btn.style.animationDelay = Math.min(i, 8) * 30 + 'ms';
+      btn.dataset.channel = ch.id;
+
+      var art = document.createElement('span');
+      art.className = 'station-art tv-art';
+      art.setAttribute('aria-hidden', 'true');
+      mediaArt(art, ch.logo, '\u{1F4FA}');
+
+      var text = document.createElement('span');
+      text.className = 'station-text';
+      var name = document.createElement('span');
+      name.className = 'station-name';
+      name.textContent = ch.name;
+      var now = document.createElement('span');
+      now.className = 'station-meta tv-now';
+      var next = document.createElement('span');
+      next.className = 'station-meta tv-next';
+      text.appendChild(name);
+      text.appendChild(now);
+      text.appendChild(next);
+
+      var state = document.createElement('span');
+      state.className = 'station-state';
+
+      btn.appendChild(art);
+      btn.appendChild(text);
+      btn.appendChild(state);
+      btn.addEventListener('click', function () {
+        if (!ch.stream) { Sound.reject(); return tv.locked ? goPremium('This channel') : nudgeRadioSignin(); }
+        if (tv.current && tv.current.id === ch.id) {
+          var video = $('tv-video');
+          if (video.paused) startVideo(video);
+          return scrollToStage();
+        }
+        Sound.tick();
+        delete tv.dead[ch.id];
+        playTv(ch);
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+    paintTvGuide();
+  }
+
+  // The parts that change as the clock moves, painted in place so the list
+  // does not re-animate every thirty seconds.
+  function paintTvGuide() {
+    $$('#tv-list .tv-row').forEach(function (btn) {
+      var id = btn.dataset.channel;
+      var ch = null;
+      (tv.channels || []).forEach(function (c) { if (c.id === id) ch = c; });
+      if (!ch) return;
+      var on = airing(id);
+      var nowEl = btn.querySelector('.tv-now');
+      var nextEl = btn.querySelector('.tv-next');
+      if (on.now) nowEl.textContent = 'Now: ' + showLine(on.now) + ' · until ' + clockTime(on.now.stop);
+      else if (!tv.withStreams) nowEl.textContent = tv.locked ? 'Premium — or today’s free group' : 'Sign in to see what’s on';
+      else if (ch.hasGuide && !tv.guideAt) nowEl.textContent = 'Finding what’s on…';
+      else nowEl.textContent = 'Live now';
+      nextEl.textContent = on.next ? 'Next ' + clockTime(on.next.start) + ': ' + on.next.title : '';
+      nextEl.hidden = !on.next;
+
+      var current = tv.current && tv.current.id === id;
+      btn.classList.toggle('is-playing', !!current);
+      btn.classList.toggle('is-dead', !current && !!tv.dead[id]);
+      var state = btn.querySelector('.station-state');
+      state.innerHTML = '';
+      if (!tv.withStreams) state.textContent = tv.locked ? 'Premium' : 'Sign in';
+      else if (current) {
+        var dot = document.createElement('span');
+        dot.className = 'live-dot';
+        state.appendChild(dot);
+        state.appendChild(document.createTextNode('Watching'));
+      } else state.textContent = tv.dead[id] ? 'Off air' : 'Watch';
+      btn.setAttribute('aria-label', (current ? 'Watching ' : 'Watch ') + ch.name);
+    });
+    paintTvStage();
+  }
+
+  function paintTvStage() {
+    var ch = tv.current;
+    $('tv-stage').hidden = !ch;
+    if (!ch) return;
+    $('tv-stage-name').textContent = ch.name;
+    var on = airing(ch.id);
+    $('tv-stage-now').textContent = on.now
+      ? 'Now: ' + showLine(on.now) + ' · until ' + clockTime(on.now.stop)
+      : ch.hasGuide
+        ? 'Live now.'
+        : 'Live now. This channel does not publish listings we can read, so there is no schedule for it.';
+    var later = $('tv-later');
+    later.innerHTML = '';
+    on.later.slice(0, 5).forEach(function (p) {
+      var li = document.createElement('li');
+      var time = document.createElement('time');
+      time.dateTime = new Date(p.start).toISOString();
+      time.textContent = clockTime(p.start);
+      var title = document.createElement('span');
+      title.textContent = showLine(p);
+      li.appendChild(time);
+      li.appendChild(title);
+      later.appendChild(li);
+    });
+    later.hidden = !on.later.length;
+  }
+
+  function scrollToStage() {
+    try { $('tv-stage').scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (err) {}
+  }
+
+  function setTvOverlay(text) {
+    var el = $('tv-overlay');
+    el.textContent = text || '';
+    el.hidden = !text;
+  }
+
+  function loadHls() {
+    if (window.Hls) return Promise.resolve(window.Hls);
+    if (tv.hlsLoading) return tv.hlsLoading;
+    tv.hlsLoading = new Promise(function (resolve, reject) {
+      var script = document.createElement('script');
+      script.src = HLS_SRC;
+      script.integrity = HLS_SRI;
+      script.crossOrigin = 'anonymous';
+      script.async = true;
+      script.onload = function () { window.Hls ? resolve(window.Hls) : reject(new Error('hls.js did not define Hls')); };
+      script.onerror = function () { tv.hlsLoading = null; reject(new Error('hls.js would not load')); };
+      document.head.appendChild(script);
+    });
+    return tv.hlsLoading;
+  }
+
+  function teardownTv() {
+    if (tv.hls) { try { tv.hls.destroy(); } catch (err) {} tv.hls = null; }
+    var video = $('tv-video');
+    video.pause();
+    video.removeAttribute('src');
+    try { video.load(); } catch (err) {}
+  }
+
+  function startVideo(video) {
+    var attempt = video.play();
+    if (attempt && attempt.catch) {
+      attempt.catch(function (err) {
+        if (!err || err.name !== 'NotAllowedError') return;
+        // The tap that chose the channel was spent waiting for the player to
+        // load. Every browser allows a muted start, so start muted and say so.
+        video.muted = true;
+        video.play()
+          .then(function () { setTvOverlay('Muted — tap the speaker to hear it'); })
+          .catch(function () { setTvOverlay('Press play to start'); });
+      });
+    }
+  }
+
+  function playTv(ch) {
+    if (radioOn()) toggleRadio();
+    teardownTv();
+    tv.current = ch;
+    tv.recovered = 0;
+    setTvOverlay('Tuning in…');
+    paintTvGuide();
+    scrollToStage();
+
+    var video = $('tv-video');
+    video.muted = false;
+    var nativeHls = !!video.canPlayType('application/vnd.apple.mpegurl');
+    var hasMse = !!(window.MediaSource || window.ManagedMediaSource);
+    // An iPhone without Media Source plays HLS itself and needs nothing loaded.
+    if (nativeHls && !hasMse) {
+      video.src = ch.stream;
+      return startVideo(video);
+    }
+    loadHls().then(function (Hls) {
+      if (tv.current !== ch) return;
+      if (!Hls.isSupported()) {
+        if (nativeHls) { video.src = ch.stream; return startVideo(video); }
+        return tvFailed('This browser cannot play live TV.', true);
+      }
+      var hls = new Hls({ maxBufferLength: 20, capLevelToPlayerSize: true });
+      tv.hls = hls;
+      hls.on(Hls.Events.ERROR, function (event, data) {
+        if (!data || !data.fatal || tv.hls !== hls) return;
+        // The channel is fine; this browser cannot decode its video (H.264
+        // and AAC — some Linux builds ship without them). Saying the channel
+        // is off air would send them hunting through channels that will all
+        // fail the same way.
+        if (data.details === Hls.ErrorDetails.MANIFEST_INCOMPATIBLE_CODECS_ERROR ||
+            data.details === Hls.ErrorDetails.BUFFER_ADD_CODEC_ERROR ||
+            data.details === Hls.ErrorDetails.BUFFER_INCOMPATIBLE_CODECS_ERROR) {
+          return tvFailed('This browser cannot play the video format these channels use. Chrome, Safari, Edge or Firefox on a phone or a Mac will.', true);
+        }
+        // One recovery of each kind, then call it: a channel that is down
+        // should say so, not spin.
+        if (tv.recovered < 2 && data.type === Hls.ErrorTypes.NETWORK_ERROR) { tv.recovered += 1; hls.startLoad(); return; }
+        if (tv.recovered < 2 && data.type === Hls.ErrorTypes.MEDIA_ERROR) { tv.recovered += 1; hls.recoverMediaError(); return; }
+        tvFailed();
+      });
+      hls.on(Hls.Events.MANIFEST_PARSED, function () { startVideo(video); });
+      hls.loadSource(ch.stream);
+      hls.attachMedia(video);
+    }).catch(function () {
+      if (tv.current === ch) tvFailed('The video player would not load. Check your connection and try again.', true);
+    });
+  }
+
+  function tvFailed(message, notTheChannel) {
+    var ch = tv.current;
+    if (!ch) return;
+    teardownTv();
+    if (!notTheChannel) tv.dead[ch.id] = true;
+    setTvOverlay(message || 'This channel is not answering right now — free channels come and go. Try another.');
+    paintTvGuide();
+  }
+
+  function closeTv() {
+    teardownTv();
+    tv.current = null;
+    setTvOverlay('');
+    paintTvGuide();
+  }
+
+  function pauseTv() {
+    var video = $('tv-video');
+    if (video && !video.paused) video.pause();
+  }
+
+  // Leaving the TV — another tab, another section. Paused rather than closed,
+  // so coming back is a tap on play; left alone in picture-in-picture, which
+  // is exactly how somebody watches while they read the recipe.
+  function leaveTv() {
+    var video = $('tv-video');
+    if (!video || !tv.current) return;
+    if (document.pictureInPictureElement === video) return;
+    pauseTv();
+  }
+
+  (function wireMedia() {
+    var audio = $('radio-audio');
+    var video = $('tv-video');
+    if (!audio || !video) return;
+
+    $$('.media-tabs .filter').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        Sound.tick();
+        showMediaTab(btn.dataset.tab);
+      });
+    });
+
+    audio.addEventListener('playing', function () {
+      if (!radio.playing) return;
+      clearTimeout(radio.tuneTimer);
+      radio.state = 'live';
+      radio.skips = 0;
+      paintRadio();
+    });
+    audio.addEventListener('waiting', function () {
+      if (!radio.playing || radio.state !== 'live') return;
+      radio.state = 'tuning';
+      armTuneTimer();
+      paintRadio();
+    });
+    // A pause from outside the app — a headset button, the OS taking the
+    // audio for a call — is a pause here too.
+    audio.addEventListener('pause', function () {
+      if (!radio.playing || radio.state === 'broken' || radio.state === 'paused') return;
+      clearTimeout(radio.tuneTimer);
+      radio.state = 'paused';
+      paintRadio();
+    });
+    audio.addEventListener('error', function () {
+      if (!radio.playing || !audio.getAttribute('src')) return;
+      radioFailed();
+    });
+
+    video.addEventListener('playing', function () {
+      if (!video.muted) setTvOverlay('');
+      else if ($('tv-overlay').textContent === 'Tuning in…') setTvOverlay('');
+      if (radioOn()) toggleRadio();
+    });
+    video.addEventListener('volumechange', function () {
+      if (!video.muted && /^Muted/.test($('tv-overlay').textContent)) setTvOverlay('');
+    });
+    video.addEventListener('waiting', function () {
+      if (tv.current && !video.paused) setTvOverlay('Buffering…');
+    });
+    // Native playback (Safari) reports a dead stream here; hls.js reports
+    // through its own error event above.
+    video.addEventListener('error', function () {
+      if (tv.current && !tv.hls && video.getAttribute('src')) tvFailed();
+    });
+
+    $('tv-close').addEventListener('click', closeTv);
+    $('tv-retry').addEventListener('click', function () { tv.channels = null; delete tv.byCat[mediaCat('tv')]; loadTv(); });
+    $('tv-recheck').addEventListener('click', function () {
+      if (tv.current) closeTv();
+      tv.channels = null;
+      tv.dead = {};
+      delete tv.byCat[mediaCat('tv')];
+      loadTv();
+    });
+
+    $('radio-bar-toggle').addEventListener('click', toggleRadio);
+    $('radio-bar-next').addEventListener('click', function () { radio.skips = 0; nextStation(); });
+    $('radio-bar-close').addEventListener('click', stopRadio);
+    $('radio-bar-info').addEventListener('click', function () {
+      leaveEndless();
+      hideLanding();
+      // To the group that is playing, not whichever was last looked at.
+      if (radio.playing && radio.playing.groupId) setMediaCat('radio', radio.playing.groupId);
+      if (view === 'radio') return showMediaTab('radio');
+      media.tab = 'radio';
+      setView('radio');
+    });
+    $('radio-retry').addEventListener('click', function () {
+      radio.stations = null;
+      delete radio.byCat[mediaCat('radio')];
+      loadRadio();
+    });
+    $('radio-resume').addEventListener('click', function () {
+      var mem = mediaMemory();
+      if (!mem.station || !mem.station.url) return;
+      radio.skips = 0;
+      playStation(mem.station);
+    });
+
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.setActionHandler('play', function () { if (!radioOn()) toggleRadio(); });
+        navigator.mediaSession.setActionHandler('pause', function () { if (radioOn()) toggleRadio(); });
+        navigator.mediaSession.setActionHandler('nexttrack', function () { radio.skips = 0; nextStation(); });
+        navigator.mediaSession.setActionHandler('stop', stopRadio);
+      } catch (err) {}
+    }
+  })();
+
+  var referralTimer = null;
+
+  function stopReferralHeartbeat() {
+    clearTimeout(referralTimer);
+    referralTimer = null;
+  }
+
+  function referralHeartbeat() {
+    var status = premiumApi.status;
+    var code = progress.state.referredBy;
+    var done = !code || !status.signedIn || code === status.userId ||
+      (progress.state.referralSeconds || 0) >= QUALIFY_SECONDS;
+    if (done) return stopReferralHeartbeat();
+
+    if (document.hidden) {
+      referralTimer = setTimeout(referralHeartbeat, HEARTBEAT_MS);
+      return;
+    }
+
+    fetch('/api/referral/ping', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: code, seconds: HEARTBEAT_MS / 1000 })
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (result) {
+        if (!result || typeof result.secondsPlayed !== 'number') return;
+        progress.state.referralSeconds = result.secondsPlayed;
+        progress.save();
+        renderInvite();
+        if (result.justQualified) {
+          toast('\u{1F389}', 'A day of Premium, sent', 'The friend who invited you just earned it — thanks for playing.');
+        }
+      })
+      .catch(function () { /* missed this heartbeat; the next one tries again */ })
+      .then(function () { referralTimer = setTimeout(referralHeartbeat, HEARTBEAT_MS); });
+  }
 
   // Tag -> the words the questions actually use, so the profile reads back in
   // the app's own language: "Actual food", not "drink".
@@ -7625,43 +10259,189 @@
 
   // Standing rules feed straight into the engine, so a banned dish never comes
   // up and its question never gets asked again.
-  function renderRules() {
-    var wrap = $('diet-rules');
-    wrap.innerHTML = '';
-    ProgressLib.RULES.forEach(function (rule) {
-      var on = progress.hasRule(rule.tag);
-      var btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'rule' + (on ? ' is-on' : '');
-      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      btn.innerHTML = '<span></span><span class="rule-state"></span>';
-      btn.children[0].textContent = rule.label;
-      btn.children[1].textContent = on ? 'On' : 'Off';
-      btn.title = rule.note;
-      btn.addEventListener('click', function () {
-        /*
-         * FREE, and it used to be Premium. That was a mistake.
-         *
-         * Somebody who does not eat meat is not a conversion opportunity. They
-         * are somebody this app is simply WRONG for until it listens, and an
-         * app that keeps serving a vegetarian steak until they pay does not get
-         * paid — it gets closed, in about fifteen seconds, and never opened
-         * again. The six standing rules are the difference between the product
-         * working and not working, which is not a thing to charge for.
-         *
-         * What is built on top of them is still Premium: banning any tag you
-         * like, never-again on a named dish, a guest's rules, the heat dial.
-         * Those are refinements on an app that already works for you.
-         */
-        var nowOn = progress.toggleRule(rule.tag);
-        btn.classList.toggle('is-on', nowOn);
-        btn.setAttribute('aria-pressed', nowOn ? 'true' : 'false');
-        btn.children[1].textContent = nowOn ? 'On' : 'Off';
-        applyRules();
-        Sound.tick();
-      });
-      wrap.appendChild(btn);
+  /*
+   * WHAT SOMEBODY DOES NOT EAT, in three groups, built once and used twice.
+   *
+   * The same markup serves the last card of the welcome and the strip on the
+   * profile screen, because they are the same question and answering it in one
+   * place has to mean it is answered in the other. They were two renderers for
+   * about a day and the copy had already drifted between them.
+   *
+   *   Faith  — a tradition's rules under its own name. Several tags each.
+   *   Diet   — vegetarian, vegan, pescatarian. Several tags each.
+   *   Avoid  — one tag each, named the way somebody would say it.
+   *
+   * Everything stacks and nothing is exclusive: Hindu and Vegetarian together,
+   * or Halal with No alcohol turned back off, are ordinary combinations and
+   * the union of what is on is what applies.
+   */
+  var DIET_GROUPS = [
+    { id: 'faith', name: 'Faith',
+      note: 'Halal, Kosher, Hindu, Jain, Sattvic and five more \u2014 a tradition\u2019s ' +
+        'rules under its own name.' },
+    { id: 'diet', name: 'Diet',
+      note: 'Vegetarian, vegan, pescatarian.' },
+    { id: 'avoid', name: 'One thing at a time',
+      note: 'Anything you would rather not be handed \u2014 pork, dairy, onion, heat \u2014 on its own.' }
+  ];
+
+  /*
+   * One row. A diet and a standing rule are the same control, so they are the
+   * same function: a name, what it actually does under it, and a word at the
+   * end saying whether it is on.
+   *
+   * The note is not decoration. A diet turns several tags on at once, and the
+   * row is the only place that can say which — somebody who picks Kosher and
+   * then finds a lasagne missing deserves to have been told which of the three
+   * parts did it.
+   */
+  function dietRow(label, note, isOn, toggle, afterToggle) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'rule' + (isOn() ? ' is-on' : '');
+    btn.setAttribute('aria-pressed', isOn() ? 'true' : 'false');
+    btn.innerHTML = '<span class="rule-name"><b></b><i></i></span>' +
+      '<span class="rule-state"></span>';
+    btn.querySelector('b').textContent = label;
+    btn.querySelector('i').textContent = note;
+    btn.children[1].textContent = isOn() ? 'On' : 'Off';
+    btn.addEventListener('click', function () {
+      /*
+       * FREE, every one of them, and the standing rules used to be Premium.
+       * That was a mistake.
+       *
+       * Somebody who does not eat meat is not a conversion opportunity. They
+       * are somebody this app is simply WRONG for until it listens, and an app
+       * that keeps serving a vegetarian steak until they pay does not get paid
+       * — it gets closed, in about fifteen seconds, and never opened again.
+       * Everything in these three groups is the difference between the product
+       * working and not working, which is not a thing to charge for. It goes
+       * double for the faith group: an app that offers a Muslim pork until the
+       * card clears has not built a funnel, it has built an insult.
+       *
+       * What is layered ON TOP is still Premium: banning a style of food the
+       * questions ask about, never-again on a named dish, a guest's rules, the
+       * heat dial. Those are refinements on an app that already works for you.
+       */
+      var nowOn = toggle();
+      btn.classList.toggle('is-on', nowOn);
+      btn.setAttribute('aria-pressed', nowOn ? 'true' : 'false');
+      btn.children[1].textContent = nowOn ? 'On' : 'Off';
+      Sound.tick();
+      applyRules();
+      // Not renderDishes: the catalogue screen deliberately lists everything a
+      // rule has ruled out, because finding a dish is how you un-rule it. The
+      // front door is a different matter — what it offers has to be offerable.
+      renderIntro();
+      paintDaily();
+      afterToggle();
     });
+    return btn;
+  }
+
+  /** What is switched on inside one group, for the line on its summary. */
+  function dietGroupOn(group) {
+    if (group !== 'avoid') {
+      return progress.dietsIn(group).filter(function (d) {
+        return progress.hasDiet(d.id);
+      }).map(function (d) { return d.label; });
+    }
+    return ProgressLib.RULES.filter(function (r) {
+      return progress.hasRule(r.tag);
+    }).map(function (r) { return r.label; });
+  }
+
+  /*
+   * Build the three groups into a container.
+   *
+   * Shut unless something inside is already on, which is the whole reason the
+   * groups exist: flat, this is twenty-seven rows of other people's rules to
+   * scroll past on the way to your own. A group that IS carrying something
+   * opens itself, so nothing anybody chose is ever hidden behind a closed
+   * door they have to remember to look inside.
+   */
+  function renderDietGroups(rootId, caveatsId) {
+    var root = $(rootId);
+    if (!root) return;
+    root.innerHTML = '';
+
+    DIET_GROUPS.forEach(function (group) {
+      var box = document.createElement('details');
+      box.className = 'diet-group';
+      box.open = dietGroupOn(group.id).length > 0;
+
+      var head = document.createElement('summary');
+      head.className = 'diet-group-head';
+      head.innerHTML = '<span class="diet-group-name"></span>' +
+        '<span class="diet-group-note"></span><span class="diet-group-count"></span>';
+      head.querySelector('.diet-group-name').textContent = group.name;
+      head.querySelector('.diet-group-note').textContent = group.note;
+      box.appendChild(head);
+
+      var rows = document.createElement('div');
+      rows.className = 'rules';
+      box.appendChild(rows);
+
+      // Repainting the counts rather than the rows, because rebuilding a list
+      // under the finger that just tapped it would shut the group and throw
+      // away the focus.
+      var after = function () {
+        paintDietCounts(root);
+        paintDietCaveats(caveatsId);
+      };
+
+      if (group.id === 'avoid') {
+        ProgressLib.RULES.forEach(function (rule) {
+          rows.appendChild(dietRow(rule.label, rule.note,
+            function () { return progress.hasRule(rule.tag); },
+            function () { return progress.toggleRule(rule.tag); }, after));
+        });
+      } else {
+        progress.dietsIn(group.id).forEach(function (diet) {
+          rows.appendChild(dietRow(diet.label, diet.note,
+            function () { return progress.hasDiet(diet.id); },
+            function () { return progress.toggleDiet(diet.id); }, after));
+        });
+      }
+
+      root.appendChild(box);
+    });
+
+    paintDietCounts(root);
+    paintDietCaveats(caveatsId);
+  }
+
+  // The count on a shut group's summary, so it can still say what is inside.
+  function paintDietCounts(root) {
+    var boxes = root.querySelectorAll('.diet-group');
+    DIET_GROUPS.forEach(function (group, i) {
+      var box = boxes[i];
+      if (!box) return;
+      var on = dietGroupOn(group.id);
+      var slot = box.querySelector('.diet-group-count');
+      // The names themselves while they fit — "Halal" tells somebody more than
+      // "1 on" does, and at one or two it always fits.
+      slot.textContent = !on.length ? ''
+        : on.length <= 2 ? on.join(' \u00b7 ')
+        : on.length + ' on';
+      box.classList.toggle('has-on', on.length > 0);
+    });
+  }
+
+  /*
+   * Only the diets actually switched on get to say what they cannot promise.
+   * Printing all of them all the time would turn an honest limit into a wall
+   * of small print, which is the reliable way to make sure nobody reads the
+   * one line that applies to them.
+   */
+  function paintDietCaveats(caveatsId) {
+    var note = $(caveatsId);
+    if (!note) return;
+    var lines = progress.dietsChosen()
+      .filter(function (d) { return d.caveat; })
+      .map(function (d) { return d.label + ': ' + d.caveat; });
+    note.hidden = lines.length === 0;
+    note.textContent = lines.join(' ');
   }
 
   function applyRules() {
@@ -7698,12 +10478,18 @@
 
   /* ------------------------------------------------------------- lifecycle */
   function resetGame() {
+    /*
+     * WHICH MENU THIS GAME IS PLAYED OVER.
+     *
+     * Set before the prior is built, because reset() sizes the weights from
+     * whatever is here. Everything downstream — the shrinking count, the
+     * shortlist, the alternates, the rules and the snoozes — reads
+     * game.items, so a mode that swaps this swaps all of them at once and
+     * there is no second list anywhere to keep in step.
+     */
+    game.items = quickMode ? Data.QUICK : Data.ITEMS;
     toastQueue = [];
     duel.live = false;
-    // A new game, and a fresh prompt budget for it. Every mode in the app
-    // comes through here, which is what makes "per game" mean the same thing
-    // in Endless, Knockout and the ordinary question flow alike.
-    startGameBudget();
     // Order matters: the bias is read while the prior is built, and the bans are
     // applied to the weights afterwards.
     applyTaste();
@@ -7718,12 +10504,15 @@
     busy = false;
     shortcut = false;
     tunedTo = null;
+    funnelStarted = false;
     $('rate-wrap').hidden = true;
     $('reaction').textContent = '';
     $('q-text').textContent = 'What sounds better?';
   }
 
   function restart() {
+    // "Decide for me" is the full menu, whatever the last game was played on.
+    quickMode = false;
     hideLanding();
     // "Decide for me" is the ordinary game, whatever was half-played before it.
     // Left live, a together run would keep intercepting step() and cap this one
@@ -7731,6 +10520,9 @@
     together.live = false;
     together.sets = [];
     together.sending = false;
+    // Asking for a fresh game is a decision about the old one. Kept, it would
+    // come back on the next visit as an offer nobody wanted twice.
+    clearResume();
     resetGame();
     applyKnobs();
     setView('decide');
@@ -7812,6 +10604,13 @@
   $('choice-neither').addEventListener('click', function (e) { answer('neither', e.currentTarget); });
   $('restart-btn').addEventListener('click', restart);
   $('accept-btn').addEventListener('click', accept);
+  $('resume-btn').addEventListener('click', resumeGame);
+  $('plan-cal').addEventListener('click', downloadPlan);
+  $('plan-clear').addEventListener('click', function () {
+    progress.clearPlan();
+    Sound.tick();
+    paintPlan();
+  });
   $('reject-btn').addEventListener('click', rejectCurrent);
   $('again-btn').addEventListener('click', goHome);
   $('done-again-btn').addEventListener('click', restart);
@@ -7899,6 +10698,7 @@
   });
 
   document.addEventListener('keydown', function (event) {
+    if (welcomeOpen) return;
     if (keysSheet.open) return;
     if (sheet.open) return;
     if (view !== 'decide' || busy) return;
@@ -8014,7 +10814,7 @@
       if (progress.state.heat === 'hot') answers.push(['spicy', 'yes']);
     }
 
-    var banned = progress.allRules().concat(guestTags);
+    var banned = effectiveRules();
     answers.forEach(function (pair) {
       if (banned.indexOf(pair[0]) !== -1) return;
       game.answer(pair[0], pair[1]);
@@ -8269,7 +11069,7 @@
   /*
    * A shelf of five dishes the catalogue does not have, written each morning.
    *
-   * THEY ARE NOT CATALOGUE DISHES and never join it. The 133 in data.js have
+   * THEY ARE NOT CATALOGUE DISHES and never join it. The ones in data.js have
    * hand-checked tags that the question engine reasons over and the dietary
    * rules filter on; these have a declared "contains" list and nothing more.
    * Letting them into the engine would mean a plausible-but-wrong tag steering
@@ -8282,6 +11082,9 @@
    * costs nothing at all.
    */
   var daily = { day: '', dishes: [] };
+  // Bumped whenever a dish can declare something it could not declare before.
+  // See loadDaily for what it is for.
+  var DAILY_VOCAB = 2;
   // showLanding runs more than once on the way in — boot calls goHome(), which
   // shows the landing, and then boot shows it again. Without this the shelf is
   // fetched twice on every cold visit.
@@ -8302,10 +11105,19 @@
     dailyAsked = true;
 
     var today = todayKey();
-    // Today's five, still in the profile: show them at once rather than
-    // flashing an empty shelf in and then filling it.
+    /*
+     * Today's five, still in the profile: show them at once rather than
+     * flashing an empty shelf in and then filling it.
+     *
+     * `vocab` is which version of the "contains" list the worker was speaking
+     * when these were written. A shelf saved before a dish could declare pork
+     * or dairy cannot be filtered for somebody who keeps halal — it would look
+     * filtered and not be — so an older one is dropped and refetched rather
+     * than shown. It costs one request, once, on the day this ships.
+     */
     var saved = progress.state.daily;
-    if (saved && saved.day === today && saved.dishes && saved.dishes.length) {
+    if (saved && saved.day === today && saved.vocab === DAILY_VOCAB &&
+        saved.dishes && saved.dishes.length) {
       daily = { day: today, dishes: saved.dishes };
       return paintDaily();
     }
@@ -8316,7 +11128,7 @@
         var list = (body && body.dishes) || [];
         if (!list.length) { dailyAsked = false; return; }
         daily = { day: today, dishes: list };
-        progress.state.daily = { day: today, dishes: list };
+        progress.state.daily = { day: today, vocab: DAILY_VOCAB, dishes: list };
         progress.save();
         paintDaily();
       })
@@ -8328,15 +11140,49 @@
       });
   }
 
+  // Five, unless a rule took some of them.
+  var DAILY_WORDS = ['No', 'One', 'Two', 'Three', 'Four', 'Five'];
+
   function paintDaily() {
     var wrap = $('daily-wrap');
     if (!wrap) return;
-    if (!daily.dishes.length) { wrap.hidden = true; return; }
+
+    /*
+     * THE SHELF OBEYS THE RULES TOO, and for a while it did not.
+     *
+     * Everything else that puts a dish in front of somebody goes through
+     * effectiveRules(). This did not go through anything: it painted whatever
+     * the model sent, so a profile with Halal on was shown pork, and one with
+     * No meat on was shown a beef stew, on the front door, every morning. The
+     * profile screen promises these rules apply to "every decision, every mode
+     * and every list", and this was the list where that was not true.
+     *
+     * Filtered here rather than at the worker, because the answer is cached at
+     * the edge for the whole day and shared by every reader in a region — it
+     * cannot know whose menu it is on. What the worker does instead is let a
+     * dish DECLARE all of this (see CONTAINS in routes/api/daily.ts); the
+     * declaration travels, and the filtering happens where the profile is.
+     */
+    var rules = effectiveRules();
+    var shown = daily.dishes.filter(function (raw) {
+      var tags = raw.tags || {};
+      return !rules.some(function (tag) { return (tags[tag] || 0) > 0; });
+    });
+
+    if (!shown.length) { wrap.hidden = true; return; }
     wrap.hidden = false;
+
+    // The heading counted to five whatever was on the shelf, which is a small
+    // lie on an ordinary morning and an obvious one on a strict profile.
+    var count = DAILY_WORDS[shown.length] || String(shown.length);
+    $('daily-title').textContent = count + ' to try today';
+    $('daily-note').textContent = shown.length === daily.dishes.length
+      ? 'Dishes the app does not already know, written this morning. Tap one to read about it.'
+      : 'Written this morning, minus the ones your rules rule out. Tap one to read about it.';
 
     var list = $('daily-list');
     list.innerHTML = '';
-    daily.dishes.forEach(function (raw, i) {
+    shown.forEach(function (raw, i) {
       // Given the shape the rest of the app expects, so the sheet, the tag
       // line and the recipe fallback all work without knowing where it came
       // from. tags is whatever the model declared and nothing is inferred.
@@ -8676,12 +11522,6 @@
 
   $('spin-btn').addEventListener('click', startSpin);
   $('spin-go').addEventListener('click', runSpin);
-  $('lang-gate-go').addEventListener('click', function () {
-    Sound.tick();
-    closeLangGate();
-    focusQuietly($('landing-start'));
-  });
-
   $('spin-swap').addEventListener('click', replaceStruck);
   $('spin-refill').addEventListener('click', function () {
     spin.out = [];
@@ -9212,11 +12052,30 @@
    * what makes a long run worth something and what makes the end of one always
    * feel like it was nearly avoidable.
    */
+  /*
+   * RETUNED, SHORTER AND STEEPER. What it was, and why it is not any more.
+   *
+   * It opened with seven seconds, a pick bought back 2.4 of them, and the
+   * buy-back fell 150ms per ten picks. Work that through against somebody
+   * tapping at a comfortable 900ms and the clock does not start losing ground
+   * until the hundredth pick; a run that goes well ran to two or three hundred
+   * taps. That is not a bus-stop game, it is a sitting. And the first sixty of
+   * those taps were the same tap, because nothing the mode has to offer — the
+   * heat bands, the milestones, the reads — had happened yet.
+   *
+   * So: five seconds to open, 1.8 bought back, falling 200ms every EIGHT
+   * picks. The same player is losing ground by the fortieth pick and out
+   * somewhere around seventy. Everything the mode does now happens inside a
+   * run somebody will actually finish, which is what makes a second run start.
+   *
+   * The floor stays where it is — see ENDLESS_ADD_MIN. It is the thing that
+   * guarantees a run ends at all, and it was never the thing making runs long.
+   */
   var ENDLESS_TICK = 50;          // ms between clock repaints
-  var ENDLESS_CLOCK = 7000;       // ms it opens with — a full bar
-  var ENDLESS_CLOCK_MAX = 7000;   // ...and the most it can ever hold
-  var ENDLESS_ADD = 2400;         // ms a pick buys back, at the start
-  var ENDLESS_ADD_DROP = 150;     // ...less, per phase survived
+  var ENDLESS_CLOCK = 5000;       // ms it opens with — a full bar
+  var ENDLESS_CLOCK_MAX = 6000;   // ...and the most it can ever hold
+  var ENDLESS_ADD = 1800;         // ms a pick buys back, at the start
+  var ENDLESS_ADD_DROP = 200;     // ...less, per phase survived
   /*
    * The floor, and why it is far below any human tapping speed.
    *
@@ -9232,12 +12091,15 @@
    * only question the mode ever asks is how long you lasted.
    */
   var ENDLESS_ADD_MIN = 260;
-  var ENDLESS_PHASE = 10;         // picks per phase
+  var ENDLESS_PHASE = 8;          // picks per phase
   var ENDLESS_PANIC = 1600;       // ms of clock at which everything goes red
   var ENDLESS_RUSH = 700;         // ...and below which a tap is a reflex, not a preference
 
-  // The picks that get a whole-screen moment rather than a step up.
-  var ENDLESS_MARKS = [10, 25, 50, 75, 100, 150, 200, 300];
+  // The picks that get a whole-screen moment rather than a step up. Pulled in
+  // with the rest of the curve: under the old tuning the second milestone
+  // arrived at twenty-five and the fourth at seventy-five, which on a run that
+  // now ends near seventy meant most players saw two of the eight.
+  var ENDLESS_MARKS = [10, 20, 35, 50, 70, 100, 150, 200];
 
   /*
    * The combo window, narrowed from 1500ms when heat arrived.
@@ -9336,7 +12198,7 @@
    * What a milestone hands back. Points inflate on their own; time is the only
    * currency this mode is actually short of, so a mark is worth a breath.
    */
-  var ENDLESS_MARK_CLOCK = 2000;
+  var ENDLESS_MARK_CLOCK = 1500;
 
   /*
    * SECOND WIND — Premium, and automatic on purpose.
@@ -9352,7 +12214,86 @@
    * player loses at zero, a paying one survives, and neither is ever asked a
    * question.
    */
-  var ENDLESS_WIND_CLOCK = 3500;
+  var ENDLESS_WIND_CLOCK = 3000;
+
+  /*
+   * EVENTS — the thing that makes the fortieth tap different from the fourth.
+   *
+   * Heat already turns a streak into a decision, but it is the SAME decision
+   * every few seconds, and a run is otherwise one rule from start to finish.
+   * An event changes the rule for a handful of picks: for six of them the
+   * clock runs at double speed, or for five a pick barely buys any time back,
+   * or for three what a tap MEANS is inverted. Then it lifts and the ordinary
+   * game resumes, which is what makes it an event rather than a difficulty
+   * setting.
+   *
+   * THE ONE RULE THEY ALL KEEP. None of them makes one card the right answer.
+   * This mode ends by telling you something true about what you like, worked
+   * out from the pairs you chose — so anything that rewarded tapping a
+   * particular side would turn taps into optimisation and quietly make the
+   * ending a lie. Every event here changes what a pair is WORTH, what it
+   * COSTS, or what tapping MEANS, and never which of the two to take. Off the
+   * menu inverts the meaning of both cards at once and inverts the learning
+   * with it, so the run still arrives at the truth.
+   *
+   * They also all make runs shorter, which is as much the point as the variety
+   * is: two of them burn clock, one refuses to give it back, and the fourth is
+   * three picks of holding a combo most runs will drop.
+   */
+  var ENDLESS_EVENTS = [
+    {
+      id: 'rush', name: 'Rush hour', picks: 6, pop: 'RUSH',
+      points: 2, drain: 2, refill: 1,
+      note: 'Double points. The clock runs twice as fast.'
+    },
+    {
+      id: 'orders', name: 'Last orders', picks: 5, pop: 'LAST ORDERS',
+      points: 2.5, drain: 1, refill: 0.34,
+      note: 'Points ×2.5, and picks barely refill.'
+    },
+    {
+      /*
+       * The only event that can be failed, and the only one paying nothing
+       * while it runs. Three picks inside the combo window pays the pot back
+       * at triple; one slow tap and it goes. It reads as a gamble because it
+       * is one — and the question it asks, whether to keep up the pace with
+       * the clock where it currently is, is heat's question with the stake
+       * made explicit.
+       */
+      id: 'wager', name: 'Double or nothing', picks: 3,
+      points: 1, drain: 1, refill: 1, wager: true,
+      note: 'Three quick in a row pays the lot, tripled.'
+    },
+    {
+      /*
+       * Tapping means the opposite for three picks. The vote it files is
+       * inverted with it (see takeEndless), so a run through this event still
+       * learns the truth — and the dish handed back at the end is still the
+       * one you kept saying yes to rather than the one you kept rejecting.
+       */
+      id: 'reverse', name: 'Off the menu', picks: 3, pop: 'OFF MENU',
+      points: 1.5, drain: 1, refill: 1, flip: true,
+      ask: 'Skip which one?',
+      note: 'Tap the one you would NOT eat.'
+    }
+  ];
+
+  /*
+   * WHEN THEY FIRE. The first one is not a dice roll.
+   *
+   * At a flat 30% from pick twelve, half of all ordinary runs ended without a
+   * single event in them — measured, over runs now averaging under thirty
+   * picks. A feature half the runs never see is not a feature, it is a rumour,
+   * and the player who most needs a reason to go again is exactly the one
+   * whose run was too short to be shown one.
+   *
+   * So the first event is guaranteed at pick eight, and everything after it is
+   * chance. Every run that gets going at all has one in it; a long run has
+   * three or four, and which ones is never the same twice.
+   */
+  var ENDLESS_EVENT_FIRST = 8;    // the first one lands here, certainly
+  var ENDLESS_EVENT_GAP = 7;      // fewest picks between the end of one and the next
+  var ENDLESS_EVENT_ODDS = 0.35;  // chance per eligible pick, after the first
 
   /*
    * THEMED RUNS — Premium. The pool, narrowed.
@@ -9396,8 +12337,21 @@
     wind: false,      // has the second wind been spent this run
     curve: [],        // score banked at every tenth pick, for the next run to race
     theme: '',        // which pool this run drew from
-    pace: null        // how far ahead or behind the best run, last time it was read
+    pace: null,       // how far ahead or behind the best run, last time it was read
+    // The event in force, if any: { spec, left, pot, kept }. `pot` and `kept`
+    // are the wager's books — what it has banked so far and whether every pick
+    // in it has been quick.
+    event: null,
+    eventAt: 0,       // the pick the last event ended on, for the gap
+    events: 0,        // how many fired this run, for the summary
+    lastEvent: ''     // ...and which, so the next one is a different one
   };
+
+  function eventNow() { return endless.event ? endless.event.spec : null; }
+  function eventPoints() { return endless.event ? endless.event.spec.points : 1; }
+  function eventDrain() { return endless.event ? endless.event.spec.drain : 1; }
+  function eventRefill() { return endless.event ? endless.event.spec.refill : 1; }
+  function eventFlipped() { return !!(endless.event && endless.event.spec.flip); }
 
   /*
    * The words a read is said in.
@@ -9500,7 +12454,7 @@
   function drainEndless() {
     // Heat is spent here, in the drain, which is the whole bargain: the run
     // scores faster because it is running out faster.
-    endless.left -= ENDLESS_TICK * heatNow().drain;
+    endless.left -= ENDLESS_TICK * heatNow().drain * eventDrain();
     if (endless.left <= 0) {
       // Premium's one save, taken automatically rather than offered. Spent
       // before the run is allowed to end, so nothing on screen ever shows a
@@ -9537,6 +12491,10 @@
   // something, and what makes the end of one always feel avoidable.
   function feedEndless() {
     var add = Math.max(ENDLESS_ADD_MIN, ENDLESS_ADD - endless.phase * ENDLESS_ADD_DROP);
+    // An event that throttles the refill does it AFTER the floor, or the floor
+    // would quietly undo it: Last orders is meant to stop the clock being
+    // topped up, and a floor of 260ms is most of what a late pick buys anyway.
+    add = Math.round(add * eventRefill());
     // Out of picks for today. The clock stops being fed rather than the screen
     // slamming shut between one tap and the next: the last few seconds play
     // out, the run ends the way every other run ends, and the summary is the
@@ -9735,6 +12693,16 @@
     endless.won = {};
     endless.champ = null;
     endless.lastRead = 0;
+    /*
+     * A best set under the old balance is not a target, so it is retired the
+     * first time somebody plays the new one — and they are told, because a
+     * record vanishing without a word is a bug as far as anybody can tell.
+     */
+    if (progress.endlessRulesAre(ProgressLib.ENDLESS_RULES)) {
+      toast('\u{23F1}\u{FE0F}', 'Endless has been rebalanced',
+        'Shorter runs, steeper clock, and events part-way through. Best scores start ' +
+        'again \u2014 the old one was set under different rules.');
+    }
     endless.best = progress.state.endlessBest || 0;
     endless.beaten = false;
     endless.phase = 0;
@@ -9744,6 +12712,10 @@
     endless.wind = false;
     endless.curve = [];
     endless.pace = null;
+    endless.event = null;
+    endless.eventAt = 0;
+    endless.events = 0;
+    endless.lastEvent = '';
     $('endless-run').classList.remove('is-warm', 'is-blazing');
 
     clearTimeout(endless.shoutTimer);
@@ -9754,6 +12726,7 @@
     $('endless-shout').hidden = true;
     setPanel('endless');
     paintEndlessHead();
+    paintEndlessEvent();
     endlessNext();
     // Last, so the first pair is on screen before a single millisecond is
     // charged for it.
@@ -10023,8 +12996,24 @@
       worth = Math.round(worth * ENDLESS_CLUTCH);
       endless.clutches++;
     }
+    worth = Math.round(worth * eventPoints());
     endless.score += worth;
     endless.picks++;
+
+    /*
+     * The wager's books, kept as it goes rather than reconstructed at the end.
+     *
+     * Every pick inside it scores normally AND goes in the pot; if all three
+     * were quick the pot is paid again at double on the way out, which makes
+     * the three of them worth triple in total. A slow or mashed one loses it
+     * there and then — `kept` never comes back — but the picks still score
+     * what they scored. Nothing is ever taken off somebody; the only thing at
+     * risk is the bonus.
+     */
+    if (endless.event && endless.event.spec.wager) {
+      endless.event.pot += worth;
+      if (!quick) endless.event.kept = false;
+    }
 
     // The curve this run is writing, for the next one to race. Sampled at the
     // same tenths endlessPaceAt() reads back.
@@ -10065,7 +13054,18 @@
       // kind of spam.
       shoutEndless(mashed ? 'Too quick to have read it' : 'Cooled off', false);
     }
-    endless.won[winner.name] = (endless.won[winner.name] || 0) + 1;
+    /*
+     * WHICH DISH THE RUN ACTUALLY CHOSE, which is not always the one tapped.
+     *
+     * Off the menu asks for the one you would skip, so during it the dish this
+     * run is voting FOR is the other one. The tally behind the ending — "the
+     * dish you kept choosing", handed back as tonight's answer — has to follow
+     * the meaning rather than the thumb, or three picks of that event would
+     * put the thing somebody twice refused on the plate.
+     */
+    var chose = eventFlipped() ? loser : winner;
+    var against = eventFlipped() ? winner : loser;
+    endless.won[chose.name] = (endless.won[chose.name] || 0) + 1;
 
     /*
      * A tap nobody read buys no time either, and this is the part that makes
@@ -10085,6 +13085,10 @@
      */
     if (!mashed) feedEndless();
 
+    // The TAPPED card goes back into the queue a few cards down — the tapped
+    // one and not `chose`, because this is about what has been dealt rather
+    // than about what was preferred, and the card that left the screen is the
+    // one that needs to come back to it.
     // The winner goes back into the queue a few cards down.
     //
     // Without this nothing can ever win twice. The lead comes off a shuffled
@@ -10136,11 +13140,11 @@
      * deserves to — a number, and "nothing it would swear to".
      */
     if (!reflex && !mashed) {
-      shuffled(Taste.decisiveTags(winner, loser, Data.TAGS))
+      shuffled(Taste.decisiveTags(chose, against, Data.LEARNABLE))
         .sort(function (x, y) { return rankOf(y.tag) - rankOf(x.tag); })
         .slice(0, ENDLESS_VOTES)
         .forEach(function (q) {
-          var side = (winner.tags[q.tag] || 0) === 1 ? 'yes' : 'no';
+          var side = (chose.tags[q.tag] || 0) === 1 ? 'yes' : 'no';
           var bucket = endless.votes[q.tag] || (endless.votes[q.tag] = { yes: 0, no: 0 });
           bucket[side]++;
         });
@@ -10162,8 +13166,12 @@
 
     // Named in the order they multiply, longest-odds first, and only ever one
     // word: this is read in peripheral vision during the tap after it.
+    // An event outranks a heat band here because it is the rarer thing and
+    // the one somebody has not seen fifty times. Gold and clutch still come
+    // first: they are rarer still, and they are about this particular tap.
     popEndless(worth, endless.kind === 'gold' ? 'PERFECT'
       : clutch ? 'CLUTCH'
+      : (eventNow() && eventNow().pop) ? eventNow().pop
       : endless.heat >= 2 ? 'BLAZING'
       : '');
     beatEndless();
@@ -10172,8 +13180,100 @@
     // sixth one. Checking is a loop over a dozen keys; waiting is five taps
     // spent sitting on a finding that was ready.
     if (endless.picks - endless.lastRead >= ENDLESS_READ_EVERY) showEndlessRead();
+
+    // Spend this pick off whatever is running, THEN look for a new one, so a
+    // fresh event can never start on the same tap the last one paid out on.
+    tickEndlessEvent();
+    rollEndlessEvent();
+
     paintEndlessHead();
     endlessNext();
+  }
+
+  /*
+   * STARTING, COUNTING DOWN AND ENDING AN EVENT.
+   *
+   * Rolled after the tap has been paid for and before the next pair is dealt,
+   * so an event that starts is in force for the pair it announces itself over
+   * rather than for the one already on screen.
+   *
+   * NEVER WHILE THE CLOCK IS RED. Two of these make the clock worse and one of
+   * them can be failed; dropping any of that on somebody at four hundred
+   * milliseconds is not difficulty, it is a mugging. The red zone already has
+   * the clutch bonus to make it interesting.
+   */
+  function rollEndlessEvent() {
+    if (endless.event || !endless.live) return;
+    if (endless.picks < ENDLESS_EVENT_FIRST) return;
+    if (endless.picks - endless.eventAt < ENDLESS_EVENT_GAP) return;
+    if (endless.left <= ENDLESS_PANIC) return;
+    // The first is certain; the rest are chance. See ENDLESS_EVENT_FIRST.
+    if (endless.events > 0 && Math.random() >= ENDLESS_EVENT_ODDS) return;
+
+    /*
+     * Never the same one twice running. Four events and a free draw means one
+     * run in four gets the same rule change back to back, which reads as the
+     * mode having nothing else rather than as luck.
+     */
+    var pool = ENDLESS_EVENTS.filter(function (e) { return e.id !== endless.lastEvent; });
+    var spec = pool[Math.floor(Math.random() * pool.length)];
+    endless.lastEvent = spec.id;
+    endless.event = { spec: spec, left: spec.picks, pot: 0, kept: true };
+    endless.events++;
+    shoutEndless(spec.name, true);
+    Sound.reveal();
+    paintEndlessEvent();
+  }
+
+  /* One pick of the event spent. Called once per tap, after the roll. */
+  function tickEndlessEvent() {
+    if (!endless.event) return;
+    endless.event.left -= 1;
+    if (endless.event.left > 0) return paintEndlessEvent();
+
+    var ev = endless.event;
+    endless.event = null;
+    endless.eventAt = endless.picks;
+
+    if (ev.spec.wager) {
+      if (ev.kept && ev.pot > 0) {
+        // Paid at the end rather than as it went, so the thing at stake is
+        // visibly a pot and the payout is a moment.
+        var bonus = ev.pot * 2;
+        endless.score += bonus;
+        popEndless(bonus, 'TRIPLE');
+        shoutEndless('Paid out', true);
+        Sound.win();
+        Confetti.burst({ y: window.innerHeight * 0.35 });
+      } else {
+        shoutEndless('Dropped it', false);
+        Sound.shrug();
+      }
+    }
+    paintEndlessEvent();
+  }
+
+  /*
+   * The band under the title. Its height is reserved whether or not anything
+   * is in it — see .endless-event in styles.css — because this sits directly
+   * above the two cards and a line appearing between one tap and the next
+   * would move them under the thumb already on its way down.
+   */
+  function paintEndlessEvent() {
+    var band = $('endless-event');
+    var ev = eventNow();
+    band.classList.toggle('is-on', !!ev);
+    band.classList.toggle('is-flip', !!(ev && ev.flip));
+    $('endless-event-name').textContent = ev ? ev.name : '';
+    $('endless-event-note').textContent = ev ? ev.note : '';
+    $('endless-event-left').textContent = ev
+      ? endless.event.left + (endless.event.left === 1 ? ' pick left' : ' picks left')
+      : '';
+    // The one line on this screen that carries no information is the place the
+    // instruction goes when an event has one, because it is the only thing
+    // here that can change without moving anything.
+    $('endless-title').textContent = (ev && ev.ask) || 'Which one?';
+    $('endless-picks').classList.toggle('is-flip', !!(ev && ev.flip));
   }
 
   function showEndlessRead() {
@@ -10243,6 +13343,11 @@
   function endEndless(why) {
     if (!endless.live) return;
     endless.live = false;
+    // A wager caught by the clock is simply not paid: it was three picks and
+    // the run did not get through them. Nothing is deducted, so the pot going
+    // unclaimed costs the score nothing it had already earned.
+    endless.event = null;
+    paintEndlessEvent();
     stopEndlessClock();
     clearTimeout(endless.shoutTimer);
     clearTimeout(endless.readTimer);
@@ -10291,6 +13396,10 @@
       else if (endless.hottest === 1) bits.push('You got it hot');
       if (endless.clutches > 0) {
         bits.push(endless.clutches + (endless.clutches === 1 ? ' pick' : ' picks') + ' made on a red clock');
+      }
+      if (endless.events > 0) {
+        bits.push('you played through ' + endless.events +
+          (endless.events === 1 ? ' event' : ' events'));
       }
       // Said plainly, because a run that was saved is not the same run as one
       // that was not, and the score does not distinguish them.
@@ -10440,6 +13549,302 @@
     if (endless.champ) landEndless(endless.champ);
   });
 
+  /* ------------------------------------------------------------- language */
+  /*
+   * The app's language, set in two places that share one list: the first card
+   * of the welcome, and the Language strip under You.
+   *
+   * I18n.apply() swaps the words; everything here is about when it runs and who
+   * asked. Picking a row applies at once and is saved at once, so there is no
+   * half-chosen state and the way back is always one tap in the same list.
+   */
+  function applyLang() {
+    var code = I18n.set(progress.state.lang || 'en');
+    // Said only when there is a translation to warn about; over the English
+    // original it would be a warning about nothing.
+    ['lang-warn-view', 'lang-warn-welcome'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.hidden = code === 'en';
+    });
+    paintLangLists();
+    // Words written by JS, not sitting in the markup, are not reached by
+    // I18n.apply, so they are written again.
+    if ($('landing-start')) renderIntro();
+    if (lastTopStatus) paintTopbar(lastTopStatus);
+    if (welcomeOpen) paintWelcome();
+  }
+
+  function langRow(entry, chosen, suggested, onPick) {
+    var li = document.createElement('li');
+    li.className = 'lang-row' + (chosen ? ' is-on' : '') + (suggested ? ' is-suggested' : '');
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'lang-btn';
+    btn.setAttribute('aria-pressed', chosen ? 'true' : 'false');
+
+    var flag = document.createElement('span');
+    flag.className = 'lang-flag';
+    flag.setAttribute('aria-hidden', 'true');
+    flag.textContent = entry.flag;
+
+    var name = document.createElement('span');
+    name.className = 'lang-name';
+    name.textContent = entry.native;
+
+    btn.appendChild(flag);
+    btn.appendChild(name);
+
+    // The English name underneath, for somebody who landed in a language they
+    // did not choose and is looking for the way out. Skipped where it would
+    // only repeat the line above.
+    if (entry.english !== entry.native) {
+      var sub = document.createElement('span');
+      sub.className = 'lang-sub';
+      sub.textContent = entry.english;
+      btn.appendChild(sub);
+    }
+    btn.addEventListener('click', function () { onPick(entry.id); });
+    li.appendChild(btn);
+    return li;
+  }
+
+  function paintLangLists() {
+    var now = I18n.get();
+    // The browser's own preference is offered (outlined), never applied.
+    var guess = progress.state.langAsked ? '' : I18n.guess();
+    ['lang-list', 'lang-welcome-list'].forEach(function (id) {
+      var list = $(id);
+      if (!list) return;
+      list.innerHTML = '';
+      I18n.LANGS.forEach(function (entry) {
+        list.appendChild(langRow(entry, entry.id === now, entry.id === guess && guess !== now, pickLang));
+      });
+    });
+  }
+
+  function pickLang(id) {
+    if (id === I18n.get()) return;
+    Sound.tick();
+    progress.state.lang = id;
+    progress.save();
+    applyLang();
+  }
+
+  /* --------------------------------------------------------------- welcome */
+  /*
+   * The first-run walkthrough. Four cards, once, then never again.
+   *
+   * WHERE IT SITS. In front of the landing rather than instead of it: the last
+   * card steps off onto the landing with the front door already painted
+   * behind it, so the app appears rather than loads. showLanding() runs first
+   * at boot for exactly that reason.
+   *
+   * WHEN IT SHOWS. Only on a profile that has neither seen it nor played
+   * anything. The second condition matters more than the first: this shipped
+   * after people were already using the app, and a walkthrough that opens in
+   * front of somebody on a hundred-decision streak to explain that questions
+   * have two answers is not a welcome, it is an insult with a progress bar.
+   *
+   * WHAT IT COSTS TO SKIP. Nothing. Skip is on every card including the first,
+   * Escape does the same, and skipping still marks it seen — somebody who
+   * closed it does not want it again tomorrow. The diet question it ends on is
+   * the one thing worth coming back for, so it is also a permanent strip on
+   * the profile screen, and the button under it reopens this.
+   */
+  var welcomeEl = $('welcome');
+
+  // Heading and subtitle live outside the panes, so the heading can be the
+  // dialog's label for all four rather than four labels that go stale.
+  var WELCOME_ALL = [
+    { id: 'lang',
+      title: 'Choose your language',
+      sub: 'The app changes straight away. You can change it again whenever you like, from your profile.',
+      next: 'Continue', tkTitle: 'lang.title', tkSub: 'lang.sub', tkNext: 'lang.choose' },
+    { id: 'what',
+      title: 'You’re hungry. You don’t know what you want.',
+      sub: 'That is the whole problem this solves, and it takes about twenty seconds.',
+      next: 'Show me how' },
+    { id: 'taste',
+      title: 'It asks. You answer. You point.',
+      sub: 'Every question is two answers and neither is wrong — and when the dish lands, if it ' +
+        'is close but not right, you point it lighter, spicier or sooner instead of starting ' +
+        'over. Have a go — right now, honestly:',
+      next: 'Next' },
+    { id: 'more',
+      title: 'There is more in here than the game.',
+      sub: 'All of this is free too, and none of it needs an account either.',
+      next: 'One last thing' },
+    { id: 'diet',
+      title: 'Anything you don’t eat?',
+      sub: 'Last question, and the only one that matters before we start: pick whatever ' +
+        'fits and nothing here will ever be offered to you again. Skip it if none of it applies.',
+      next: 'Start deciding' }
+  ];
+
+  // First run shows only the language card; the full tour (from the profile's
+  // "Run the welcome again") starts with it and carries on.
+  var WELCOME = WELCOME_ALL;
+  var welcomeAt = 0;
+  var welcomeOpen = false;
+
+  function paintWelcome() {
+    var step = WELCOME[welcomeAt];
+
+    $('welcome-step').textContent = WELCOME.length > 1 ? 'Step ' + (welcomeAt + 1) + ' of ' + WELCOME.length : '';
+    $('welcome-heading').textContent = step.tkTitle ? I18n.t(step.tkTitle, step.title) : step.title;
+    $('welcome-sub').textContent = step.tkSub ? I18n.t(step.tkSub, step.sub) : step.sub;
+    label('welcome-next', step.tkNext ? I18n.t(step.tkNext, step.next) : step.next);
+    $('welcome-back').hidden = welcomeAt === 0;
+
+    WELCOME_ALL.forEach(function (other) {
+      $('welcome-pane-' + other.id).hidden = other.id !== step.id;
+    });
+    $('welcome-skip').hidden = WELCOME.length === 1;
+
+    var dots = $('welcome-dots');
+    dots.innerHTML = '';
+    WELCOME.forEach(function (other, i) {
+      var li = document.createElement('li');
+      li.className = 'welcome-dot' + (i === welcomeAt ? ' is-on' : '') +
+        (i < welcomeAt ? ' is-done' : '');
+      dots.appendChild(li);
+    });
+
+    if (step.id === 'diet') renderWelcomeDiets();
+
+    // The heading rather than the button: a screen reader should hear what
+    // this card is before it hears what to press, and the button is one Tab
+    // away either direction.
+    focusQuietly($('welcome-heading'));
+  }
+
+  function openWelcome(languageOnly) {
+    WELCOME = languageOnly === true ? WELCOME_ALL.slice(0, 1) : WELCOME_ALL;
+    welcomeAt = 0;
+    welcomeOpen = true;
+    welcomeEl.hidden = false;
+    document.body.classList.add('is-welcoming');
+    paintWelcome();
+  }
+
+  /*
+   * Closing it is the same call whether it was finished or skipped, because
+   * the profile is written as it goes rather than at the end: every tap on the
+   * diet card has already saved. There is no half-answered state to discard,
+   * which is why there is no "are you sure" on the way out.
+   */
+  function closeWelcome() {
+    if (!welcomeOpen) return;
+    welcomeOpen = false;
+    welcomeEl.hidden = true;
+    document.body.classList.remove('is-welcoming');
+    progress.state.onboarded = true;
+    // Answered, or skipped: either way it is not asked again.
+    progress.state.langAsked = true;
+    progress.save();
+    applyRules();
+    applyTaste();
+    renderIntro();
+    focusQuietly($('landing-start'));
+  }
+
+  function stepWelcome(by) {
+    var to = welcomeAt + by;
+    if (to < 0) return;
+    if (to >= WELCOME.length) return closeWelcome();
+    welcomeAt = to;
+    Sound.tick();
+    paintWelcome();
+  }
+
+  /*
+   * Escape skips, and the arrows step.
+   *
+   * Bound on the document rather than the card because the card holds two
+   * lists of forty-odd buttons on the last step, and requiring focus to be
+   * inside a particular one of them to get out is the kind of trap a keyboard
+   * user finds and a mouse user never does. Left and right are only taken when
+   * the focus is not already on something that wants them.
+   */
+  document.addEventListener('keydown', function (event) {
+    if (!welcomeOpen) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      return closeWelcome();
+    }
+    var el = document.activeElement;
+    if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+    if (event.key === 'ArrowRight') { event.preventDefault(); stepWelcome(1); }
+    else if (event.key === 'ArrowLeft' && welcomeAt > 0) { event.preventDefault(); stepWelcome(-1); }
+  });
+
+  $('welcome-next').addEventListener('click', function () { stepWelcome(1); });
+  $('welcome-back').addEventListener('click', function () { stepWelcome(-1); });
+  $('welcome-skip').addEventListener('click', function () {
+    Sound.tick();
+    closeWelcome();
+  });
+
+  /*
+   * The demonstration answer, and why it is kept.
+   *
+   * "Hot or cold" is a real question out of the real bank, and somebody
+   * answering it here has told the app something true about what they feel
+   * like. Recording it as a lean rather than as an answer is the honest
+   * weight: an answer belongs to a game and this is not one, but a lean is
+   * exactly what this is — a thumb on the scale worth about one game, which
+   * Taste caps well below anything a played answer can do.
+   */
+  function takeWelcomeTaste(side) {
+    progress.lean('hot', side, 1);
+    progress.save();
+    $('welcome-hot').classList.toggle('is-taken', side === 'yes');
+    $('welcome-cold').classList.toggle('is-taken', side === 'no');
+    $('welcome-taste-note').textContent = side === 'yes'
+      ? 'Noted — warm things, then. That is one answer in; a real game is about eight.'
+      : 'Noted — cold things, then. That is one answer in; a real game is about eight.';
+    Sound.tick();
+    applyTaste();
+  }
+
+  $('welcome-hot').addEventListener('click', function () { takeWelcomeTaste('yes'); });
+  $('welcome-cold').addEventListener('click', function () { takeWelcomeTaste('no'); });
+
+  /*
+   * The diet card.
+   *
+   * The same three groups the profile screen carries, built by the same
+   * function — see renderDietGroups. Both write straight through to the
+   * profile on tap, so there is nothing to submit here and nothing to lose by
+   * walking away half way down.
+   */
+  function renderWelcomeDiets() {
+    renderDietGroups('welcome-groups', 'welcome-caveats');
+  }
+
+  // Reachable again from the profile, because the diet question is worth
+  // coming back to and because somebody who skipped it on a bus deserves a
+  // second look at what they skipped.
+  $('replay-welcome').addEventListener('click', function () {
+    Sound.tick();
+    openWelcome(false);
+  });
+
+  /*
+   * Every diet has to name a tag the catalogue can actually carry, or it would
+   * sit there switched on and quietly rule out nothing at all — the exact
+   * failure nobody would report, because a rule that does nothing looks
+   * identical to a rule being honoured. `meatdairy` is derived by item()
+   * rather than authored, so it is allowed through by name.
+   */
+  ProgressLib.DIETS.forEach(function (diet) {
+    diet.tags.forEach(function (tag) {
+      if (tag === 'meatdairy' || Data.TAGS.indexOf(tag) !== -1) return;
+      throw new Error('Diet "' + diet.label + '" names unknown tag "' + tag + '"');
+    });
+  });
+
   /* --------------------------------------------------------------- landing */
   // The first thing anybody sees, and the only screen in this app allowed to
   // raise its voice. What used to be here was a sign-up form — a name, a
@@ -10455,8 +13860,8 @@
   var shell = document.querySelector('.content');
   var landed = false;
 
-  // The reel is decoration, and it is here on purpose: "112 dishes" as a number
-  // does not land the way 112 dishes going past does.
+  // The reel is decoration, and it is here on purpose: the catalogue as a
+  // number does not land the way the dishes themselves going past does.
   var reelTimer = null;
 
   function startReel() {
@@ -10525,6 +13930,35 @@
     if ('inert' in shell) shell.inert = false;
     shell.removeAttribute('aria-hidden');
   }
+
+  /*
+   * QUICK DECIDE — the same game over the hundred the catalogue started with.
+   *
+   * Free, and worth saying why it is not a Premium tease: this is a shorter
+   * route to the same answer, not a smaller version of the product. The long
+   * game exists for somebody who wants the whole menu; this exists for
+   * somebody who wants their dinner. Measured, it finds the dish in 7.8
+   * questions against 11.4, and finds it first every time.
+   */
+  function startQuick() {
+    quickMode = true;
+    hideLanding();
+    together.live = false;
+    together.sets = [];
+    together.sending = false;
+    clearResume();
+    resetGame();
+    // The heat, meal and mix dials are somebody's standing preferences, not a
+    // property of the long game — leaving them off here would make the quick
+    // route quietly ignore what they had already told the app.
+    applyKnobs();
+    setView('decide');
+    step();
+  }
+
+  var quickMode = false;
+
+  $('quick-btn').addEventListener('click', function () { Sound.tick(); startQuick(); });
 
   $('landing-start').addEventListener('click', function () {
     hideLanding();
@@ -10636,6 +14070,9 @@
     event.preventDefault();
     installPrompt = event;
     $('install-wrap').hidden = false;
+    // It can arrive after the reward screen has already painted, in which
+    // case the strip drew its Share-sheet wording or nothing at all.
+    paintKeep();
   });
 
   $('install-btn').addEventListener('click', function () {
@@ -10657,6 +14094,31 @@
     $('install-wrap').hidden = true;
   });
 
+  /*
+   * THE WAY OUT, ON THE FRONT DOOR TOO.
+   *
+   * The footer lives after the app shell, in normal document flow. The
+   * landing screen is a fixed overlay covering everything below the top bar,
+   * with the body's own scrolling switched off — so the footer was underneath
+   * it, technically visible to anything measuring boxes and completely
+   * unreachable to a thumb. Unreachable on the FIRST screen anybody sees,
+   * which is the one screen where somebody is most likely to be looking for
+   * what this thing is and who wrote it.
+   *
+   * Cloned rather than written twice. Two lists of the same eight links is
+   * two lists that drift, and the one that drifts is always the copy nobody
+   * remembers exists. scripts/nav-test.mjs checks the markup; this makes the
+   * landing carry exactly what the markup says.
+   */
+  (function footerOnTheLanding() {
+    var foot = document.querySelector('.appfoot');
+    var inner = document.querySelector('#landing .landing-inner');
+    if (!foot || !inner) return;
+    var copy = foot.cloneNode(true);
+    copy.classList.add('is-onlanding');
+    inner.appendChild(copy);
+  })();
+
   /* ------------------------------------------------------------------ boot */
   $('landing-dishes').textContent = String(Data.ITEMS.length);
   $('landing-recipes').textContent = String(Recipes.count());
@@ -10669,24 +14131,38 @@
   // this same profile straight from the Whop session.
   progress.reload();
   progress.tidySnoozes();
-  // Before applyTheme and before the landing: every string painted from here
-  // on should already be in the right language, rather than being swapped
-  // afterwards in front of the reader.
-  applyLang();
   applyTheme();
   repaintVaults();
   applyMute();
   applyRules();
   applyTaste();
+  applyLang();
   goHome();
   renderProfile();
-  /*
-   * The chooser comes before the landing, once. goHome() has already put the
-   * landing up underneath it, so answering the gate reveals a screen that is
-   * already in the chosen language rather than building one afterwards.
-   */
-  if (!progress.state.langAsked) openLangGate();
   showLanding();
+
+  /*
+   * First run, and nothing else counts as one.
+   *
+   * Both halves are load-bearing. `onboarded` covers somebody who has seen it
+   * and skipped it; `decisions` covers everybody who was already using this
+   * app before the walkthrough existed, whose saved profile has no such flag
+   * in it and who would otherwise be told on their next visit how questions
+   * work. After the landing has painted, so the first thing behind the card is
+   * the app rather than an empty page.
+   */
+  // Not when the link already says where to go: somebody who tapped "pick for
+  // me" or "that's the one" on the homepage asked for an answer, not a tour.
+  // They get the walkthrough next time, if they come back without deciding.
+  var deepLinked = /[?&](go|dish|with)=/.test(window.location.search || '');
+  if (!deepLinked && !progress.state.onboarded && !(progress.state.decisions > 0)) {
+    // The full tour stays skipped, for faster onboarding. Only the language
+    // card is shown, once, because everything after it is written in a language
+    // the reader may not have.
+    progress.state.onboarded = true;
+    progress.save();
+    if (!progress.state.langAsked) openWelcome(true);
+  }
 
   // The home-screen shortcuts in the manifest promise to land somewhere
   // specific. Honour them, or they are three taps to the same screen as the
@@ -10702,36 +14178,74 @@
     var first = unpackAnswers(here.searchParams.get('with'));
     if (first) return joinTogether(first);
 
+    /*
+     * ?dish= — "that's the one" from the homepage preview. The dish they just
+     * landed on there, opened here with its recipe and a Maps search, so the
+     * tap that says yes arrives at the thing rather than at a fresh game.
+     * Matched against the catalogue by name; anything else is an ordinary
+     * visit.
+     */
+    var named = (here.searchParams.get('dish') || '').trim().toLowerCase();
+    if (named) {
+      var found = Data.ITEMS.filter(function (d) { return d.name.toLowerCase() === named; })[0];
+      if (found) {
+        hideLanding();
+        setView('dishes');
+        openSheet(found);
+        return;
+      }
+    }
+
+    // The old "when do you usually need this?" greeting is retired (see
+    // paintPlan); a profile that set one stops being greeted by it.
+    if (progress.plan()) progress.clearPlan();
+
     var go = here.searchParams.get('go');
     if (go === 'decide') restart();
+    else if (go === 'tonight') showTonight();
+    else if (go === 'quick') startQuick();
     else if (go === 'dishes') { hideLanding(); setView('dishes'); }
     else if (go === 'news') { hideLanding(); setView('news'); }
     else if (go === 'ask') { hideLanding(); setView('chat'); }
+    // Where the sign-in redirect sends somebody back to: straight onto the
+    // Profile view, with the invite card drawing the eye to itself rather
+    // than left for them to go find — see highlightInvite(). The only two
+    // links that ever point here are #invite-signin and the comeback
+    // dialog's signed-out "Sign in for my link", both below.
+    else if (go === 'profile') { hideLanding(); setView('profile'); highlightInvite(); }
+    // Where #daily-signin sends somebody back to, for the same reason.
+    else if (go === 'daily') { hideLanding(); setView('daily'); }
+    // The hub's two sections, and where their sign-in links send people back to.
+    else if (go === 'planner') { hideLanding(); setView('planner'); }
+    else if (go === 'kitchen') { hideLanding(); setView('kitchen'); }
+    else if (go === 'scan') { hideLanding(); setView('scan'); }
+    // Where #radio-signin sends somebody back to, on whichever tab they
+    // were on; ?go=tv and ?go=listen pick the tab outright.
+    else if (go === 'radio') { hideLanding(); setView('radio'); }
+    else if (go === 'tv') { hideLanding(); media.tab = 'tv'; setView('radio'); }
+    else if (go === 'listen') { hideLanding(); media.tab = 'radio'; setView('radio'); }
+    else if (go === 'help') { hideLanding(); setView('help'); }
 
     /*
      * ?prompt= — see a prompt now, instead of playing until one is due.
      *
-     * The three prompts are deliberately hard to trigger: the enjoy one is
-     * never put to a Premium member at all, the affiliate one wants
-     * twenty-five decisions behind it, and the share one only goes to
-     * somebody who has already said they like this. Good rules for a
-     * stranger, and useless if you are the person who has to check the thing
-     * works — the honest answer to "why do I never see it" was "because you
-     * are paying and you have not made twenty-five decisions", which is not
-     * something anybody should have to take on trust.
+     * Both prompts are deliberately hard to trigger: the enjoy one is never
+     * put to a Premium member at all, and the share one only goes to somebody
+     * who has already said they like this. Good rules for a stranger, and
+     * useless if you are the person who has to check the thing works — the
+     * honest answer to "why do I never see it" was "because you are paying
+     * and you have not said you like it", which is not something anybody
+     * should have to take on trust.
      *
-     * So: ?prompt=enjoy, ?prompt=earn, ?prompt=share, or ?prompt=all to walk
-     * through all three. It spends nothing — no showing is counted and
+     * So: ?prompt=enjoy, ?prompt=share, ?prompt=comeback, or ?prompt=all to
+     * walk through all three. It spends nothing — no showing is counted and
      * nothing is saved — so previewing one does not use up a real one, and it
      * cannot be stumbled into, because nobody types a query string by
      * accident.
      */
     var wanted = (here.searchParams.get('prompt') || '').toLowerCase();
     if (wanted) {
-      var queue = wanted === 'all' ? ['enjoy', 'earn', 'share', 'ads']
-                : wanted === 'ads' ? ['ads']
-                : [wanted];
-      previewPrompts(queue);
+      previewPrompts(wanted === 'all' ? ['enjoy', 'share', 'comeback'] : [wanted]);
     }
   })();
 
@@ -10741,23 +14255,11 @@
    * timer, so a slow read does not stack two sheets on top of each other.
    */
   function previewPrompts(names) {
-    var openers = { enjoy: openEnjoy, earn: openEarn, share: openShare };
-    // 'ads' expands to one preview of every card in the roster, in order, so
-    // the whole rotation can be read in one go rather than played for.
-    var queue = [];
-    names.forEach(function (n) {
-      if (openers[n]) return queue.push(n);
-      if (n !== 'ads') return;
-      ADS.forEach(function (ad, i) { queue.push('ad:' + i); });
-    });
+    var openers = { enjoy: openEnjoy, share: openShare, comeback: openComeback };
+    var queue = names.filter(function (n) { return openers[n]; });
     if (!queue.length) return;
 
-    function next() {
-      var name = queue.shift();
-      if (!name) return;
-      if (name.indexOf('ad:') === 0) openAd(ADS[Number(name.slice(3))], true);
-      else openers[name](true);
-      var dlg = $(name.indexOf('ad:') === 0 ? 'ad-sheet' : name + '-sheet');
+    function afterClose(dlg) {
       if (!dlg || !queue.length) return;
       // Native <dialog> fires this; the attribute fallback does not, in which
       // case the walk simply stops after the first one rather than misfiring.
@@ -10765,6 +14267,13 @@
         dlg.removeEventListener('close', once);
         setTimeout(next, 350);
       });
+    }
+
+    function next() {
+      var name = queue.shift();
+      if (!name) return;
+      openers[name](true);
+      afterClose($(name + '-sheet'));
     }
 
     // After the landing has painted, or the sheet opens behind it.
@@ -10775,5 +14284,7 @@
   // account that owns Premium. No key to paste, no purchase to "claim" — the
   // checkout at /premium already attached access to the account directly, so
   // this is the same check every later load makes, just running once early.
-  syncPremium(true);
+  syncPremium(true).then(function (status) {
+    referralHeartbeat();
+  });
 })();

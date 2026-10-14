@@ -3,8 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Text size, chosen with "Aa" in the top bar and remembered on this
+     device. Applied here, before anything is drawn, so a larger setting never
+     flashes small first. Everything is sized in rem, so this one class scales
+     the whole app. -->
+<script>try{var t=localStorage.getItem('m45-text');if(t==='lg'||t==='xl')document.documentElement.classList.add('text-'+t)}catch(e){}</script>
 <title>morsels45 — what should you eat?</title>
-<meta name="description" content="Twenty questions that work out what you actually feel like eating.">
+<meta name="description" content="Can’t decide what to eat? Answer a few either-or questions and get one dish with its recipe. Then plan the week, scan food and cook. Free to start.">
+<meta name="8c05a9c7e728a9bdcd859b116fa7b4d7c713ac2c" content="8c05a9c7e728a9bdcd859b116fa7b4d7c713ac2c">
 
 <!-- ===========================================================================
      What this page looks like when somebody sends it on. Share is the app's
@@ -16,15 +22,15 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="morsels45">
 <meta property="og:title" content="morsels45 — what should you eat?">
-<meta property="og:description" content="A handful of either-or questions and you have an answer. 133 dishes, no sign-up, and an answer in about twenty seconds.">
+<meta property="og:description" content="A handful of either-or questions and you have an answer &mdash; then point it lighter, spicier or sooner until it is right. 450 dishes, no sign-up, about twenty seconds.">
 <meta property="og:url" content="https://morsels45-app.whop.site/decide/">
 <meta property="og:image" content="https://morsels45-app.whop.site/site-card.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="morsels45 — stop scrolling, start eating">
+<meta property="og:image:alt" content="morsels45 — an assistant for working out what to eat">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="morsels45 — what should you eat?">
-<meta name="twitter:description" content="A handful of either-or questions and you have an answer. 133 dishes, no sign-up, and an answer in about twenty seconds.">
+<meta name="twitter:description" content="A handful of either-or questions and you have an answer &mdash; then point it lighter, spicier or sooner until it is right. 450 dishes, no sign-up, about twenty seconds.">
 <meta name="twitter:image" content="https://morsels45-app.whop.site/site-card.png">
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#17171a">
@@ -99,8 +105,22 @@
     <span class="mark-word">morsels45</span>
   </a>
   <nav class="topbar-nav" aria-label="Account">
-    <a class="topbar-link" id="topbar-premium" data-i18n="top.premium" href="/premium">Premium</a>
-    <a class="topbar-link topbar-account" id="topbar-account" href="/api/oauth/login?redirect_to=%2Fdecide%2F">Sign in</a>
+    <!-- target="_top": same reasoning as #topbar-account below, one iframe
+         hop further downstream. This page is always inside Whop's own frame
+         when opened from an experience, and without this the click leaves
+         somebody stuck on /premium inside that frame — then PlanPicker's
+         own same-tab Link to /checkout/$planId carries the same framing
+         forward, and Whop's checkout element there is a payment form, which
+         refuses to render nested inside an ancestor frame it does not
+         recognise, the same way Whop's sign-in page does. The embed then
+         looks broken — nothing to click, nothing to retry — when the real
+         cause is three hops upstream of it. -->
+    <!-- Bigger text, for anybody who wants it: three sizes, one button. -->
+    <button class="topbar-link topbar-text" id="topbar-text" type="button" aria-label="Text size: normal. Tap for bigger text." title="Text size">
+      <span class="topbar-text-small" aria-hidden="true">A</span><span class="topbar-text-big" aria-hidden="true">A</span>
+    </button>
+    <a class="topbar-link topbar-premium" id="topbar-premium" href="/premium" target="_top">Premium</a>
+    <a class="topbar-link topbar-account" id="topbar-account" href="/api/oauth/login?redirect_to=%2Fdecide%2F" target="_top">Sign in</a>
   </nav>
 </header>
 
@@ -120,32 +140,162 @@
      whether to bother.
      =========================================================================== -->
 <!-- ===========================================================================
-     The first-run language chooser.
+     THE WELCOME, and why an app with no sign-up has one at all.
 
-     Shown once, before anything else, because every other screen is written in
-     a language the reader may not have. It is not a guess acted on silently:
-     the browser's preference only decides which row starts selected, and
-     somebody whose phone is set to one language and whose head is in another
-     gets to say so before they read a word of the app.
+     The landing screen below is a good pitch and a bad explanation. It sells
+     the idea in two lines and then drops somebody straight into a question,
+     which is fine for the half of the catalogue of people who were going to
+     tap "Decide for me" anyway and no use at all to the rest — who arrive not
+     knowing that the questions are two-answer, that there are recipes behind
+     every dish, or that the thing is theirs without an account.
+
+     Four steps, once, and then never again. It is skippable from the first
+     frame, every step is reachable from the keyboard, and it asks for exactly
+     one thing: what you do not eat. That question is last on purpose. Asked
+     first it is a form standing between somebody and the thing they came for;
+     asked after the app has shown what it does, it reads as the app offering
+     to get something right rather than demanding credentials.
+
+     It is NOT a dialog element. <dialog> would put this above the top bar and
+     under its own backdrop, and the welcome wants to be the whole screen —
+     the same footprint the landing has, so stepping off the last card lands
+     on the landing rather than dissolving to reveal it.
      =========================================================================== -->
-<div class="lang-gate" id="lang-gate" hidden>
-  <div class="lang-gate-inner">
-    <p class="lang-gate-mark" aria-hidden="true">&#127760;</p>
-    <h1 class="lang-gate-title" data-i18n="lang.title">Choose your language</h1>
-    <ul class="lang-list" id="lang-gate-list"></ul>
-    <button class="go go-sm" id="lang-gate-go" type="button">
-      <span class="go-label" data-i18n="lang.choose">Continue</span>
-      <span class="go-arrow" aria-hidden="true">
-        <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
-      </span>
-    </button>
-    <!-- Only up when something has actually been translated. Saying "this may
-         be wrong" over the English original would be a warning about nothing. -->
-    <p class="lang-warn" id="lang-warn-gate" data-i18n="lang.warn" hidden>This page has been
-    translated. Some of it may read oddly or be wrong &mdash; the English is the
-    original.</p>
-    <p class="fine" data-i18n="lang.note">Dishes, recipes and the news stay in English for
-    now &mdash; your browser can translate those if you ask it to.</p>
+<div class="welcome" id="welcome" hidden>
+  <div class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcome-heading">
+    <p class="mechanic" id="welcome-step">Step 1 of 4</p>
+    <h2 class="welcome-heading" id="welcome-heading" tabindex="-1"></h2>
+    <p class="welcome-sub" id="welcome-sub"></p>
+
+    <!-- The language card. Always the first thing, because every card after
+         it is written in a language the reader may not have. -->
+    <section class="welcome-pane" id="welcome-pane-lang" hidden>
+      <ul class="lang-list" id="lang-welcome-list"></ul>
+      <p class="lang-warn" id="lang-warn-welcome" data-i18n="lang.warn" hidden>This page has been
+      translated. Some of it may read oddly or be wrong &mdash; the English is the
+      original.</p>
+      <p class="fine" data-i18n="lang.note">Dishes, recipes and the news stay in English for
+      now &mdash; your browser can translate those if you ask it to.</p>
+    </section>
+
+    <!-- What it is. Numbers read out of the catalogue at load, the same ones
+         the landing uses, so this cannot become a claim nobody checks. -->
+    <section class="welcome-pane" id="welcome-pane-what" hidden>
+      <ul class="welcome-points">
+        <li><span class="welcome-point-icon" aria-hidden="true">&#127860;</span>
+          <span class="welcome-point-body"><b>One answer, not a list.</b>
+          Forty things to scroll through is the problem, not the solution.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#129517;</span>
+          <span class="welcome-point-body"><b>Close? Point me.</b>
+          Lighter, spicier, sooner &mdash; I answer again that way. You never have to know what
+          you want, only which way to lean.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#9201;&#65039;</span>
+          <span class="welcome-point-body"><b>About eight questions.</b>
+          Usually under a minute, start to dinner.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#128274;</span>
+          <span class="welcome-point-body"><b>No account, no email.</b>
+          Everything you do stays on this device unless you sign in for Premium.</span></li>
+      </ul>
+    </section>
+
+    <!-- The mechanic, demonstrated rather than described, using the real
+         question furniture so the first real question looks familiar. The
+         answer is kept: it is a genuine opinion about food, it is the same
+         weight any other answer carries, and throwing it away to make the
+         step decorative would be the app asking a question it did not mean. -->
+    <section class="welcome-pane" id="welcome-pane-taste" hidden>
+      <div class="picks welcome-picks">
+        <button class="pick" id="welcome-hot" type="button">
+          <span class="pick-no">01</span>
+          <span class="pick-body">
+            <span class="pick-icon" aria-hidden="true">&#127798;&#65039;</span>
+            <span class="pick-label">Something hot</span>
+          </span>
+        </button>
+        <button class="pick" id="welcome-cold" type="button">
+          <span class="pick-no">02</span>
+          <span class="pick-body">
+            <span class="pick-icon" aria-hidden="true">&#129482;</span>
+            <span class="pick-label">Something cold</span>
+          </span>
+        </button>
+      </div>
+      <p class="fine" id="welcome-taste-note">There is no wrong one, and nothing is final
+      &mdash; every question has an <em>Either, honestly</em> under it, and you can undo
+      the last answer at any point.</p>
+    </section>
+
+    <!-- ===================================================================
+         The parts nobody finds, because they are behind a game they have not
+         played yet.
+
+         EVERY LINE HERE IS FREE, and that is the constraint this card is
+         written under rather than a happy accident. The first draft listed
+         recipes, cook mode, the shopping list, Nearby-that-serves-this-dish
+         and six-round-one-phone Together — four of which are Premium. A
+         welcome that opens a locked door four times is not a welcome, it is a
+         trailer, and somebody who taps one of them thirty seconds after
+         arriving learns that this app's first word to them was a sales pitch.
+         The paid half is discoverable on its own; it does not need the front
+         door. If you add a line here, check the gate first.
+         =================================================================== -->
+    <section class="welcome-pane" id="welcome-pane-more" hidden>
+      <ul class="welcome-points">
+        <li><span class="welcome-point-icon" aria-hidden="true">&#128205;</span>
+          <span class="welcome-point-body"><b>Nearby.</b>
+          Everywhere around you that you could eat, sorted by the kind of place it is.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#128172;</span>
+          <span class="welcome-point-body"><b>Ask what to eat.</b>
+          Describe the situation in your own words &mdash; three free questions a day.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#127859;</span>
+          <span class="welcome-point-body"><b>Five to try today.</b>
+          Five dishes the app does not already know, written fresh each morning.</span></li>
+        <li><span class="welcome-point-icon" aria-hidden="true">&#128101;</span>
+          <span class="welcome-point-body"><b>Decide with a friend.</b>
+          Send a link, they answer their half, and it lands on one dish you can both live with.</span></li>
+      </ul>
+    </section>
+
+    <!-- ===================================================================
+         The one question this asks for.
+
+         THREE GROUPS, ALL SHUT. Flat, it was thirteen rows; with the faiths
+         it would be twenty-seven, which on a phone is a wall of other
+         people's rules to scroll past on the way to your own. Grouped and
+         closed, it is three lines and a choice about which one is yours.
+
+         <details> rather than a listbox or a script-driven accordion: it
+         opens from the keyboard, it is announced as expandable, it survives
+         with no JavaScript, and Find-in-page can still reach a shut one. The
+         summary carries a count so a shut group can still say what is on
+         inside it — see paintDietGroups in app.js.
+         =================================================================== -->
+    <section class="welcome-pane" id="welcome-pane-diet" hidden>
+      <div class="diet-groups" id="welcome-groups"></div>
+      <p class="fine diet-caveats" id="welcome-caveats" hidden></p>
+      <!-- Said on both screens that offer these, and never hidden behind a
+           chosen rule: the list includes shellfish, dairy, egg and nuts-by-
+           another-name, so somebody WILL use it as an allergy filter, and the
+           moment to be clear about what it can and cannot do is before they
+           rely on it rather than after. -->
+      <p class="fine diet-allergy">If this is an allergy, read it as a filter and not as a promise. These are tags on dishes, not ingredient lists: a kitchen decides what actually goes in, and cross-contamination is past anything an app can see. <b>Ask whoever cooks it.</b></p>
+      <p class="fine">All of it is free, all of it stacks, and you can change any of
+      it later under <em>You</em>. Nothing here is asked twice.</p>
+    </section>
+
+    <div class="welcome-actions">
+      <button class="plain" id="welcome-skip">Skip this</button>
+      <span class="welcome-spacer"></span>
+      <button class="plain" id="welcome-back" hidden>Back</button>
+      <button class="go go-sm" id="welcome-next">
+        <span class="go-label">Next</span>
+        <span class="go-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+        </span>
+      </button>
+    </div>
+
+    <ol class="welcome-dots" id="welcome-dots" aria-hidden="true"></ol>
   </div>
 </div>
 
@@ -170,23 +320,95 @@
          pitch clean, with nothing in front of it. -->
     <p class="landing-hello" id="landing-hello" hidden></p>
 
-    <h1 class="landing-ask" data-i18n-html="landing.ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s alright &mdash; I might.</em></h1>
-    <p class="landing-sub" data-i18n="landing.sub">A few easy either-ors &mdash; sweet or savoury, hot or cold, hands or cutlery &mdash;
-    and we&rsquo;ll work out what you actually feel like. Usually in about eight questions.</p>
+    <!-- Word for word what the site's own hero says, which is the point: the
+         two screens are the same product and used to end on a promise to read
+         minds. An assistant asks. -->
+    <h1 class="landing-ask" data-i18n-html="landing.ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s what I&rsquo;m for.</em></h1>
+    <p class="landing-sub" data-i18n="landing.sub">A few easy either-ors &mdash; sweet or savoury, hot or cold. Then one
+    answer, with the recipe behind it. Close but not quite? Point me lighter, spicier, sooner, and
+    I answer again that way.</p>
+
+    <!--
+      AN INTERRUPTED DECISION, OFFERED BACK.
+
+      People show a strong tendency to resume a task they were pulled away
+      from — the Ovsiankina half of the Zeigarnik effect, and the half that
+      survived the 2025 meta-analysis intact. Half a decide game is exactly
+      that task: four answers given, nothing to show for them, and the only
+      thing on offer until now was starting again from the first question.
+
+      It expires (see RESUME_HOURS in app.js): what somebody felt like at
+      lunchtime is not what they feel like at eight, and handing back stale
+      answers as if they still counted would be worse than losing them.
+    -->
+    <!--
+      SAID ON THE FIRST SCREEN, NOT DISCOVERED LATER.
+
+      The preview is only defensible if nobody is surprised by it — either
+      when it starts or when it stops. So it is announced here, on the front
+      door, with the count on it, and the ending screen later says exactly
+      what stopped. A free trial somebody did not know they were on is a
+      thing being taken away; one they were told about is one they used.
+    -->
+        <p class="landing-resume" id="landing-resume" hidden>
+      <button class="link-btn" id="resume-btn"></button>
+      <span class="fine" id="resume-note"></span>
+    </p>
 
     <div class="landing-actions">
       <button class="go go-big" id="landing-start">
-        <span class="go-label" data-i18n="landing.start">Decide for me</span>
+        <span class="go-label">Decide for me</span>
         <span class="go-arrow" aria-hidden="true">
           <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
         </span>
       </button>
-      <button class="plain landing-plain" id="tonight-btn" data-i18n="landing.tonight">Tonight&rsquo;s pick</button>
-      <button class="plain landing-plain" id="landing-browse" data-i18n="landing.browse">Browse the menu</button>
-      <button class="plain landing-plain" id="landing-nearby" data-i18n="landing.nearby">See what&rsquo;s near you</button>
-      <button class="plain landing-plain" id="landing-ask" data-i18n="landing.askai">Ask what to eat</button>
-      <button class="plain landing-plain" id="landing-news" data-i18n="landing.news">Read about food</button>
-      <button class="plain landing-plain" id="landing-invite" data-i18n="landing.invite">Decide with a friend</button>
+      <!-- QUICK DECIDE, as a button. It was a line of text in the quiet row
+           underneath, and read as a footnote rather than as the faster way in
+           it is. The second button, not a second primary: outlined, so
+           "Decide for me" is still the one loud thing on the screen. -->
+      <button class="go go-big go-alt landing-quick" id="quick-btn" type="button">
+        <span class="go-label">Quick decide
+          <span class="landing-quick-sub">100 favourites &middot; fewer questions</span>
+        </span>
+        <span class="go-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+        </span>
+      </button>
+      <!--
+        THE NO-QUESTIONS ROUTE, and the label says so.
+
+        Behaviour happens where motivation, ability and a prompt meet, and of
+        the three, ability is nearly always the cheapest to move. Motivation
+        here is already at its ceiling — the reader is hungry — so everything
+        left is in how little it costs to act, and this is the cheapest thing
+        in the app: one tap, no questions, an answer that already respects
+        every rule on the profile.
+
+        It was the seventh item in a quiet row of seven, labelled with a name
+        that says when it applies rather than what it saves you. Same button,
+        same place in the order, told properly.
+      -->
+      <button class="plain landing-plain landing-second" id="tonight-btn">Tonight&rsquo;s pick &mdash; no questions</button>
+      <!--
+        THE SHORT GAME, AND IT IS SHORTER FOR A REASON THAT CAN BE MEASURED.
+
+        The same questions over the hundred dishes the catalogue started with.
+        Fewer dishes are easier to tell apart, so the game gets there in 7.8
+        questions instead of 11.4 and lands on the right one 100% of the time
+        instead of 99.3%. Free, like the long one: it is a shorter route to
+        the same kind of answer, not a cut-down version of it.
+      -->
+      <button class="plain landing-plain" id="landing-browse">Browse the menu</button>
+      <button class="plain landing-plain" id="landing-nearby">See what&rsquo;s near you</button>
+      <button class="plain landing-plain" id="landing-ask">Ask what to eat</button>
+      <button class="plain landing-plain" id="landing-news">Read about food</button>
+      <!-- The rest of the hub, from the front door: it is not only a game. -->
+      <button class="plain landing-plain" type="button" data-landing-view="planner">Plan the week</button>
+      <button class="plain landing-plain" type="button" data-landing-view="kitchen">Your recipes &mdash; your own, and from any website</button>
+      <button class="plain landing-plain" type="button" data-landing-view="scan">Scan food &mdash; is it healthy?</button>
+      <button class="plain landing-plain" type="button" data-landing-view="radio">TV &amp; radio to cook and eat to</button>
+      <button class="plain landing-plain" id="landing-invite">Decide with a friend</button>
+      <button class="plain landing-plain" type="button" data-landing-view="help">New here? How to use morsels45</button>
     </div>
 
     <div class="knob-block" id="party-wrap">
@@ -215,15 +437,42 @@
       <b>Add to Home Screen</b>, then tap <b>Add</b>. It opens full screen with no address bar.</span>
     </p>
 
-    <p class="landing-free">No account. No email. Nothing to fill in.</p>
+    <p class="landing-free">No account needed to decide. A free account adds the planner, TV and radio.</p>
 
     <!-- Real numbers, read out of the catalogue at load rather than written
          here, so they cannot drift into being a claim nobody checks. -->
     <ul class="landing-stats">
-      <li><b id="landing-dishes">133</b><span>dishes</span></li>
+      <li><b id="landing-dishes">450</b><span>dishes</span></li>
       <li><b id="landing-questions">8</b><span>questions, usually</span></li>
-      <li><b id="landing-recipes">133</b><span>recipes inside</span></li>
+      <li><b id="landing-recipes">780</b><span>recipes inside</span></li>
     </ul>
+
+    <!-- ===================================================================
+         FIVE TO TRY TODAY.
+
+         Free, and deliberately so: it is the reason to open the app on a day
+         you are not deciding anything, which is the only way a food app gets
+         opened twice. Written fresh each morning, and kept OUT of the deciding
+         engine — these are somewhere to read and go and cook, not answers the
+         questions can land on. See routes/api/daily.ts for why that line
+         matters.
+
+         Moved up here, right after the hero, from below the entire Premium
+         mode grid — which is where a section whose whole point is "open the
+         app on an ordinary day" cannot afford to sit if anybody is meant to
+         actually find it.
+
+         Hidden until it has something. A shelf that says "nothing today" is
+         worse than no shelf.
+         =================================================================== -->
+    <section class="strip" id="daily-wrap" hidden>
+      <h2 class="strip-title" id="daily-title">Five to try today</h2>
+      <p class="fine" id="daily-note">Dishes the app does not already know,
+      written this morning. Tap one to read about it.</p>
+      <ul class="daily-list" id="daily-list"></ul>
+      <p class="fine daily-made">Suggested by AI, so check anything you are not sure about
+      &mdash; especially if you are cooking for someone with an allergy.</p>
+    </section>
 
     <!-- ===================================================================
          ENDLESS, and why it is out here on its own rather than in the grid
@@ -244,8 +493,10 @@
           <span class="endless-card-name">Endless</span>
           <span class="endless-card-tag" id="endless-tag">Free</span>
         </span>
-        <span class="endless-card-hook">Two dishes, and a few seconds on the clock. Answer fast and it goes hot &mdash; worth more, and burning quicker. Tap one and it buys you a
-        little more time &mdash; then a little less each time. See how far you get.</span>
+        <span class="endless-card-hook">Two dishes, and five seconds on the clock. Answer fast and it goes hot &mdash; worth more,
+        and burning quicker. Every pick buys a little time back, and a little less each time. Part-way
+        through, things start happening to the rules: the clock doubles, refills dry up, or the cards
+        start meaning the opposite. See how far you get.</span>
         <span class="endless-card-line" id="endless-card-line">No questions. No rounds. Just don&rsquo;t stop.</span>
       </button>
       <!--
@@ -311,28 +562,6 @@
       <button class="plain" id="surprise-btn" hidden>Surprise me <span class="tag-premium">Premium</span></button>
     </div>
 
-    <!-- ===================================================================
-         FIVE TO TRY TODAY.
-
-         Free, and deliberately so: it is the reason to open the app on a day
-         you are not deciding anything, which is the only way a food app gets
-         opened twice. Written fresh each morning, and kept OUT of the deciding
-         engine — these are somewhere to read and go and cook, not answers the
-         questions can land on. See routes/api/daily.ts for why that line
-         matters.
-
-         Hidden until it has something. A shelf that says "nothing today" is
-         worse than no shelf.
-         =================================================================== -->
-    <section class="strip" id="daily-wrap" hidden>
-      <h2 class="strip-title">Five to try today</h2>
-      <p class="fine" id="daily-note">Five dishes the app does not already know,
-      written this morning. Tap one to read about it.</p>
-      <ul class="daily-list" id="daily-list"></ul>
-      <p class="fine daily-made">Suggested by AI, so check anything you are not sure about
-      &mdash; especially if you are cooking for someone with an allergy.</p>
-    </section>
-
     <section class="strip" id="picks-wrap">
       <h2 class="strip-title">Something new <span class="tag-premium">Premium</span></h2>
       <p class="fine">Two questions, then a few things you have not had, chosen from what you
@@ -341,9 +570,13 @@
     </section>
 
     <section class="strip" id="menu-wrap">
-      <h2 class="strip-title">Feeding people <span class="tag-premium">Premium</span></h2>
-      <p class="fine" id="menu-blurb">A starter, a main and a pudding that actually go together &mdash; not three heavy
-      things, and not three cold ones.</p>
+      <!-- NOT badged Premium, because it is not. A free profile gets one menu
+           every couple of days — the panel that says so calls it "the next free
+           menu" in as many words — and the badge above it said the opposite.
+           The line underneath states the limit instead; renderMenuView writes
+           the tier-specific half of it. -->
+      <h2 class="strip-title">Feeding people</h2>
+      <p class="fine" id="menu-blurb">Five courses that actually go together &mdash; something to pick at, a starter, a main, a pudding and something to finish. Not five heavy things, and not five from the same kitchen unless that is the point of it.</p>
       <button class="plain" id="menu-btn">Write me a menu</button>
     </section>
 
@@ -442,6 +675,30 @@
   </p>
 </div>
 
+<!-- ===================================================================
+     THE RADIO PLAYER. Outside .app and every view in it, so changing
+     section never stops the music — see #view-radio. Hidden until a station
+     is chosen, and gone again when it is stopped.
+     =================================================================== -->
+<audio id="radio-audio" preload="none"></audio>
+<div class="radio-bar" id="radio-bar" role="region" aria-label="Radio player" hidden>
+  <span class="radio-bar-art" id="radio-bar-art" aria-hidden="true"></span>
+  <button class="radio-bar-info" id="radio-bar-info" type="button" title="Open the radio">
+    <span class="radio-bar-status" id="radio-bar-status">Tuning in&hellip;</span>
+    <span class="radio-bar-name" id="radio-bar-name"></span>
+  </button>
+  <button class="radio-bar-btn" id="radio-bar-toggle" type="button" aria-label="Pause">
+    <svg class="radio-ico-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+    <svg class="radio-ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+  </button>
+  <button class="radio-bar-btn" id="radio-bar-next" type="button" aria-label="Next station">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14l9-7zM16 5h2.5v14H16z"/></svg>
+  </button>
+  <button class="radio-bar-btn" id="radio-bar-close" type="button" aria-label="Stop the radio">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.4 5 5 6.4 10.6 12 5 17.6 6.4 19l5.6-5.6 5.6 5.6 1.4-1.4-5.6-5.6L19 6.4 17.6 5 12 10.6z"/></svg>
+  </button>
+</div>
+
 <div class="app">
 
   <!-- ============================ rail ============================ -->
@@ -449,14 +706,17 @@
     <ul class="rail-list">
       <li><button class="rail-link is-current" data-i18n="nav.decide" data-view="decide">Decide</button></li>
       <li><button class="rail-link" data-i18n="nav.dishes" data-view="dishes">Dishes</button></li>
+      <li><button class="rail-link" data-view="planner">Meal planner</button></li>
+      <li><button class="rail-link" data-view="kitchen">Recipes &amp; kitchen</button></li>
+      <li><button class="rail-link" data-view="scan">Scan food</button></li>
       <li><button class="rail-link" data-i18n="nav.menu" data-view="menu">Menu</button></li>
       <li><button class="rail-link" data-i18n="nav.nearby" data-view="nearby">Nearby</button></li>
       <li><button class="rail-link" data-i18n="nav.ask" data-view="chat">Ask</button></li>
       <li><button class="rail-link" data-i18n="nav.news" data-view="news">News</button></li>
+      <li><button class="rail-link" data-view="radio">TV &amp; radio</button></li>
+      <li><button class="rail-link" data-view="daily">Daily</button></li>
       <li><button class="rail-link" data-i18n="nav.profile" data-view="profile">Profile</button></li>
-      <!-- Asked for as a tab at the top. It is a setting rather than a section,
-           so it sits last, after the things you actually came to do. -->
-      <li><button class="rail-link" data-i18n="nav.language" data-view="language">Language</button></li>
+      <li><button class="rail-link" data-view="help">Help</button></li>
     </ul>
 
     <p class="rail-foot" id="rail-streak" hidden><b id="streak-count">0</b> day streak</p>
@@ -515,7 +775,16 @@
             </button>
             <button class="plain" id="choice-either">Either, honestly</button>
           </div>
-          <p class="closing"><span id="hunch">Wide open</span><i class="thread"><span id="meter-fill"></span></i></p>
+          <!--
+            The count, the word and the hairline. The count is the real number
+            of dishes still contradicting nothing, recomputed every question:
+            effort towards a goal rises as the goal gets closer, and a number
+            falling from three hundred to one does that work in a way that
+            "getting warmer" cannot. The landing page has promised this exact
+            number since the preview shipped; the app itself only ever said a
+            word.
+          -->
+          <p class="closing"><b class="closing-count" id="still"></b><span id="hunch">Wide open</span><i class="thread"><span id="meter-fill"></span></i></p>
         </div>
       </div>
 
@@ -558,6 +827,23 @@
               <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
             </span>
           </button>
+          <!-- =============================================================
+               STEERING, WHICH IS THE POINT AND WAS MISSING.
+               The only thing you could say about a dish you did not want was
+               "no". That is a veto, not a conversation — you could reject
+               the answer but you could not point, so the app kept guessing
+               and you kept declining, which is an exhausting way to be
+               helped. These say which WAY to go, and the next dish is
+               different in that direction because the tag goes into the same
+               engine the questions feed.
+               Built in app.js (paintSteers), because which directions are
+               worth offering depends on the dish on screen: there is no
+               point offering "milder" for a bowl of cereal.
+               ============================================================= -->
+          <div class="steer" id="steer" hidden>
+            <p class="steer-lead" id="steer-lead">Close? Point me somewhere.</p>
+            <div class="steer-row" id="steer-row"></div>
+          </div>
           <div class="verdict-side">
             <button class="quiet" id="reject-btn">Not quite</button>
             <button class="quiet" id="share-btn">Share this</button>
@@ -586,15 +872,97 @@
             <h2 class="verdict-name" id="done-name">Sorted.</h2>
           </div>
           <p class="verdict-note" id="done-text">Go and eat it.</p>
+          <!--
+            ONE TRUE THING ABOUT YOU. Filled from progress.noticing(), which
+            counts rather than guesses, and stays hidden when the numbers do
+            not support a sentence — which is most of the first week. See the
+            long comment over noticing() in progress.js.
+          -->
+          <p class="verdict-notice" id="done-notice" hidden></p>
         </div>
 
         <p class="xp-line"><span id="xp-total">+0</span> <span>XP</span></p>
         <ul class="awards" id="awards"></ul>
 
+        <!-- WHAT ELSE IS HERE, SAID AT THE MOMENT SOMEBODY WOULD LEAVE.
+             Most people get their answer and close the tab, having seen one
+             screen of an app with seven. Three free things, chosen by what
+             this profile has not done yet, and one line saying what is new
+             tomorrow - only things that really do refill each day. Painted
+             by app.js (paintNext). No counter, no guilt, nothing locked. -->
+        <section class="strip" id="next-strip" hidden>
+          <h2 class="strip-title">Free, while you&rsquo;re here</h2>
+          <div class="plan-cues" id="next-row"></div>
+          <p class="fine" id="next-tomorrow"></p>
+        </section>
+
         <section class="strip" id="rate-wrap" hidden>
           <h2 class="strip-title">How was it? <span class="tag-premium">Premium</span></h2>
           <p class="fine" id="rate-note">Tell me and I get better at picking for you.</p>
           <div class="rates" id="rates"></div>
+        </section>
+
+        <!--
+          THE IF-THEN PLAN. Binding a thing you want to do to a cue that
+          already happens is the best-evidenced behaviour-change tool there
+          is (see the comment over PLAN_CUES in progress.js), and it is the
+          one persuasive thing on this screen that is entirely the reader's
+          own: they write it, it stays on this device, and forgetting it is
+          one tap. Free on every profile, like the rules.
+        -->
+        <!--
+          ONE QUESTION, ONCE, AND NEVER AGAIN.
+
+          The funnel says WHERE people stop. It cannot say why, and the
+          cheapest way to find out is to ask the people who are still here.
+          Four options and a tap; no free text, because a text box at the end
+          of deciding dinner is a text box nobody fills in.
+
+          Earned rather than immediate: it waits until somebody has had a few
+          answers out of this, because "what would make it worth paying for"
+          asked on the first visit is asking somebody to price a thing they
+          have not used. Answered once, stored on the device, never shown
+          again — and a tap to say "nothing, I am not paying" is a complete
+          answer that ends it the same way.
+        -->
+        <!--
+          THE END OF THE PREVIEW, COUNTED RATHER THAN PITCHED.
+
+          Shown once, on the decision that spends the last one. It does not
+          argue; it lists what this profile actually did with the five and
+          what of that stops working. Every number is read off the profile
+          itself, so it cannot overstate — somebody who saved nothing is told
+          they saved nothing, and that is a fair outcome for a preview too.
+        -->
+        <!-- ONE TAP AWAY TOMORROW.
+             The only return mechanism this app is allowed: the person puts it
+             on their own home screen, on purpose. No account, no email, no
+             notification. Filled in by app.js, which decides between the real
+             install prompt and the Share-sheet instructions depending on what
+             the browser will actually do. -->
+        <section class="strip" id="keep-strip" hidden>
+          <h2 class="strip-title" id="keep-title">Keep it one tap away</h2>
+          <p class="fine" id="keep-note"></p>
+          <div class="keep-actions">
+            <button class="plan-cue" type="button" id="keep-go"></button>
+            <button class="plain keep-no" type="button" id="keep-no">Not now</button>
+          </div>
+        </section>
+
+        <section class="strip" id="why-strip" hidden>
+          <h2 class="strip-title" id="why-title">One question, and then never again</h2>
+          <p class="fine" id="why-note">What would make Premium worth paying for? Tap whichever is closest — it goes nowhere near your name.</p>
+          <div class="plan-cues" id="why-options"></div>
+        </section>
+
+        <section class="strip" id="plan-strip" hidden>
+          <h2 class="strip-title" id="plan-title">When do you usually need this?</h2>
+          <p class="fine" id="plan-note"></p>
+          <div class="plan-cues" id="plan-cues"></div>
+          <div class="plan-done" id="plan-done" hidden>
+            <button class="plain" id="plan-cal">Put it in my calendar</button>
+            <button class="plain" id="plan-clear">Forget it</button>
+          </div>
         </section>
 
         <div class="levelup" id="levelup" hidden>
@@ -624,6 +992,22 @@
             <button class="quiet" id="done-profile-btn">Your profile</button>
           </div>
         </div>
+
+        <!-- THE ONE PART OF THIS APP THAT COSTS REAL MONEY TO RUN, and it
+             was reading as a footnote: its only other entry point was the
+             seventh quiet link on the screen before this one. Everybody who
+             accepts a dish reaches this screen, so this is where a defining
+             feature actually gets seen rather than found. -->
+        <section class="strip" id="reward-together">
+          <h2 class="strip-title">Do it together <span class="tag-premium">Premium</span></h2>
+          <p class="fine">One real browser, a cursor each, from your own phones — nobody waiting on the other to type. <button class="link-btn beam-help-link" type="button">What&rsquo;s this?</button></p>
+          <button class="go go-alt" id="reward-order-btn">
+            <span class="go-label">Order it together</span>
+            <span class="go-arrow" aria-hidden="true">
+              <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
+            </span>
+          </button>
+        </section>
       </div>
 
       <!-- this or that -->
@@ -947,6 +1331,19 @@
             </div>
           </div>
 
+          <!-- The event band. Its height is reserved whether or not anything
+               is in it, because it sits directly above the two cards: a line
+               appearing between one tap and the next would move them under a
+               thumb already on its way down, in the one mode built on tapping
+               the same place over and over. See paintEndlessEvent. -->
+          <div class="endless-event" id="endless-event" aria-live="polite">
+            <p class="endless-event-head">
+              <b id="endless-event-name"></b>
+              <span id="endless-event-left"></span>
+            </p>
+            <p class="endless-event-note" id="endless-event-note"></p>
+          </div>
+
           <div class="picks endless-picks is-titled" id="endless-picks">
             <button class="pick" id="endless-a" type="button">
               <span class="pick-no" aria-hidden="true">01</span>
@@ -978,7 +1375,7 @@
             <p class="fine" id="endless-read-note"></p>
           </div>
 
-          <p class="pane-line endless-status" id="endless-status">Every pick buys time back. It buys back less the longer you last.</p>
+          <p class="pane-line endless-status" id="endless-status">Every pick buys time back &mdash; less each time. Events change the rules as you go.</p>
           <button class="plain" id="endless-stop">Stop &mdash; and see what it worked out</button>
         </div>
 
@@ -1276,8 +1673,8 @@
          ========================================================================= -->
     <section class="view" id="view-nearby" aria-label="Nearby">
       <header class="head">
-        <p class="mechanic" data-i18n="eyebrow.aroundyou">Around you</p>
-        <h1 class="head-title" data-i18n="view.nearby">Nearby</h1>
+        <p class="mechanic">Around you</p>
+        <h1 class="head-title">Nearby</h1>
       </header>
 
           <div class="locate" id="near-locate">
@@ -1319,6 +1716,7 @@
                 <!-- The list is free. This is the part that costs: one real
                      browser, both of you in it, on that place's menu. -->
                 <button class="quiet" id="near-beam-btn">Order from here <span class="tag-premium">Premium</span></button>
+                <button class="link-btn beam-help-link" type="button">What&rsquo;s this?</button>
               </div>
             </div>
             <p class="pane-line" id="near-summary"></p>
@@ -1358,7 +1756,7 @@
     <section class="view" id="view-chat" aria-label="Ask">
       <header class="head">
         <p class="mechanic">Ask <span class="tag-beta">Beta</span></p>
-        <h1 class="head-title" data-i18n="view.ask">Ask anything</h1>
+        <h1 class="head-title">Ask anything</h1>
         <p class="head-sub">Food is what it knows best &mdash; what to eat, what goes with what,
         what to do with half a cabbage &mdash; but it will have a go at whatever you ask.</p>
         <p class="fine chat-beta">Beta &mdash; it runs on a service that is busy a lot of the
@@ -1395,8 +1793,8 @@
 
     <section class="view" id="view-news" aria-label="Food news">
       <header class="head">
-        <p class="mechanic" data-i18n="eyebrow.worthreading">Worth reading</p>
-        <h1 class="head-title" data-i18n="view.news">Food news</h1>
+        <p class="mechanic">Worth reading</p>
+        <h1 class="head-title">Food news</h1>
         <p class="head-sub">Recipes, restaurants and the odd argument about bread &mdash;
         from <b>the Guardian</b>, <b>Eater</b>, <b>NYT Dining</b>, <b>The Kitchn</b>,
         <b>Smitten Kitchen</b>, <b>Saveur</b> and <b>King Arthur Baking</b>.</p>
@@ -1439,8 +1837,12 @@
           <button class="quiet" id="news-fresh" type="button">Something else to read</button>
         </div>
 
+        <!-- Attribution, and what tapping a row actually does. The second
+             half is painted per tier: it said "tapping through opens their
+             page" to everybody, which stopped being true for a Standard
+             reader the day the outbound link became part of Premium. -->
         <p class="fine news-foot">Headlines and summaries belong to the publishers.
-        Tapping through opens their page.</p>
+        <span id="news-foot-go"></span></p>
       </div>
 
       <div class="notice" id="news-error" hidden>
@@ -1456,16 +1858,163 @@
       </div>
     </section>
 
+    <!-- ------------------------- PLANNER & KITCHEN ------------------------- -->
+    <!-- ===============================================================
+         THE HUB: everything after "what shall we eat" — planning the week,
+         shopping for it, cooking it, and the kitchen tools around that.
+         Built by js/hub.js, which says what each part is and who it is for.
+         Empty here on purpose: hub.js draws them the first time they open.
+         =============================================================== -->
+    <section class="view" id="view-planner" aria-label="Meal planner"></section>
+    <section class="view" id="view-kitchen" aria-label="Recipes and kitchen"></section>
+    <!-- Scan food: its own section, not a tab in the kitchen, because it is
+         the one people reach for in a shop with a packet in their hand. -->
+    <section class="view" id="view-scan" aria-label="Scan food"></section>
+    <!-- Every section in plain words, and a way to each. Rendered by hub.js. -->
+    <section class="view" id="view-help" aria-label="Help"></section>
+
+    <!-- ------------------------- TV & RADIO ------------------------- -->
+    <!-- ===============================================================
+         TV AND RADIO — one group free a day with an account, all of it with Premium.
+         lib/tv.ts and lib/radio.ts say where each comes from.
+
+         In groups, a dozen at most in each: food first, then what people
+         have on while they cook and eat. The first radio had a hundred and
+         twenty stations in one list; a list that long is a list nobody
+         chooses from, so it is one group at a time, chosen with a tap.
+
+         The names are drawn for everybody, signed in or not: "sign in for
+         TV" with nothing to look at is an ask, and BBC Food and Hell's
+         Kitchen on a list is a reason. Only the streams and the listings
+         need the account.
+
+         The radio player is not in here. It is #radio-bar, outside every
+         view, so it carries on while you go and look up the recipe. The TV
+         stays here — a picture nobody can see is just noise — and pauses
+         when you leave, unless it is in picture-in-picture.
+         =============================================================== -->
+    <section class="view" id="view-radio" aria-label="TV and radio">
+      <header class="head">
+        <p class="mechanic">One group free a day</p>
+        <h1 class="head-title">TV &amp; radio</h1>
+        <p class="head-sub">Something to watch or listen to while you cook and eat. Free
+        channels and stations in groups &mdash; food shows first, then music, comedy, travel,
+        calm and more &mdash; with what&rsquo;s on now and next. Tap a group to see what is in it.
+        The radio keeps playing while you look up the recipe.</p>
+      </header>
+
+      <div class="radio-signin" id="radio-signedout" hidden>
+        <p class="fine">Sign in to watch and listen. One group is free every day; the rest is Premium.</p>
+        <!-- target="_top": see the note on #invite-signin. -->
+        <a class="go go-sm" id="radio-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dradio" target="_top">
+          <span class="go-label">Sign in with Whop to watch and listen</span>
+        </a>
+      </div>
+
+      <p class="fine media-free" id="media-free-note" hidden></p>
+
+      <div class="filters media-tabs" role="tablist" aria-label="TV or radio">
+        <button class="filter" id="tab-tv" data-tab="tv" role="tab" type="button">&#x1F4FA; TV</button>
+        <button class="filter" id="tab-radio" data-tab="radio" role="tab" type="button">&#x1F4FB; Radio</button>
+      </div>
+
+      <!-- ---------- TV ---------- -->
+      <div class="media-pane" id="tv-pane" role="tabpanel" aria-labelledby="tab-tv">
+        <div class="tv-stage" id="tv-stage" hidden>
+          <div class="tv-frame">
+            <video id="tv-video" playsinline controls preload="none"></video>
+            <p class="tv-overlay" id="tv-overlay" hidden></p>
+          </div>
+          <div class="tv-stage-head">
+            <div class="tv-stage-text">
+              <p class="tv-stage-name" id="tv-stage-name"></p>
+              <p class="fine" id="tv-stage-now"></p>
+            </div>
+            <button class="quiet" id="tv-close" type="button">Close</button>
+          </div>
+          <ol class="tv-later" id="tv-later"></ol>
+        </div>
+
+        <!-- The groups, filled from /api/tv: food first, then the rest. -->
+        <div class="media-cats" id="tv-cats" role="group" aria-label="Kinds of TV"></div>
+
+        <div class="out-loading" id="tv-loading" hidden>
+          <div class="bone bone-row"></div>
+          <div class="bone bone-row"></div>
+          <div class="bone bone-row"></div>
+          <p class="fine">Finding what&rsquo;s on&hellip;</p>
+        </div>
+        <ul class="stations" id="tv-list"></ul>
+        <p class="fine tv-checked" id="tv-checked" hidden>
+          <span id="tv-checked-text"></span>
+          <button class="link-btn" id="tv-recheck" type="button">Check again</button>
+        </p>
+        <div class="notice" id="tv-error" hidden>
+          <p>The channel list would not load.</p>
+          <div class="locate-actions">
+            <button class="quiet" id="tv-retry" type="button">Try again</button>
+          </div>
+        </div>
+        <p class="fine radio-foot">Channels from
+        <a href="https://github.com/iptv-org/iptv" target="_blank" rel="noopener noreferrer">iptv-org</a>,
+        the open database of free TV, read fresh every hour — and each one is tried from your own
+        browser before it is listed, so you only see the channels that actually play where you are.
+        Each group is picked by hand from iptv-org&rsquo;s own categories, with nothing grim
+        for the dinner table. What&rsquo;s
+        on comes from each channel&rsquo;s published listings, found through
+        <a href="https://github.com/iptv-org/epg" target="_blank" rel="noopener noreferrer">iptv-org/epg</a>;
+        a channel can run a few minutes off them. They are free, ad-supported channels &mdash;
+        the adverts are theirs, not ours.</p>
+      </div>
+
+      <!-- ---------- RADIO ---------- -->
+      <div class="media-pane" id="radio-pane" role="tabpanel" aria-labelledby="tab-radio" hidden>
+        <!-- Painted from this device's memory of the last station played: one
+             tap back to "the radio" rather than the list. -->
+        <p class="radio-resume" id="radio-resume-wrap" hidden>
+          <button class="quiet" id="radio-resume" type="button"></button>
+        </p>
+
+        <!-- The groups, filled from /api/radio: food and dining, then music. -->
+        <div class="media-cats" id="radio-cats" role="group" aria-label="Kinds of radio"></div>
+
+        <div class="out-loading" id="radio-loading" hidden>
+          <div class="bone bone-row"></div>
+          <div class="bone bone-row"></div>
+          <div class="bone bone-row"></div>
+          <p class="fine">Tuning in&hellip;</p>
+        </div>
+
+        <ul class="stations" id="radio-list"></ul>
+
+        <div class="notice" id="radio-error" hidden>
+          <p>The radio directory is not answering just now.</p>
+          <p class="fine">It is a free, volunteer-run directory and it has the odd bad minute.
+          Nothing is wrong at your end.</p>
+          <div class="locate-actions">
+            <button class="quiet" id="radio-retry" type="button">Try again</button>
+          </div>
+        </div>
+
+        <p class="fine radio-foot">Stations come from
+        <a href="https://www.radio-browser.info/" target="_blank" rel="noopener noreferrer">Radio Browser</a>,
+        a free community directory. The food and dining group is stations named for eating &mdash;
+        dinner lounges, restaurant and coffee-bar channels, a barbecue station; the others are music
+        to cook and eat to, about ten of the best-loved stations in each, with no talk, news or
+        sport. Each streams straight from its own broadcaster to you; morsels45 hosts none of them
+        and puts nothing over them, though a station may run its own adverts.</p>
+      </div>
+    </section>
+
     <!-- Feeding people: its own section, because writing a menu is a thing you
          come here to do, not a step on the way to deciding what to eat. It
          lived inside #view-decide as a panel and was reachable only by
          scrolling the opening screen to the bottom and finding one button. -->
     <section class="view" id="view-menu" aria-label="Tonight&rsquo;s menu">
       <header class="head">
-        <p class="mechanic" data-i18n="eyebrow.feeding">Feeding people</p>
-        <h1 class="head-title" data-i18n="view.menu">Tonight&rsquo;s menu</h1>
-        <p class="head-sub">A starter, a main and a pudding that actually go together &mdash;
-        not three heavy things, and not three cold ones. They come <b>one at a time</b>:
+        <p class="mechanic">Feeding people</p>
+        <h1 class="head-title">Tonight&rsquo;s menu</h1>
+        <p class="head-sub">Five courses that actually go together &mdash; something to pick at, a starter, a main, a pudding and something to finish. Not five heavy things, and not five from the same kitchen unless that is the point of it. They come <b>one at a time</b>:
         say yes to the starter before you are shown the main, and each one is chosen to go
         with what you have already said yes to.</p>
       </header>
@@ -1503,6 +2052,9 @@
         <div id="menu-questions" hidden>
           <p class="q-step" id="menu-q-step">Question 1 of 3</p>
           <h2 class="q-title" id="menu-q-title"></h2>
+          <!-- Only on the "anything else" question, and only when some of it is
+               already a standing rule. See menuQuestions() in app.js. -->
+          <p class="fine" id="menu-q-note" hidden></p>
           <div class="knobs" id="menu-q-options" role="group" aria-label="Answer"></div>
           <button class="plain" id="menu-q-back">Back</button>
         </div>
@@ -1638,9 +2190,16 @@
 
     <section class="view" id="view-dishes" aria-label="Dishes">
       <header class="head">
-        <p class="mechanic" data-i18n="eyebrow.thelist">The list</p>
-        <h1 class="head-title" data-i18n="view.dishes">Dishes</h1>
+        <p class="mechanic">The list</p>
+        <h1 class="head-title">Dishes</h1>
       </header>
+
+      <!-- A real count, off progress.state.picks — a dish name that has
+           actually been landed on and accepted, not a made-up streak. Marks
+           every tried dish below the same way, so this is something to fill
+           in by playing rather than a number nobody can act on. -->
+      <p class="head-sub" id="collection-count"></p>
+      <i class="thread thread-wide"><span id="collection-fill"></span></i>
 
       <div class="find">
         <svg class="find-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true">
@@ -1681,37 +2240,67 @@
       <p class="notice" id="dish-empty" hidden>Nothing matches. Try something else.</p>
     </section>
 
-    <!-- ------------------------- PROFILE ------------------------- -->
-    <!-- ===================================================================
-         LANGUAGE.
-
-         A tab rather than a line buried in the profile, because somebody who
-         needs this cannot read the profile tab to find it. It is the one
-         setting whose own label is the thing being set, so every option is
-         written in its own language: a reader looking for Thai is looking
-         for "ภาษาไทย", not for "Thai".
-         =================================================================== -->
-    <section class="view" id="view-language" aria-label="Language">
+    <!-- =========================================================================
+         THE DAILY THREE — three small, free things that have nothing to do
+         with dinner. Deciding what to eat is an episodic problem: most
+         people are not doing it every day, so there was nothing here to come
+         back for on the days they are not. These three are account-only, not
+         Premium (see lib/habits.ts) — what they need is to be the same
+         wherever you sign in, not something to pay for.
+         ========================================================================= -->
+    <section class="view" id="view-daily" aria-label="Daily">
       <header class="head">
-        <p class="mechanic" data-i18n="lang.eyebrow">Language</p>
-        <h1 class="head-title" data-i18n="lang.title">Choose your language</h1>
-        <p class="head-sub" data-i18n="lang.sub">The app changes straight away. You can
-        change it again whenever you like, from this tab.</p>
+        <p class="mechanic">Every day</p>
+        <h1 class="head-title">Your daily three</h1>
+        <p class="head-sub">Nothing to do with dinner. A mood to log, one good thing to write
+        down, and a question nobody in the world answered differently today &mdash; three
+        small reasons to open this even on a day with no decision to make.</p>
       </header>
 
-      <ul class="lang-list" id="lang-list"></ul>
+      <div id="daily-signedout">
+        <p class="fine">These come free with an account &mdash; not Premium, just signed in.</p>
+        <!-- target="_top": see the note on #invite-signin above. -->
+        <a class="quiet" id="daily-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Ddaily" target="_top">Sign in with Whop</a>
+      </div>
 
-      <!-- Only up when something has actually been translated. Saying "this may
-           be wrong" over the English original would be a warning about nothing. -->
-      <p class="lang-warn" id="lang-warn-view" data-i18n="lang.warn" hidden>This page has been
-      translated. Some of it may read oddly or be wrong &mdash; the English is the
-      original.</p>
-      <p class="fine" data-i18n="lang.ai">Answers from the AI will come back in your
-      language.</p>
-      <p class="fine" data-i18n="lang.note">Dishes, recipes and the news stay in English
-      for now &mdash; your browser can translate those if you ask it to.</p>
+      <div id="daily-signedin" hidden>
+        <section class="strip" id="checkin-wrap">
+          <h2 class="strip-title">How&rsquo;s today going?</h2>
+          <p class="fine">Tap one. Once a day, and you can change it any time before midnight UTC.</p>
+          <div class="mood-row" id="mood-row" role="group" aria-label="Today's mood">
+            <button class="mood-btn" data-mood="great" type="button"><span class="mood-emoji">&#x1F525;</span><span class="mood-label">Great</span></button>
+            <button class="mood-btn" data-mood="good" type="button"><span class="mood-emoji">&#x1F642;</span><span class="mood-label">Good</span></button>
+            <button class="mood-btn" data-mood="okay" type="button"><span class="mood-emoji">&#x1F610;</span><span class="mood-label">Okay</span></button>
+            <button class="mood-btn" data-mood="rough" type="button"><span class="mood-emoji">&#x1F615;</span><span class="mood-label">Rough</span></button>
+            <button class="mood-btn" data-mood="bad" type="button"><span class="mood-emoji">&#x1F629;</span><span class="mood-label">Bad</span></button>
+          </div>
+          <p class="fine" id="checkin-streak"></p>
+          <div class="checkin-history" id="checkin-history" aria-hidden="true"></div>
+        </section>
+
+        <section class="strip" id="journal-wrap">
+          <h2 class="strip-title">One good thing today</h2>
+          <p class="fine">One line is enough. Tomorrow you get to read it back.</p>
+          <p class="journal-row">
+            <input class="journal-input" id="journal-input" type="text" maxlength="140"
+              placeholder="One good thing that happened today&hellip;">
+            <button class="go go-sm" id="journal-save" type="button">Save</button>
+          </p>
+          <p class="fine" id="journal-streak"></p>
+          <ul class="journal-list" id="journal-list"></ul>
+        </section>
+
+        <section class="strip" id="trivia-wrap">
+          <h2 class="strip-title">Today&rsquo;s question</h2>
+          <p class="fine" id="trivia-stats"></p>
+          <p class="trivia-q" id="trivia-question"></p>
+          <div class="trivia-choices" id="trivia-choices"></div>
+          <p class="fine" id="trivia-result" hidden></p>
+        </section>
+      </div>
     </section>
 
+    <!-- ------------------------- PROFILE ------------------------- -->
     <section class="view" id="view-profile" aria-label="Your profile">
       <header class="head">
         <p class="mechanic">You</p>
@@ -1726,6 +2315,25 @@
         <div class="ledger-row"><b id="tile-dishes">0</b><span>dishes tried</span></div>
       </div>
       <p class="fine" id="freeze-note" hidden></p>
+
+      <!--
+        WHAT YOU HAVE BUILT HERE, counted.
+
+        Effort makes a thing feel more valuable and more yours, and everything
+        in this list took some: a diet picked, a dish struck off, a plan
+        named. Scattered across nine strips further down the page it reads as
+        settings. Gathered up with the number it changes — how many dishes are
+        off the table before a single question is asked — it reads as a thing
+        that knows you, which is what it is.
+
+        Free, above the paid strips, and never a nag: there is no bar to fill
+        and no percentage. Somebody who has told it nothing sees nothing.
+      -->
+      <section class="strip" id="known-wrap" hidden>
+        <h2 class="strip-title">What I know about you</h2>
+        <ul class="known" id="known-list"></ul>
+        <p class="fine" id="known-effect"></p>
+      </section>
 
       <!-- Premium here is exactly what the account page already knows: real
            Whop sign-in, real product access, checked server-side. Nothing to
@@ -1749,9 +2357,44 @@
             </span>
           </a>
           <a class="plain" id="buy-refresh" href="https://whop.com/@me/settings/memberships/" target="_blank" rel="noopener noreferrer" hidden>Manage or cancel your subscription</a>
-          <p class="fine" id="buy-note">Free for seven days, then $3.45/month &mdash; cancel
-          before it ends and you are not charged. Tax may be added depending on where you are,
-          so the total can come to a little over that; checkout shows it before you pay.</p>
+          <p class="fine" id="buy-note">Free for seven days, then $19.99/year or $3.45/month
+          &mdash; cancel before it ends and you are not charged. Tax may be added depending on
+          where you are, so the total can come to a little over that; checkout shows it before
+          you pay.</p>
+        </div>
+      </section>
+
+      <!-- INVITE A FRIEND, EARN A DAY OF PREMIUM.
+           Three states, one strip: signed out (with or without somebody
+           else's link already remembered), signed in and still earning a
+           friend's ten minutes, and signed in with an invite link of your
+           own. See the referral section in app.js and lib/referrals.ts. -->
+      <section class="strip" id="invite-wrap">
+        <h2 class="strip-title">Invite a friend, earn a day of Premium</h2>
+
+        <div id="invite-signedout">
+          <p class="fine" id="invite-note">Sign in free to get your own invite link.</p>
+          <ul class="invite-perks">
+            <li>Invite friends, earn free Premium days</li>
+            <li>Bonus days at 3 and 10 friends</li>
+            <li>Works on any device you sign into</li>
+          </ul>
+          <!-- target="_top": this page is always inside Whop's own iframe
+               when opened from an experience (see js/app.js's `framed`), and
+               Whop's own sign-in page refuses to render inside a frame — so
+               without this the click just does nothing, with no error. -->
+          <a class="quiet" id="invite-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile" target="_top">Sign in with Whop</a>
+        </div>
+
+        <div id="invite-mine" hidden>
+          <p class="fine">Send this to a friend. Once they sign in and play for ten minutes, you get a day of Premium — no limit on how many friends.</p>
+          <p class="invite-code-row">
+            <button class="invite-code" id="referral-link" type="button" aria-label="Copy your invite link"></button>
+            <span class="invite-copied" id="invite-copied" hidden>Copied</span>
+          </p>
+          <p class="fine" id="invite-progress" hidden></p>
+          <p class="fine" id="invite-stats"></p>
+          <p class="fine" id="invite-bonus" hidden></p>
         </div>
       </section>
 
@@ -1767,10 +2410,40 @@
         <p class="fine" id="fav-empty">Nothing saved yet. Hit <em>Save it</em> on a result.</p>
       </section>
 
+      <!-- Free, and above the paid strips rather than among them. What
+           somebody does not eat is not a feature of this app, it is a
+           condition of it working at all — see the comment on the rule
+           buttons in app.js.
+
+           This used to be two strips, "What you don't eat" over an "Always
+           avoid" that carried a Premium badge it had stopped meaning: the
+           rules under it were made free and the badge was left behind, which
+           is a worse lie than the badge ever was a sale. One strip now, the
+           same three groups the welcome uses, and no badge on any of it. -->
+      <section class="strip" id="strip-language">
+        <h2 class="strip-title" data-i18n="lang.eyebrow">Language</h2>
+        <p class="fine" data-i18n="lang.sub">The app changes straight away. You can
+        change it again whenever you like, from your profile.</p>
+        <ul class="lang-list" id="lang-list"></ul>
+        <p class="lang-warn" id="lang-warn-view" data-i18n="lang.warn" hidden>This page has been
+        translated. Some of it may read oddly or be wrong &mdash; the English is the
+        original.</p>
+        <p class="fine" data-i18n="lang.ai">Answers from the AI will come back in your
+        language.</p>
+        <p class="fine" data-i18n="lang.note">Dishes, recipes and the news stay in English
+        for now &mdash; your browser can translate those if you ask it to.</p>
+      </section>
+
       <section class="strip">
-        <h2 class="strip-title">Always avoid <span class="tag-premium">Premium</span></h2>
-        <p class="fine">Applied to every decision, so you stop being asked.</p>
-        <div class="rules" id="diet-rules"></div>
+        <h2 class="strip-title">What you don&rsquo;t eat</h2>
+        <p class="fine">Answered once, applied to every decision, every mode and every
+        list. Pick as many as fit &mdash; they stack.</p>
+        <div class="diet-groups" id="diet-groups"></div>
+        <p class="fine diet-caveats" id="diet-caveats" hidden></p>
+        <p class="fine diet-allergy">If this is an allergy, read it as a filter and not as a promise. These are tags on dishes, not ingredient lists: a kitchen decides what actually goes in, and cross-contamination is past anything an app can see. <b>Ask whoever cooks it.</b></p>
+        <div class="locate-actions">
+          <button class="quiet" id="replay-welcome">Run the welcome again</button>
+        </div>
       </section>
 
       <section class="strip">
@@ -1781,8 +2454,9 @@
       </section>
 
       <section class="strip">
-        <h2 class="strip-title">Anything else <span class="tag-premium">Premium</span></h2>
-        <p class="fine">Ban any ingredient or style, not just the six above.</p>
+        <h2 class="strip-title">Ban a style of food <span class="tag-premium">Premium</span></h2>
+        <p class="fine">Not what is in it &mdash; what it is. Anything the questions
+        ask about, struck off before they ask.</p>
         <div class="filters" id="custom-rules"></div>
       </section>
 
@@ -1840,26 +2514,8 @@
 
       <section class="strip" id="guest-wrap">
         <h2 class="strip-title">Guest at the table <span class="tag-premium">Premium</span></h2>
-        <p class="fine">Someone visiting. Extra avoids for this session only &mdash; Always avoid stays as it is.</p>
+        <p class="fine">Someone visiting. Extra avoids for this session only &mdash; what you don&rsquo;t eat stays exactly as it is.</p>
         <div class="knobs" id="guest-knobs" role="group" aria-label="Guest at the table"></div>
-      </section>
-
-      <!-- The affiliate programme, somewhere it can be found on purpose.
-
-           Until now this existed in exactly one place in the whole app: a
-           button inside a prompt that comes up occasionally. That is not
-           advertising it, that is hiding it behind a coin flip — somebody who
-           closed the prompt once had no way back to it, and somebody who
-           went looking for it could not find it at all. It lives here as
-           well now, permanently, on the screen people already open to look
-           at their own numbers. -->
-      <section class="strip" id="earn-wrap">
-        <h2 class="strip-title">Earn from this</h2>
-        <p class="fine">morsels45 has an affiliate programme. Share your own link, and when
-        somebody signs up through it you take a cut &mdash; for as long as they stay. Free to
-        join, nothing to pay, and it costs the people you send nothing extra.</p>
-        <p class="fine" id="earn-wrap-line"></p>
-        <a class="link-btn" href="https://whop.com/morsels45/affiliates" target="_blank" rel="noopener noreferrer">Get my link</a>
       </section>
 
       <section class="strip">
@@ -1896,32 +2552,61 @@
   </main>
 </div>
 
+<!-- ===========================================================================
+     THE WAY BACK OUT.
+
+     This app had no footer and the top bar carried two links: Premium, and
+     your account. So from the screen people actually spend their time on,
+     there was no route to how it works, the FAQ, the dish index, the privacy
+     page or the standards page — and none back to the front page either,
+     because the brand mark up there points at /decide/, which is where you
+     already are.
+
+     Six or seven pages reachable from every page of the marketing site and
+     from none of the app is not a small gap. It is most of the site being
+     invisible to most of the audience.
+
+     Below the rail rather than in it: the rail is the app's own seven
+     screens and adding outside links to it would blur what that control is
+     for. A footer is the conventional place to look for exactly these, which
+     is the whole argument for putting them there.
+     =========================================================================== -->
+<!-- target="_top" on every link here, for the same reason as #topbar-premium
+     above: this page is always inside Whop's own iframe when opened from an
+     experience, and a same-tab navigation to any of these would leave
+     someone stuck looking at a full marketing-site page squeezed inside
+     that frame. For /premium specifically it is worse than a bad look — see
+     the long comment on #topbar-premium for how it breaks checkout three
+     hops downstream. -->
+<footer class="appfoot">
+  <nav class="appfoot-nav" aria-label="The rest of morsels45">
+    <a href="/" target="_top">Home</a>
+    <a href="/info" target="_top">More about morsels45</a>
+    <a href="/eat" target="_top">All dishes</a>
+    <a href="/how-it-works" target="_top">How it works</a>
+    <a href="/premium" target="_top">Premium</a>
+    <a href="/faq" target="_top">FAQ</a>
+    <a href="/account" target="_top">Account</a>
+    <a href="/privacy" target="_top">Privacy</a>
+    <a href="/honesty" target="_top">What we won&rsquo;t do</a>
+  </nav>
+  <p class="appfoot-fine">Your games and settings stay in this browser. Once you sign in, your meal plan, your recipes and your daily check-ins are kept with your account, so they are on all your devices. <a href="/privacy" target="_top">How that works</a>.</p>
+</footer>
+
 <!--
   "Getting on all right?" — asked once, at a good moment, and then never again.
   Two panes in one dialog: the question, and the offer that only the yes branch
   ever sees. A "not really" is a complete answer and gets no pitch at all.
 -->
-<!--
-  "Want to earn some money?" — the affiliate offer, on the same sheet as
-  everything else so it reads as the app asking rather than an advert that got
-  in. Same discipline as the enjoy prompt next to it: earned, once, and a
-  refusal that is the same size as the agreement.
--->
 <!-- ===========================================================================
-     THE AD SHEET — one dialog, many prompts.
+     THE PREMIUM EXPLAIN SHEET.
 
-     The three prompts below it are each about one specific thing and each keep
-     their own state, which is why they have their own markup. These are the
-     rotating ones: the Premium pitch and the affiliate offers. They differ
-     only in words and a link, so writing a dialog per angle would be four
-     copies of the same markup drifting apart. Everything here is filled in
-     from the ADS roster in app.js, which is also the one place a new offer
-     gets added.
-
-     Two refusals, and they are not the same refusal. "Not now" is a shrug and
-     the prompt comes back in a later game. The second one is final and is
-     honoured forever — a pitch with no way to end it is the thing that makes
-     people leave rather than the thing that makes them buy.
+     Used to be filled from a rotating roster of unsolicited Premium pitches,
+     shown on a timer and a per-game budget — removed entirely, not slowed
+     down further. What is left is purely reactive: it opens only because
+     somebody tapped a locked feature or a "try it free" link (see
+     goPremium() in app.js), and says what that one thing unlocks. One way
+     out, same as any other sheet.
      =========================================================================== -->
 <dialog class="sheet enjoy-sheet" id="ad-sheet" aria-labelledby="ad-title">
   <button class="sheet-x" id="ad-close" aria-label="Close">&times;</button>
@@ -1931,8 +2616,43 @@
   <p class="fine" id="ad-fine"></p>
   <div class="enjoy-actions">
     <a class="go go-sm" id="ad-go" target="_blank" rel="noopener noreferrer"></a>
-    <button class="quiet" id="ad-later" type="button">Not now</button>
-    <button class="quiet" id="ad-never" type="button"></button>
+  </div>
+</dialog>
+
+<!-- ===========================================================================
+     THE COMEBACK ANNOUNCEMENT — said once, ever, to somebody genuinely
+     coming back on a later day (see returningDay() in app.js). Not on the
+     usual roster and never about money: this is the one place in the app
+     that says "we built something new," and it is said once in a profile's
+     whole lifetime so it never curdles into an ad.
+
+     No corner "x". Three ways out, not one: the first button goes to the
+     invite card, through real sign-in first if that is not done yet (see
+     app.js — its label says which, "See my invite link" or "Sign in for
+     my link", so it is never a guess what tapping it does). "Play the
+     game" goes straight back to a decision, and "Skip" is the pure
+     dismissal — the only one of the three disabled for
+     the first five seconds, long enough to actually read three sentences,
+     short enough that nobody is trapped. The hold is shown two ways at
+     once, not left to a digit nobody is watching: a solid bar under the
+     button that visibly drains over the same five seconds, driven by a
+     single CSS transition rather than a redraw every tick, so the motion
+     reads as continuous rather than as a clock ticking down. A bar of its
+     own, not a tint behind the label, because a tint behind text has to
+     fight that text for contrast and a thing meant to be unmissable should
+     not be the thing most likely to end up unreadable.
+     =========================================================================== -->
+<dialog class="sheet enjoy-sheet" id="comeback-sheet" aria-labelledby="comeback-title">
+  <span class="sheet-art" aria-hidden="true">🎉</span>
+  <h2 class="sheet-name" id="comeback-title"></h2>
+  <p class="sheet-note" id="comeback-body"></p>
+  <div class="enjoy-actions">
+    <button class="go go-sm" id="comeback-go" type="button"></button>
+    <button class="quiet" id="comeback-play" type="button"></button>
+    <span class="skip-timer-wrap">
+      <button class="quiet" id="comeback-skip" type="button" disabled></button>
+      <span class="skip-timer-track" aria-hidden="true"><span class="skip-timer-fill" id="comeback-skip-fill"></span></span>
+    </span>
   </div>
 </dialog>
 
@@ -1966,24 +2686,6 @@
     <div class="enjoy-actions">
       <button class="go go-sm" id="share-done-ok" type="button">Carry on</button>
     </div>
-  </div>
-</dialog>
-
-<dialog class="sheet enjoy-sheet" id="earn-sheet" aria-labelledby="earn-title">
-  <button class="sheet-x" id="earn-close" aria-label="Close">&times;</button>
-  <span class="sheet-art" aria-hidden="true">&#128176;</span>
-  <h2 class="sheet-name" id="earn-title">Want to earn some money?</h2>
-  <!-- Opens with what this person has actually done, filled in by app.js. A
-       pitch that starts by telling you something true about yourself is read;
-       one that starts "if you like morsels45" is skipped, because it opens by
-       admitting it does not know. -->
-  <p class="sheet-note" id="earn-lead"></p>
-  <p class="sheet-note">Share your link, and when somebody signs up through it you take a
-  cut &mdash; for as long as they stay.</p>
-  <p class="fine">Free to join, nothing to pay, and it costs the people you send nothing extra.</p>
-  <div class="enjoy-actions">
-    <a class="go go-sm" id="earn-go" href="https://whop.com/morsels45/affiliates" target="_blank" rel="noopener noreferrer">Show me how</a>
-    <button class="quiet" id="earn-no" type="button">Not for me</button>
   </div>
 </dialog>
 
@@ -2085,7 +2787,13 @@
   </div>
 
   <div class="cook-foot">
-    <button class="quiet" id="cook-along-btn">Cook along <span class="tag-premium">Premium</span></button>
+    <!-- Hyperbeam-powered — upgraded from a quiet text link, same reasoning
+         as #reward-together below: this is the one part of the app that
+         costs real money to run, and it was reading as a footnote. -->
+    <button class="go go-sm go-alt" id="cook-along-btn">
+      <span class="go-label">Cook along <span class="tag-premium">Premium</span></span>
+    </button>
+    <button class="link-btn beam-help-link" type="button">What&rsquo;s this?</button>
     <button class="quiet" id="cook-prev">Back</button>
     <button class="go go-sm" id="cook-next">
       <span class="go-label">Next step</span>
@@ -2093,6 +2801,46 @@
         <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
       </span>
     </button>
+  </div>
+</dialog>
+
+<!-- ===================================================================
+     WHAT THE SHARED BROWSER IS, AND WHERE IT LIVES.
+     It was the defining feature and the least understood one: four buttons
+     in four corners of the app, each named for what it does there, and
+     nothing anywhere saying they were the same thing or how to use it. Every
+     one of them now has a "What's this?" that opens this.
+     =================================================================== -->
+<dialog class="sheet beam-help" id="beam-help" aria-label="The shared browser">
+  <p class="mechanic">Premium</p>
+  <h2 class="sheet-name">The shared browser</h2>
+  <p>A real web browser, running in the cloud, that two of you use at the same time &mdash; each
+  from your own phone, each with your own cursor. You open it here, send the other person a link,
+  and whatever either of you does, both of you see. No screen-sharing, no passing one phone round
+  the table.</p>
+
+  <h3 class="strip-title">Where you&rsquo;ll find it</h3>
+  <ol class="beam-places">
+    <li><b>&#x1F6F5; Order it together</b> &mdash; on the answer screen, once you accept a dish.
+    Opens a delivery site on that dish so you can both pick and pay in one basket.</li>
+    <li><b>&#x1F4CD; Order from here</b> &mdash; in <b>Nearby</b>, on any restaurant. Opens that
+    place&rsquo;s own ordering page.</li>
+    <li><b>&#x1F9D1;&#x200D;&#x1F373; Cook along</b> &mdash; in <b>cook mode</b>, on any recipe. One
+    cooking video, in step, in two kitchens.</li>
+    <li><b>&#x1F6D2; Shop it together</b> &mdash; on any <b>shopping list</b>: a recipe&rsquo;s, or
+    your whole week&rsquo;s in the <b>Planner</b>. One supermarket basket, filled by both of you.</li>
+  </ol>
+
+  <h3 class="strip-title">How to use it</h3>
+  <ol class="beam-steps">
+    <li>Tap one of those buttons. The browser opens here in a few seconds.</li>
+    <li>Tap <b>Copy link</b> and send it to whoever you&rsquo;re with.</li>
+    <li>They open it on their phone or laptop &mdash; nothing to install &mdash; and you each get a cursor.</li>
+  </ol>
+  <p class="fine">It is part of Premium because it is a real computer running for you while it is
+  open: the one part of morsels45 that costs real money by the minute.</p>
+  <div class="sheet-actions">
+    <button class="go go-sm" id="beam-help-close" type="button"><span class="go-label">Got it</span></button>
   </div>
 </dialog>
 
@@ -2104,7 +2852,10 @@
   <ul class="shopping" id="list-items"></ul>
   <div class="sheet-actions">
     <button class="quiet" id="list-copy">Copy the list</button>
-    <button class="quiet" id="list-shop-btn">Shop it together <span class="tag-premium">Premium</span></button>
+    <button class="go go-sm go-alt" id="list-shop-btn">
+      <span class="go-label">Shop it together <span class="tag-premium">Premium</span></span>
+    </button>
+    <button class="link-btn beam-help-link" type="button">What&rsquo;s this?</button>
   </div>
 </dialog>
 
@@ -2172,13 +2923,14 @@
 <script src="js/config.js"></script>
 <!-- Premium is the site's own Whop session, asked through /api/premium-status —
      no licence key, no per-browser account. -->
-<script src="js/i18n.js"></script>
 <script src="js/premium.js"></script>
 <script src="js/progress.js"></script>
 <script src="js/sound.js"></script>
 <script src="js/confetti.js"></script>
 <script src="js/places.js"></script>
 <script src="js/mapview.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/app.js"></script>
+<script src="js/hub.js"></script>
 </body>
 </html>

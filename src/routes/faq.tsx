@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
 import { JsonLd } from '#/components/JsonLd'
-import { DISH_COUNT, OFFER, pageHead } from '#/lib/site'
+import { DIET_FREE, DIET_FREE_WHY, DISH_COUNT, OFFER, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 export const Route = createFileRoute('/faq')({
@@ -10,8 +10,9 @@ export const Route = createFileRoute('/faq')({
   head: () =>
     pageHead({
       path: '/faq',
-      title: 'FAQ — morsels45',
-      description: 'What is free, what Premium adds, how Always avoid works, and how to cancel.',
+      title: 'morsels45 FAQ — what’s free, food rules and cancelling',
+      description:
+        'Answers about morsels45: what’s free, what an account and Premium add, how the food rules (halal, kosher, vegetarian, allergies) work, and how to cancel.',
     }),
   component: FaqPage,
 })
@@ -23,15 +24,19 @@ const FAQS: [string, string][] = [
   ],
   [
     'What does Premium add?',
-    `Always avoid, Knockout, Blitz, This or that, Shortlist, Together, Swipe, order it together, cook along, shop the list together, meal slot, heat dial, mix-it-up, a side with that, don’t repeat this week, guest at the table, cook mode, unlimited saved dishes, cook-from-your-kitchen, a planned week, extra palettes, and picks that follow what you have actually liked. ${OFFER}, cancel any time.`,
+    `Knockout, Blitz, This or that, Shortlist, Together, Swipe, order it together, cook along, shop the list together, meal slot, heat dial, mix-it-up, a side with that, don’t repeat this week, guest at the table, cook mode, unlimited saved dishes, cook-from-your-kitchen, a planned week, extra palettes, and picks that follow what you have actually liked. ${OFFER}, cancel any time.`,
   ],
   [
-    'Can I tell it what I do not eat, without paying?',
-    'Yes. The six standing rules — no meat, no seafood, no cheese, nothing spicy, nothing fried, no caffeine — are free, and they apply to every decision, Tonight’s pick included. An app that keeps offering a vegetarian steak until they pay is not a trial, it is broken. Premium adds banning any tag you like on top of those six, striking a named dish off for good, a guest’s rules for one sitting, and the heat dial.',
+    'Can I tell it what I do not eat — including halal or kosher — without paying?',
+    `${DIET_FREE} It holds for every decision, every mode and every list — Tonight’s pick, the shortlist, the week plan and the daily shelf included. ${DIET_FREE_WHY}`,
+  ],
+  [
+    'Can two of us decide together?',
+    'Yes, and it does not take two subscriptions. Together asks each of you five either-ors on the same phone and lands on the one dish you can both live with, in about twenty seconds; the shared browser then orders it with a cursor each. Both are part of the one Premium plan. There is no separate two-person subscription — there was one briefly, nobody bought it, and covering the person you eat with turned out to be a feature rather than a billing arrangement.',
   ],
   [
     'Do I need an account?',
-    'Not to play. Sign in with Whop when you want Premium to follow you to another device — it is bound to the Whop account you pay with, not to a licence key or this browser.',
+    'Not to play. Sign in with Whop when you want Premium to be on at another device — it is bound to the Whop account you pay with, not to a licence key or this browser. The features travel; what the game has learned about you does not, which is the next question down.',
   ],
   [
     'I paid. Why is it still locked?',

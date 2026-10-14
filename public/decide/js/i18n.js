@@ -52,14 +52,14 @@ window.I18n = (function () {
       'top.premium': 'Premium', 'top.signin': 'Log masuk',
       'lang.title': 'Pilih bahasa anda',
       'lang.eyebrow': 'Bahasa',
-      'lang.sub': 'Aplikasi bertukar serta-merta. Anda boleh menukarnya bila-bila masa dari tab ini.',
+      'lang.sub': 'Aplikasi bertukar serta-merta. Anda boleh menukarnya bila-bila masa dari tab Profil.',
       'lang.note': 'Hidangan, resipi dan berita kekal dalam bahasa Inggeris buat masa ini — pelayar anda boleh menterjemahkannya jika anda minta.',
       'lang.ai': 'Jawapan daripada AI akan datang dalam bahasa anda.',
       'lang.warn': 'Halaman ini telah diterjemahkan. Ada bahagian yang mungkin kedengaran janggal atau tidak tepat — teks asal dalam bahasa Inggeris.',
       'lang.current': 'Sedang digunakan',
       'lang.choose': 'Teruskan',
-      'landing.ask': 'Anda lapar.<br>Anda tak tahu nak makan apa.<br><em>Tak apa — mungkin saya tahu.</em>',
-      'landing.sub': 'Beberapa soalan mudah — manis atau masin, panas atau sejuk, guna tangan atau sudu garpu — dan kami akan cari apa yang anda benar-benar teringin. Biasanya dalam lapan soalan.',
+      'landing.ask': 'Anda lapar.<br>Anda tak tahu nak makan apa.<br><em>Itulah gunanya saya.</em>',
+      'landing.sub': 'Beberapa soalan pilih-satu yang mudah — manis atau masin, panas atau sejuk. Kemudian satu jawapan, lengkap dengan resipinya. Hampir tapi belum tepat? Minta yang lebih ringan, lebih pedas, lebih cepat, dan saya jawab semula begitu.',
       'landing.start': 'Pilihkan untuk saya',
       'landing.tonight': 'Pilihan malam ini',
       'landing.browse': 'Lihat menu',
@@ -79,8 +79,7 @@ window.I18n = (function () {
       'btn.back': 'Kembali', 'btn.done': 'Selesai', 'btn.tryagain': 'Cuba lagi',
       'btn.startover': 'Mula semula', 'btn.nevermind': 'Tak apa, kembali',
       'btn.decideagain': 'Pilih lagi', 'btn.yes': 'Ya', 'btn.no': 'Tidak',
-      'btn.either': 'Mana-mana', 'btn.neither': 'Tak kedua-duanya',
-      'ad.later': 'Tidak sekarang', 'ad.never.aff': 'Bukan untuk saya', 'ad.never.plus': 'Tidak berminat'
+      'btn.either': 'Mana-mana', 'btn.neither': 'Tak kedua-duanya'
     },
     th: {
       'nav.decide': 'ตัดสินใจ', 'nav.dishes': 'อาหาร', 'nav.menu': 'เมนู',
@@ -89,14 +88,14 @@ window.I18n = (function () {
       'top.premium': 'Premium', 'top.signin': 'เข้าสู่ระบบ',
       'lang.title': 'เลือกภาษาของคุณ',
       'lang.eyebrow': 'ภาษา',
-      'lang.sub': 'แอปเปลี่ยนภาษาทันที คุณเปลี่ยนได้ทุกเมื่อจากแท็บนี้',
+      'lang.sub': 'แอปเปลี่ยนภาษาทันที คุณเปลี่ยนได้ทุกเมื่อจากแท็บโปรไฟล์',
       'lang.note': 'อาหาร สูตร และข่าวยังเป็นภาษาอังกฤษไปก่อน — เบราว์เซอร์ของคุณแปลให้ได้หากคุณสั่ง',
       'lang.ai': 'คำตอบจาก AI จะมาเป็นภาษาของคุณ',
       'lang.warn': 'หน้านี้ถูกแปลแล้ว บางส่วนอาจอ่านแปลกหรือไม่ถูกต้อง — ต้นฉบับเป็นภาษาอังกฤษ',
       'lang.current': 'ใช้อยู่',
       'lang.choose': 'ต่อไป',
-      'landing.ask': 'คุณหิว<br>แต่ไม่รู้ว่าอยากกินอะไร<br><em>ไม่เป็นไร — บางทีฉันอาจรู้</em>',
-      'landing.sub': 'คำถามง่าย ๆ ไม่กี่ข้อ — หวานหรือเค็ม ร้อนหรือเย็น ใช้มือหรือช้อนส้อม — แล้วเราจะหาให้ว่าคุณอยากกินอะไรจริง ๆ โดยปกติประมาณแปดข้อ',
+      'landing.ask': 'คุณหิว<br>แต่ไม่รู้ว่าอยากกินอะไร<br><em>นั่นแหละคือหน้าที่ของฉัน</em>',
+      'landing.sub': 'คำถามเลือกข้อใดข้อหนึ่งง่าย ๆ ไม่กี่ข้อ — หวานหรือเค็ม ร้อนหรือเย็น แล้วได้คำตอบเดียวพร้อมสูตรอาหาร ใกล้เคียงแต่ยังไม่ใช่? บอกให้เบาลง เผ็ดขึ้น หรือเร็วขึ้น แล้วฉันจะตอบใหม่ตามนั้น',
       'landing.start': 'ตัดสินใจให้ฉัน',
       'landing.tonight': 'เมนูเด็ดคืนนี้',
       'landing.browse': 'ดูเมนู',
@@ -116,8 +115,7 @@ window.I18n = (function () {
       'btn.back': 'กลับ', 'btn.done': 'เสร็จสิ้น', 'btn.tryagain': 'ลองอีกครั้ง',
       'btn.startover': 'เริ่มใหม่', 'btn.nevermind': 'ช่างเถอะ ย้อนกลับ',
       'btn.decideagain': 'ตัดสินใจอีกครั้ง', 'btn.yes': 'ใช่', 'btn.no': 'ไม่',
-      'btn.either': 'อะไรก็ได้', 'btn.neither': 'ไม่ทั้งสองอย่าง',
-      'ad.later': 'ไม่ใช่ตอนนี้', 'ad.never.aff': 'ไม่สนใจ', 'ad.never.plus': 'ไม่สนใจ'
+      'btn.either': 'อะไรก็ได้', 'btn.neither': 'ไม่ทั้งสองอย่าง'
     },
     hi: {
       'nav.decide': 'चुनें', 'nav.dishes': 'व्यंजन', 'nav.menu': 'मेन्यू',
@@ -126,14 +124,14 @@ window.I18n = (function () {
       'top.premium': 'Premium', 'top.signin': 'साइन इन',
       'lang.title': 'अपनी भाषा चुनें',
       'lang.eyebrow': 'भाषा',
-      'lang.sub': 'ऐप तुरंत बदल जाता है। आप जब चाहें इस टैब से इसे फिर बदल सकते हैं।',
+      'lang.sub': 'ऐप तुरंत बदल जाता है। आप जब चाहें प्रोफ़ाइल टैब से इसे फिर बदल सकते हैं।',
       'lang.note': 'व्यंजन, रेसिपी और खबरें अभी अंग्रेज़ी में ही रहेंगी — आप कहें तो आपका ब्राउज़र इनका अनुवाद कर सकता है।',
       'lang.ai': 'AI के जवाब आपकी भाषा में आएँगे।',
       'lang.warn': 'इस पेज का अनुवाद किया गया है। कुछ हिस्से अटपटे या गलत लग सकते हैं — मूल पाठ अंग्रेज़ी में है।',
       'lang.current': 'चालू',
       'lang.choose': 'आगे बढ़ें',
-      'landing.ask': 'आपको भूख लगी है।<br>पता नहीं क्या खाना है।<br><em>कोई बात नहीं — शायद मुझे पता हो।</em>',
-      'landing.sub': 'कुछ आसान सवाल — मीठा या नमकीन, गरम या ठंडा, हाथ से या चम्मच से — और हम पता लगा लेंगे कि आपका सच में क्या खाने का मन है। आम तौर पर लगभग आठ सवालों में।',
+      'landing.ask': 'आपको भूख लगी है।<br>पता नहीं क्या खाना है।<br><em>इसीलिए तो मैं हूँ।</em>',
+      'landing.sub': 'कुछ आसान या-तो-वह सवाल — मीठा या नमकीन, गरम या ठंडा। फिर एक जवाब, साथ में रेसिपी। करीब है पर ठीक नहीं? हल्का, तीखा या जल्दी बनने वाला बताइए, और जवाब उसी हिसाब से फिर बदल जाएगा।',
       'landing.start': 'मेरे लिए चुनो',
       'landing.tonight': 'आज रात की पसंद',
       'landing.browse': 'मेन्यू देखें',
@@ -162,14 +160,14 @@ window.I18n = (function () {
       'top.premium': 'Premium', 'top.signin': 'تسجيل الدخول',
       'lang.title': 'اختر لغتك',
       'lang.eyebrow': 'اللغة',
-      'lang.sub': 'يتغيّر التطبيق فورًا. يمكنك تغييرها في أي وقت من هذا التبويب.',
+      'lang.sub': 'يتغيّر التطبيق فورًا. يمكنك تغييرها في أي وقت من الملف الشخصي.',
       'lang.note': 'تبقى الأطباق والوصفات والأخبار بالإنجليزية في الوقت الحالي — يستطيع متصفحك ترجمتها إن طلبت منه ذلك.',
       'lang.ai': 'ستصلك إجابات الذكاء الاصطناعي بلغتك.',
       'lang.warn': 'تمت ترجمة هذه الصفحة. قد يبدو بعضها غريبًا أو غير دقيق — النص الأصلي بالإنجليزية.',
       'lang.current': 'قيد الاستخدام',
       'lang.choose': 'متابعة',
-      'landing.ask': 'أنت جائع.<br>ولا تعرف ماذا تريد أن تأكل.<br><em>لا بأس — ربما أعرف أنا.</em>',
-      'landing.sub': 'بضعة أسئلة سهلة — حلو أم مالح، ساخن أم بارد، باليد أم بالشوكة — ونعرف ما تشتهيه فعلًا. عادةً في نحو ثمانية أسئلة.',
+      'landing.ask': 'أنت جائع.<br>ولا تعرف ماذا تريد أن تأكل.<br><em>وهذا ما وُجدت من أجله.</em>',
+      'landing.sub': 'بضعة أسئلة سهلة من نوع «هذا أم ذاك» — حلو أم مالح، ساخن أم بارد. ثم إجابة واحدة، ومعها الوصفة. قريب لكن ليس تمامًا؟ اطلب أخفّ أو أحرّ أو أسرع، وسأجيب من جديد على هذا الأساس.',
       'landing.start': 'قرّر عني',
       'landing.tonight': 'اختيار الليلة',
       'landing.browse': 'تصفّح القائمة',
@@ -189,125 +187,7 @@ window.I18n = (function () {
       'btn.back': 'رجوع', 'btn.done': 'تم', 'btn.tryagain': 'حاول مرة أخرى',
       'btn.startover': 'ابدأ من جديد', 'btn.nevermind': 'لا بأس، ارجع',
       'btn.decideagain': 'قرّر مجددًا', 'btn.yes': 'نعم', 'btn.no': 'لا',
-      'btn.either': 'أيّهما', 'btn.neither': 'لا هذا ولا ذاك',
-      'ad.later': 'ليس الآن', 'ad.never.aff': 'لا يهمني', 'ad.never.plus': 'غير مهتم'
-    }
-  };
-
-  /*
-   * The ads, translated — Malay, Thai and Arabic only.
-   *
-   * NOT HINDI, ON PURPOSE. The offers are shown in English to a Hindi reader,
-   * buttons included, so an offer never arrives half in one language. Anything
-   * absent here falls back to the English written in app.js's ADS roster, which
-   * is also why a new ad needs no entry here to work: it simply shows in
-   * English until somebody writes it.
-   *
-   * Keyed by the ad's id, each as [title, body, fine, cta]. No figure is added
-   * or changed in translation — the $3.45 is the one the English carries.
-   */
-  var ADS = {
-    ms: {
-      'plus-takeaway': ['Lebih murah daripada satu pesanan bawa pulang',
-        'Premium memberi anda enam lagi cara bermain, mod masak, pembina menu, dan peraturan yang tidak pernah ditanya dua kali. Sebulan penuh harganya kurang daripada satu pesanan penghantaran.',
-        'Tujuh hari percuma dahulu. Permainan yang anda main kekal percuma sama ada anda langgan atau tidak.',
-        'Tujuh hari percuma'],
-      'plus-modes': ['Ada enam lagi permainan di sini',
-        'Knockout, Blitz, Ini atau itu, Senarai pendek, Swipe dan Bersama — semuanya menunggu di sebalik satu suis. Katalog yang sama, enam cara berbeza untuk berbalah mengenainya.',
-        'Tujuh hari percuma, kemudian $3.45 sebulan.',
-        'Jenguk sekejap'],
-      'aff-tell': ['Dapat bayaran kerana bercerita',
-        'morsels45 ada program affiliate. Kongsi pautan anda sendiri, dan apabila seseorang mendaftar melaluinya, anda dapat bahagian — selagi mereka kekal.',
-        'Percuma untuk sertai, tiada apa untuk dibayar, dan orang yang anda hantar tidak dikenakan kos tambahan.',
-        'Tunjukkan caranya'],
-      'aff-already': ['Anda sudah pun mengesyorkannya',
-        'Setiap kali anda menyelesaikan pertengkaran tentang makan malam dengan ini, ada orang lain yang mendengarnya. Dengan pautan di tangan, ia bernilai untuk anda juga, bukan hanya untuk mereka.',
-        'Mengambil masa seminit untuk disediakan dan tiada apa untuk dibayar.',
-        'Dapatkan pautan saya'],
-      'aff-recurring': ['Dibayar selagi mereka kekal',
-        'Bahagian itu bukan yuran sekali sahaja. Daftarkan seseorang dan anda terus menerima pendapatan daripada mereka setiap bulan mereka terus menggunakannya.',
-        'Tiada apa untuk dibayar, tiada apa untuk dihantar, dan tiada minimum.',
-        'Lihat syarat'],
-      'aff-nothing-to-sell': ['Tiada apa untuk dibeli, tiada apa untuk disiarkan',
-        'Ini bukan jenis yang menyuruh anda membeli kit atau menyiarkan apa-apa di media sosial. Ia cuma pautan. Anda hantar kepada orang yang tak boleh decide nak makan apa, iaitu semua orang.',
-        'Percuma untuk sertai dan anda boleh berhenti bila-bila masa.',
-        'Dapatkan pautan saya'],
-      'aff-group': ['Satu pautan untuk satu kumpulan sembang',
-        'Pautan yang sama tidak luput dan tidak kisah berapa ramai yang menggunakannya. Letakkan di tempat yang beberapa orang akan nampak sekali, bukannya menghantarnya berulang kali.',
-        'Percuma untuk sertai, dan orang yang anda hantar tidak dikenakan kos tambahan.',
-        'Tunjukkan caranya'],
-      'aff-cancel': ['Pautan anda kekal walaupun anda berhenti membayar',
-        'Program affiliate bukan sebahagian daripada Premium. Sertai dengan versi percuma, kekalkan jika anda membatalkan langganan, dan terus menerima pendapatan sama ada anda langgan atau tidak.',
-        'Tiada bayaran untuk menjadi affiliate, selama-lamanya.',
-        'Sertai sekarang']
-    },
-    th: {
-      'plus-takeaway': ['ถูกกว่าค่าสั่งอาหารกลับบ้านหนึ่งมื้อ',
-        'Premium คือโหมดการเล่นอีกหกแบบ โหมดทำอาหาร เครื่องมือสร้างเมนู และกติกาที่จะไม่ถามคุณซ้ำสอง ทั้งเดือนราคาถูกกว่าค่าสั่งเดลิเวอรีเพียงครั้งเดียว',
-        'ลองฟรีเจ็ดวันก่อน เกมที่คุณเล่นอยู่ยังฟรีเหมือนเดิมไม่ว่าคุณจะสมัครหรือไม่',
-        'ลองฟรีเจ็ดวัน'],
-      'plus-modes': ['ข้างในยังมีอีกหกเกม',
-        'Knockout, Blitz, This or that, Shortlist, Swipe และ Together ซ่อนอยู่หลังสวิตช์เดียว รายการอาหารชุดเดิม แต่มีหกวิธีให้เถียงกันไม่ซ้ำ',
-        'ฟรีเจ็ดวัน จากนั้น $3.45 ต่อเดือน',
-        'ลองดู'],
-      'aff-tell': ['ได้เงินแค่บอกต่อ',
-        'morsels45 มีโปรแกรมพันธมิตร (affiliate) แชร์ลิงก์ของคุณเอง เมื่อมีคนสมัครผ่านลิงก์นั้น คุณจะได้ส่วนแบ่ง — ตราบเท่าที่เขายังใช้อยู่',
-        'สมัครฟรี ไม่มีค่าใช้จ่าย และคนที่คุณส่งให้ไม่ต้องจ่ายเพิ่มแม้แต่บาท',
-        'ดูวิธี'],
-      'aff-already': ['คุณแนะนำมันอยู่แล้ว',
-        'ทุกครั้งที่คุณใช้มันยุติการเถียงเรื่องมื้อเย็น จะมีอีกคนได้ยินเรื่องนี้ พอมีลิงก์อยู่ในมือ มันก็มีค่าสำหรับคุณด้วย ไม่ใช่แค่สำหรับเขา',
-        'ตั้งค่าไม่ถึงหนึ่งนาที และไม่มีค่าใช้จ่าย',
-        'รับลิงก์ของฉัน'],
-      'aff-recurring': ['จ่ายให้ตราบเท่าที่เขายังอยู่',
-        'ส่วนแบ่งนี้ไม่ใช่ค่าแนะนำครั้งเดียว ชวนใครสักคนมาสมัคร แล้วคุณจะได้รายได้จากเขาทุกเดือนที่เขายังใช้งานอยู่',
-        'ไม่มีค่าใช้จ่าย ไม่ต้องส่งของ และไม่มีขั้นต่ำ',
-        'ดูเงื่อนไข'],
-      'aff-nothing-to-sell': ['ไม่ต้องซื้อ ไม่ต้องโพสต์',
-        'ไม่ใช่แบบที่ต้องซื้อชุดสินค้าหรือโพสต์อะไรบนโซเชียลมีเดีย มันคือลิงก์ลิงก์เดียว ส่งให้คนที่ตัดสินใจไม่ได้ว่าจะกินอะไร ซึ่งก็คือทุกคน',
-        'สมัครฟรี และเลิกได้ทุกเมื่อ',
-        'รับลิงก์ของฉัน'],
-      'aff-group': ['ลิงก์เดียว ใช้ได้ทั้งกลุ่มแชต',
-        'ลิงก์เดิมไม่มีวันหมดอายุ และไม่สนว่าจะมีกี่คนใช้ ฝากไว้ในที่ที่คนหลายคนจะเห็นครั้งเดียว แทนที่จะส่งซ้ำแล้วซ้ำอีก',
-        'สมัครฟรี และคนที่คุณส่งให้ไม่ต้องจ่ายเพิ่ม',
-        'ดูวิธี'],
-      'aff-cancel': ['เลิกจ่ายแล้ว ลิงก์ของคุณยังอยู่',
-        'โปรแกรมพันธมิตรไม่ได้เป็นส่วนหนึ่งของ Premium สมัครด้วยเวอร์ชันฟรีได้ ยกเลิกแล้วยังเก็บไว้ได้ และยังได้รายได้ต่อไปไม่ว่าอย่างไร',
-        'การเป็นพันธมิตรไม่มีค่าใช้จ่าย ตลอดไป',
-        'เข้าร่วม']
-    },
-    ar: {
-      'plus-takeaway': ['أقل من طلب توصيل واحد',
-        'يمنحك Premium ست طرق لعب إضافية، ووضع الطبخ، وأداة بناء القوائم، وقواعد لا تسألك عنها مرتين. شهر كامل منه يكلّف أقل من طلب توصيل واحد.',
-        'سبعة أيام مجانًا أولًا. تبقى اللعبة التي تلعبها مجانية في الحالتين.',
-        'سبعة أيام مجانًا'],
-      'plus-modes': ['هنا ست ألعاب أخرى',
-        'Knockout وBlitz وThis or that وShortlist وSwipe وTogether — كلها خلف مفتاح واحد. الكتالوج نفسه، وست طرق مختلفة للجدال حوله.',
-        'سبعة أيام مجانًا، ثم 3.45$ في الشهر.',
-        'ألقِ نظرة'],
-      'aff-tell': ['احصل على أجر مقابل إخبار الناس',
-        'لدى morsels45 برنامج شراكة بالعمولة. شارك رابطك الخاص، وعندما يشترك أحدهم من خلاله تحصل على حصة — ما دام مستمرًا.',
-        'الانضمام مجاني، ولا شيء تدفعه، ولا يكلّف من ترسل إليهم أي شيء إضافي.',
-        'أرني الطريقة'],
-      'aff-already': ['أنت توصي به أصلًا',
-        'في كل مرة تحسم فيها نقاشًا حول العشاء بهذا التطبيق، يسمع عنه شخص آخر. وبوجود رابط في يدك، يصبح لذلك قيمة لك أنت أيضًا، لا لهم وحدهم.',
-        'يستغرق إعداده دقيقة، ولا شيء تدفعه.',
-        'احصل على رابطي'],
-      'aff-recurring': ['يدفع لك ما دام مشتركًا',
-        'الحصة ليست مكافأة لمرة واحدة. اشترك أحدهم وستواصل الكسب منه كل شهر يواصل فيه الاستخدام.',
-        'لا شيء تدفعه، ولا شيء تشحنه، ولا حدّ أدنى.',
-        'اطّلع على الشروط'],
-      'aff-nothing-to-sell': ['لا شيء لتشتريه، ولا شيء لتنشره',
-        'هذا ليس من ذلك النوع الذي يطلب منك شراء حقيبة أو نشر أي شيء على وسائل التواصل. إنه رابط فقط. ترسله إلى من لا يستطيعون تقرير ما يأكلونه، أي إلى الجميع.',
-        'الانضمام مجاني، ويمكنك التوقف في أي وقت.',
-        'احصل على رابطي'],
-      'aff-group': ['رابط واحد يكفي مجموعة دردشة كاملة',
-        'الرابط نفسه لا ينتهي ولا يهمّه كم شخصًا يستخدمه. ضعه في مكان يراه فيه عدة أشخاص مرة واحدة، بدل إرساله مرارًا وتكرارًا.',
-        'الانضمام مجاني، ولا يكلّف من ترسل إليهم أي شيء إضافي.',
-        'أرني الطريقة'],
-      'aff-cancel': ['رابطك يبقى معك إن توقفت عن الدفع',
-        'برنامج الشراكة ليس جزءًا من Premium. انضم عبر النسخة المجانية، واحتفظ به إن ألغيت اشتراكك، وواصل الكسب في الحالتين.',
-        'لا شيء تدفعه لتكون شريكًا، أبدًا.',
-        'انضم']
+      'btn.either': 'أيّهما', 'btn.neither': 'لا هذا ولا ذاك'
     }
   };
 
@@ -382,28 +262,8 @@ window.I18n = (function () {
     if (asHtml) el.innerHTML = out; else el.textContent = out;
   }
 
-  /*
-   * One ad in the current language, or the very object it was given if there
-   * is nothing written for this language — which is the whole of the fallback,
-   * and why Hindi, which has no ads here, simply sees the English ones.
-   */
-  function ad(card) {
-    var set = ADS[lang];
-    var row = set && set[card.id];
-    if (!row) return card;
-    return {
-      id: card.id, kind: card.kind, icon: card.icon,
-      title: row[0], body: row[1], fine: row[2], cta: row[3]
-    };
-  }
-
-  /* Whether this language has its own ads, for the button labels around them. */
-  function hasAds() { return !!ADS[lang]; }
-
   return {
     LANGS: LANGS,
-    ad: ad,
-    hasAds: hasAds,
     t: t,
     apply: apply,
     guess: guess,

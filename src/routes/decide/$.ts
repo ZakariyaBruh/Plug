@@ -25,6 +25,7 @@ import progressJs from '../../../public/decide/js/progress.js?raw'
 import recipesJs from '../../../public/decide/js/recipes.js?raw'
 import soundJs from '../../../public/decide/js/sound.js?raw'
 import tasteJs from '../../../public/decide/js/taste.js?raw'
+import hubJs from '../../../public/decide/js/hub.js?raw'
 import manifestJson from '../../../public/decide/manifest.webmanifest?raw'
 import iconSvg from '../../../public/decide/icon.svg?raw'
 import iconMaskableSvg from '../../../public/decide/icon-maskable.svg?raw'
@@ -55,11 +56,13 @@ import swJsRaw from '../../../public/decide/sw.js?raw'
  * exists to be different, not to be read.
  */
 import { BUILD } from 'virtual:build-id'
+import { CLARITY_ID, GA4_ID, GA4_ON, REPLAY_ON } from '#/lib/site'
 
 const VERSIONED = [
   'styles.css', 'js/app.js', 'js/confetti.js', 'js/config.js', 'js/data.js',
-  'js/engine.js', 'js/flavor.js', 'js/i18n.js', 'js/mapview.js', 'js/places.js',
-  'js/premium.js', 'js/progress.js', 'js/recipes.js', 'js/sound.js', 'js/taste.js',
+  'js/engine.js', 'js/flavor.js', 'js/i18n.js', 'js/mapview.js', 'js/places.js', 'js/premium.js',
+  'js/progress.js', 'js/recipes.js', 'js/sound.js',
+  'js/taste.js', 'js/hub.js',
 ]
 
 function stampUrls(text: string, quote: string): string {
@@ -70,7 +73,54 @@ function stampUrls(text: string, quote: string): string {
   return out
 }
 
-const page = stampUrls(indexHtml, '"')
+/*
+ * SESSION REPLAY, AND A WARNING ABOUT THIS WHOLE FILE.
+ *
+ * IN PRODUCTION, THE PAGE THIS ROUTE BUILDS IS NEVER SERVED. The build
+ * writes a stamped copy of the shell to dist/client/decide/index.html and
+ * Cloudflare's asset handler answers from that before a request reaches the
+ * worker. Both copies carry identical ?v= stamps, so the served page looks
+ * exactly like this route's output and is not — which cost a couple of hours
+ * to establish, and is written down here so it costs nobody else any.
+ *
+ * Anything the page needs therefore has to be added in vite.config.ts, in
+ * stampServiceWorker, where that static copy is written. The replay snippet
+ * lives there and is the real one.
+ *
+ * It is kept here as well, deliberately: this route is still the fallback
+ * for any request the asset handler does not answer, and a fallback that
+ * quietly serves a page without the tag the privacy page promises is on
+ * would be worse than the duplication. Same constant governs both.
+ */
+function withReplay(html: string): string {
+  if (!REPLAY_ON) return html
+  const tag =
+    '<script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};' +
+    't=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;' +
+    'y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);' +
+    `})(window,document,"clarity","script",${JSON.stringify(CLARITY_ID)});</script>`
+  // Last thing in the head, after the pixel note and before anything the app
+  // needs, so a slow third party cannot hold up the first question.
+  return html.replace('</head>', `${tag}\n</head>`)
+}
+
+/*
+ * And GA4, on the same terms as the replay tag above — including the same
+ * caveat: the copy that gets served is the one vite.config.ts stamps, and
+ * this is the fallback. Same constant governs both.
+ */
+function withGa4(html: string): string {
+  if (!GA4_ON) return html
+  const tag =
+    `<script async src="https://www.googletagmanager.com/gtag/js?id=${GA4_ID}"></script>` +
+    `<script>window.dataLayer=window.dataLayer||[];` +
+    `function gtag(){dataLayer.push(arguments);}` +
+    `gtag('js',new Date());` +
+    `gtag('config',${JSON.stringify(GA4_ID)},{anonymize_ip:true});</script>`
+  return html.replace('</head>', `${tag}\n</head>`)
+}
+
+const page = withGa4(withReplay(stampUrls(indexHtml, '"')))
 const swJs = stampUrls(swJsRaw, "'").replace('__BUILD__', BUILD)
 
 const FILES: Record<string, { body: string; type: string }> = {
@@ -91,6 +141,7 @@ const FILES: Record<string, { body: string; type: string }> = {
   'js/recipes.js': { body: recipesJs, type: 'text/javascript; charset=utf-8' },
   'js/sound.js': { body: soundJs, type: 'text/javascript; charset=utf-8' },
   'js/taste.js': { body: tasteJs, type: 'text/javascript; charset=utf-8' },
+  'js/hub.js': { body: hubJs, type: 'text/javascript; charset=utf-8' },
   'manifest.webmanifest': { body: manifestJson, type: 'application/manifest+json; charset=utf-8' },
   'icon.svg': { body: iconSvg, type: 'image/svg+xml; charset=utf-8' },
   'icon-maskable.svg': { body: iconMaskableSvg, type: 'image/svg+xml; charset=utf-8' },

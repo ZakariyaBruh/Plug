@@ -9,7 +9,7 @@ import { SITE_URL } from '#/lib/site'
  * Until now this path returned the app shell as a 200 — an HTML page where a
  * crawler asked for XML, which is worse than a 404 because it looks like an
  * answer. The pages worth finding are the four that explain the product, the
- * game itself, and one per dish: 112 pages that each answer a question
+ * game itself, and one per dish: a page each that answers a question
  * somebody actually types.
  *
  * The private pages (account, checkout, order-complete) are deliberately not
@@ -18,39 +18,39 @@ import { SITE_URL } from '#/lib/site'
 const PAGES: Array<[path: string, priority: string]> = [
   ['/', '1.0'],
   ['/decide/', '0.9'],
-  // The hub that makes the 112 dish pages reachable. It was missing here for
+  // The hub that makes the dish pages reachable. It was missing here for
   // the same reason it was missing everywhere: it did not exist, and the dish
   // pages were URLs only this file knew about.
   ['/eat', '0.85'],
   ['/premium', '0.8'],
+  // Everything the site does, on one page — linked from every footer, and
+  // missing from here until now.
+  ['/info', '0.7'],
   ['/how-it-works', '0.7'],
   ['/faq', '0.6'],
+  ['/honesty', '0.4'],
   ['/privacy', '0.3'],
 ]
 
-// Injected by vite at build time — see vite.config.ts.
-declare const __BUILT_AT__: string
+// Injected by vite at build time — see PAGE_DATES in vite.config.ts.
+declare const __PAGE_DATES__: Record<string, string>
 
 /*
  * <lastmod> is the only honest lever left for asking to be recrawled. Google
  * retired the sitemap ping endpoint, so what is left is telling the truth
- * about when a page changed and being believed — and being believed is the
- * hard part. A lastmod that reads "just now" every time it is fetched is
- * noise, and a sitemap that behaves that way gets its dates ignored
- * altogether. This one is the build time: it moves when a deploy actually
- * changes the pages, and not otherwise.
+ * about when a page changed and being believed. Each date here is the last
+ * commit to the files that page is made from — not the build time, which
+ * moved all 459 dates on every deploy and taught Google to ignore them.
  */
-const LASTMOD = __BUILT_AT__
-
-function urlEntry(path: string, priority: string) {
-  return `  <url><loc>${SITE_URL}${path}</loc><lastmod>${LASTMOD}</lastmod>` +
+function urlEntry(path: string, priority: string, lastmod: string) {
+  return `  <url><loc>${SITE_URL}${path}</loc><lastmod>${lastmod}</lastmod>` +
     `<priority>${priority}</priority></url>`
 }
 
 function sitemap() {
   const entries = [
-    ...PAGES.map(([path, priority]) => urlEntry(path, priority)),
-    ...ALL_DISHES.map((dish) => urlEntry(`/eat/${dish.slug}`, '0.4')),
+    ...PAGES.map(([path, priority]) => urlEntry(path, priority, __PAGE_DATES__[path] ?? __PAGE_DATES__['/'])),
+    ...ALL_DISHES.map((dish) => urlEntry(`/eat/${dish.slug}`, '0.4', __PAGE_DATES__.dish)),
   ]
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
