@@ -1,12 +1,31 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
+import { useEffect, useState } from 'react'
 
 import { PageShell } from '#/components/PageShell'
 import { loadViewer } from '#/lib/viewer'
-import { PREMIUM_PLAN_ID } from '#/lib/products'
-import { pageHead } from '#/lib/site'
+import { checkProductAccess } from '#/lib/session'
+import { PREMIUM_PLAN_ID, PREMIUM_PRODUCT_ID } from '#/lib/products'
+import { referralStats } from '#/lib/referrals'
+import { SITE_URL, pageHead } from '#/lib/site'
+
+/*
+ * Its own server function rather than folded into loadViewer: loadViewer
+ * runs on every page on the site, and a referral lookup is only ever useful
+ * on this one. See lib/referrals.ts for what it actually means.
+ */
+const loadReferral = createServerFn({ method: 'GET' }).handler(async () => {
+  const { signedIn, user } = await checkProductAccess(PREMIUM_PRODUCT_ID)
+  if (!signedIn || !user) return null
+  const stats = await referralStats(user.sub)
+  return { link: `${SITE_URL}/decide/?ref=${user.sub}`, ...stats }
+})
 
 export const Route = createFileRoute('/account')({
-  loader: () => loadViewer(),
+  loader: async () => {
+    const [viewer, referral] = await Promise.all([loadViewer(), loadReferral()])
+    return { viewer, referral }
+  },
   head: () =>
     pageHead({
       path: '/account',
@@ -16,8 +35,64 @@ export const Route = createFileRoute('/account')({
   component: AccountPage,
 })
 
+function InviteCard({ referral }: { referral: { link: string; invited: number; qualified: number; bonusUntil: string | null } }) {
+  const [copied, setCopied] = useState(false)
+
+  return (
+    <div className="rounded-2xl border border-[var(--border)] p-6">
+      <p className="text-sm text-[var(--text-dim)]">Invite a friend, earn a day of Premium</p>
+      <p className="mt-2 text-sm text-[var(--text-dim)]">
+        Send this link. Once they sign in and play for ten minutes, you get a day of Premium — no
+        limit on how many friends.
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          navigator.clipboard?.writeText(referral.link).then(() => {
+            setCopied(true)
+            setTimeout(() => setCopied(false), 1600)
+          })
+        }}
+        className="mt-4 block w-full break-words rounded-lg border border-dashed border-[var(--amber)] px-4 py-2 text-left font-mono text-xs hover:bg-[var(--amber-soft)]"
+      >
+        {referral.link}
+      </button>
+      {copied ? <p className="mt-1 text-xs text-[var(--amber)]">Copied</p> : null}
+      <p className="mt-4 text-sm text-[var(--text-dim)]">
+        {referral.invited === 0
+          ? 'Nobody has used your link yet.'
+          : `${referral.qualified} of ${referral.invited} invited friend${referral.invited === 1 ? '' : 's'} have played long enough to earn you a day.`}
+      </p>
+      {referral.bonusUntil ? (
+        <p className="mt-2 text-sm font-semibold text-[var(--amber)]">
+          Free Premium active until {new Date(referral.bonusUntil).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}.
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+/*
+ * Read after load rather than through the router's search params: the flag
+ * comes from the sign-in callback (lib/oauth.ts) and is wiped from the
+ * address at once, so a reload does not say it again.
+ */
+function useSignInFailed() {
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('signin') !== 'failed') return
+    setFailed(true)
+    params.delete('signin')
+    const rest = params.toString()
+    window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''))
+  }, [])
+  return failed
+}
+
 function AccountPage() {
-  const viewer = Route.useLoaderData()
+  const { viewer, referral } = Route.useLoaderData()
+  const signInFailed = useSignInFailed()
 
   return (
     <PageShell user={viewer.user}>
@@ -25,15 +100,71 @@ function AccountPage() {
         <div className="mx-auto max-w-xl px-6">
           <h1 className="text-3xl font-bold">Account</h1>
 
+          {signInFailed && !viewer.signedIn ? (
+            <div role="alert" className="mt-6 rounded-2xl border-2 border-[var(--amber)] p-5">
+              <p className="font-semibold">Sign-in did not finish</p>
+              <p className="mt-2 text-[var(--text-dim)]">
+                Nothing is wrong with your account. Please try once more with the button below. If
+                it stops again, open morsels45-app.whop.site in your phone's own web browser (Safari
+                or Chrome) and sign in there.
+              </p>
+            </div>
+          ) : null}
+
           {!viewer.signedIn ? (
-            <div className="mt-8 rounded-2xl border border-[var(--border)] p-8 text-center">
-              <p className="text-[var(--text-dim)]">Sign in to see what's unlocked on this account.</p>
-              <a
-                href="/api/oauth/login?redirect_to=%2Faccount"
-                className="mt-6 inline-block rounded-full bg-[var(--amber)] px-6 py-3 font-semibold text-black hover:opacity-90 hover:scale-105 active:scale-95"
-              >
-                Sign in with Whop
-              </a>
+            <div className="mt-8 rounded-2xl border border-[var(--border)] p-8">
+              <p className="text-center text-[var(--text-dim)]">
+                Free, and nothing to pay for — here's what an account actually gets you.
+              </p>
+
+              <dl className="mt-6 space-y-5">
+                <div>
+                  <dt className="font-semibold">Invite friends, earn free Premium</dt>
+                  <dd className="mt-1 text-sm text-[var(--text-dim)]">
+                    Send your link. Once a friend signs in and plays for ten minutes, you get a day
+                    of Premium — free, and there's no limit on how many friends.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Bonus days at three and ten friends</dt>
+                  <dd className="mt-1 text-sm text-[var(--text-dim)]">
+                    Three qualified friends is worth two extra days on top of the one each already
+                    gave. Ten is worth five more.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold">Works on any device you sign into</dt>
+                  <dd className="mt-1 text-sm text-[var(--text-dim)]">
+                    Premium earned this way is tied to your account, not a browser — sign in
+                    anywhere and it's already on, same as a paid membership.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-sm">One invite link, yours for good</dt>
+                  <dd className="mt-1 text-sm text-[var(--text-dim)]">
+                    No code to request and nothing that expires — the same link works every time.
+                  </dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-sm">Track it at a glance</dt>
+                  <dd className="mt-1 text-sm text-[var(--text-dim)]">
+                    See how many friends you've invited, how many qualified, and exactly when your
+                    bonus runs out.
+                  </dd>
+                </div>
+              </dl>
+
+              <div className="mt-8 text-center">
+                <a
+                  href="/api/oauth/login?redirect_to=%2Faccount"
+                  className="inline-block rounded-full bg-[var(--amber)] px-6 py-3 font-semibold text-black hover:opacity-90 hover:scale-105 active:scale-95"
+                >
+                  Sign in with Whop
+                </a>
+                <p className="mt-3 text-xs text-[var(--text-dim)]">
+                  Free. No card, and nothing about this is a subscription.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="mt-8 space-y-6">
@@ -46,7 +177,7 @@ function AccountPage() {
 
               <div className="rounded-2xl border border-[var(--border)] p-6">
                 <p className="text-sm text-[var(--text-dim)]">Premium</p>
-                {viewer.hasPremium ? (
+                {viewer.isMember ? (
                   <>
                     <p className="mt-1 text-lg font-semibold text-[var(--amber)]">Active</p>
                     <p className="mt-2 text-sm text-[var(--text-dim)]">
@@ -69,6 +200,22 @@ function AccountPage() {
                       </a>
                     </div>
                   </>
+                ) : viewer.hasPremium ? (
+                  <>
+                    <p className="mt-1 text-lg font-semibold text-[var(--amber)]">
+                      Active — free, from referrals
+                    </p>
+                    <p className="mt-2 text-sm text-[var(--text-dim)]">
+                      Not a subscription, so there is nothing to manage or cancel. It runs out on its
+                      own unless more friends qualify.
+                    </p>
+                    <a
+                      href="/decide/"
+                      className="mt-4 inline-block text-sm font-semibold text-[var(--amber)] underline"
+                    >
+                      Play now
+                    </a>
+                  </>
                 ) : (
                   <>
                     <p className="mt-1 text-lg font-semibold">Not active</p>
@@ -82,6 +229,8 @@ function AccountPage() {
                   </>
                 )}
               </div>
+
+              {referral ? <InviteCard referral={referral} /> : null}
 
               <a
                 href="/api/oauth/logout"

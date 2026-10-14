@@ -1,6 +1,5 @@
 import { Link } from '@tanstack/react-router'
 
-import { AFFILIATES_URL } from '#/lib/site'
 
 export function SiteFooter() {
   return (
@@ -12,10 +11,20 @@ export function SiteFooter() {
             Stop scrolling. Start eating. Free to play. Premium is extra.
           </p>
         </div>
+        {/* EVERY PAGE ON THE SITE IS IN HERE, and scripts/nav-test.mjs fails
+            the build if one stops being. A footer that is nearly complete is
+            worse than one that is obviously partial: it stops anybody
+            looking. */}
         <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[var(--text-dim)]">
+          <Link to="/" className="hover:text-[var(--text)]">
+            Home
+          </Link>
           <a href="/decide/" className="hover:text-[var(--text)]">
             Play
           </a>
+          <Link to="/info" className="hover:text-[var(--text)]">
+            More about morsels45
+          </Link>
           <Link to="/eat" className="hover:text-[var(--text)]">
             All dishes
           </Link>
@@ -34,18 +43,12 @@ export function SiteFooter() {
           <Link to="/privacy" className="hover:text-[var(--text)]">
             Privacy
           </Link>
-          {/* The affiliate programme existed in exactly one place before this:
-              a button inside a prompt in the game that comes up occasionally.
-              Nobody could go and find it on purpose. It belongs in the footer
-              of every page, which is where people look for exactly this. */}
-          <a
-            href={AFFILIATES_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-[var(--text)]"
-          >
-            Earn from it
-          </a>
+          {/* In the footer of every page, next to Privacy, where people look
+              for exactly this kind of promise. It is named for what it gives
+              the reader rather than for what it admits. */}
+          <Link to="/honesty" className="hover:text-[var(--text)]">
+            What we won&rsquo;t do
+          </Link>
         </nav>
       </div>
       <p className="mx-auto mt-8 max-w-5xl px-6 text-xs text-[var(--text-dim)]">

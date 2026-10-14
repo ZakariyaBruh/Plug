@@ -50,7 +50,8 @@ var SHELL = [
   'js/progress.js',
   'js/recipes.js',
   'js/sound.js',
-  'js/taste.js'
+  'js/taste.js',
+  'js/hub.js'
 ];
 
 self.addEventListener('install', function (event) {

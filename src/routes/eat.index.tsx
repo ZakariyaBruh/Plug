@@ -1,15 +1,15 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 
 import { PageShell } from '#/components/PageShell'
 import { ALL_DISHES } from '#/lib/dishes'
-import { pageHead } from '#/lib/site'
+import { DISH_COUNT, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
  * /eat — every dish, on one page a crawler can actually walk.
  *
- * WHY THIS PAGE HAD TO EXIST. The 112 dish pages were orphans: nothing on this
+ * WHY THIS PAGE HAD TO EXIST. The dish pages were orphans: nothing on this
  * site linked to any of them. The game has a Dishes screen, but the game is a
  * static script that builds its list in the browser, so a crawler sees an empty
  * div. That left sitemap.xml as the only thing that knew those URLs existed —
@@ -34,6 +34,12 @@ const GROUPS: { tag: string; title: string; blurb: string }[] = [
   { tag: 'veg', title: 'Vegetarian', blurb: 'No meat, no seafood, no argument.' },
   { tag: 'breakfast', title: 'Breakfast', blurb: 'The meal most often skipped and most often regretted.' },
   { tag: 'spicy', title: 'Spicy', blurb: 'Somewhere between a warmth and a problem.' },
+  { tag: 'sweet', title: 'Sweet', blurb: 'Dessert, or breakfast, depending how the day went.' },
+  { tag: 'soupy', title: 'Soups and stews', blurb: 'One bowl, one spoon, minimal cleanup.' },
+  { tag: 'handheld', title: 'Handheld', blurb: 'No plate required, and no apology for that.' },
+  { tag: 'cheesy', title: 'Cheesy', blurb: 'The tag that explains itself.' },
+  { tag: 'seafood', title: 'Seafood', blurb: 'From a river, a reef, or a tin — still counts.' },
+  { tag: 'chicken', title: 'Chicken', blurb: 'The compromise nobody has to defend.' },
 ]
 
 export const Route = createFileRoute('/eat/')({
@@ -42,7 +48,9 @@ export const Route = createFileRoute('/eat/')({
     return { viewer, dishes }
   },
   head: ({ loaderData }) => {
-    const count = loaderData?.dishes.length ?? 112
+    // DISH_COUNT rather than a literal: the build fails if it and data.js
+    // disagree, which is the only thing that has ever kept this number honest.
+    const count = loaderData?.dishes.length ?? DISH_COUNT
     return pageHead({
       path: '/eat',
       title: `What to eat — all ${count} dishes, with recipes`,
@@ -72,6 +80,18 @@ function DishGrid({ dishes }: { dishes: typeof ALL_DISHES }) {
 
 function EatIndex() {
   const { viewer, dishes } = Route.useLoaderData()
+  const navigate = useNavigate()
+
+  /*
+   * A second way to browse a list of 450: pick one at random and land on its
+   * own page, recipe and all. The game already has this move ("Endless") for
+   * somebody mid-decision; this is the same idea for somebody who is just
+   * looking, with nothing to answer first.
+   */
+  function surpriseMe() {
+    const dish = dishes[Math.floor(Math.random() * dishes.length)]
+    navigate({ to: '/eat/$dish', params: { dish: dish.slug } })
+  }
 
   return (
     <PageShell user={viewer.user}>
@@ -87,7 +107,7 @@ function EatIndex() {
               list is the last thing you want to do right now, that is rather the point of the
               game — a handful of either-ors and it picks one for you.
             </p>
-            <div className="mt-8">
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               {/* A link into the app, so it is named for going there rather
                   than for the thing the app does — same reasoning as the
                   homepage. */}
@@ -97,6 +117,13 @@ function EatIndex() {
               >
                 Play now
               </a>
+              <button
+                type="button"
+                onClick={surpriseMe}
+                className="inline-block rounded-full border border-[var(--border)] px-8 py-3 font-semibold hover:border-[var(--amber)]"
+              >
+                Surprise me
+              </button>
             </div>
           </header>
 

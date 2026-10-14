@@ -1,6 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { setCookie } from '@tanstack/react-start/server'
 
+import { isLocal, oauthOrigin } from '#/lib/oauth'
+
 const SCOPES = 'openid profile email'
 
 function base64url(bytes: Uint8Array): string {
@@ -24,6 +26,18 @@ export const Route = createFileRoute('/api/oauth/login')({
     handlers: {
       GET: async ({ request }) => {
         const url = new URL(request.url)
+        const origin = oauthOrigin(url)
+
+        // Started on another of the addresses Whop serves this app from: move
+        // to the registered one first, so the cookies below land on the same
+        // site the callback will read them on. See lib/oauth.ts.
+        if (!isLocal(url) && url.origin !== origin) {
+          return new Response(null, {
+            status: 302,
+            headers: { Location: `${origin}/api/oauth/login${url.search}`, 'Cache-Control': 'no-store' },
+          })
+        }
+
         const verifier = randomString()
         const state = randomString()
         const nonce = randomString()
@@ -51,7 +65,7 @@ export const Route = createFileRoute('/api/oauth/login')({
         const params = new URLSearchParams({
           response_type: 'code',
           client_id: process.env.APP_ID ?? '',
-          redirect_uri: `${url.origin}/api/oauth/callback`,
+          redirect_uri: `${origin}/api/oauth/callback`,
           scope: SCOPES,
           state,
           nonce,
