@@ -373,7 +373,8 @@
       <button class="plain landing-plain" id="landing-news">Read about food</button>
       <!-- The rest of the hub, from the front door: it is not only a game. -->
       <button class="plain landing-plain" type="button" data-landing-view="planner">Plan the week</button>
-      <button class="plain landing-plain" type="button" data-landing-view="kitchen">Your kitchen &mdash; cookbook, scanner, timers</button>
+      <button class="plain landing-plain" type="button" data-landing-view="kitchen">Your recipes &mdash; your own, and from any website</button>
+      <button class="plain landing-plain" type="button" data-landing-view="scan">Scan food &mdash; is it healthy?</button>
       <button class="plain landing-plain" type="button" data-landing-view="radio">Food TV &amp; radio</button>
       <button class="plain landing-plain" id="landing-invite">Decide with a friend</button>
     </div>
@@ -673,8 +674,9 @@
     <ul class="rail-list">
       <li><button class="rail-link is-current" data-view="decide">Decide</button></li>
       <li><button class="rail-link" data-view="dishes">Dishes</button></li>
-      <li><button class="rail-link" data-view="planner">Planner</button></li>
-      <li><button class="rail-link" data-view="kitchen">Kitchen</button></li>
+      <li><button class="rail-link" data-view="planner">Meal planner</button></li>
+      <li><button class="rail-link" data-view="kitchen">Recipes &amp; kitchen</button></li>
+      <li><button class="rail-link" data-view="scan">Scan food</button></li>
       <li><button class="rail-link" data-view="menu">Menu</button></li>
       <li><button class="rail-link" data-view="nearby">Nearby</button></li>
       <li><button class="rail-link" data-view="chat">Ask</button></li>
@@ -1831,7 +1833,10 @@
          Empty here on purpose: hub.js draws them the first time they open.
          =============================================================== -->
     <section class="view" id="view-planner" aria-label="Meal planner"></section>
-    <section class="view" id="view-kitchen" aria-label="Kitchen tools"></section>
+    <section class="view" id="view-kitchen" aria-label="Recipes and kitchen"></section>
+    <!-- Scan food: its own section, not a tab in the kitchen, because it is
+         the one people reach for in a shop with a packet in their hand. -->
+    <section class="view" id="view-scan" aria-label="Scan food"></section>
 
     <!-- ------------------------- TV & RADIO ------------------------- -->
     <!-- ===============================================================

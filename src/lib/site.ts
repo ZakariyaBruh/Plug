@@ -413,7 +413,7 @@ export const THE_JOBS: { name: string; blurb: string }[] = [
 
 export const SITE_TITLE = 'morsels45 — your food hub: decide, plan, cook'
 export const SITE_DESCRIPTION =
-  `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner, food TV and radio are free with an account; Premium adds the shopping list, nutrition, budget, cookbook, barcode scanner, fridge photo and more.`
+  `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner, food TV and radio are free with an account; Premium adds the shopping list, nutrition, budget, your own recipes, recipes from websites, a food scanner that says how healthy something is, and more.`
 
 declare global {
   interface Window {
@@ -546,7 +546,7 @@ export const PREMIUM_HEADLINES: { name: string; blurb: string }[] = [
   {
     name: 'A smarter kitchen',
     blurb:
-      'Your own cookbook on every device. Any recipe imported without the life story. A barcode scanner that says “this has dairy, which you ruled out”. Dinner from a photo of the fridge. Cook mode that reads the steps aloud and listens for “next”.',
+      'Your family recipes on every device — copied from a photo of the card, even handwriting. Any recipe from a website without the life story. Scan food and see in plain words how healthy it is. Dinner from a photo of the fridge. Cook mode that reads the steps aloud.',
   },
   {
     /*
@@ -583,11 +583,11 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
   },
   {
     name: 'Your kitchen',
-    blurb: 'The tools for the cooking itself, all in the Kitchen section.',
+    blurb: 'The tools for the cooking itself — in Recipes & kitchen, and Scan food.',
     items: [
-      ['Your cookbook', 'Your own recipes and the ones you import, kept against your account so they are on every device. Scale any of them, cook them step by step, or drop them into the calendar.'],
-      ['Import any recipe', 'Paste the link to a recipe on most recipe sites and get just the ingredients and the method — no life story, no pop-ups, no adverts — with the original always linked.'],
-      ['Barcode scanner', 'Scan a packet in the shop and see its Nutri-Score, how processed it is, its allergens, and whether it breaks the food rules you already set — in the same words. Data from Open Food Facts.'],
+      ['Your own recipes', 'Keep the family recipes safe, on every device: type them in, copy them from a photo of a cookbook page or a handwritten card, or paste them from an email and it tidies them up. Change the number of people and the amounts change too.'],
+      ['Recipes from websites', 'Paste the address of a recipe on almost any site and get just the ingredients and the steps — no long story, no pop-ups, no adverts. It reads the site’s recipe card, the page itself, or the recipe plugins food blogs use, and the AI reads the page when nothing else can.'],
+      ['Scan food — is it healthy?', 'Scan the barcode on anything in the shop or the cupboard: a score out of 100, a green, amber or red answer, sugar in teaspoons and salt as a share of your daily limit — and a warning if it has something you do not eat. Data from Open Food Facts.'],
       ['Dinner from a photo of your fridge', 'Photograph the fridge or the cupboard. It lists what it can see and which dishes you can make, what each one uses and what you would still need. The photo is not kept.'],
       ['Hands-free cook mode', 'The steps read aloud, and voice commands for “next”, “back”, “repeat” and “start timer” — for when your hands are covered in flour.'],
     ],

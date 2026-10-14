@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { gate, json } from '#/lib/gate'
+import { health } from '#/lib/food-health'
 import { cacheGet, cachePut } from '#/lib/hub-store'
 
 /*
@@ -23,7 +24,7 @@ const CODE = /^\d{6,14}$/
 const FIELDS = [
   'product_name', 'brands', 'quantity', 'image_front_small_url', 'nutriscore_grade', 'nova_group',
   'allergens_tags', 'traces_tags', 'ingredients_analysis_tags', 'ingredients_text', 'ingredients_text_en',
-  'nutriments', 'labels_tags',
+  'nutriments', 'labels_tags', 'nutrient_levels', 'categories_tags', 'serving_size', 'serving_quantity',
 ].join(',')
 const WEEK_MS = 7 * 24 * 3600 * 1000
 
@@ -50,6 +51,8 @@ type Off = {
     nutriscore_grade?: string; nova_group?: number; allergens_tags?: string[]; traces_tags?: string[]
     ingredients_analysis_tags?: string[]; ingredients_text?: string; ingredients_text_en?: string
     nutriments?: Record<string, number | string>; labels_tags?: string[]
+    nutrient_levels?: Record<string, string>; categories_tags?: string[]
+    serving_size?: string; serving_quantity?: number | string
   }
 }
 
@@ -76,6 +79,7 @@ function shape(code: string, data: Off) {
     brand: (p.brands || '').split(',')[0].trim().slice(0, 60),
     quantity: (p.quantity || '').slice(0, 40),
     image: p.image_front_small_url?.startsWith('https://') ? p.image_front_small_url : '',
+    health: health(p),
     nutriscore: /^[a-e]$/.test(p.nutriscore_grade ?? '') ? p.nutriscore_grade!.toUpperCase() : null,
     nova: typeof p.nova_group === 'number' ? p.nova_group : null,
     vegan: analysis.includes('en:vegan') ? true : analysis.includes('en:non-vegan') ? false : null,
@@ -106,7 +110,7 @@ export const Route = createFileRoute('/api/scan')({
         const code = new URL(request.url).searchParams.get('code') ?? ''
         if (!CODE.test(code)) return json({ error: 'bad_code' }, 400)
 
-        const cached = await cacheGet<ReturnType<typeof shape>>(`off:${code}`)
+        const cached = await cacheGet<ReturnType<typeof shape>>(`off:v2:${code}`)
         if (cached) return json({ product: cached })
 
         let data: Off
@@ -123,7 +127,7 @@ export const Route = createFileRoute('/api/scan')({
         }
         const product = shape(code, data)
         if (!product) return json({ error: 'not_found' }, 404)
-        await cachePut(`off:${code}`, product, WEEK_MS)
+        await cachePut(`off:v2:${code}`, product, WEEK_MS)
         return json({ product })
       },
     },

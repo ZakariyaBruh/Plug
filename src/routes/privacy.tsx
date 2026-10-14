@@ -120,7 +120,8 @@ const SECTIONS: Section[] = [
     body: [
       'If you use the meal planner, each week you plan is stored in our database (Turso) against your Whop user id: the dishes, recipes and notes in each slot, which shopping-list lines you ticked, your household size and the prep plan. If you are on Premium and save recipes to your cookbook, each one is stored the same way. Delete a recipe and it is deleted; tell us and we will delete the lot. We also count how many AI requests each account makes per feature per day, so one account cannot run up the bill; those counts are deleted every day.',
       'The planner’s AI, the dinner-party planner and the nutrition and cost estimates send Google’s Gemini the dish names involved and the food rules that apply — never your name, and for a dinner party only how many guests there are, not who. Nutrition and cost estimates are worked out per dish and shared by everyone (a lasagne’s nutrition does not depend on who asked), so they are not linked to you.',
-      'A fridge photo is shrunk on your device, sent once to Gemini to list the food in it, and not stored by us anywhere — not in the database, not in a log. When you import a recipe, our server fetches the page you gave it, so that website sees our server and not you. When you scan a barcode, our server asks Open Food Facts about that barcode and nothing else, and keeps the product’s details for a week for everybody.',
+      'A fridge photo, or a photo of a recipe you are copying, is shrunk on your device, sent once to Gemini to read, and not stored by us anywhere — not in the database, not in a log; only the recipe you choose to save is kept. A recipe you paste in is sent to Gemini to be tidied up. When you get a recipe from a website, our server fetches the page you gave it, so that website sees our server and not you; if the page has no recipe card, the page’s text (not anything about you) is sent to Gemini to read the recipe out of it.',
+      'When you scan food, the barcode is read on your device — by your browser, or by an open-source reader (ZXing) that your browser downloads from the jsDelivr CDN the first time you scan. Our server then asks Open Food Facts about that barcode and nothing else, and keeps the product’s details for a week for everybody. Your recent scans are remembered in this browser only.',
       'Hands-free cook mode reads the steps aloud on your device. Its voice commands use your browser’s own speech recognition, which in Chrome sends what the microphone hears to Google to be transcribed — that is your browser’s doing, under its own privacy terms, and we never receive the audio. Timers, nutrition targets, your budget, dinner-party drafts and recent scans stay in this browser only.',
     ],
   },
@@ -291,15 +292,15 @@ const THIRD_PARTIES: [string, string][] = [
   ...(GA4_ON
     ? ([['Google Analytics', 'Counts page views and the seventeen events named above. No advertising features.']] as [string, string][])
     : []),
-  ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions; fills and balances the meal planner; plans dinner parties; estimates nutrition and cost per dish; writes the daily briefing; and reads a fridge photo once, which is not kept.'],
-  ['Open Food Facts', 'The product database behind the barcode scanner. Asked by our server with the barcode only.'],
+  ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions; fills and balances the meal planner; plans dinner parties; estimates nutrition and cost per dish; writes the daily briefing; reads recipes from pasted text, from photos and from web pages with no recipe card; and reads a fridge photo once, which is not kept.'],
+  ['Open Food Facts', 'The product database behind Scan food. Asked by our server with the barcode only.'],
   ['Hyperbeam', 'Runs the shared browser, when you open one.'],
   ['OpenStreetMap and Photon', 'Look up places near you, when you use Nearby and allow location.'],
   ['freeipapi.com', 'Looks up which currency your country uses, by your IP, on the Premium page.'],
   ['open.er-api.com', 'Today’s exchange rate, to show the Premium price in that currency.'],
   ['TV channels', 'Each food channel you watch streams straight to you from its own servers, which see your IP address as any website would.'],
   ['Plex and Pluto TV', 'Publish the TV listings for what is on now and next. Asked by our server, never by your device.'],
-  ['jsDelivr', 'Serves the open-source video player (hls.js), the first time you press play on a TV channel.'],
+  ['jsDelivr', 'Serves two open-source tools when they are first needed: the video player (hls.js) for Food TV, and the barcode reader (ZXing) for Scan food.'],
   ['Radio Browser', 'The directory the food radio’s stations come from. Asked by our server, never by your device.'],
   ['Radio stations', 'Each station you play streams straight to you from its own broadcaster, which sees your IP address as any website would.'],
   ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day — and, if you use them, your daily check-in, journal line and trivia answer, your planned weeks, your cookbook and your daily AI request counts, against your Whop user id.'],

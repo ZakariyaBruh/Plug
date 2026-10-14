@@ -260,9 +260,9 @@ function InfoPage() {
             <h2 className="mt-2 text-3xl font-bold">Free decides. An account plans. Premium does the rest.</h2>
             <p className="mt-3 max-w-xl text-[var(--text-dim)]">
               {THE_GIFT} A free account adds the meal calendar and its AI, food TV and radio. Premium
-              adds the shopping list, nutrition and budget, the dinner-party planner, your cookbook,
-              the barcode scanner, the fridge photo, hands-free cooking, the daily briefing and the
-              shared browser.
+              adds the shopping list, nutrition and budget, the dinner-party planner, your own recipes
+              and recipes from websites, the food scanner, the fridge photo, hands-free cooking, the
+              daily briefing and the shared browser.
             </p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
               <div className="rounded-2xl border border-[var(--border)] p-8">

@@ -88,7 +88,7 @@
     nothing_to_fill: 'There are no empty slots of that kind this week.',
     empty_week: 'Put a few dishes in the week first.',
     bad_url: 'That does not look like a web address.',
-    no_recipe: 'That page does not publish its recipe in a form we can read. Most big recipe sites do — try another.',
+    no_recipe: 'Could not find a recipe on that page. Check it is the page of the recipe itself, not a list of recipes \u2014 or copy the recipe and use \u201CPaste it in\u201D under Your own recipes.',
     refused: 'That site does not let apps read its pages \u2014 Allrecipes, Serious Eats and Simply Recipes block everyone. BBC Good Food, Bon App\u00E9tit, King Arthur, Food Network and most others work.',
     unreachable: 'That page did not answer.',
     not_a_page: 'That address is not a web page.',
@@ -98,7 +98,10 @@
     bad_image: 'That photo could not be read. Try another.',
     too_restrictive: 'Between them, the guests rule out nearly everything. Try fewer rules or fewer courses.',
     no_guests: 'Add at least one guest.',
-    cookbook_full: 'Your cookbook is full (200 recipes). Delete one to add another.'
+    cookbook_full: 'You have 200 recipes saved, which is the most it can keep. Delete one to add another.',
+    no_recipe_photo: 'Could not find a recipe in that photo. Try again in good light, with the whole recipe in the picture and the words in focus.',
+    no_recipe_text: 'Could not find a recipe in that. Paste the ingredients and the steps together.',
+    too_short: 'Paste a little more \u2014 the ingredients and the steps.'
   };
 
   function errorText(err) {
@@ -137,7 +140,7 @@
       el('p', { class: 'hub-gate-tier', text: 'Free with an account' }),
       el('p', { class: 'hub-gate-title', text: what }),
       el('p', { class: 'hub-gate-why', text: why }),
-      el('p', { class: 'fine', text: 'Not Premium — just signed in, so it is the same on every device.' }),
+      el('p', { class: 'fine', text: 'Free — you only need to sign in. morsels45 uses Whop accounts: if you do not have one, you can make one in a minute with your email. Then it is the same on your phone and your computer.' }),
       // target="_top": see the note on #invite-signin in index.html.
       el('a', { class: 'go go-sm hub-gate-go', href: signInHref(go), target: '_top' }, [
         el('span', { class: 'go-label', text: 'Sign in with Whop' })
@@ -174,7 +177,7 @@
         role: 'tab',
         'aria-selected': on ? 'true' : 'false',
         on: { click: function () { Sound.tick(); onPick(tab.id); } }
-      }, [tab.label, tab.premium ? el('span', { class: 'hub-tier-dot', title: 'Premium', 'aria-label': 'Premium', text: '✦' }) : null]);
+      }, [tab.label, tab.premium ? el('span', { class: 'tag-premium hub-tab-tag', text: 'Premium' }) : null]);
     }));
   }
 
@@ -374,10 +377,10 @@
   var planner = { tab: store('planner-tab') || 'week', root: null, ai: null };
 
   var PLANNER_TABS = [
-    { id: 'week', label: 'Week' },
+    { id: 'week', label: 'My week' },
     { id: 'shop', label: 'Shopping list', premium: true },
-    { id: 'nutrition', label: 'Nutrition', premium: true },
-    { id: 'budget', label: 'Budget', premium: true },
+    { id: 'nutrition', label: 'How healthy?', premium: true },
+    { id: 'budget', label: 'What it costs', premium: true },
     { id: 'party', label: 'Dinner party', premium: true }
   ];
 
@@ -387,7 +390,7 @@
     planner.root = root;
     clear(root);
     root.appendChild(head('Plan the week', 'Meal planner',
-      'Plan the week’s meals, let the AI fill the gaps and plan your prep, then shop, count and budget it — all from the same calendar.'));
+      'Plan your meals for the week ahead. Then, with one tap, get the shopping list, see how healthy the week is and roughly what it costs.'));
     root.appendChild(tabStrip(PLANNER_TABS, planner.tab, function (id) {
       planner.tab = id;
       store('planner-tab', id);
@@ -439,6 +442,11 @@
       status
     ]));
 
+    body.appendChild(howTo([
+      'Under any meal, tap \u201C+ Add\u201D and choose a dish \u2014 or type a note, like \u201CLeftovers\u201D.',
+      'Tap a dish any time to see its recipe.',
+      'Short of ideas? Use \u201CFill my empty meals\u201D below and the app will suggest dishes for you.'
+    ], 'How to plan your week'));
     body.appendChild(renderAiBar());
 
     var grid = el('div', { class: 'hub-week' });
@@ -504,9 +512,10 @@
   function openItem(item) {
     if (item.t === 'dish') { M.openDish(item.name); return; }
     if (item.t === 'recipe') {
-      kitchen.tab = 'cookbook';
+      var saved = (cookbook.list || []).filter(function (r) { return r.id === item.id; })[0];
+      kitchen.tab = saved && isWeb(saved) ? 'web' : 'own';
       kitchen.open = item.id;
-      store('kitchen-tab', 'cookbook');
+      store('kitchen-tab', kitchen.tab);
       M.setView('kitchen');
     }
   }
@@ -598,14 +607,14 @@
     var fillWhich = el('select', { class: 'hub-select', 'aria-label': 'Which empty slots to fill' }, [
       el('option', { value: 'dinner', text: 'Empty dinners' }),
       el('option', { value: 'main', text: 'Empty lunches and dinners' }),
-      el('option', { value: 'all', text: 'Every empty slot' })
+      el('option', { value: 'all', text: 'All empty meals' })
     ]);
     fillWhich.value = store('fill-which') || 'dinner';
     fillWhich.addEventListener('change', function () { store('fill-which', fillWhich.value); });
 
-    var fillBtn = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: '✨ Fill the gaps' })]);
-    var prepBtn = el('button', { class: 'quiet', type: 'button', text: '\u{1F961} Plan my prep session' });
-    var balanceBtn = el('button', { class: 'quiet', type: 'button', text: '⚖️ Balance my week' });
+    var fillBtn = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: '\u2728 Fill my empty meals' })]);
+    var prepBtn = el('button', { class: 'quiet', type: 'button', text: '\u{1F961} Make a cook-ahead plan' });
+    var balanceBtn = el('button', { class: 'quiet', type: 'button', text: '\u2696\uFE0F Is my week balanced?' });
     var out = el('div', { class: 'hub-ai-out', 'aria-live': 'polite' });
 
     fillBtn.addEventListener('click', function () {
@@ -650,8 +659,8 @@
     });
 
     wrap.appendChild(el('div', { class: 'hub-ai-head' }, [
-      el('p', { class: 'hub-ai-title', text: 'Calendar AI' }),
-      el('p', { class: 'fine', text: 'It only works on this calendar: filling it, planning the prep, checking the balance. Every dish it picks is from the catalogue and keeps your food rules.' })
+      el('p', { class: 'hub-ai-title', text: 'Let the app help' }),
+      el('p', { class: 'fine', text: 'Choose which meals to fill, then tap the button: it suggests dishes from our recipes, and only ones that keep your food rules. The cook-ahead plan tells you what to chop and cook on Sunday to make the week easy. You can undo anything it adds.' })
     ]));
     wrap.appendChild(el('div', { class: 'hub-ai-row' }, [fillWhich, fillBtn, prepBtn, balanceBtn]));
     wrap.appendChild(out);
@@ -1236,41 +1245,57 @@
    * KITCHEN
    * ==================================================================== */
 
-  var kitchen = { tab: store('kitchen-tab') || 'cookbook', root: null, open: null, editing: null, imported: null };
-
   var KITCHEN_TABS = [
-    { id: 'cookbook', label: 'Cookbook', premium: true },
-    { id: 'import', label: 'Import a recipe', premium: true },
-    { id: 'scan', label: 'Scan a barcode', premium: true },
-    { id: 'fridge', label: 'Fridge photo', premium: true },
-    { id: 'timers', label: 'Timers & converter' },
-    { id: 'season', label: 'In season' }
+    { id: 'own', label: 'Your own recipes', premium: true },
+    { id: 'web', label: 'Recipes from websites', premium: true },
+    { id: 'fridge', label: 'What can I cook?', premium: true },
+    { id: 'timers', label: 'Timers & measurements' },
+    { id: 'season', label: 'What’s in season' }
   ];
+  var KITCHEN_IDS = KITCHEN_TABS.map(function (t) { return t.id; });
+  // Tabs that used to exist, and where they live now. Scanning moved to its
+  // own section, Scan food.
+  var OLD_KITCHEN_TAB = { cookbook: 'own', 'import': 'web', scan: 'own' };
+
+  var kitchen = { tab: 'own', root: null, open: null, editing: null, imported: null, read: null };
+  (function () {
+    var saved = store('kitchen-tab');
+    kitchen.tab = KITCHEN_IDS.indexOf(saved) !== -1 ? saved : OLD_KITCHEN_TAB[saved] || 'own';
+  })();
 
   function renderKitchen() {
     var root = M.$('view-kitchen');
     if (!root) return;
     kitchen.root = root;
     clear(root);
-    root.appendChild(head('Your kitchen', 'Kitchen',
-      'Your own cookbook, recipes from any website, a barcode scanner that knows what you do not eat, dinner from a photo of the fridge — and timers, conversions and what is in season.'));
+    root.appendChild(head('Your kitchen', 'Recipes & kitchen',
+      'Keep your own recipes, save recipes from any website, find out what you can cook with what is in the fridge — plus kitchen timers, measurements and what is in season.'));
     root.appendChild(tabStrip(KITCHEN_TABS, kitchen.tab, function (id) {
       kitchen.tab = id;
       store('kitchen-tab', id);
-      if (id !== 'cookbook') kitchen.open = null;
+      kitchen.open = null;
+      kitchen.editing = null;
       renderKitchen();
     }));
     var body = el('div', { class: 'hub-body' });
     root.appendChild(body);
-    if (kitchen.tab === 'cookbook') return renderCookbook(body);
-    if (kitchen.tab === 'import') return renderImport(body);
-    if (kitchen.tab === 'scan') return renderScan(body);
+    if (kitchen.tab === 'own') return renderOwn(body);
+    if (kitchen.tab === 'web') return renderWeb(body);
     if (kitchen.tab === 'fridge') return renderFridge(body);
     if (kitchen.tab === 'timers') return renderTimers(body);
     if (kitchen.tab === 'season') return renderSeason(body);
   }
 
-  /* ---------------------------------------------------- cookbook (P) -- */
+  // "How it works", numbered, at the top of anything that is not obvious.
+  // Written for somebody who has never used an app like this.
+  function howTo(steps, title) {
+    return el('div', { class: 'hub-how' }, [
+      el('p', { class: 'hub-how-title', text: title || 'How it works' }),
+      el('ol', {}, steps.map(function (s) { return el('li', { text: s }); }))
+    ]);
+  }
+
+  /* ------------------------------------------------- the cookbook (P) -- */
 
   var cookbook = { list: null, loading: false, error: '' };
 
@@ -1297,50 +1322,212 @@
     });
   }
 
-  function renderCookbook(body) {
-    if (!plus()) {
-      body.appendChild(premiumCard('Your cookbook',
-        'Your own recipes and the ones you import, kept against your account so they are on every device — and they work with everything else here.',
-        ['Write your own, or import from any recipe website', 'Scale any recipe to how many you are feeding', 'Cook it step by step in cook mode, hands-free', 'Drop it into the calendar; it goes on the shopping list']));
-      return;
-    }
-    if (kitchen.editing) return renderRecipeForm(body, kitchen.editing);
-    if (!cookbook.list) {
-      if (cookbook.error) {
-        body.appendChild(el('p', { class: 'hub-note is-error' }, [cookbook.error + ' ', el('button', { class: 'link-btn', type: 'button', text: 'Try again', on: { click: function () { cookbook.error = ''; renderKitchen(); } } })]));
-        return;
-      }
-      body.appendChild(note('Opening your cookbook…'));
-      if (!cookbook.loading) loadCookbook().then(renderKitchen).catch(renderKitchen);
-      return;
-    }
-    if (kitchen.open) {
-      var r = cookbook.list.filter(function (x) { return x.id === kitchen.open; })[0];
-      if (r) return renderRecipe(body, r);
-      kitchen.open = null;
-    }
-
-    body.appendChild(el('div', { class: 'hub-row' }, [
-      el('button', { class: 'go go-sm', type: 'button', on: { click: function () { kitchen.editing = { name: '', serves: 2, time: '', ingredients: [], steps: [], notes: '' }; renderKitchen(); } } }, [el('span', { class: 'go-label', text: '+ Write a recipe' })]),
-      el('button', { class: 'quiet', type: 'button', text: 'Import one from a website', on: { click: function () { kitchen.tab = 'import'; store('kitchen-tab', 'import'); renderKitchen(); } } })
-    ]));
-
-    if (!cookbook.list.length) {
-      body.appendChild(note('Nothing in your cookbook yet. Write down a family recipe, or import one from any recipe site.'));
-      return;
-    }
-    body.appendChild(el('ul', { class: 'hub-cards' }, cookbook.list.map(function (r) {
-      return el('li', {}, [el('button', { class: 'hub-card', type: 'button', on: { click: function () { kitchen.open = r.id; renderKitchen(); } } }, [
-        r.image ? el('img', { class: 'hub-card-img', src: r.image, alt: '', loading: 'lazy', referrerPolicy: 'no-referrer' }) : el('span', { class: 'hub-card-img is-blank', 'aria-hidden': 'true', text: '\u{1F4D6}' }),
-        el('span', { class: 'hub-card-name', text: r.name }),
-        el('span', { class: 'hub-from', text: [r.time ? r.time + ' min' : '', 'serves ' + r.serves, r.source ? hostOf(r.source) : 'your recipe'].filter(Boolean).join(' · ') })
-      ])]);
-    })));
-  }
+  function isWeb(r) { return r.origin ? r.origin === 'web' : !!r.source; }
 
   function hostOf(url) {
     try { return new URL(url).hostname.replace(/^www\./, ''); } catch (err) { return ''; }
   }
+
+  // Shared by both recipe tabs: loading, an open recipe, the edit form.
+  function cookbookReady(body) {
+    if (kitchen.editing) { renderRecipeForm(body, kitchen.editing); return false; }
+    if (!cookbook.list) {
+      if (cookbook.error) {
+        body.appendChild(el('p', { class: 'hub-note is-error' }, [cookbook.error + ' ', el('button', { class: 'link-btn', type: 'button', text: 'Try again', on: { click: function () { cookbook.error = ''; renderKitchen(); } } })]));
+        return false;
+      }
+      body.appendChild(note('Opening your recipes…'));
+      if (!cookbook.loading) loadCookbook().then(renderKitchen).catch(renderKitchen);
+      return false;
+    }
+    if (kitchen.open) {
+      var r = cookbook.list.filter(function (x) { return x.id === kitchen.open; })[0];
+      if (r) { renderRecipe(body, r); return false; }
+      kitchen.open = null;
+    }
+    return true;
+  }
+
+  function recipeCards(list) {
+    return el('ul', { class: 'hub-cards' }, list.map(function (r) {
+      var from = r.origin === 'photo' ? 'copied from a photo' : r.origin === 'text' ? 'pasted in' : isWeb(r) ? hostOf(r.source) : 'your recipe';
+      return el('li', {}, [el('button', { class: 'hub-card', type: 'button', on: { click: function () { kitchen.open = r.id; renderKitchen(); } } }, [
+        r.image ? el('img', { class: 'hub-card-img', src: r.image, alt: '', loading: 'lazy', referrerPolicy: 'no-referrer' }) : el('span', { class: 'hub-card-img is-blank', 'aria-hidden': 'true', text: isWeb(r) ? '\u{1F310}' : '\u{1F4D6}' }),
+        el('span', { class: 'hub-card-name', text: r.name }),
+        el('span', { class: 'hub-from', text: [r.time ? r.time + ' min' : '', 'serves ' + r.serves, from].filter(Boolean).join(' · ') })
+      ])]);
+    }));
+  }
+
+  /* ---- your own recipes ------------------------------------------------ */
+
+  function renderOwn(body) {
+    if (!plus()) {
+      body.appendChild(premiumCard('Your own recipes',
+        'Keep your family recipes safe in one place, on every device. Type them in, copy them from a photo of a cookbook or a handwritten card, or paste them from an email.',
+        ['Copy a recipe from a photo — even handwriting', 'Paste one from an email or a message and it tidies it up', 'Change the number of people and the amounts change too', 'Cook it step by step, or add it to your week']));
+      return;
+    }
+    if (!cookbookReady(body)) return;
+
+    body.appendChild(howTo([
+      'Choose how to add a recipe: type it, copy it from a photo, or paste it.',
+      'Check it looks right, then tap “Save”.',
+      'It is kept here, on every device you sign in on. Tap it any time to cook it.'
+    ], 'Keep your recipes here'));
+
+    var photoInput = el('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'hub-file', id: 'hub-recipe-photo' });
+    var out = el('div', { 'aria-live': 'polite' });
+    photoInput.addEventListener('change', function () {
+      var file = photoInput.files && photoInput.files[0];
+      if (!file) return;
+      clear(out).appendChild(note('Reading your recipe… this takes about ten seconds.'));
+      shrinkPhoto(file, 1600).then(function (photo) {
+        return api('/api/recipe-import', { method: 'POST', body: { image: photo.base64, mime: photo.mime } });
+      }).then(function (res) {
+        res.recipe.origin = 'photo';
+        kitchen.read = 'photo';
+        kitchen.editing = res.recipe;
+        renderKitchen();
+      }).catch(function (err) { clear(out).appendChild(note(err && err.code ? errorText(err) : ERRORS.bad_image, 'error')); });
+    });
+
+    var pasteBox = el('div', { class: 'hub-paste', hidden: true }, [
+      el('label', { class: 'hub-label', for: 'hub-paste-text', text: 'Paste the recipe here' }),
+      el('textarea', { class: 'hub-input hub-area', id: 'hub-paste-text', rows: '8', placeholder: 'Paste the whole recipe — the ingredients and the method. It does not need to be tidy.' }),
+      el('button', { class: 'go go-sm', type: 'button', on: { click: function (e) {
+        var text = M.$('hub-paste-text').value.trim();
+        if (text.length < 30) { clear(out).appendChild(note('Paste a little more — the ingredients and the steps.', 'error')); return; }
+        var btn = e.currentTarget;
+        busyButton(btn, true);
+        clear(out).appendChild(note('Tidying it up…'));
+        api('/api/recipe-import', { method: 'POST', body: { text: text } }).then(function (res) {
+          res.recipe.origin = 'text';
+          kitchen.read = 'text';
+          kitchen.editing = res.recipe;
+          renderKitchen();
+        }).catch(function (err) { busyButton(btn, false); clear(out).appendChild(note(errorText(err), 'error')); });
+      } } }, [el('span', { class: 'go-label', text: 'Tidy it up' })])
+    ]);
+
+    body.appendChild(el('div', { class: 'hub-big-actions' }, [
+      el('button', { class: 'hub-big-btn', type: 'button', on: { click: function () { kitchen.read = null; kitchen.editing = { name: '', serves: 2, time: '', ingredients: [], steps: [], notes: '', origin: 'own' }; renderKitchen(); } } }, [
+        el('span', { class: 'hub-big-icon', 'aria-hidden': 'true', text: '✍️' }),
+        el('span', { class: 'hub-big-label', text: 'Type it in' }),
+        el('span', { class: 'hub-big-sub', text: 'Write a recipe yourself' })
+      ]),
+      photoInput,
+      el('label', { class: 'hub-big-btn', for: 'hub-recipe-photo' }, [
+        el('span', { class: 'hub-big-icon', 'aria-hidden': 'true', text: '\u{1F4F7}' }),
+        el('span', { class: 'hub-big-label', text: 'Copy it from a photo' }),
+        el('span', { class: 'hub-big-sub', text: 'A cookbook page or a handwritten card' })
+      ]),
+      el('button', { class: 'hub-big-btn', type: 'button', on: { click: function () { pasteBox.hidden = !pasteBox.hidden; if (!pasteBox.hidden) M.$('hub-paste-text').focus(); } } }, [
+        el('span', { class: 'hub-big-icon', 'aria-hidden': 'true', text: '\u{1F4CB}' }),
+        el('span', { class: 'hub-big-label', text: 'Paste it in' }),
+        el('span', { class: 'hub-big-sub', text: 'From an email or a message' })
+      ])
+    ]));
+    body.appendChild(pasteBox);
+    body.appendChild(out);
+
+    var mine = cookbook.list.filter(function (r) { return !isWeb(r); });
+    body.appendChild(el('h2', { class: 'strip-title', text: 'Your recipes (' + mine.length + ')' }));
+    if (!mine.length) body.appendChild(note('None yet. Add one with the buttons above — a family favourite is a good start.'));
+    else body.appendChild(recipeCards(mine));
+  }
+
+  /* ---- recipes from websites -------------------------------------------- */
+
+  var READ_SAYS = {
+    'recipe-card': 'Read from the website’s own recipe card.',
+    microdata: 'Read from the recipe on the page.',
+    plugin: 'Read from the recipe on the page.',
+    headings: 'Read from the recipe on the page — worth a quick look before you save.',
+    ai: 'This page had no recipe card, so the AI read it — please check the amounts before you cook.'
+  };
+
+  function renderWeb(body) {
+    if (!plus()) {
+      body.appendChild(premiumCard('Recipes from websites',
+        'Found a recipe online? Paste its address and you get just the recipe — the ingredients and the steps — without the long story, the pop-ups and the adverts. It is saved for you on every device.',
+        ['Works with most recipe websites and food blogs', 'Change the number of people and the amounts change too', 'Cook it step by step, or add it to your week']));
+      return;
+    }
+    if (!cookbookReady(body)) return;
+
+    body.appendChild(howTo([
+      'Find a recipe you like on any website.',
+      'Copy its address — the line at the very top of the screen that starts with “https”.',
+      'Come back here, paste it in the box below, and tap “Get the recipe”.'
+    ]));
+
+    var input = el('input', { class: 'hub-input', type: 'url', inputmode: 'url', placeholder: 'Paste the recipe’s address here', 'aria-label': 'Recipe web address' });
+    var go = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Get the recipe' })]);
+    var pasteBtn = navigator.clipboard && navigator.clipboard.readText ? el('button', { class: 'quiet', type: 'button', text: '\u{1F4CB} Paste' }) : null;
+    var out = el('div', { class: 'hub-import-out', 'aria-live': 'polite' });
+    function run() {
+      var url = input.value.trim();
+      if (!url) { input.focus(); return; }
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      busyButton(go, true);
+      clear(out).appendChild(note('Reading the page…'));
+      api('/api/recipe-import', { method: 'POST', body: { url: url } }).then(function (res) {
+        busyButton(go, false);
+        res.recipe.origin = 'web';
+        kitchen.imported = res.recipe;
+        kitchen.importedHow = res.method;
+        paintImported(out);
+      }).catch(function (err) { busyButton(go, false); clear(out).appendChild(note(errorText(err), 'error')); });
+    }
+    go.addEventListener('click', run);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
+    if (pasteBtn) pasteBtn.addEventListener('click', function () {
+      navigator.clipboard.readText().then(function (t) { input.value = (t || '').trim(); if (input.value) run(); }).catch(function () { input.focus(); });
+    });
+    body.appendChild(el('div', { class: 'hub-row hub-add-row' }, [input, pasteBtn, go]));
+    body.appendChild(out);
+    if (kitchen.imported) paintImported(out);
+
+    body.appendChild(el('details', { class: 'hub-details' }, [
+      el('summary', { text: 'Which websites work?' }),
+      el('p', { class: 'fine', text: 'Most recipe websites and food blogs do, including BBC Good Food, Bon Appétit, King Arthur Baking and Food Network. If a page has no recipe card, the AI reads it instead. A few big sites — Allrecipes, Serious Eats and Simply Recipes — block apps from reading them; for those, use “Paste it in” under Your own recipes.' })
+    ]));
+
+    var saved = cookbook.list.filter(isWeb);
+    body.appendChild(el('h2', { class: 'strip-title', text: 'Saved from websites (' + saved.length + ')' }));
+    if (!saved.length) body.appendChild(note('Recipes you save from websites will appear here.'));
+    else body.appendChild(recipeCards(saved));
+  }
+
+  function paintImported(out) {
+    var r = kitchen.imported;
+    clear(out);
+    var save = el('button', { class: 'go', type: 'button' }, [el('span', { class: 'go-label', text: 'Save this recipe' })]);
+    save.addEventListener('click', function () {
+      busyButton(save, true);
+      saveRecipe(r).then(function (savedRecipe) {
+        kitchen.imported = null;
+        kitchen.open = savedRecipe.id;
+        Sound.win();
+        renderKitchen();
+      }).catch(function (err) { busyButton(save, false); out.appendChild(note(errorText(err), 'error')); });
+    });
+    var how = READ_SAYS[kitchen.importedHow] || '';
+    out.appendChild(el('article', { class: 'hub-recipe' }, [
+      how ? el('p', { class: 'hub-note' + (kitchen.importedHow === 'ai' ? ' is-warn' : ' is-good'), text: how }) : null,
+      r.image ? el('img', { class: 'hub-recipe-img', src: r.image, alt: '', referrerPolicy: 'no-referrer' }) : null,
+      el('h2', { class: 'hub-recipe-name', text: r.name }),
+      el('p', { class: 'fine', text: [r.time ? r.time + ' minutes' : '', 'serves ' + r.serves, 'from ' + hostOf(r.source)].filter(Boolean).join(' · ') }),
+      el('div', { class: 'hub-row' }, [save, el('button', { class: 'quiet', type: 'button', text: 'Change something first', on: { click: function () { kitchen.read = kitchen.importedHow === 'ai' ? 'web-ai' : null; kitchen.editing = JSON.parse(JSON.stringify(r)); renderKitchen(); } } })]),
+      el('h3', { class: 'strip-title', text: 'Ingredients (' + r.ingredients.length + ')' }),
+      el('ul', { class: 'hub-ingredients' }, r.ingredients.map(function (l) { return el('li', { text: l }); })),
+      el('h3', { class: 'strip-title', text: 'Method (' + r.steps.length + ' steps)' }),
+      el('ol', { class: 'hub-steps' }, r.steps.map(function (s) { return el('li', { text: s }); }))
+    ]));
+  }
+
+  /* ---- one recipe, and the form to write or change one ------------------ */
 
   function renderRecipe(body, r) {
     var serves = r.serves;
@@ -1349,8 +1536,8 @@
       clear(list);
       Recipes.scale(r, serves).forEach(function (line) { list.appendChild(el('li', { text: line })); });
     }
-    var servesSel = el('select', { class: 'hub-select', 'aria-label': 'Serves' }, [1, 2, 3, 4, 5, 6, 8, 10, 12].concat([r.serves]).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(function (a, b) { return a - b; }).map(function (n) {
-      return el('option', { value: String(n), text: 'Serves ' + n });
+    var servesSel = el('select', { class: 'hub-select', 'aria-label': 'How many people' }, [1, 2, 3, 4, 5, 6, 8, 10, 12].concat([r.serves]).filter(function (v, i, a) { return a.indexOf(v) === i; }).sort(function (a, b) { return a - b; }).map(function (n) {
+      return el('option', { value: String(n), text: 'For ' + n + (n === 1 ? ' person' : ' people') });
     }));
     servesSel.value = String(serves);
     servesSel.addEventListener('change', function () { serves = Number(servesSel.value); paintList(); });
@@ -1359,36 +1546,37 @@
     var slotDay = el('select', { class: 'hub-select', 'aria-label': 'Day' }, DAYS.map(function (d) { return el('option', { value: d, text: DAY_NAME[d] }); }));
     var slotMeal = el('select', { class: 'hub-select', 'aria-label': 'Meal' }, MEALS.map(function (m) { return el('option', { value: m, text: MEAL_NAME[m] }); }));
     slotMeal.value = 'dinner';
-    var addCal = el('button', { class: 'quiet', type: 'button', text: 'Add to this week' });
+    var addCal = el('button', { class: 'quiet', type: 'button', text: 'Add to this week’s meals' });
     addCal.addEventListener('click', function () {
       loadWeek(plan.week).then(function () {
         if (!plan.data) return;
         addToSlot(slotDay.value + '-' + slotMeal.value, { t: 'recipe', id: r.id, name: r.name });
-        addCal.textContent = 'Added to ' + DAY_NAME[slotDay.value] + ' ' + slotMeal.value;
+        addCal.textContent = 'Added to ' + DAY_NAME[slotDay.value] + ' ' + slotMeal.value + ' ✓';
       });
     });
 
-    body.appendChild(el('div', { class: 'hub-row' }, [el('button', { class: 'quiet', type: 'button', text: '‹ All recipes', on: { click: function () { kitchen.open = null; renderKitchen(); } } })]));
+    var backTo = isWeb(r) ? 'Recipes from websites' : 'Your own recipes';
+    body.appendChild(el('div', { class: 'hub-row' }, [el('button', { class: 'quiet', type: 'button', text: '‹ Back to ' + backTo, on: { click: function () { kitchen.open = null; renderKitchen(); } } })]));
     body.appendChild(el('article', { class: 'hub-recipe' }, [
       r.image ? el('img', { class: 'hub-recipe-img', src: r.image, alt: '', referrerPolicy: 'no-referrer' }) : null,
       el('h2', { class: 'hub-recipe-name', text: r.name }),
-      el('p', { class: 'fine', text: [r.time ? r.time + ' minutes' : '', r.source ? 'from ' + hostOf(r.source) : 'your own recipe'].filter(Boolean).join(' · ') }),
+      el('p', { class: 'fine', text: [r.time ? r.time + ' minutes' : '', isWeb(r) ? 'from ' + hostOf(r.source) : r.origin === 'photo' ? 'copied from a photo' : 'your own recipe'].filter(Boolean).join(' · ') }),
       r.notes ? el('p', { class: 'hub-recipe-notes', text: r.notes }) : null,
       el('div', { class: 'hub-row' }, [
-        el('button', { class: 'go go-sm', type: 'button', on: { click: function () { M.openCookMode({ name: r.name, serves: r.serves, ingredients: r.ingredients, steps: r.steps.length ? r.steps : ['Cook it the way the notes say.'] }, serves, { name: r.name, icon: '\u{1F4D6}' }); } } }, [el('span', { class: 'go-label', text: 'Cook it' })]),
+        el('button', { class: 'go', type: 'button', on: { click: function () { M.openCookMode({ name: r.name, serves: r.serves, ingredients: r.ingredients, steps: r.steps.length ? r.steps : ['Cook it the way the notes say.'] }, serves, { name: r.name, icon: '\u{1F4D6}' }); } } }, [el('span', { class: 'go-label', text: 'Start cooking, step by step' })]),
         servesSel
       ]),
       el('h3', { class: 'strip-title', text: 'Ingredients' }),
       list,
       el('h3', { class: 'strip-title', text: 'Method' }),
       el('ol', { class: 'hub-steps' }, r.steps.map(function (s) { return el('li', { text: s }); })),
-      r.source ? el('p', { class: 'fine' }, ['Original: ', el('a', { href: r.source, target: '_blank', rel: 'noopener noreferrer', text: hostOf(r.source) })]) : null,
+      isWeb(r) ? el('p', { class: 'fine' }, ['Original recipe: ', el('a', { href: r.source, target: '_blank', rel: 'noopener noreferrer', text: hostOf(r.source) })]) : null,
       el('div', { class: 'hub-row' }, [slotDay, slotMeal, addCal]),
       el('div', { class: 'hub-row' }, [
-        el('button', { class: 'quiet', type: 'button', text: 'Edit', on: { click: function () { kitchen.editing = JSON.parse(JSON.stringify(r)); renderKitchen(); } } }),
+        el('button', { class: 'quiet', type: 'button', text: 'Change this recipe', on: { click: function () { kitchen.read = null; kitchen.editing = JSON.parse(JSON.stringify(r)); renderKitchen(); } } }),
         el('button', { class: 'quiet danger', type: 'button', text: 'Delete', on: { click: function (e) {
           var btn = e.currentTarget;
-          if (btn.dataset.sure !== '1') { btn.dataset.sure = '1'; btn.textContent = 'Tap again to delete'; return; }
+          if (btn.dataset.sure !== '1') { btn.dataset.sure = '1'; btn.textContent = 'Tap again to delete it for good'; return; }
           api('/api/cookbook?id=' + encodeURIComponent(r.id), { method: 'DELETE' }).then(function () {
             cookbook.list = cookbook.list.filter(function (x) { return x.id !== r.id; });
             kitchen.open = null;
@@ -1400,17 +1588,17 @@
   }
 
   function renderRecipeForm(body, draft) {
-    var name = el('input', { class: 'hub-input', type: 'text', maxlength: '120', value: draft.name || '', placeholder: 'Grandma’s lasagne', 'aria-label': 'Recipe name' });
-    var serves = el('input', { class: 'hub-input hub-num', type: 'number', min: '1', max: '50', value: String(draft.serves || 2), 'aria-label': 'Serves' });
-    var time = el('input', { class: 'hub-input hub-num', type: 'number', min: '1', max: '1440', value: draft.time ? String(draft.time) : '', placeholder: 'mins', 'aria-label': 'Minutes' });
-    var ingredients = el('textarea', { class: 'hub-input hub-area', rows: '8', placeholder: 'One per line, e.g.\n500g beef mince\n2 onions, chopped\n1 tin chopped tomatoes', 'aria-label': 'Ingredients, one per line' });
+    var name = el('input', { class: 'hub-input', type: 'text', maxlength: '120', value: draft.name || '', placeholder: 'For example: Grandma’s lasagne', 'aria-label': 'Recipe name', id: 'hub-form-name' });
+    var serves = el('input', { class: 'hub-input hub-num', type: 'number', min: '1', max: '50', value: String(draft.serves || 2), 'aria-label': 'How many people it feeds' });
+    var time = el('input', { class: 'hub-input hub-num', type: 'number', min: '1', max: '1440', value: draft.time ? String(draft.time) : '', placeholder: 'mins', 'aria-label': 'Minutes it takes' });
+    var ingredients = el('textarea', { class: 'hub-input hub-area', rows: '8', placeholder: 'One on each line, for example:\n500g beef mince\n2 onions, chopped\n1 tin chopped tomatoes', 'aria-label': 'Ingredients, one on each line' });
     ingredients.value = (draft.ingredients || []).join('\n');
-    var steps = el('textarea', { class: 'hub-input hub-area', rows: '8', placeholder: 'One step per line', 'aria-label': 'Method, one step per line' });
+    var steps = el('textarea', { class: 'hub-input hub-area', rows: '8', placeholder: 'One step on each line, in order', 'aria-label': 'Method, one step on each line' });
     steps.value = (draft.steps || []).join('\n');
-    var notes = el('textarea', { class: 'hub-input hub-area', rows: '3', placeholder: 'Notes — where it came from, what to serve it with', 'aria-label': 'Notes' });
+    var notes = el('textarea', { class: 'hub-input hub-area', rows: '3', placeholder: 'Anything else — who it came from, what to serve it with', 'aria-label': 'Notes' });
     notes.value = draft.notes || '';
     var out = el('div', { 'aria-live': 'polite' });
-    var save = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Save to my cookbook' })]);
+    var save = el('button', { class: 'go', type: 'button' }, [el('span', { class: 'go-label', text: 'Save this recipe' })]);
     save.addEventListener('click', function () {
       var recipe = {
         id: draft.id,
@@ -1421,220 +1609,333 @@
         steps: steps.value.split('\n').map(function (l) { return l.trim(); }).filter(Boolean),
         source: draft.source || '',
         image: draft.image || '',
-        notes: notes.value.trim()
+        notes: notes.value.trim(),
+        origin: draft.origin || (draft.source ? 'web' : 'own')
       };
       if (!recipe.name || (!recipe.ingredients.length && !recipe.steps.length)) {
-        clear(out).appendChild(note('Give it a name and at least an ingredient or a step.', 'error'));
+        clear(out).appendChild(note('Give it a name, and add at least one ingredient or step.', 'error'));
         return;
       }
       busyButton(save, true);
       saveRecipe(recipe).then(function (savedRecipe) {
         kitchen.editing = null;
+        kitchen.read = null;
+        kitchen.imported = null;
+        kitchen.tab = isWeb(savedRecipe) ? 'web' : 'own';
+        store('kitchen-tab', kitchen.tab);
         kitchen.open = savedRecipe.id;
         Sound.win();
         renderKitchen();
       }).catch(function (err) { busyButton(save, false); clear(out).appendChild(note(errorText(err), 'error')); });
     });
+    var banner = kitchen.read === 'photo' ? 'The AI copied this from your photo. Please check the amounts and steps against the photo, then save.'
+      : kitchen.read === 'text' ? 'The AI tidied this up from what you pasted. Please check it, then save.'
+      : kitchen.read === 'web-ai' ? 'The AI read this from the web page. Please check the amounts, then save.' : '';
     body.appendChild(el('div', { class: 'hub-form' }, [
-      el('label', { class: 'hub-label', text: 'Name' }), name,
-      el('div', { class: 'hub-row' }, [el('label', { class: 'hub-target' }, ['Serves ', serves]), el('label', { class: 'hub-target' }, ['Takes ', time, ' min'])]),
-      el('label', { class: 'hub-label', text: 'Ingredients' }), ingredients,
-      el('label', { class: 'hub-label', text: 'Method' }), steps,
-      el('label', { class: 'hub-label', text: 'Notes' }), notes,
-      el('div', { class: 'hub-row' }, [save, el('button', { class: 'quiet', type: 'button', text: 'Cancel', on: { click: function () { kitchen.editing = null; renderKitchen(); } } })]),
+      banner ? el('p', { class: 'hub-note is-warn', text: banner }) : null,
+      el('label', { class: 'hub-label', for: 'hub-form-name', text: 'Recipe name' }), name,
+      el('div', { class: 'hub-row' }, [el('label', { class: 'hub-target' }, ['Feeds ', serves, ' people']), el('label', { class: 'hub-target' }, ['Takes ', time, ' minutes'])]),
+      el('label', { class: 'hub-label', text: 'Ingredients (one on each line)' }), ingredients,
+      el('label', { class: 'hub-label', text: 'Method (one step on each line)' }), steps,
+      el('label', { class: 'hub-label', text: 'Notes (optional)' }), notes,
+      el('div', { class: 'hub-row' }, [save, el('button', { class: 'quiet', type: 'button', text: 'Cancel', on: { click: function () { kitchen.editing = null; kitchen.read = null; renderKitchen(); } } })]),
       out
     ]));
   }
 
-  /* ------------------------------------------------------ import (P) -- */
+  /* ====================================================================
+   * SCAN FOOD (P) — its own section
+   * ==================================================================== */
 
-  function renderImport(body) {
-    if (!plus()) {
-      body.appendChild(premiumCard('Import any recipe',
-        'Paste the address of a recipe on any website and get just the recipe — the ingredients and the method, without the life story, the pop-ups or the adverts.',
-        ['Works with most big recipe sites', 'Saves to your cookbook, synced to your account', 'Then scale it, cook it hands-free, or plan it into your week']));
-      return;
-    }
-    var input = el('input', { class: 'hub-input', type: 'url', placeholder: 'https://www.example.com/recipes/best-ever-brownies', 'aria-label': 'Recipe web address' });
-    var go = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Get the recipe' })]);
-    var out = el('div', { class: 'hub-import-out', 'aria-live': 'polite' });
-    function run() {
-      var url = input.value.trim();
-      if (!url) return;
-      busyButton(go, true);
-      clear(out).appendChild(note('Reading the page…'));
-      api('/api/recipe-import', { method: 'POST', body: { url: url } }).then(function (res) {
-        busyButton(go, false);
-        kitchen.imported = res.recipe;
-        paintImported(out);
-      }).catch(function (err) { busyButton(go, false); clear(out).appendChild(note(errorText(err), 'error')); });
-    }
-    go.addEventListener('click', run);
-    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') run(); });
-    body.appendChild(el('div', { class: 'hub-row hub-add-row' }, [input, go]));
-    body.appendChild(el('p', { class: 'fine', text: 'Reads the recipe the site publishes for search engines (schema.org), so it is the site’s own ingredients and method, word for word. The original is always linked.' }));
-    body.appendChild(out);
-    if (kitchen.imported) paintImported(out);
-  }
-
-  function paintImported(out) {
-    var r = kitchen.imported;
-    clear(out);
-    var save = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Save to my cookbook' })]);
-    save.addEventListener('click', function () {
-      busyButton(save, true);
-      saveRecipe(r).then(function (savedRecipe) {
-        kitchen.imported = null;
-        kitchen.tab = 'cookbook';
-        kitchen.open = savedRecipe.id;
-        store('kitchen-tab', 'cookbook');
-        Sound.win();
-        renderKitchen();
-      }).catch(function (err) { busyButton(save, false); out.appendChild(note(errorText(err), 'error')); });
-    });
-    out.appendChild(el('article', { class: 'hub-recipe' }, [
-      r.image ? el('img', { class: 'hub-recipe-img', src: r.image, alt: '', referrerPolicy: 'no-referrer' }) : null,
-      el('h2', { class: 'hub-recipe-name', text: r.name }),
-      el('p', { class: 'fine', text: [r.time ? r.time + ' minutes' : '', 'serves ' + r.serves, 'from ' + hostOf(r.source)].filter(Boolean).join(' · ') }),
-      r.notes ? el('p', { class: 'hub-recipe-notes', text: r.notes }) : null,
-      el('div', { class: 'hub-row' }, [save, el('button', { class: 'quiet', type: 'button', text: 'Edit before saving', on: { click: function () { kitchen.editing = JSON.parse(JSON.stringify(r)); kitchen.tab = 'cookbook'; store('kitchen-tab', 'cookbook'); renderKitchen(); } } })]),
-      el('h3', { class: 'strip-title', text: 'Ingredients (' + r.ingredients.length + ')' }),
-      el('ul', { class: 'hub-ingredients' }, r.ingredients.map(function (l) { return el('li', { text: l }); })),
-      el('h3', { class: 'strip-title', text: 'Method (' + r.steps.length + ' steps)' }),
-      el('ol', { class: 'hub-steps' }, r.steps.map(function (s) { return el('li', { text: s }); }))
-    ]));
-  }
-
-  /* -------------------------------------------------------- scan (P) -- */
-
-  var scan = { stream: null, timer: null, last: null };
+  var ZXING_SRC = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+  var ZXING_SRI = 'sha384-BzBxP10ZE72aitqj5UMmUsbKFliP/DZqA8Wq+BNNhlIJDGoEd1tpkMYXOg9+n6sB';
+  var scan = { stream: null, timer: null, reader: null, last: null, zxing: null };
 
   var TAG_WORDS = { pork: 'pork', beef: 'beef', alcohol: 'alcohol', allium: 'onion or garlic', root: 'root vegetables', shellfish: 'shellfish', meat: 'meat', seafood: 'fish', dairy: 'dairy', egg: 'egg' };
+  var VERDICT_ICON = { good: '\u{1F7E2}', ok: '\u{1F7E1}', treat: '\u{1F534}', unknown: '⚪' };
+  var LEVEL_WORD = { low: 'Low', moderate: 'Medium', high: 'High' };
+
+  /*
+   * Reading barcodes. Chrome on Android and on Macs can read them itself
+   * (BarcodeDetector). Everywhere else — every iPhone, Windows — the open
+   * source ZXing reader does it, fetched the first time somebody scans and
+   * pinned with its hash.
+   */
+  function loadZxing() {
+    if (window.ZXing) return Promise.resolve(window.ZXing);
+    if (scan.zxing) return scan.zxing;
+    scan.zxing = new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = ZXING_SRC;
+      s.integrity = ZXING_SRI;
+      s.crossOrigin = 'anonymous';
+      s.async = true;
+      s.onload = function () { window.ZXing ? resolve(window.ZXing) : reject(new Error('no ZXing')); };
+      s.onerror = function () { scan.zxing = null; reject(new Error('ZXing would not load')); };
+      document.head.appendChild(s);
+    });
+    return scan.zxing;
+  }
+
+  function zxingReader(Z) {
+    var hints = new Map();
+    hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [Z.BarcodeFormat.EAN_13, Z.BarcodeFormat.EAN_8, Z.BarcodeFormat.UPC_A, Z.BarcodeFormat.UPC_E]);
+    hints.set(Z.DecodeHintType.TRY_HARDER, true);
+    return new Z.BrowserMultiFormatReader(hints);
+  }
+
+  function nativeDetector() {
+    if (!('BarcodeDetector' in window)) return null;
+    try { return new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] }); } catch (err) { return null; }
+  }
 
   function stopCamera() {
     if (scan.timer) cancelAnimationFrame(scan.timer);
     scan.timer = null;
+    if (scan.reader) { try { scan.reader.reset(); } catch (err) {} scan.reader = null; }
     if (scan.stream) scan.stream.getTracks().forEach(function (t) { t.stop(); });
     scan.stream = null;
   }
 
-  function renderScan(body) {
+  // A photo of the barcode: the way that works everywhere, including inside
+  // apps that will not share the live camera.
+  function readBarcodePhoto(file) {
+    var det = nativeDetector();
+    if (det && window.createImageBitmap) {
+      return createImageBitmap(file).then(function (bmp) { return det.detect(bmp); }).then(function (codes) {
+        if (codes && codes.length) return codes[0].rawValue;
+        return readWithZxing(file);
+      }).catch(function () { return readWithZxing(file); });
+    }
+    return readWithZxing(file);
+  }
+
+  function readWithZxing(file) {
+    return loadZxing().then(function (Z) {
+      var url = URL.createObjectURL(file);
+      return zxingReader(Z).decodeFromImageUrl(url).then(function (result) {
+        URL.revokeObjectURL(url);
+        return result.getText();
+      }, function () { URL.revokeObjectURL(url); return null; });
+    });
+  }
+
+  function renderScanView() {
+    var root = M.$('view-scan');
+    if (!root) return;
     stopCamera();
+    clear(root);
+    root.appendChild(head('Check a product', 'Scan food',
+      'Point your phone’s camera at the barcode on any packet, tin or bottle. You will see straight away how healthy it is, in plain words — and whether it has anything in it you do not eat.'));
+    var body = el('div', { class: 'hub-body' });
+    root.appendChild(body);
+
     if (!plus()) {
-      body.appendChild(premiumCard('Barcode scanner',
-        'Scan a packet in the shop and see what is really in it — checked against the food rules you already set, in the same words.',
-        ['“Has dairy — you have ruled out dairy”, before it is in the basket', 'Nutri-Score, how processed it is, and the numbers per 100 g', 'Allergens and “may contain” traces', 'From Open Food Facts, the open database of 3 million products']));
+      body.appendChild(premiumCard('Scan food — is it good for you?',
+        'Scan the barcode on anything in the shop or the cupboard and get a simple answer: a healthy choice, fine now and then, or best as a treat — with the reasons in everyday words.',
+        ['A score out of 100 and a green, amber or red answer', 'Sugar in teaspoons, salt as a share of your daily limit', 'Warns you if it has something you have said you do not eat', 'Works on over three million products']));
       return;
     }
-    var code = el('input', { class: 'hub-input', type: 'text', inputmode: 'numeric', pattern: '[0-9]*', maxlength: '14', placeholder: 'Or type the number under the barcode', 'aria-label': 'Barcode number' });
-    var look = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Look it up' })]);
-    var camBtn = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: '\u{1F4F7} Scan with the camera' })]);
+
+    body.appendChild(howTo([
+      'Tap “Scan with my camera”. If your phone asks to use the camera, tap Allow.',
+      'Hold the barcode (the black stripes) inside the box, about a hand’s width from the phone.',
+      'The answer appears by itself. If the camera will not work, tap “Take a photo of the barcode” instead.'
+    ]));
+
     var video = el('video', { class: 'hub-camera', playsinline: true, muted: true, hidden: true });
+    var frame = el('div', { class: 'hub-camera-wrap', hidden: true }, [video, el('span', { class: 'hub-camera-box', 'aria-hidden': 'true' })]);
     var out = el('div', { 'aria-live': 'polite' });
+    var code = el('input', { class: 'hub-input', type: 'text', inputmode: 'numeric', pattern: '[0-9]*', maxlength: '14', placeholder: 'For example 5000157024671', 'aria-label': 'The numbers under the barcode', id: 'hub-scan-code' });
+    var look = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Check it' })]);
 
     function lookup(value) {
       var c = String(value || '').replace(/\D/g, '');
-      if (!/^\d{8,14}$/.test(c)) { clear(out).appendChild(note(ERRORS.bad_code, 'error')); return; }
+      if (!/^\d{8,14}$/.test(c)) { clear(out).appendChild(note('A barcode number is 8 to 14 digits long. Check the numbers under the stripes.', 'error')); return; }
       stopCamera();
-      video.hidden = true;
-      clear(out).appendChild(note('Looking up ' + c + '…'));
+      frame.hidden = true;
+      code.value = c;
+      clear(out).appendChild(note('Looking it up…'));
       api('/api/scan?code=' + c).then(function (res) {
         scan.last = res.product;
         var recent = (store('scans') || []).filter(function (p) { return p.code !== res.product.code; });
-        recent.unshift({ code: res.product.code, name: res.product.name, brand: res.product.brand });
+        recent.unshift({ code: res.product.code, name: res.product.name, brand: res.product.brand, verdict: res.product.health && res.product.health.verdict });
         store('scans', recent.slice(0, 8));
         paintProduct(clear(out), res.product);
-      }).catch(function (err) { clear(out).appendChild(note(errorText(err), 'error')); });
+        try { out.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (err) {}
+      }).catch(function (err) {
+        clear(out).appendChild(note(err.code === 'not_found'
+          ? 'That product is not in the database yet. Try the numbers again, or try another product.'
+          : errorText(err), 'error'));
+      });
     }
+
+    var camBtn = el('button', { class: 'hub-big-btn', type: 'button' }, [
+      el('span', { class: 'hub-big-icon', 'aria-hidden': 'true', text: '\u{1F4F7}' }),
+      el('span', { class: 'hub-big-label', text: 'Scan with my camera' }),
+      el('span', { class: 'hub-big-sub', text: 'Point it at the barcode' })
+    ]);
+    camBtn.addEventListener('click', function () {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        clear(out).appendChild(note('This browser cannot use the camera here. Tap “Take a photo of the barcode” instead.', 'error'));
+        return;
+      }
+      stopCamera();
+      clear(out).appendChild(note('Starting the camera…'));
+      var det = nativeDetector();
+      if (det) {
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (stream) {
+          scan.stream = stream;
+          video.srcObject = stream;
+          video.hidden = false;
+          frame.hidden = false;
+          video.play();
+          clear(out).appendChild(note('Hold the barcode inside the box…'));
+          var busy = false;
+          (function tick() {
+            if (!scan.stream) return;
+            if (!busy && video.readyState >= 2) {
+              busy = true;
+              det.detect(video).then(function (codes) {
+                busy = false;
+                if (codes && codes.length) { Sound.tick(); lookup(codes[0].rawValue); }
+              }).catch(function () { busy = false; });
+            }
+            scan.timer = requestAnimationFrame(tick);
+          })();
+        }).catch(cameraRefused);
+        return;
+      }
+      loadZxing().then(function (Z) {
+        var reader = zxingReader(Z);
+        scan.reader = reader;
+        video.hidden = false;
+        frame.hidden = false;
+        clear(out).appendChild(note('Hold the barcode inside the box…'));
+        return reader.decodeFromConstraints({ video: { facingMode: 'environment' } }, video, function (result) {
+          if (result && scan.reader === reader) { Sound.tick(); lookup(result.getText()); }
+        });
+      }).catch(cameraRefused);
+    });
+
+    function cameraRefused() {
+      stopCamera();
+      frame.hidden = true;
+      clear(out).appendChild(note('The camera did not start — it may be blocked here. Tap “Take a photo of the barcode” instead; that always works.', 'error'));
+    }
+
+    var photo = el('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'hub-file', id: 'hub-barcode-photo' });
+    photo.addEventListener('change', function () {
+      var file = photo.files && photo.files[0];
+      if (!file) return;
+      stopCamera();
+      frame.hidden = true;
+      clear(out).appendChild(note('Reading the barcode in your photo…'));
+      readBarcodePhoto(file).then(function (value) {
+        photo.value = '';
+        if (value) lookup(value);
+        else clear(out).appendChild(note('Could not see a barcode in that photo. Try again closer, in good light, with the stripes filling most of the picture — or type the numbers below.', 'error'));
+      }).catch(function () { clear(out).appendChild(note('Could not read that photo. Type the numbers under the barcode instead.', 'error')); });
+    });
 
     look.addEventListener('click', function () { lookup(code.value); });
     code.addEventListener('keydown', function (e) { if (e.key === 'Enter') lookup(code.value); });
 
-    var canDetect = 'BarcodeDetector' in window && navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
-    camBtn.addEventListener('click', function () {
-      if (!canDetect) return;
-      var detector;
-      try { detector = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] }); } catch (err) { clear(out).appendChild(note('This browser cannot read barcodes from the camera. Type the number instead.', 'error')); return; }
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }).then(function (stream) {
-        scan.stream = stream;
-        video.srcObject = stream;
-        video.hidden = false;
-        video.play();
-        clear(out).appendChild(note('Point the camera at the barcode…'));
-        var busy = false;
-        function tick() {
-          if (!scan.stream) return;
-          if (!busy && video.readyState >= 2) {
-            busy = true;
-            detector.detect(video).then(function (codes) {
-              busy = false;
-              if (codes && codes.length) { Sound.tick(); code.value = codes[0].rawValue; lookup(codes[0].rawValue); }
-            }).catch(function () { busy = false; });
-          }
-          scan.timer = requestAnimationFrame(tick);
-        }
-        tick();
-      }).catch(function () { clear(out).appendChild(note('The camera is not available — allow it in your browser, or type the number instead.', 'error')); });
-    });
-
-    body.appendChild(el('div', { class: 'hub-row' }, [canDetect ? camBtn : el('p', { class: 'fine', text: 'Camera scanning works in Chrome on Android and on Macs. Here, type the number under the barcode.' })]));
-    body.appendChild(video);
+    body.appendChild(el('div', { class: 'hub-big-actions' }, [
+      camBtn,
+      photo,
+      el('label', { class: 'hub-big-btn', for: 'hub-barcode-photo' }, [
+        el('span', { class: 'hub-big-icon', 'aria-hidden': 'true', text: '\u{1F5BC}️' }),
+        el('span', { class: 'hub-big-label', text: 'Take a photo of the barcode' }),
+        el('span', { class: 'hub-big-sub', text: 'Works on every phone' })
+      ])
+    ]));
+    body.appendChild(frame);
+    body.appendChild(el('label', { class: 'hub-label', for: 'hub-scan-code', text: 'Or type the numbers under the barcode' }));
     body.appendChild(el('div', { class: 'hub-row hub-add-row' }, [code, look]));
     body.appendChild(out);
     if (scan.last) paintProduct(out, scan.last);
 
     var recent = store('scans') || [];
     if (recent.length) {
-      body.appendChild(el('h2', { class: 'strip-title', text: 'Recently scanned' }));
+      body.appendChild(el('h2', { class: 'strip-title', text: 'You checked recently' }));
       body.appendChild(el('div', { class: 'hub-row' }, recent.map(function (p) {
-        return el('button', { class: 'quiet', type: 'button', text: p.name + (p.brand ? ' (' + p.brand + ')' : ''), on: { click: function () { lookup(p.code); } } });
+        return el('button', { class: 'quiet', type: 'button', on: { click: function () { lookup(p.code); } } }, [
+          p.verdict ? el('span', { 'aria-hidden': 'true', text: VERDICT_ICON[p.verdict] + ' ' }) : null,
+          p.name + (p.brand ? ' (' + p.brand + ')' : '')
+        ]);
       })));
     }
-    body.appendChild(el('p', { class: 'fine hub-foot' }, ['Product data from ', el('a', { href: 'https://world.openfoodfacts.org/', target: '_blank', rel: 'noopener noreferrer', text: 'Open Food Facts' }), ', written by volunteers. Always check the packet if an allergy is serious.']));
+    body.appendChild(el('p', { class: 'fine hub-foot' }, ['Product information from ', el('a', { href: 'https://world.openfoodfacts.org/', target: '_blank', rel: 'noopener noreferrer', text: 'Open Food Facts' }), ', written by volunteers. This is a guide, not medical advice — if you have an allergy, always read the packet.']));
   }
 
   function paintProduct(out, p) {
+    var h = p.health || { verdict: 'unknown', title: 'Not enough information to judge', summary: '', lights: [], goods: [] };
     var rules = M.effectiveRules();
     var clashes = p.contains.filter(function (t) { return rules.indexOf(t) !== -1; });
-    var verdict;
-    if (clashes.length) verdict = el('p', { class: 'hub-verdict is-bad', text: '⚠ Has ' + clashes.map(function (t) { return TAG_WORDS[t] || t; }).join(', ') + ' — which you have ruled out.' });
-    else if (!p.ingredientsKnown) verdict = el('p', { class: 'hub-verdict is-unknown', text: 'No ingredient list on record, so it cannot be checked against your rules. Read the packet.' });
-    else verdict = el('p', { class: 'hub-verdict is-good', text: rules.length ? '✓ Nothing you have ruled out, going by its ingredient list.' : '✓ Ingredient list on record. Set food rules in Profile and they are checked here too.' });
 
-    var per = p.per100g;
-    var rows = [['Energy', per.kcal, 'kcal'], ['Fat', per.fat, 'g'], ['of which saturates', per.saturates, 'g'], ['Carbohydrate', per.carbs, 'g'], ['of which sugars', per.sugars, 'g'], ['Fibre', per.fibre, 'g'], ['Protein', per.protein, 'g'], ['Salt', per.salt, 'g']].filter(function (r) { return r[1] !== null; });
+    var verdict = el('div', { class: 'hub-health is-' + h.verdict }, [
+      el('div', { class: 'hub-health-score' }, [
+        el('span', { class: 'hub-health-num', text: h.score !== null && h.score !== undefined ? String(h.score) : '?' }),
+        el('span', { class: 'hub-health-of', text: 'out of 100' })
+      ]),
+      el('div', { class: 'hub-health-text' }, [
+        el('p', { class: 'hub-health-title', text: VERDICT_ICON[h.verdict] + ' ' + h.title }),
+        h.summary ? el('p', { class: 'hub-health-summary', text: h.summary }) : null
+      ])
+    ]);
+
+    var rulesCard;
+    if (clashes.length) rulesCard = el('p', { class: 'hub-verdict is-bad', text: '⚠ This has ' + clashes.map(function (t) { return TAG_WORDS[t] || t; }).join(' and ') + ' in it — which you have said you do not eat.' });
+    else if (!p.ingredientsKnown) rulesCard = el('p', { class: 'hub-verdict is-unknown', text: 'There is no ingredient list on record, so we cannot check it for things you do not eat. Read the packet.' });
+    else if (rules.length) rulesCard = el('p', { class: 'hub-verdict is-good', text: '✓ Nothing in it that you have said you do not eat (going by its ingredient list).' });
+    else rulesCard = el('p', { class: 'hub-verdict is-unknown', text: 'Tip: tell the app what you do not eat (in Profile) and it will warn you here.' });
+
+    var lights = (h.lights || []).map(function (l) {
+      return el('li', { class: 'hub-light is-' + l.level }, [
+        el('span', { class: 'hub-light-dot', 'aria-hidden': 'true' }),
+        el('span', { class: 'hub-light-name', text: l.label }),
+        el('span', { class: 'hub-light-level', text: LEVEL_WORD[l.level] }),
+        el('span', { class: 'hub-light-plain', text: l.plain })
+      ]);
+    });
+
+    var per = p.per100g || {};
+    var rows = [['Energy', per.kcal, 'kcal'], ['Fat', per.fat, 'g'], ['of which saturates', per.saturates, 'g'], ['Carbohydrate', per.carbs, 'g'], ['of which sugars', per.sugars, 'g'], ['Fibre', per.fibre, 'g'], ['Protein', per.protein, 'g'], ['Salt', per.salt, 'g']].filter(function (r) { return r[1] !== null && r[1] !== undefined; });
+    var gradeText = h.grade ? 'The Nutri-Score is ' + h.grade + ' — the grade printed on many packets, from A (best) to E (least healthy).' : '';
 
     out.appendChild(el('article', { class: 'hub-product' }, [
       el('div', { class: 'hub-product-head' }, [
         p.image ? el('img', { class: 'hub-product-img', src: p.image, alt: '', referrerPolicy: 'no-referrer' }) : null,
         el('div', {}, [
           el('h2', { class: 'hub-recipe-name', text: p.name }),
-          el('p', { class: 'fine', text: [p.brand, p.quantity, p.code].filter(Boolean).join(' · ') }),
-          el('div', { class: 'hub-row' }, [
-            p.nutriscore ? el('span', { class: 'hub-score is-' + p.nutriscore.toLowerCase(), text: 'Nutri-Score ' + p.nutriscore }) : null,
-            p.nova ? el('span', { class: 'hub-score', text: 'NOVA ' + p.nova + (p.nova === 4 ? ' · ultra-processed' : p.nova === 1 ? ' · unprocessed' : '') }) : null,
-            p.vegan === true ? el('span', { class: 'hub-score is-a', text: 'Vegan' }) : p.vegetarian === true ? el('span', { class: 'hub-score is-b', text: 'Vegetarian' }) : null
-          ])
+          el('p', { class: 'fine', text: [p.brand, p.quantity].filter(Boolean).join(' · ') })
         ])
       ]),
       verdict,
-      p.contains.length ? el('p', {}, [el('strong', { text: 'Contains: ' }), p.contains.map(function (t) { return TAG_WORDS[t] || t; }).join(', ')]) : null,
-      p.traces.length ? el('p', { class: 'fine', text: 'May contain traces of: ' + p.traces.join(', ') }) : null,
-      rows.length ? el('table', { class: 'hub-table' }, [el('caption', { text: 'Per 100 g' })].concat(rows.map(function (r) {
+      rulesCard,
+      lights.length ? el('h3', { class: 'strip-title', text: 'What is in it (traffic lights, like on the packet)' }) : null,
+      lights.length ? el('ul', { class: 'hub-lights' }, lights) : null,
+      h.goods && h.goods.length ? el('p', { class: 'hub-good-line', text: '\u{1F44D} Good news: it is ' + h.goods.join(' and ') + '.' }) : null,
+      h.processing ? el('p', { class: 'hub-processing' }, [el('strong', { text: 'How processed is it? ' }), h.processing]) : null,
+      gradeText ? el('p', { class: 'fine', text: gradeText }) : null,
+      rows.length ? el('details', { class: 'hub-details' }, [el('summary', { text: 'All the numbers (per ' + (h.per || '100 g') + ')' }), el('table', { class: 'hub-table' }, rows.map(function (r) {
         return el('tr', {}, [el('th', { scope: 'row', text: r[0] }), el('td', { text: r[1] + ' ' + r[2] })]);
-      }))) : null,
-      p.ingredients ? el('details', {}, [el('summary', { text: 'Ingredients' }), el('p', { class: 'fine', text: p.ingredients })]) : null
+      }))]) : null,
+      p.ingredients ? el('details', { class: 'hub-details' }, [el('summary', { text: 'Ingredients' }), el('p', { class: 'fine', text: p.ingredients })]) : null,
+      p.traces.length ? el('p', { class: 'fine', text: 'May contain traces of: ' + p.traces.join(', ') + '.' }) : null,
+      el('button', { class: 'go go-sm', type: 'button', on: { click: function () { scan.last = null; renderScanView(); try { window.scrollTo(0, 0); } catch (err) {} } } }, [el('span', { class: 'go-label', text: 'Check another product' })])
     ]));
   }
 
   /* ------------------------------------------------------ fridge (P) -- */
 
-  function shrinkPhoto(file) {
+  function shrinkPhoto(file, maxSide) {
     return new Promise(function (resolve, reject) {
       var url = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function () {
-        var max = 1024;
+        var max = maxSide || 1024;
         var scale = Math.min(1, max / Math.max(img.width, img.height));
         var canvas = document.createElement('canvas');
         canvas.width = Math.round(img.width * scale);
@@ -1686,6 +1987,11 @@
         Sound.win();
       }).catch(function (err) { clear(out).appendChild(note(err && err.code ? errorText(err) : ERRORS.bad_image, 'error')); });
     });
+    body.appendChild(howTo([
+      'Open the fridge (or the cupboard) so the food is easy to see.',
+      'Tap \u201CTake or choose a photo\u201D and take a picture.',
+      'In about ten seconds you will see what is there and the dishes you can make with it.'
+    ]));
     body.appendChild(el('div', { class: 'hub-row' }, [input, label]));
     body.appendChild(preview);
     body.appendChild(out);
@@ -2120,9 +2426,10 @@
       }).catch(function () { return false; });
     },
     onView: function (name) {
-      if (name !== 'kitchen') stopCamera();
+      if (name !== 'scan') stopCamera();
       if (name === 'planner') renderPlanner();
       else if (name === 'kitchen') renderKitchen();
+      else if (name === 'scan') renderScanView();
       else if (name === 'news') renderBriefing();
     },
     // Called whenever the account status is checked again, which is on
@@ -2136,7 +2443,7 @@
       lastTier = now;
       if (changedAccount) { plan.data = null; plan.loadedFor = null; cookbook.list = null; }
       var v = M.currentView();
-      if (v === 'planner' || v === 'kitchen' || v === 'news') window.M45Hub.onView(v);
+      if (v === 'planner' || v === 'kitchen' || v === 'scan' || v === 'news') window.M45Hub.onView(v);
     }
   };
 
@@ -2145,5 +2452,5 @@
   ensureTicker();
   // Opened before this file had loaded — ?go=planner at boot, say.
   var opened = M.currentView();
-  if (opened === 'planner' || opened === 'kitchen' || opened === 'news') window.M45Hub.onView(opened);
+  if (opened === 'planner' || opened === 'kitchen' || opened === 'scan' || opened === 'news') window.M45Hub.onView(opened);
 })();

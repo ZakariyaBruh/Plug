@@ -27,7 +27,16 @@ type CookbookRecipe = {
   source: string
   image: string
   notes: string
+  /*
+   * Where it came from, which decides where it is shown: "Your own recipes"
+   * (written in, pasted in, or copied from a photo) or "From websites".
+   * Recipes saved before this existed are sorted by whether they have a
+   * source address.
+   */
+  origin: 'own' | 'text' | 'photo' | 'web'
 }
+
+const ORIGINS = ['own', 'text', 'photo', 'web'] as const
 
 function lines(raw: unknown, cap: number, each: number): string[] {
   if (!Array.isArray(raw)) return []
@@ -55,6 +64,9 @@ function cleanRecipe(raw: unknown, id: string): CookbookRecipe | null {
     source: /^https?:\/\//.test(source) ? source : '',
     image: /^https:\/\//.test(image) ? image : '',
     notes: str(r.notes, 1000),
+    origin: (ORIGINS as readonly string[]).includes(r.origin as string)
+      ? (r.origin as CookbookRecipe['origin'])
+      : /^https?:\/\//.test(source) ? 'web' : 'own',
   }
 }
 

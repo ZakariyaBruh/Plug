@@ -13914,6 +13914,7 @@
     // The hub's two sections, and where their sign-in links send people back to.
     else if (go === 'planner') { hideLanding(); setView('planner'); }
     else if (go === 'kitchen') { hideLanding(); setView('kitchen'); }
+    else if (go === 'scan') { hideLanding(); setView('scan'); }
     // Where #radio-signin sends somebody back to, on whichever tab they
     // were on; ?go=tv and ?go=listen pick the tab outright.
     else if (go === 'radio') { hideLanding(); setView('radio'); }

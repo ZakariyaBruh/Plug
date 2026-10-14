@@ -29,10 +29,10 @@ export const Route = createFileRoute('/premium')({
       path: '/premium',
       title: `Premium — morsels45 · ${OFFER_SHORT}, then ${PRICE_MONTHLY}`,
       description:
-        `Premium switches on the rest of the food hub: a shopping list, nutrition and budget for your planned week, a dinner-party planner, your own synced cookbook with recipe import, a barcode scanner, dinner from a fridge photo, hands-free cook mode, a daily AI food briefing and the shared browser. ${OFFER}.`,
+        `Premium switches on the rest of the food hub: a shopping list, nutrition and budget for your planned week, a dinner-party planner, your own recipes and recipes from any website, a food scanner that says how healthy something is, dinner from a fridge photo, hands-free cook mode, a daily AI food briefing and the shared browser. ${OFFER}.`,
       ogTitle: `morsels45 Premium — ${OFFER_SHORT}`,
       ogDescription:
-        `Shopping list, nutrition and budget for your week. Your cookbook, recipe import, a barcode scanner and dinner from a photo of your fridge. Hands-free cook mode, a daily AI food briefing, and a browser two of you drive at once. ${OFFER}.`,
+        `Shopping list, nutrition and budget for your week. Your own recipes, recipes from any website, a food scanner that tells you how healthy it is, and dinner from a photo of your fridge. Hands-free cook mode, a daily AI food briefing, and a browser two of you drive at once. ${OFFER}.`,
     }),
   component: PremiumPage,
 })
@@ -67,10 +67,11 @@ function PremiumPage() {
             <p className="mt-4 text-[var(--text-dim)]">
               Deciding is free, and so is telling it what you do not eat. A free account adds the
               meal calendar, food TV and radio. Premium is everything else: a shopping list,
-              nutrition and a budget for your week, a dinner-party planner, your own cookbook with
-              recipe import, a barcode scanner, dinner from a photo of your fridge, hands-free cook
-              mode, a daily AI food briefing, and a real browser two people drive at once. Nothing
-              is charged for {TRIAL_DAYS} days.
+              nutrition and a budget for your week, a dinner-party planner, your own recipes (even
+              copied from a photo of a handwritten card), recipes from any website, a food scanner
+              that tells you how healthy something is, dinner from a photo of your fridge,
+              hands-free cook mode, a daily AI food briefing, and a real browser two people drive at
+              once. Nothing is charged for {TRIAL_DAYS} days.
             </p>
             {/* Said next to the promise rather than three pages away in the
                 FAQ, which is where it was. "It remembers you" and "sign in
