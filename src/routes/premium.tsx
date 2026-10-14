@@ -29,10 +29,10 @@ export const Route = createFileRoute('/premium')({
       path: '/premium',
       title: `Premium — morsels45 · ${OFFER_SHORT}, then ${PRICE_MONTHLY}`,
       description:
-        `Premium stops it repeating itself, gets you as far as the table with cook mode and a shopping list, and covers the person you eat with on one subscription. ${OFFER}. What you do not eat is free on every profile.`,
+        `Premium switches on the rest of the food hub: a shopping list, nutrition and budget for your planned week, a dinner-party planner, your own synced cookbook with recipe import, a barcode scanner, dinner from a fridge photo, hands-free cook mode, a daily AI food briefing and the shared browser. ${OFFER}.`,
       ogTitle: `morsels45 Premium — ${OFFER_SHORT}`,
       ogDescription:
-        `It learns what you like and stops offering the same thing twice. Cook mode, a shopping list, and somewhere near you that serves it. Together settles it between two of you on one phone, and a browser you both drive orders it. ${OFFER}.`,
+        `Shopping list, nutrition and budget for your week. Your cookbook, recipe import, a barcode scanner and dinner from a photo of your fridge. Hands-free cook mode, a daily AI food briefing, and a browser two of you drive at once. ${OFFER}.`,
     }),
   component: PremiumPage,
 })
@@ -59,15 +59,18 @@ function PremiumPage() {
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
               morsels45 Premium
             </p>
-            <h1 className="mt-3 text-4xl font-bold sm:text-5xl">{OFFER_SHORT}</h1>
+            <h1 className="mt-3 text-4xl font-bold sm:text-5xl">The whole food hub</h1>
+            <p className="mt-2 text-lg font-semibold">{OFFER_SHORT}</p>
             {/* No price here. There are four of them now, and the picker
                 below is the only thing that knows which one is selected — a
                 line naming two of them sat above a control showing a third. */}
             <p className="mt-4 text-[var(--text-dim)]">
-              The decide game is free, and so is telling it what you do not eat. Premium is the
-              part that remembers: it learns what you actually like, stops offering the same thing
-              twice in a week, and opens a real browser two people can order in at once, with a
-              cursor each. Nothing is charged for {TRIAL_DAYS} days.
+              Deciding is free, and so is telling it what you do not eat. A free account adds the
+              meal calendar, food TV and radio. Premium is everything else: a shopping list,
+              nutrition and a budget for your week, a dinner-party planner, your own cookbook with
+              recipe import, a barcode scanner, dinner from a photo of your fridge, hands-free cook
+              mode, a daily AI food briefing, and a real browser two people drive at once. Nothing
+              is charged for {TRIAL_DAYS} days.
             </p>
             {/* Said next to the promise rather than three pages away in the
                 FAQ, which is where it was. "It remembers you" and "sign in
@@ -87,7 +90,7 @@ function PremiumPage() {
                   href="/decide/"
                   className="inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
                 >
-                  Play now
+                  Open morsels45
                 </a>
                 <Link to="/account" className="text-sm text-[var(--text-dim)] underline underline-offset-4">
                   Manage your account
@@ -143,15 +146,35 @@ function PremiumPage() {
         <section className="border-t border-[var(--border)] bg-[var(--bg-raised)] py-14">
           <div className="mx-auto max-w-3xl px-6">
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">
-              The reason most people pay
+              The shared browser
             </p>
-            <h2 className="mt-2 text-3xl font-bold">A browser two people drive at once.</h2>
+            <h2 className="mt-2 text-3xl font-bold">A browser two people drive at once &mdash; and where you&rsquo;ll find it.</h2>
             <p className="mt-4 text-[var(--text-dim)]">
-              A real browser, running somewhere else, with a cursor each. Order the dish you landed
-              on from one basket. Cook along to the same video from two kitchens, where “wait, go
-              back” means the same frame for both of you. Fill one shopping list together. It is the
-              part of this that costs real money to run, and it is the part a subscription actually
-              pays for.
+              A real web browser running in the cloud. You open it from one of the buttons below,
+              send the other person a link, and you each get a cursor in the same window, from your
+              own phones. Nothing to install, nobody passing a phone round the table.
+            </p>
+            <ol className="mt-6 list-decimal space-y-3 pl-5 text-[var(--text-dim)]">
+              <li>
+                <strong className="text-[var(--text)]">Order it together</strong> &mdash; on the answer
+                screen, once you accept a dish. Opens a delivery site on it; you fill one basket.
+              </li>
+              <li>
+                <strong className="text-[var(--text)]">Order from here</strong> &mdash; in Nearby, on any
+                restaurant. Opens that place&rsquo;s own ordering page.
+              </li>
+              <li>
+                <strong className="text-[var(--text)]">Cook along</strong> &mdash; in cook mode, on any
+                recipe. One cooking video, in step, in two kitchens.
+              </li>
+              <li>
+                <strong className="text-[var(--text)]">Shop it together</strong> &mdash; on any shopping
+                list, a recipe&rsquo;s or your whole week&rsquo;s in the Planner. One supermarket basket.
+              </li>
+            </ol>
+            <p className="mt-4 text-sm text-[var(--text-dim)]">
+              Every one of those buttons has a &ldquo;What&rsquo;s this?&rdquo; beside it in the app. It is
+              part of Premium because it is a real computer running for you while it is open.
             </p>
             <p className="mt-4 text-[var(--text-dim)]">
               <strong className="text-[var(--text)]">{DIET_FREE}</strong> {DIET_FREE_WHY}
@@ -215,7 +238,7 @@ function PremiumPage() {
                   href="/decide/"
                   className="mt-8 inline-block rounded-full border border-[var(--border)] px-6 py-3 text-sm font-semibold hover:border-[var(--amber)]"
                 >
-                  Play free
+                  Open it free
                 </a>
               </div>
               <div className="rounded-2xl border border-[var(--amber)] bg-[var(--amber-soft)] p-8">
@@ -239,7 +262,7 @@ function PremiumPage() {
                     href="/decide/"
                     className="mt-8 inline-block rounded-full bg-[var(--amber)] px-6 py-3 text-sm font-semibold text-black hover:opacity-90"
                   >
-                    Play now
+                    Open morsels45
                   </a>
                 ) : (
                   <div className="mt-8">

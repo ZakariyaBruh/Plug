@@ -512,6 +512,45 @@
   // setPanel('home') leaves behind.
   var panel = 'home';
 
+  /*
+   * THE BRIDGE TO hub.js — the planner, the kitchen tools, the briefing and
+   * hands-free cooking live in their own file, and this is everything of
+   * this one they are allowed to use. Functions, not copies: effectiveRules
+   * is read fresh every time, so a rule changed in Profile holds in the
+   * planner the moment it is changed. See js/hub.js.
+   */
+  window.M45 = {
+    $: function (id) { return $(id); },
+    $$: function (sel) { return $$(sel); },
+    premium: premiumApi,
+    isPlus: function () { return isPlus(); },
+    signedIn: function () { return !!premiumApi.status.signedIn; },
+    goPremium: function (what) { goPremium(what); },
+    toast: function (icon, title, text) { toast(icon, title, text); },
+    setView: function (name) { hideLanding(); setView(name); },
+    currentView: function () { return view; },
+    openDish: function (name) {
+      var dish = dishByName(name);
+      if (dish) openSheet(dish);
+      return !!dish;
+    },
+    dishByName: function (name) { return dishByName(name); },
+    openCookMode: function (recipe, serves, dish) { openCookMode(recipe, serves, dish); },
+    openBeam: function (kind, label) { openBeam(kind, label); },
+    beamHelp: function () { openBeamHelp(); },
+    effectiveRules: function () { return effectiveRules(); },
+    breaksRules: function (dish) { return breaksRules(dish, effectiveRules()); },
+    likedNames: function () {
+      try {
+        var ratings = progress.state.ratings || {};
+        return Object.keys(ratings).filter(function (n) { return ratings[n] === 'loved'; }).slice(0, 20);
+      } catch (err) { return []; }
+    },
+    Sound: Sound,
+    Data: Data,
+    Recipes: Recipes
+  };
+
   function setView(name) {
     // Leaving the menu tab is a decision about the menu, so it is taken here,
     // before `view` moves on and the old one is unknowable. See leaveMenu.
@@ -535,6 +574,7 @@
     if (name === 'news') renderNews();
     if (name === 'radio') renderRadio();
     if (name === 'daily') renderDaily();
+    if (window.M45Hub) window.M45Hub.onView(name);
     if (name === 'chat') renderChat();
     // A half-written answer left running in a section nobody is looking at
     // keeps scrolling it into view from somewhere else in the app.
@@ -1705,6 +1745,30 @@
   });
 
   $('beam-close').addEventListener('click', closeBeam);
+
+  // The hub's sections, straight from the landing screen.
+  $$('[data-landing-view]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      hideLanding();
+      setView(btn.dataset.landingView);
+    });
+  });
+
+  // "What's this?" beside every shared-browser button — see #beam-help.
+  var beamHelp = $('beam-help');
+  function openBeamHelp() {
+    if (!beamHelp) return;
+    if (beamHelp.showModal) beamHelp.showModal();
+    else beamHelp.setAttribute('open', '');
+  }
+  document.addEventListener('click', function (e) {
+    var link = e.target && e.target.closest ? e.target.closest('.beam-help-link') : null;
+    if (link) { e.preventDefault(); openBeamHelp(); }
+  });
+  if (beamHelp) {
+    $('beam-help-close').addEventListener('click', function () { beamHelp.close(); });
+    beamHelp.addEventListener('click', function (e) { if (e.target === beamHelp) beamHelp.close(); });
+  }
 
   // Taking the way out. The new tab is the same session, so the frame in here
   // has to go: two connections to one browser is two streams billed as one,
@@ -4625,7 +4689,7 @@
     paintKeep();
     paintNext();
     paintWhy();
-    paintPlan();
+    paintPlan(item);
     setPanel('reward');
     paintStreak();
     Sound.win();
@@ -4907,52 +4971,71 @@
    */
   var PLAN_CUES = ProgressLib.PLAN_CUES;
 
-  function paintPlan() {
+  /*
+   * PUT IT IN YOUR WEEK — what this strip is now.
+   *
+   * It used to ask "When do you usually need this?" and change the home
+   * screen's greeting at that hour: an implementation intention, in the
+   * literature's words, and in a reader's words a question that made no
+   * sense. Its replacement is the thing people actually want to do after
+   * saying yes to a dish — put it in the week — which is what the meal
+   * planner (js/hub.js) is for. Free with an account, like the planner.
+   * Any old greeting a profile still carries is cleared on load (see boot).
+   */
+  var planStripItem = null;
+
+  function paintPlan(item) {
     var wrap = $('plan-strip');
     if (!wrap) return;
-
-    var plan = progress.plan();
-    var earned = (progress.state.decisions || 0) >= 2;
-
-    // Nothing to show: too early, and nothing set.
-    if (!plan && !earned) { wrap.hidden = true; return; }
+    if (item) planStripItem = item;
+    var dish = planStripItem;
+    if (!dish) { wrap.hidden = true; return; }
     wrap.hidden = false;
 
     var cues = $('plan-cues');
-    var done = $('plan-done');
+    $('plan-done').hidden = true;
+    cues.hidden = false;
+    cues.innerHTML = '';
+    $('plan-title').textContent = 'Put it in your week';
 
-    if (plan) {
-      $('plan-title').textContent = 'Your plan';
-      $('plan-note').textContent = 'You said you would work out what to eat ' + plan.phrase +
-        '. Open the home screen around then and I will say so there — nothing is sent to ' +
-        'you, and if you do not come back on your own, nothing happens either.';
-      cues.hidden = true;
-      done.hidden = false;
+    if (!premiumApi.status.signedIn) {
+      $('plan-note').textContent = 'The meal planner comes free with an account: plan the week, let its AI fill the gaps, and it is on every device you sign in on.';
+      var link = document.createElement('a');
+      link.className = 'plan-cue';
+      link.href = '/api/oauth/login?redirect_to=' + encodeURIComponent('/decide/?go=planner');
+      // target="_top": see the note on #invite-signin.
+      link.target = '_top';
+      link.textContent = 'Sign in and plan it';
+      cues.appendChild(link);
       return;
     }
 
-    $('plan-title').textContent = 'When do you usually need this?';
-    $('plan-note').textContent = 'Pick the moment — after work, before dinner, whenever you ' +
-      'usually end up stuck. Open the home screen again around then and it will greet you ' +
-      'with that instead of a plain "hungry?" No notification, no email — it only changes ' +
-      'what is on the screen when you come back yourself.';
-    cues.hidden = false;
-    done.hidden = true;
-
-    cues.innerHTML = '';
-    PLAN_CUES.forEach(function (cue) {
+    $('plan-note').textContent = 'Drop ' + dish.name + ' into the meal planner, and let it plan the rest of the week around it.';
+    var meal = dish.tags && dish.tags.breakfast > 0 ? 'breakfast' : 'dinner';
+    [['Tonight', 0], ['Tomorrow', 1]].forEach(function (choice) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'plan-cue';
-      btn.textContent = cue.label;
+      btn.textContent = choice[0] + (meal === 'breakfast' ? ' (breakfast)' : '');
       btn.addEventListener('click', function () {
-        progress.setPlan(cue.id);
-        Sound.tick();
-        paintPlan();
-        toast('\u{1F553}', 'Noted', 'The home screen will greet you with it ' + cue.phrase + '.');
+        if (!window.M45Hub || !window.M45Hub.addDish) return;
+        var date = new Date();
+        date.setDate(date.getDate() + choice[1]);
+        btn.disabled = true;
+        window.M45Hub.addDish(dish.name, date, meal).then(function (ok) {
+          Sound.tick();
+          btn.textContent = ok ? 'Added \u2713' : 'Could not add it \u2014 try the planner';
+          if (ok) toast('\u{1F4C5}', 'In your week', dish.name + ' is on ' + (choice[1] ? 'tomorrow' : 'tonight') + '\u2019s ' + meal + '.');
+        });
       });
       cues.appendChild(btn);
     });
+    var open = document.createElement('button');
+    open.type = 'button';
+    open.className = 'plan-cue';
+    open.textContent = 'Open the planner';
+    open.addEventListener('click', function () { setView('planner'); });
+    cues.appendChild(open);
   }
 
   /*
@@ -8308,6 +8391,8 @@
       // when their status lands would otherwise keep the free six, and the
       // only way out of it was to leave the tab and come back.
       if (news.stories) paintNews();
+      // The planner, kitchen and briefing each depend on the tier too.
+      if (window.M45Hub) window.M45Hub.onStatus();
       if (announce && status.hasPremium && !was) {
         Sound.win();
         Confetti.burst({ y: window.innerHeight * 0.35 });
@@ -9116,12 +9201,17 @@
         });
       })
       .then(function (data) {
+        if (!data.signedIn) return { data: data, channels: data.channels };
+        $('radio-signedout').hidden = true;
+        return checkChannels(data.channels).then(function (channels) { return { data: data, channels: channels }; });
+      })
+      .then(function (got) {
         tv.loading = false;
-        tv.channels = data.channels;
-        tv.withStreams = !!data.signedIn;
+        tv.channels = got.channels;
+        tv.withStreams = !!got.data.signedIn;
         $('tv-loading').hidden = true;
         if (view === 'radio' && media.tab === 'tv') {
-          $('radio-signedout').hidden = !!data.signedIn;
+          $('radio-signedout').hidden = !!got.data.signedIn;
           paintTv();
         }
         if (tv.withStreams) loadGuide();
@@ -9131,6 +9221,76 @@
         $('tv-loading').hidden = true;
         if (view === 'radio' && media.tab === 'tv') $('tv-error').hidden = false;
       });
+  }
+
+  /*
+   * CHECKED ON THE FLY, FROM THIS BROWSER.
+   *
+   * The server hands over candidates — the verified channels and anything
+   * new on iptv-org's live list, each with every stream address it has — and
+   * none of them is listed until this browser has asked the stream itself
+   * and been answered with a real playlist. That is the only check that
+   * knows about this viewer's country, network and browser: a channel that
+   * is geo-blocked here, or down this minute, simply does not appear, rather
+   * than sitting in the list waiting to fail. Six at a time, five seconds
+   * each, the first twelve that answer in the order the server ranked them.
+   */
+  var TV_MAX = 12;
+  var TV_CHECK_MS = 5000;
+
+  function streamAnswers(url) {
+    var control = 'AbortController' in window ? new AbortController() : null;
+    var timer = setTimeout(function () { if (control) control.abort(); }, TV_CHECK_MS);
+    return fetch(url, { mode: 'cors', cache: 'no-store', credentials: 'omit', signal: control ? control.signal : undefined })
+      .then(function (r) { return r.ok ? r.text() : ''; })
+      .then(function (text) { clearTimeout(timer); return text.slice(0, 7) === '#EXTM3U'; })
+      .catch(function () { clearTimeout(timer); return false; });
+  }
+
+  function checkChannel(ch) {
+    var streams = (ch.streams || (ch.stream ? [ch.stream] : [])).slice(0, 3);
+    var i = 0;
+    function next() {
+      if (i >= streams.length) return Promise.resolve(null);
+      var url = streams[i++];
+      return streamAnswers(url).then(function (ok) {
+        if (!ok) return next();
+        var out = {};
+        Object.keys(ch).forEach(function (k) { out[k] = ch[k]; });
+        out.stream = url;
+        return out;
+      });
+    }
+    return next();
+  }
+
+  function checkChannels(candidates) {
+    var results = new Array(candidates.length);
+    var done = 0;
+    var at = 0;
+    var note = document.querySelector('#tv-loading .fine');
+    function paintProgress() {
+      if (note) note.textContent = 'Checking which channels play for you\u2026 ' + done + ' of ' + candidates.length;
+    }
+    paintProgress();
+    function worker() {
+      if (at >= candidates.length) return Promise.resolve();
+      var index = at++;
+      return checkChannel(candidates[index]).then(function (ok) {
+        results[index] = ok;
+        done++;
+        paintProgress();
+        return worker();
+      });
+    }
+    var pool = [];
+    for (var w = 0; w < Math.min(6, candidates.length); w++) pool.push(worker());
+    return Promise.all(pool).then(function () {
+      if (note) note.textContent = 'Finding what\u2019s on\u2026';
+      var working = results.filter(Boolean);
+      tv.checked = { at: Date.now(), tried: candidates.length, playing: working.length };
+      return working.slice(0, TV_MAX);
+    });
   }
 
   function loadGuide() {
@@ -9181,9 +9341,26 @@
     return p.title + (p.subtitle ? ' — ' + p.subtitle : '');
   }
 
+  function paintTvChecked() {
+    var line = $('tv-checked');
+    if (!line) return;
+    var c = tv.checked;
+    line.hidden = !(c && tv.withStreams);
+    if (!c) return;
+    $('tv-checked-text').textContent = 'Checked from your browser just now: ' + c.playing + ' of ' + c.tried +
+      ' food channels play where you are' + (c.playing > TV_MAX ? ', showing the first ' + TV_MAX : '') + '.';
+  }
+
   function paintTv() {
+    paintTvChecked();
     var list = $('tv-list');
     list.innerHTML = '';
+    if (tv.withStreams && !(tv.channels || []).length) {
+      var none = document.createElement('li');
+      none.className = 'fine';
+      none.textContent = 'None of the free food channels answered from here just now. They come and go \u2014 check again in a little while.';
+      list.appendChild(none);
+    }
     (tv.channels || []).forEach(function (ch, i) {
       var li = document.createElement('li');
       var btn = document.createElement('button');
@@ -9483,6 +9660,12 @@
 
     $('tv-close').addEventListener('click', closeTv);
     $('tv-retry').addEventListener('click', function () { tv.channels = null; loadTv(); });
+    $('tv-recheck').addEventListener('click', function () {
+      if (tv.current) closeTv();
+      tv.channels = null;
+      tv.dead = {};
+      loadTv();
+    });
 
     $('radio-bar-toggle').addEventListener('click', toggleRadio);
     $('radio-bar-next').addEventListener('click', function () { radio.skips = 0; nextStation(); });
@@ -13709,6 +13892,10 @@
       }
     }
 
+    // The old "when do you usually need this?" greeting is retired (see
+    // paintPlan); a profile that set one stops being greeted by it.
+    if (progress.plan()) progress.clearPlan();
+
     var go = here.searchParams.get('go');
     if (go === 'decide') restart();
     else if (go === 'tonight') showTonight();
@@ -13724,6 +13911,9 @@
     else if (go === 'profile') { hideLanding(); setView('profile'); highlightInvite(); }
     // Where #daily-signin sends somebody back to, for the same reason.
     else if (go === 'daily') { hideLanding(); setView('daily'); }
+    // The hub's two sections, and where their sign-in links send people back to.
+    else if (go === 'planner') { hideLanding(); setView('planner'); }
+    else if (go === 'kitchen') { hideLanding(); setView('kitchen'); }
     // Where #radio-signin sends somebody back to, on whichever tab they
     // were on; ?go=tv and ?go=listen pick the tab outright.
     else if (go === 'radio') { hideLanding(); setView('radio'); }

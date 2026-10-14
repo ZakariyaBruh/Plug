@@ -137,7 +137,7 @@ function InfoPage() {
                 href="/decide/"
                 className="inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
               >
-                Play free
+                Open it free
               </a>
               <Link
                 to="/premium"
@@ -146,7 +146,7 @@ function InfoPage() {
                 See Premium — {OFFER_SHORT}
               </Link>
             </div>
-            <p className="mt-6 text-sm text-[var(--text-dim)]">No account. No email. Free to play. Premium is extra.</p>
+            <p className="mt-6 text-sm text-[var(--text-dim)]">No account needed to start. A free account adds the meal planner, food TV and radio. Premium is the rest of the hub.</p>
             <a href="#try-it" className="mt-3 inline-block text-sm text-[var(--amber)] underline underline-offset-4">
               Or try five questions right here ↓
             </a>
@@ -256,11 +256,13 @@ function InfoPage() {
 
         <section className="border-t border-[var(--border)] py-16">
           <div className="mx-auto max-w-5xl px-6">
-            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Standard vs Premium</p>
-            <h2 className="mt-2 text-3xl font-bold">Free answers the question. Premium remembers the answer.</h2>
+            <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Free, account and Premium</p>
+            <h2 className="mt-2 text-3xl font-bold">Free decides. An account plans. Premium does the rest.</h2>
             <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              {THE_GIFT} It learns what you like, stops offering it twice, gets you as far as the
-              table, and covers the person you eat with.
+              {THE_GIFT} A free account adds the meal calendar and its AI, food TV and radio. Premium
+              adds the shopping list, nutrition and budget, the dinner-party planner, your cookbook,
+              the barcode scanner, the fridge photo, hands-free cooking, the daily briefing and the
+              shared browser.
             </p>
             <div className="mt-10 grid gap-6 md:grid-cols-2">
               <div className="rounded-2xl border border-[var(--border)] p-8">
@@ -283,7 +285,7 @@ function InfoPage() {
                   href="/decide/"
                   className="mt-8 inline-block rounded-full border border-[var(--border)] px-6 py-3 text-sm font-semibold hover:border-[var(--amber)]"
                 >
-                  Play free
+                  Open it free
                 </a>
               </div>
               <div className="rounded-2xl border border-[var(--amber)] bg-[var(--amber-soft)] p-8">
@@ -335,7 +337,7 @@ function InfoPage() {
               href="/decide/"
               className="mt-8 inline-block rounded-full bg-[var(--amber)] px-8 py-3 font-semibold text-black hover:opacity-90"
             >
-              Play free
+              Open it free
             </a>
           </div>
         </section>

@@ -27,7 +27,7 @@ export const Route = createFileRoute('/privacy')({
 })
 
 /** Last time the wording was reviewed against the code. */
-const REVIEWED = '13 October 2026'
+const REVIEWED = '14 October 2026'
 
 /*
  * `lede` is the section's answer, in one sentence, at full brightness. `body`
@@ -114,11 +114,23 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    id: 'hub',
+    heading: 'The planner and the kitchen',
+    lede: 'Your week and your cookbook are kept against your Whop account so they follow you between devices. Photos and voice are never kept.',
+    body: [
+      'If you use the meal planner, each week you plan is stored in our database (Turso) against your Whop user id: the dishes, recipes and notes in each slot, which shopping-list lines you ticked, your household size and the prep plan. If you are on Premium and save recipes to your cookbook, each one is stored the same way. Delete a recipe and it is deleted; tell us and we will delete the lot. We also count how many AI requests each account makes per feature per day, so one account cannot run up the bill; those counts are deleted every day.',
+      'The planner’s AI, the dinner-party planner and the nutrition and cost estimates send Google’s Gemini the dish names involved and the food rules that apply — never your name, and for a dinner party only how many guests there are, not who. Nutrition and cost estimates are worked out per dish and shared by everyone (a lasagne’s nutrition does not depend on who asked), so they are not linked to you.',
+      'A fridge photo is shrunk on your device, sent once to Gemini to list the food in it, and not stored by us anywhere — not in the database, not in a log. When you import a recipe, our server fetches the page you gave it, so that website sees our server and not you. When you scan a barcode, our server asks Open Food Facts about that barcode and nothing else, and keeps the product’s details for a week for everybody.',
+      'Hands-free cook mode reads the steps aloud on your device. Its voice commands use your browser’s own speech recognition, which in Chrome sends what the microphone hears to Google to be transcribed — that is your browser’s doing, under its own privacy terms, and we never receive the audio. Timers, nutrition targets, your budget, dinner-party drafts and recent scans stay in this browser only.',
+    ],
+  },
+  {
     id: 'tv',
     heading: 'Food TV',
     lede: 'The channel hears you watch it, the way any website hears you visit it. The guide is fetched by us, so the listing services never see you.',
     body: [
-      'The channels are free, ad-supported food channels listed in iptv-org, an open database of free TV. The list is put together ahead of time, so opening the TV does not contact iptv-org at all. What is on now and next is fetched by this site’s server from the guide services each channel publishes its listings to — Plex and Pluto TV — so those services see our server, never your device.',
+      'The channels are free, ad-supported food channels listed in iptv-org, an open database of free TV. Our server reads iptv-org’s list once an hour, so iptv-org sees our server, never your device. What is on now and next is fetched by our server from the guide services each channel publishes its listings to — Plex and Pluto TV — so those services do not see you either.',
+      'When you open Food TV, your browser checks each candidate channel before listing it, with one small request to that channel’s own stream server (up to about twenty of them), so you only see the channels that actually play where you are. Those servers see your IP address when it checks, as any website would.',
       'When you press play, your browser streams the channel straight from that channel’s own servers, which see your IP address and your browser, exactly as any website does, and may count the view for their adverts. The video player code is a well-known open-source library (hls.js), loaded from the jsDelivr CDN the first time you press play, so jsDelivr sees that request too. morsels45 does not relay, record or keep a history of what you watch.',
     ],
   },
@@ -279,7 +291,8 @@ const THIRD_PARTIES: [string, string][] = [
   ...(GA4_ON
     ? ([['Google Analytics', 'Counts page views and the seventeen events named above. No advertising features.']] as [string, string][])
     : []),
-  ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions.'],
+  ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions; fills and balances the meal planner; plans dinner parties; estimates nutrition and cost per dish; writes the daily briefing; and reads a fridge photo once, which is not kept.'],
+  ['Open Food Facts', 'The product database behind the barcode scanner. Asked by our server with the barcode only.'],
   ['Hyperbeam', 'Runs the shared browser, when you open one.'],
   ['OpenStreetMap and Photon', 'Look up places near you, when you use Nearby and allow location.'],
   ['freeipapi.com', 'Looks up which currency your country uses, by your IP, on the Premium page.'],
@@ -289,7 +302,7 @@ const THIRD_PARTIES: [string, string][] = [
   ['jsDelivr', 'Serves the open-source video player (hls.js), the first time you press play on a TV channel.'],
   ['Radio Browser', 'The directory the food radio’s stations come from. Asked by our server, never by your device.'],
   ['Radio stations', 'Each station you play streams straight to you from its own broadcaster, which sees your IP address as any website would.'],
-  ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day — and, if you use them, your daily check-in, journal line and trivia answer, against your Whop user id.'],
+  ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day — and, if you use them, your daily check-in, journal line and trivia answer, your planned weeks, your cookbook and your daily AI request counts, against your Whop user id.'],
   ['Cloudflare', 'Serves this site.'],
 ]
 

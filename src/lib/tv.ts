@@ -34,20 +34,98 @@ export type Programme = { title: string; subtitle: string; start: number; stop: 
 export const TV_CHANNELS = lineup.channels as TvChannel[]
 export const TV_GENERATED = lineup.generated
 
+/*
+ * THE LIST, CHECKED ON THE FLY.
+ *
+ * tv-lineup.json is the list as scripts/tv-lineup.mjs last verified it, with
+ * the guide source for each channel — that part needs the 25 MB guide index
+ * and stays a script. But which channels exist and where they stream from
+ * changes week to week, so the candidate list is rebuilt here from iptv-org's
+ * live cooking playlist (13 KB) every hour: verified channels first, each
+ * with every stream address iptv-org currently lists for it, then any food
+ * channel that has appeared since.
+ *
+ * And none of it is shown on trust. The page checks each candidate from the
+ * viewer's own browser before listing it (see the TV section of app.js) —
+ * which is the only check that can know about the viewer's country, network
+ * and browser — and lists the first twelve that answer.
+ */
+const PLAYLIST = 'https://iptv-org.github.io/iptv/categories/cooking.m3u'
+// Restreams of paid channels by bare IP or re-hosts, and hosts that only
+// allow their own site (Pluto TV). Same list as scripts/tv-lineup.mjs.
+const BLOCKED_HOST = /^\d+\.\d+\.\d+\.\d+$|freeott|mcquack|freem3u|techtraveleat|cinerama|skygo|tangotv|smartplaytv|onetv\.app|fasttvcdn|catcast|alpaca|mjunoon|pishow|bitred|uplink\.kz|jmp2\.uk|pluto\.tv/i
+// Filed under cooking, but not food.
+const NOT_FOOD = new Set(['Boligkjopiblinde.se', 'Boligkobiblinde.se', 'BuyingBlindDenmark.se', 'Skonneombygninger.se', 'StugfixarnaNorge.se'])
+export const MAX_CANDIDATES = 20
+
+export type Candidate = { id: string; name: string; logo: string; website: string; streams: string[]; hasGuide: boolean }
+
+type Entry = { id: string; name: string; logo: string; url: string }
+
+export function parsePlaylist(text: string): Entry[] {
+  const out: Entry[] = []
+  const lines = text.split(/\r?\n/)
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (!line.startsWith('#EXTINF')) continue
+    const url = (lines[i + 1] ?? '').trim()
+    const attr = (name: string) => new RegExp(`${name}="([^"]*)"`).exec(line)?.[1] ?? ''
+    const group = attr('group-title')
+    const label = line.slice(line.lastIndexOf(',') + 1)
+    if (/geo-blocked/i.test(label) || /shop/i.test(group)) continue
+    if (!url.startsWith('https://')) continue
+    let host = ''
+    try { host = new URL(url).hostname } catch { continue }
+    if (BLOCKED_HOST.test(host)) continue
+    const id = attr('tvg-id').split('@')[0]
+    if (!id || NOT_FOOD.has(id)) continue
+    const name = label.replace(/\s*\(\d+p\)/g, '').replace(/\s*\[[^\]]*\]/g, '').trim()
+    out.push({ id, name: name || id, logo: attr('tvg-logo'), url })
+  }
+  return out
+}
+
+const PLAYLIST_TTL_MS = 60 * 60 * 1000
+let playlistMemo: { at: number; entries: Promise<Entry[]> } | null = null
+
+function liveEntries(): Promise<Entry[]> {
+  if (playlistMemo && Date.now() - playlistMemo.at < PLAYLIST_TTL_MS) return playlistMemo.entries
+  const entries = fetch(PLAYLIST, { signal: AbortSignal.timeout(8000), headers: { 'User-Agent': 'morsels45/1.0 (+https://morsels45-app.whop.site)' } })
+    .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`playlist ${r.status}`))))
+    .then(parsePlaylist)
+  const memo = { at: Date.now(), entries }
+  playlistMemo = memo
+  // A failed fetch is not kept, and the verified list still answers.
+  entries.catch(() => { if (playlistMemo === memo) playlistMemo = null })
+  return entries
+}
+
+export async function candidates(): Promise<Candidate[]> {
+  const live = await liveEntries().catch((err) => {
+    console.error('tv: live playlist unavailable, using the verified list alone', err)
+    return [] as Entry[]
+  })
+  const byId = new Map<string, Entry[]>()
+  for (const e of live) byId.set(e.id, [...(byId.get(e.id) ?? []), e])
+
+  const out: Candidate[] = TV_CHANNELS.map((c) => ({
+    id: c.id,
+    name: c.name,
+    logo: c.logo || byId.get(c.id)?.[0]?.logo || '',
+    website: c.website,
+    streams: [...new Set([c.stream, ...(byId.get(c.id) ?? []).map((e) => e.url)])],
+    hasGuide: !!c.guide,
+  }))
+  for (const [id, entries] of byId) {
+    if (out.some((c) => c.id === id)) continue
+    out.push({ id, name: entries[0].name, logo: entries[0].logo.startsWith('https://') ? entries[0].logo : '', website: '', streams: [...new Set(entries.map((e) => e.url))], hasGuide: false })
+  }
+  return out.slice(0, MAX_CANDIDATES)
+}
+
 /** What a signed-out visitor sees: the names, not the streams. */
 export function tvTeaser() {
   return TV_CHANNELS.map(({ id, name, logo }) => ({ id, name, logo }))
-}
-
-export function tvForViewer() {
-  return TV_CHANNELS.map(({ id, name, logo, stream, website, guide }) => ({
-    id,
-    name,
-    logo,
-    stream,
-    website,
-    hasGuide: !!guide,
-  }))
 }
 
 const AGENT = 'morsels45/1.0 (+https://morsels45-app.whop.site)'

@@ -342,8 +342,16 @@ export const TRIAL_TERMS_ANNUAL = `Free for ${TRIAL_DAYS} days, then ${PRICE_YEA
  * the three it serves. Anything that serves none of them is not the product,
  * however good it is.
  */
+/*
+ * WHAT IT IS, SINCE IT STOPPED BEING ONLY A GAME.
+ *
+ * It was "an assistant for working out what to eat", and every page sold it
+ * as that: $3.45 a month for a questionnaire, which nobody pays. What it is
+ * now is a food hub — deciding, planning the week, shopping, cooking, the
+ * news and food TV — and the deciding is the front door, not the house.
+ */
 export const WHAT_IT_IS =
-  'An assistant for working out what to eat. It asks, you point, and it gets you fed.'
+  'Your food hub: decide what to eat, plan the week, shop for it, cook it hands-free, and keep up with food news, TV and radio — all built around what you do and do not eat.'
 
 /*
  * THE INSIGHT, WHICH IS THE ONE THING THIS SITE KNOWS THAT THE READER DOES NOT.
@@ -403,9 +411,9 @@ export const THE_JOBS: { name: string; blurb: string }[] = [
   },
 ]
 
-export const SITE_TITLE = 'morsels45 — what should I eat?'
+export const SITE_TITLE = 'morsels45 — your food hub: decide, plan, cook'
 export const SITE_DESCRIPTION =
-  `${WHAT_IT_IS} Free to play and free to tell it your rules — halal, kosher, vegetarian, an allergy. Premium remembers what you like and gets you from the answer to the table.`
+  `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner, food TV and radio are free with an account; Premium adds the shopping list, nutrition, budget, cookbook, barcode scanner, fridge photo and more.`
 
 declare global {
   interface Window {
@@ -507,8 +515,11 @@ const TV_NAMES = tvLineup.channels.map((c) => c.name)
 const TV_EXAMPLES = TV_NAMES.slice(0, 3).join(', ')
 
 export const ACCOUNT = [
-  `Food TV — ${TV_NAMES.length} free food channels, live, with what is on now and next: ${TV_EXAMPLES} and more`,
-  'Food radio — a dozen stations made for the kitchen and the table: dinner lounges, restaurant and coffee-bar channels, a barbecue station. It keeps playing while you look up the recipe',
+  'Meal-prep calendar — breakfast, lunch, dinner and a snack for every day of the week, synced to your account, with a calendar AI that fills the gaps, plans your prep session and checks the balance',
+  `Food TV — ${TV_NAMES.length} free food channels, live, with what is on now and next: ${TV_EXAMPLES} and more — each checked from your own browser before it is listed`,
+  'Food radio — a dozen stations made for the kitchen and the table. It keeps playing while you look up the recipe',
+  'Kitchen timers and converter — several named timers at once that ring wherever you are in the app, plus cups to grams, ounces, °F and gas marks',
+  'In season — what is at its best this month, and the dishes that use it',
   'The daily three — a mood check-in, one good thing, and a food question everybody gets the same day, with streaks that follow you between devices',
 ]
 
@@ -528,29 +539,24 @@ export const ACCOUNT = [
  */
 export const PREMIUM_HEADLINES: { name: string; blurb: string }[] = [
   {
-    name: 'It stops repeating itself',
+    name: 'Your week, sorted',
     blurb:
-      'Strike a dish off and it never comes back. Accept one and it is off the table for a week. Everything it offers leans towards what you have actually liked — which is the part a free profile cannot do, because it does not remember you. That memory lives in the browser you play in; signing in elsewhere switches Premium on there, and starts its memory fresh.',
+      'Plan the week in the calendar — that part is free with an account — and Premium turns it into one shopping list merged and sorted by aisle, a nutrition count against your own targets, and a budget with cheaper swaps for the priciest nights.',
   },
   {
-    name: 'It gets you fed, not just decided',
+    name: 'A smarter kitchen',
     blurb:
-      'Cook mode takes it one step at a time with the timer built in. The shopping list goes to the shop with you. And if you would rather not cook, it finds somewhere near you that actually serves the thing.',
+      'Your own cookbook on every device. Any recipe imported without the life story. A barcode scanner that says “this has dairy, which you ruled out”. Dinner from a photo of the fridge. Cook mode that reads the steps aloud and listens for “next”.',
   },
   {
     /*
-     * The one line on this page that names who "you" is.
-     *
-     * Shared identity is the strongest thing in the persuasion literature and
-     * the easiest to fake badly — a brand inventing a tribe to belong to. The
-     * honest version needs no invention: the argument this product exists to
-     * settle is one that happens between two people, and it is a very
-     * specific two people who both recognise it instantly. Saying so is not a
-     * appeal to belonging, it is a description of the customer.
+     * The one line on this page that names who "you" is — the argument this
+     * product exists to settle happens between people, and so does most
+     * cooking for anyone but yourself.
      */
-    name: 'Two of you, one answer',
+    name: 'Cooking for more than you',
     blurb:
-      `The argument this whole thing exists to settle happens between two people, and both of them are sitting there. Together takes five either-ors from each of you on one phone and lands on the one dish you can both live with, in about twenty seconds. The shared browser then orders it from two, with a cursor each.`,
+      'A dinner-party menu every guest can eat, with a timeline that works back from when you sit down. A real browser two of you drive at once — to order, shop or cook along. And it remembers what you like, so it stops offering the same thing twice.',
   },
 ]
 
@@ -566,6 +572,34 @@ export const PREMIUM_HEADLINES: { name: string; blurb: string }[] = [
  */
 export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, string][] }[] = [
   {
+    name: 'Plan the week',
+    blurb: 'The meal calendar is free with an account. Premium is everything that runs off it.',
+    items: [
+      ['Shopping list from your week', 'Every ingredient in every recipe on your calendar, scaled to your household, merged into one list and sorted by aisle. Tick it off in the shop and it syncs to your other devices; copy or share it in one tap.'],
+      ['Nutrition for the week', 'Roughly what each planned day adds up to — energy, protein, carbs, fat and fibre — against targets you set. Estimated from the recipe each dish actually uses, and labelled as an estimate.'],
+      ['Budget for the week', 'Roughly what the week costs to cook, in your currency and for your household, against a budget you set — with cheaper dishes that keep your food rules, swapped in with one tap.'],
+      ['Dinner party planner', 'Each guest’s rules — vegetarian, vegan, no pork, no dairy, nothing spicy — and a menu every one of them can eat, with a clock-time timeline that works back from when you sit down, and the shopping list for it.'],
+    ],
+  },
+  {
+    name: 'Your kitchen',
+    blurb: 'The tools for the cooking itself, all in the Kitchen section.',
+    items: [
+      ['Your cookbook', 'Your own recipes and the ones you import, kept against your account so they are on every device. Scale any of them, cook them step by step, or drop them into the calendar.'],
+      ['Import any recipe', 'Paste the link to a recipe on most recipe sites and get just the ingredients and the method — no life story, no pop-ups, no adverts — with the original always linked.'],
+      ['Barcode scanner', 'Scan a packet in the shop and see its Nutri-Score, how processed it is, its allergens, and whether it breaks the food rules you already set — in the same words. Data from Open Food Facts.'],
+      ['Dinner from a photo of your fridge', 'Photograph the fridge or the cupboard. It lists what it can see and which dishes you can make, what each one uses and what you would still need. The photo is not kept.'],
+      ['Hands-free cook mode', 'The steps read aloud, and voice commands for “next”, “back”, “repeat” and “start timer” — for when your hands are covered in flour.'],
+    ],
+  },
+  {
+    name: 'Stay in the know',
+    blurb: 'The news section is free to browse. Premium reads it for you.',
+    items: [
+      ['Daily food briefing', 'The five food stories worth knowing today, boiled down by AI to a sentence or two each with a link to the publisher’s own article — and one thing to cook today because of them.'],
+    ],
+  },
+  {
     name: 'It gets to know you',
     blurb: 'Everything above works better the longer you use it.',
     items: [
@@ -577,12 +611,12 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
   },
   {
     name: 'The shared browser',
-    blurb: 'A real browser running somewhere else, that two people drive at once with a cursor each. This is the part that costs money to run, and the part a subscription actually pays for.',
+    blurb: 'A real browser running in the cloud that two people use at once, each from their own phone with their own cursor. You open it from one of the buttons below, send the other person the link, and you both see and do the same thing. It is the part that costs money to run by the minute.',
     items: [
-      ['Order it together', 'A real browser you both drive, opened on the dish you landed on. Send the link and you get a cursor each.'],
-      ['Order from here', 'Pick a place in Nearby and order from its own site, in the same shared browser — no phone call, no queue.'],
-      ['Cook along', 'Two kitchens, one video, in step. "Wait, go back" means the same frame for both of you.'],
-      ['Shop the list together', 'One basket, filled by both of you, from the shopping list the recipe made.'],
+      ['Order it together — on the answer screen', 'Once you accept a dish, open a delivery site on it in a browser you both drive, and fill one basket.'],
+      ['Order from here — in Nearby', 'Pick a restaurant near you and order from its own site, in the same shared browser — no phone call, no queue.'],
+      ['Cook along — in cook mode', 'Two kitchens, one cooking video, in step. "Wait, go back" means the same frame for both of you.'],
+      ['Shop it together — on any shopping list', 'A recipe’s list, or your whole week’s from the planner: one supermarket basket, filled by both of you.'],
     ],
   },
   {

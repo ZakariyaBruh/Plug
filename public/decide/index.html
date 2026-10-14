@@ -371,6 +371,10 @@
       <button class="plain landing-plain" id="landing-nearby">See what&rsquo;s near you</button>
       <button class="plain landing-plain" id="landing-ask">Ask what to eat</button>
       <button class="plain landing-plain" id="landing-news">Read about food</button>
+      <!-- The rest of the hub, from the front door: it is not only a game. -->
+      <button class="plain landing-plain" type="button" data-landing-view="planner">Plan the week</button>
+      <button class="plain landing-plain" type="button" data-landing-view="kitchen">Your kitchen &mdash; cookbook, scanner, timers</button>
+      <button class="plain landing-plain" type="button" data-landing-view="radio">Food TV &amp; radio</button>
       <button class="plain landing-plain" id="landing-invite">Decide with a friend</button>
     </div>
 
@@ -400,7 +404,7 @@
       <b>Add to Home Screen</b>, then tap <b>Add</b>. It opens full screen with no address bar.</span>
     </p>
 
-    <p class="landing-free">No account. No email. Nothing to fill in.</p>
+    <p class="landing-free">No account needed to decide. A free account adds the planner, TV and radio.</p>
 
     <!-- Real numbers, read out of the catalogue at load rather than written
          here, so they cannot drift into being a claim nobody checks. -->
@@ -669,6 +673,8 @@
     <ul class="rail-list">
       <li><button class="rail-link is-current" data-view="decide">Decide</button></li>
       <li><button class="rail-link" data-view="dishes">Dishes</button></li>
+      <li><button class="rail-link" data-view="planner">Planner</button></li>
+      <li><button class="rail-link" data-view="kitchen">Kitchen</button></li>
       <li><button class="rail-link" data-view="menu">Menu</button></li>
       <li><button class="rail-link" data-view="nearby">Nearby</button></li>
       <li><button class="rail-link" data-view="chat">Ask</button></li>
@@ -959,7 +965,7 @@
              feature actually gets seen rather than found. -->
         <section class="strip" id="reward-together">
           <h2 class="strip-title">Do it together <span class="tag-premium">Premium</span></h2>
-          <p class="fine">One real browser, a cursor each, from your own phones — nobody waiting on the other to type.</p>
+          <p class="fine">One real browser, a cursor each, from your own phones — nobody waiting on the other to type. <button class="link-btn beam-help-link" type="button">What&rsquo;s this?</button></p>
           <button class="go go-alt" id="reward-order-btn">
             <span class="go-label">Order it together</span>
             <span class="go-arrow" aria-hidden="true">
@@ -1675,6 +1681,7 @@
                 <!-- The list is free. This is the part that costs: one real
                      browser, both of you in it, on that place's menu. -->
                 <button class="quiet" id="near-beam-btn">Order from here <span class="tag-premium">Premium</span></button>
+                <button class="link-btn beam-help-link" type="button">What&rsquo;s this?</button>
               </div>
             </div>
             <p class="pane-line" id="near-summary"></p>
@@ -1816,6 +1823,16 @@
       </div>
     </section>
 
+    <!-- ------------------------- PLANNER & KITCHEN ------------------------- -->
+    <!-- ===============================================================
+         THE HUB: everything after "what shall we eat" — planning the week,
+         shopping for it, cooking it, and the kitchen tools around that.
+         Built by js/hub.js, which says what each part is and who it is for.
+         Empty here on purpose: hub.js draws them the first time they open.
+         =============================================================== -->
+    <section class="view" id="view-planner" aria-label="Meal planner"></section>
+    <section class="view" id="view-kitchen" aria-label="Kitchen tools"></section>
+
     <!-- ------------------------- TV & RADIO ------------------------- -->
     <!-- ===============================================================
          FOOD TV AND FOOD RADIO — free with an account, like the daily
@@ -1882,6 +1899,10 @@
           <p class="fine">Finding what&rsquo;s on&hellip;</p>
         </div>
         <ul class="stations" id="tv-list"></ul>
+        <p class="fine tv-checked" id="tv-checked" hidden>
+          <span id="tv-checked-text"></span>
+          <button class="link-btn" id="tv-recheck" type="button">Check again</button>
+        </p>
         <div class="notice" id="tv-error" hidden>
           <p>The channel list would not load.</p>
           <div class="locate-actions">
@@ -1890,7 +1911,8 @@
         </div>
         <p class="fine radio-foot">Channels from
         <a href="https://github.com/iptv-org/iptv" target="_blank" rel="noopener noreferrer">iptv-org</a>,
-        the open database of free TV, and only the food ones whose own streams play here. What&rsquo;s
+        the open database of free TV, read fresh every hour — and each one is tried from your own
+        browser before it is listed, so you only see the food channels that actually play where you are. What&rsquo;s
         on comes from each channel&rsquo;s published listings, found through
         <a href="https://github.com/iptv-org/epg" target="_blank" rel="noopener noreferrer">iptv-org/epg</a>;
         a channel can run a few minutes off them. They are free, ad-supported channels &mdash;
@@ -2705,6 +2727,7 @@
     <button class="go go-sm go-alt" id="cook-along-btn">
       <span class="go-label">Cook along <span class="tag-premium">Premium</span></span>
     </button>
+    <button class="link-btn beam-help-link" type="button">What&rsquo;s this?</button>
     <button class="quiet" id="cook-prev">Back</button>
     <button class="go go-sm" id="cook-next">
       <span class="go-label">Next step</span>
@@ -2712,6 +2735,46 @@
         <svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6h20M16 1l5 5-5 5"/></svg>
       </span>
     </button>
+  </div>
+</dialog>
+
+<!-- ===================================================================
+     WHAT THE SHARED BROWSER IS, AND WHERE IT LIVES.
+     It was the defining feature and the least understood one: four buttons
+     in four corners of the app, each named for what it does there, and
+     nothing anywhere saying they were the same thing or how to use it. Every
+     one of them now has a "What's this?" that opens this.
+     =================================================================== -->
+<dialog class="sheet beam-help" id="beam-help" aria-label="The shared browser">
+  <p class="mechanic">Premium</p>
+  <h2 class="sheet-name">The shared browser</h2>
+  <p>A real web browser, running in the cloud, that two of you use at the same time &mdash; each
+  from your own phone, each with your own cursor. You open it here, send the other person a link,
+  and whatever either of you does, both of you see. No screen-sharing, no passing one phone round
+  the table.</p>
+
+  <h3 class="strip-title">Where you&rsquo;ll find it</h3>
+  <ol class="beam-places">
+    <li><b>&#x1F6F5; Order it together</b> &mdash; on the answer screen, once you accept a dish.
+    Opens a delivery site on that dish so you can both pick and pay in one basket.</li>
+    <li><b>&#x1F4CD; Order from here</b> &mdash; in <b>Nearby</b>, on any restaurant. Opens that
+    place&rsquo;s own ordering page.</li>
+    <li><b>&#x1F9D1;&#x200D;&#x1F373; Cook along</b> &mdash; in <b>cook mode</b>, on any recipe. One
+    cooking video, in step, in two kitchens.</li>
+    <li><b>&#x1F6D2; Shop it together</b> &mdash; on any <b>shopping list</b>: a recipe&rsquo;s, or
+    your whole week&rsquo;s in the <b>Planner</b>. One supermarket basket, filled by both of you.</li>
+  </ol>
+
+  <h3 class="strip-title">How to use it</h3>
+  <ol class="beam-steps">
+    <li>Tap one of those buttons. The browser opens here in a few seconds.</li>
+    <li>Tap <b>Copy link</b> and send it to whoever you&rsquo;re with.</li>
+    <li>They open it on their phone or laptop &mdash; nothing to install &mdash; and you each get a cursor.</li>
+  </ol>
+  <p class="fine">It is part of Premium because it is a real computer running for you while it is
+  open: the one part of morsels45 that costs real money by the minute.</p>
+  <div class="sheet-actions">
+    <button class="go go-sm" id="beam-help-close" type="button"><span class="go-label">Got it</span></button>
   </div>
 </dialog>
 
@@ -2726,6 +2789,7 @@
     <button class="go go-sm go-alt" id="list-shop-btn">
       <span class="go-label">Shop it together <span class="tag-premium">Premium</span></span>
     </button>
+    <button class="link-btn beam-help-link" type="button">What&rsquo;s this?</button>
   </div>
 </dialog>
 
@@ -2800,5 +2864,6 @@
 <script src="js/places.js"></script>
 <script src="js/mapview.js"></script>
 <script src="js/app.js"></script>
+<script src="js/hub.js"></script>
 </body>
 </html>
