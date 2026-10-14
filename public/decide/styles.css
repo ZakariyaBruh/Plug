@@ -5742,3 +5742,16 @@ html.text-xl { font-size: 130%; }
 @media (max-width: 30rem) {
   .help-tier { margin-left: 0; flex-basis: auto; }
 }
+
+/* --- a sign-in that did not finish --- */
+.signin-failed {
+  position: fixed; z-index: 90; left: 50%; bottom: calc(var(--s5) + env(safe-area-inset-bottom));
+  transform: translateX(-50%); width: min(30rem, calc(100% - 2rem));
+  display: grid; gap: var(--s2); padding: var(--s4);
+  border: 2px solid var(--amber); border-radius: .875rem; background: var(--char);
+  box-shadow: 0 12px 40px rgb(0 0 0 / .45);
+}
+.signin-failed-title { margin: 0; font-family: var(--display); font-weight: 700; font-size: var(--t-md); }
+.signin-failed-text { margin: 0; line-height: 1.55; color: var(--ink); }
+.signin-failed-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); }
+.signin-failed-actions .go { text-decoration: none; }

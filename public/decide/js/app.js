@@ -8480,6 +8480,34 @@
     }
   })();
 
+  /*
+   * SIGN-IN THAT DID NOT FINISH. The callback sends people back here with
+   * ?signin=failed rather than dropping them on the home page with nothing
+   * said (see lib/oauth.ts). A notice that stays until it is closed — a toast
+   * is gone in two seconds — saying what to do in words anybody can follow,
+   * with the button to try again right there.
+   */
+  (function signInFailed() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('signin') !== 'failed') return;
+    params.delete('signin');
+    var rest = params.toString(), back = window.location.pathname + (rest ? '?' + rest : '');
+    window.history.replaceState(null, '', back);
+    var box = document.createElement('div');
+    box.className = 'signin-failed';
+    box.setAttribute('role', 'alert');
+    box.innerHTML = '<p class="signin-failed-title"></p><p class="signin-failed-text"></p>' +
+      '<div class="signin-failed-actions"><a class="go go-sm" target="_top"><span class="go-label">Try again</span></a>' +
+      '<button class="quiet" type="button">Close</button></div>';
+    box.querySelector('.signin-failed-title').textContent = 'Sign-in did not finish';
+    box.querySelector('.signin-failed-text').textContent =
+      'Nothing is wrong with your account. Please try once more. If it stops again, open ' +
+      'morsels45-app.whop.site in your phone’s own web browser (Safari or Chrome) and sign in there.';
+    box.querySelector('a').href = '/api/oauth/login?redirect_to=' + encodeURIComponent(back);
+    box.querySelector('button').addEventListener('click', function () { box.remove(); });
+    document.body.appendChild(box);
+  })();
+
   function inviteLink(userId) {
     return window.location.origin + '/decide/?ref=' + encodeURIComponent(userId);
   }

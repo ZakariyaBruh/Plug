@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { PageShell } from '#/components/PageShell'
 import { loadViewer } from '#/lib/viewer'
@@ -72,14 +72,44 @@ function InviteCard({ referral }: { referral: { link: string; invited: number; q
   )
 }
 
+/*
+ * Read after load rather than through the router's search params: the flag
+ * comes from the sign-in callback (lib/oauth.ts) and is wiped from the
+ * address at once, so a reload does not say it again.
+ */
+function useSignInFailed() {
+  const [failed, setFailed] = useState(false)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('signin') !== 'failed') return
+    setFailed(true)
+    params.delete('signin')
+    const rest = params.toString()
+    window.history.replaceState(null, '', window.location.pathname + (rest ? `?${rest}` : ''))
+  }, [])
+  return failed
+}
+
 function AccountPage() {
   const { viewer, referral } = Route.useLoaderData()
+  const signInFailed = useSignInFailed()
 
   return (
     <PageShell user={viewer.user}>
       <main className="py-16 fade-in-up">
         <div className="mx-auto max-w-xl px-6">
           <h1 className="text-3xl font-bold">Account</h1>
+
+          {signInFailed && !viewer.signedIn ? (
+            <div role="alert" className="mt-6 rounded-2xl border-2 border-[var(--amber)] p-5">
+              <p className="font-semibold">Sign-in did not finish</p>
+              <p className="mt-2 text-[var(--text-dim)]">
+                Nothing is wrong with your account. Please try once more with the button below. If
+                it stops again, open morsels45-app.whop.site in your phone's own web browser (Safari
+                or Chrome) and sign in there.
+              </p>
+            </div>
+          ) : null}
 
           {!viewer.signedIn ? (
             <div className="mt-8 rounded-2xl border border-[var(--border)] p-8">
