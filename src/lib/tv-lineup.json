@@ -1,0 +1,1211 @@
+{
+  "generated": "2026-10-14",
+  "source": "iptv-org",
+  "categories": [
+    {
+      "id": "food",
+      "name": "Food & cooking",
+      "emoji": "🍳",
+      "iptv": [
+        "cooking"
+      ],
+      "channels": [
+        {
+          "id": "AmericasTestKitchen.us",
+          "name": "America's Test Kitchen",
+          "country": "US",
+          "website": "https://www.americastestkitchen.com/",
+          "logo": "https://i.imgur.com/prMkTsZ.png",
+          "stream": "https://aegis-cloudfront-1.tubi.video/0094c1fc-7c41-45d0-af7a-6bbb62d6cd6e/playlist.m3u8",
+          "guide": {
+            "site": "pluto.tv",
+            "id": "5e84f54a82f05300080e6746"
+          }
+        },
+        {
+          "id": "CookingPanda.us",
+          "name": "Cooking Panda",
+          "country": "US",
+          "website": "https://cookingpanda.com/pages/contact-us",
+          "logo": "https://i.imgur.com/bhY0Zcs.png",
+          "stream": "https://stream-us-east-1.getpublica.com/playlist.m3u8?network_id=46",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5f07e9fdf313eb0041bbecda"
+          }
+        },
+        {
+          "id": "GordonRamsaysHellsKitchen.us",
+          "name": "Gordon Ramsay's Hell's Kitchen",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/gordon-ramsays-hells-kitchen",
+          "logo": "https://i.imgur.com/WgN4T18.png",
+          "stream": "https://aegis-cloudfront-1.tubi.video/c8364f36-c60b-4a39-8d86-0b92db4611c0/index.m3u8",
+          "guide": {
+            "site": "pluto.tv",
+            "id": "5b4e99f4423e067bd6df6903"
+          }
+        },
+        {
+          "id": "GustoTV.ca",
+          "name": "Gusto TV",
+          "country": "CA",
+          "website": "https://gustotv.com/",
+          "logo": "https://i.imgur.com/swUX3hQ.png",
+          "stream": "https://563f72af.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X0d1c3RvVFZfSExT/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5f8746eabd529300418246d9"
+          }
+        },
+        {
+          "id": "Tastemade.us",
+          "name": "Tastemade",
+          "country": "US",
+          "website": "https://www.tastemade.com/",
+          "logo": "https://i.imgur.com/xP7Ehn8.png",
+          "stream": "https://rakutenaa-tm-intl-aus-rakuten-eu-n1gtg.amagi.tv/playlist/rakutenAA-tm-intl-aus-rakuten-eu/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "66311d1a707bae70101ec757"
+          }
+        },
+        {
+          "id": "bonappetit.us",
+          "name": "Bon Appétit",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/YhFFxlE.png",
+          "stream": "https://bonappetit-samsung.amagi.tv/playlist.m3u8",
+          "guide": null
+        },
+        {
+          "id": "Hungry.us",
+          "name": "Hungry",
+          "country": "US",
+          "website": "https://www.hungry.live/",
+          "logo": "https://i.imgur.com/MIUDYh0.png",
+          "stream": "https://dos35knl8v49a.cloudfront.net/v1/food/samsungheadend_us/latest/main/hls/playlist.m3u8",
+          "guide": null
+        },
+        {
+          "id": "TastemadeTravel.us",
+          "name": "Tastemade Travel",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/8s6aRwv.png",
+          "stream": "https://d6ef3usc6d9cl.cloudfront.net/Tastemade_Travel.m3u8",
+          "guide": null
+        },
+        {
+          "id": "FoodNetwork.it",
+          "name": "Food Network",
+          "country": "IT",
+          "website": "http://www.foodnetwork.it/",
+          "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Food_Network_New_Logo.png/960px-Food_Network_New_Logo.png",
+          "stream": "https://streaming.aurora.enhanced.live/live/mpc/enl0eG1mLmVncmVzcy5mZDJ2eHI=/out/v1/IT_SIMULCAST/FOODNETWORK/CMAF/index.m3u8",
+          "guide": null
+        },
+        {
+          "id": "HelloTaste.ro",
+          "name": "Hello Taste",
+          "country": "RO",
+          "website": "https://hellotaste.ro/",
+          "logo": "https://i.imgur.com/TdKO0er.png",
+          "stream": "https://live77cdn2.antenaplay.ro/live2_fast/ch5/stream.m3u8",
+          "guide": null
+        },
+        {
+          "id": "TV5MONDEChefs.fr",
+          "name": "TV5MONDE Chefs",
+          "country": "FR",
+          "website": "https://www.tv5mondeplus.com/en/direct?channelid=32",
+          "logo": "https://provider-static.plex.tv/epg/cms/production/9adadebc-556e-4510-a632-ee532eb5863b/LOGO_PLEX_CHEFS_1500X1000_WHITE.png",
+          "stream": "https://tvf-tv5ch.otteravision.com/tvf/tv5ch/tv5ch.m3u8",
+          "guide": null
+        }
+      ]
+    },
+    {
+      "id": "music",
+      "name": "Music",
+      "emoji": "🎵",
+      "iptv": [
+        "music"
+      ],
+      "channels": [
+        {
+          "id": "NEWKPOP.us",
+          "name": "NEW K-POP",
+          "country": "US",
+          "website": "https://watch.plex.tv/live-tv/channel/new-k-id",
+          "logo": "https://i.imgur.com/B7ILXMc.png",
+          "stream": "https://ads.its-newid.net/api/manifest.m3u8?ads.service_id=GB17000088V&channel_id=newid_086&tp=samsung_tvplus",
+          "guide": {
+            "site": "plex.tv",
+            "id": "60d4edd7b2fdec002c14112d"
+          }
+        },
+        {
+          "id": "Now90s00s.uk",
+          "name": "Now 90s00s",
+          "country": "UK",
+          "website": "https://www.nowmusic.com/",
+          "logo": "https://images.pluto.tv/channels/660c209e19ca71000846cf38/colorLogoPNG.png",
+          "stream": "https://amg01076-amg01076c19-rakuten-gb-8653.playouts.now.amagi.tv/playlist/amg01076-lightning-now90s00s-rakutengb/playlist.m3u8",
+          "guide": {
+            "site": "pluto.tv",
+            "id": "660c209e19ca71000846cf38"
+          }
+        },
+        {
+          "id": "NOWRock.uk",
+          "name": "NOW Rock",
+          "country": "UK",
+          "website": "https://www.nowmusic.com/",
+          "logo": "https://i.imgur.com/GuM4GnX.png",
+          "stream": "https://lightning-now90s-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-lightning-now90s-rakuten/CDN/playlist.m3u8",
+          "guide": {
+            "site": "pluto.tv",
+            "id": "6568a78d635c3c0008765f41"
+          }
+        },
+        {
+          "id": "QelloConcertsbyStingray.ca",
+          "name": "Qello Concerts by Stingray",
+          "country": "CA",
+          "website": "https://qello.com/en/",
+          "logo": "https://i.imgur.com/IRyFTWq.png",
+          "stream": "https://d39g1vxj2ef6in.cloudfront.net/v1/master/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod-rakuten-stitched/master.m3u8?ads.xumo_channelId=88883052",
+          "guide": {
+            "site": "plex.tv",
+            "id": "62d7f68fb19cbf65dc7bef7c"
+          }
+        },
+        {
+          "id": "QwestTV.fr",
+          "name": "Qwest TV",
+          "country": "FR",
+          "website": "https://www.qwest.tv/",
+          "logo": "https://i.imgur.com/DjgNNHK.png",
+          "stream": "https://qwestjazz-rakuten.amagi.tv/hls/amagi_hls_data_rakutenAA-qwestjazz-rakuten/CDN/master.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "60b0f65c0c8ffb002c821a75"
+          }
+        },
+        {
+          "id": "StingrayClassicRock.ca",
+          "name": "Stingray Classic Rock",
+          "country": "CA",
+          "website": "",
+          "logo": "https://i.imgur.com/FBgu8yB.png",
+          "stream": "https://lotus.stingray.com/manifest/ose-101ads-montreal/samsungtvplus/master.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "61aaa0cc784a2161d3caf7ff"
+          }
+        },
+        {
+          "id": "StingrayClassica.ca",
+          "name": "Stingray Classica",
+          "country": "CA",
+          "website": "https://classica.stingray.com/",
+          "logo": "https://i.imgur.com/nh1k5RC.png",
+          "stream": "https://lotus.stingray.com/manifest/classica-cla008-montreal/samsungtvplus/master.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "62d7f68fb19cbf65dc7bef7d"
+          }
+        },
+        {
+          "id": "StingrayDJAZZ.ca",
+          "name": "Stingray DJAZZ",
+          "country": "CA",
+          "website": "https://djazz.stingray.com/",
+          "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Stingray_Djazz.png/960px-Stingray_Djazz.png",
+          "stream": "https://lotus.stingray.com/manifest/djazz-djaads-montreal/samsungtvplus/master.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "62fc0150c67d52bddf74cc89"
+          }
+        },
+        {
+          "id": "StingrayEasyListening.ca",
+          "name": "Stingray Easy Listening",
+          "country": "CA",
+          "website": "",
+          "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Stingray_Music_logo.svg/960px-Stingray_Music_logo.svg.png",
+          "stream": "https://lotus.stingray.com/manifest/ose-137ads-montreal/samsungtvplus/master.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "62ee76b5271f393d2d9f709a"
+          }
+        },
+        {
+          "id": "StingrayFlashback70s.ca",
+          "name": "Stingray Flashback 70's",
+          "country": "CA",
+          "website": "",
+          "logo": "https://i.imgur.com/jf5C9QF.png",
+          "stream": "https://lotus.stingray.com/manifest/ose-115ads-montreal/samsungtvplus/master.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "62f15810a3ffe928ef806c75"
+          }
+        }
+      ]
+    },
+    {
+      "id": "calm",
+      "name": "Calm & nature",
+      "emoji": "🌿",
+      "iptv": [
+        "relax"
+      ],
+      "channels": [
+        {
+          "id": "WildEarth.za",
+          "name": "WildEarth",
+          "country": "ZA",
+          "website": "https://wildearth.tv/",
+          "logo": "https://i.imgur.com/Vhv5gjN.png",
+          "stream": "https://dqga3jatxofgx.cloudfront.net/WildEarth.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "60d4edddb2fdec002c141135"
+          }
+        },
+        {
+          "id": "10Bold.au",
+          "name": "10 Bold",
+          "country": "AU",
+          "website": "http://tenplay.com.au/",
+          "logo": "https://i.imgur.com/2xglh33.png",
+          "stream": "https://dce3793146fef017.mediapackage.us-west-2.amazonaws.com/out/v1/55cdf73af7894775ba6de8f57482b66a/CMAF_HLS/index.m3u8",
+          "guide": null
+        },
+        {
+          "id": "DroneTV.us",
+          "name": "DroneTV",
+          "country": "US",
+          "website": "https://www.airvuz.com/dronetv",
+          "logo": "https://i.ibb.co/S71C9RJC/dronetv.webp",
+          "stream": "https://airvuz-dronetv-1-us.ohlscdn.wurl.tv/playlist.m3u8",
+          "guide": null
+        },
+        {
+          "id": "MyZenTV.fr",
+          "name": "MyZen TV",
+          "country": "FR",
+          "website": "https://www.myzen.tv/",
+          "logo": "https://i.imgur.com/fIi8o0C.png",
+          "stream": "https://cdn-ue1-prod.tsv2.amagi.tv/linear/amg01255-secomcofites-my-myzen-en-plex/playlist.m3u8",
+          "guide": null
+        },
+        {
+          "id": "ScreenDreams.us",
+          "name": "Screen Dreams",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/AHIo9oz.png",
+          "stream": "https://stream-us-east-1.getpublica.com/playlist.m3u8?network_id=2240",
+          "guide": null
+        },
+        {
+          "id": "SpaceLivepoweredbysen.uk",
+          "name": "Space Live powered by sen",
+          "country": "UK",
+          "website": "https://www.sen.com/live",
+          "logo": "https://tvpnlogopeu.samsungcloud.tv/platform/image/sourcelogo/vc/00/02/34/GB3800007C5_20251209T004625SQUARE.png",
+          "stream": "https://linear-1224.frequency.stream/dist/lg-uk/1224/hls/master/playlist.m3u8",
+          "guide": null
+        },
+        {
+          "id": "ZenLIFEbyStingray.ca",
+          "name": "ZenLIFE by Stingray",
+          "country": "CA",
+          "website": "https://stingray.com/consumer/products/zen-life/",
+          "logo": "https://www.stingray.com/wp-content/uploads/2023/12/stingray_zenlifebystingray_white.svg",
+          "stream": "https://lotus.stingray.com/manifest/zenlife-zen001-montreal/samsungtvplus/master.m3u8",
+          "guide": null
+        }
+      ]
+    },
+    {
+      "id": "travel",
+      "name": "Travel",
+      "emoji": "✈️",
+      "iptv": [
+        "travel"
+      ],
+      "channels": [
+        {
+          "id": "Journy.us",
+          "name": "Journy",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/1JNrLxq.png",
+          "stream": "https://d3s3a5c7f101eb.cloudfront.net/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "61f0489a3f2259f988094ddb"
+          }
+        },
+        {
+          "id": "ArubaTV.aw",
+          "name": "Aruba.TV",
+          "country": "AW",
+          "website": "https://aruba.tv/",
+          "logo": "https://i.imgur.com/9fWY09U.png",
+          "stream": "https://cdn01.setar.aw/Canal49/canal49/playlist.m3u8",
+          "guide": null
+        },
+        {
+          "id": "ChileChannel.cl",
+          "name": "Chile Channel",
+          "country": "CL",
+          "website": "https://chilechanneltv.cl/",
+          "logo": "https://i.imgur.com/F1it6fh.png",
+          "stream": "https://v2.tustreaming.cl/chilechannel/index.m3u8",
+          "guide": null
+        },
+        {
+          "id": "ChinaTravel.cn",
+          "name": "China Travel",
+          "country": "CN",
+          "website": "",
+          "logo": "https://i.imgur.com/vSgY3CD.png",
+          "stream": "https://fastlive.cctvplus.com/out/v1/ca6f9297b7314a63959435028af287fc/index.m3u8",
+          "guide": null
+        },
+        {
+          "id": "FunRoads.us",
+          "name": "Fun Roads",
+          "country": "US",
+          "website": "https://funroads.tv/",
+          "logo": "https://i.imgur.com/2Q6TENm.png",
+          "stream": "https://stream-us-east-1.getpublica.com/playlist.m3u8?network_id=978",
+          "guide": null
+        },
+        {
+          "id": "INTRAVEL.nl",
+          "name": "INTRAVEL",
+          "country": "NL",
+          "website": "https://www.in.tv/channel/intravel",
+          "logo": "https://cdn.uc.assets.prezly.com/731574b6-2dab-4d87-85cf-fa48648b845a/INTRAVELLandscapeColor.png",
+          "stream": "https://amg00861-amg00861c10-rakuten-uk-3152.playouts.now.amagi.tv/playlist.m3u8",
+          "guide": null
+        },
+        {
+          "id": "PalmBeachesTV.us",
+          "name": "Palm Beaches TV",
+          "country": "US",
+          "website": "https://www.thepalmbeaches.tv/",
+          "logo": "https://i.imgur.com/kBol4Pf.png",
+          "stream": "https://live.feed.thepalmbeaches.tv/index.m3u8",
+          "guide": null
+        },
+        {
+          "id": "PeerTVSouthTyrol.it",
+          "name": "Peer TV South Tyrol",
+          "country": "IT",
+          "website": "https://www.peer.tv/en",
+          "logo": "https://www.peer.biz/peertv-iptv/peer-tv-south-tyrol.png",
+          "stream": "https://iptv.peer.biz/live/peertv-en.m3u8",
+          "guide": null
+        },
+        {
+          "id": "DiscoverPakistan.pk",
+          "name": "Discover Pakistan",
+          "country": "PK",
+          "website": "https://www.discoverpakistan.tv/",
+          "logo": "https://i.imgur.com/IJH47fJ.png",
+          "stream": "https://livecdn.live247stream.com/discoverpakistan/web/playlist.m3u8",
+          "guide": null
+        },
+        {
+          "id": "OEPMTV.do",
+          "name": "OEPM TV",
+          "country": "DO",
+          "website": "https://proinversiontv.com/",
+          "logo": "https://i.imgur.com/QghtwMB.jpeg",
+          "stream": "https://cnn.hostlagarto.com/oepmtelevision/tracks-v1a1/mono.m3u8",
+          "guide": null
+        }
+      ]
+    },
+    {
+      "id": "comedy",
+      "name": "Comedy",
+      "emoji": "😂",
+      "iptv": [
+        "comedy"
+      ],
+      "channels": [
+        {
+          "id": "AngerManagementChannel.us",
+          "name": "Anger Management Channel",
+          "country": "US",
+          "website": "https://lionsgatechannels.com/channel/anger-management",
+          "logo": "https://i.imgur.com/VXZgrNy.png",
+          "stream": "https://amg00353-lionsgatestudio-angermgmt-samsungau-o9jg9.amagi.tv/playlist/amg00353-lionsgatestudio-angermgmt-samsungau/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6303ca568a01b5d4dae57d0e"
+          }
+        },
+        {
+          "id": "ComedyDynamics.us",
+          "name": "Comedy Dynamics",
+          "country": "US",
+          "website": "https://www.comedydynamics.com/where-to-watch/",
+          "logo": "https://i.imgur.com/1lEvUOa.png",
+          "stream": "https://d3a5mry3t5fzw9.cloudfront.net/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5efe1de5e0b3f5003f5d9f76"
+          }
+        },
+        {
+          "id": "FailArmy.us",
+          "name": "FailArmy",
+          "country": "US",
+          "website": "https://www.failarmy.com/pages/streaming",
+          "logo": "https://i.imgur.com/VIpQJxL.png",
+          "stream": "https://failarmy-international-it.samsung.wurl.tv/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5f170d62b898490041b4936e"
+          }
+        },
+        {
+          "id": "JustforLaughsGags.us",
+          "name": "Just for Laughs Gags",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/HjVEVMJ.png",
+          "stream": "https://distributionsjustepourrire-justforlaughsgags-1-be.samsung.wurl.tv/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "64704954e536e0faaf10be9f"
+          }
+        },
+        {
+          "id": "MrBeanLiveAction.uk",
+          "name": "Mr Bean Live Action",
+          "country": "UK",
+          "website": "",
+          "logo": "https://i.imgur.com/5RZ78WP.png",
+          "stream": "https://amg00627-amg00627c40-rakuten-uk-5725.playouts.now.amagi.tv/playlist/amg00627-banijayfast-mrbeanpopupcc-rakutenuk/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "68111e72e57481a3c2d16dce"
+          }
+        },
+        {
+          "id": "RiffTrax.us",
+          "name": "RiffTrax",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/rifftrax",
+          "logo": "https://i.imgur.com/hM4yKMn.png",
+          "stream": "https://wurlrifftrax.global.transmit.live/hls/68222b9cbe836edbe6f39e74/playlist.m3u8",
+          "guide": {
+            "site": "pluto.tv",
+            "id": "58d947b9e420d8656ee101ab"
+          }
+        },
+        {
+          "id": "SNLVault.us",
+          "name": "SNL Vault",
+          "country": "US",
+          "website": "",
+          "logo": "https://provider-static.plex.tv/epg/cms/production/712dae9e-9111-4bbc-8ea4-242e891ab5b3/snl-vault-fclogo-72-dpi-1500-x-1000-3-2-channel-logo-dark-plex-1.png",
+          "stream": "https://d4whmvwm0rdvi.cloudfront.net/10007/99993017/hls/master.m3u8?ads.xumo_channelId=99993017",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5fc70600598c41002da3dd34"
+          }
+        },
+        {
+          "id": "30ARidiculousTV.us",
+          "name": "30A Ridiculous TV",
+          "country": "US",
+          "website": "https://30a-tv.com/30a/funny-crazy-videos/",
+          "logo": "https://30a.media/wp-content/uploads/2023/08/pzaz-30atv-2-230x366-ridiculous.jpg",
+          "stream": "https://30a-tv.com/feeds/720p/63.m3u8",
+          "guide": null
+        },
+        {
+          "id": "AFV.us",
+          "name": "AFV",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/TOB9vmW.png",
+          "stream": "https://linear-12.frequency.stream/dist/plex/12/hls/master/playlist.m3u8",
+          "guide": null
+        },
+        {
+          "id": "ComedyCentralLatinAmerica.us",
+          "name": "Comedy Central Latin America",
+          "country": "US",
+          "website": "http://comedycentral.la/",
+          "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Comedy_Central_2018.svg/960px-Comedy_Central_2018.svg.png",
+          "stream": "https://barinaslive1.boldmss.com/COMEDY/COMEDY.isml/COMEDY.m3u8",
+          "guide": null
+        }
+      ]
+    },
+    {
+      "id": "docs",
+      "name": "Documentaries",
+      "emoji": "🌍",
+      "iptv": [
+        "documentary",
+        "science"
+      ],
+      "channels": [
+        {
+          "id": "AdventureEarth.de",
+          "name": "Adventure Earth",
+          "country": "DE",
+          "website": "https://www.autentic.com/117/Channels.htm#adventure_earth",
+          "logo": "https://i.imgur.com/94Pq9Io.png",
+          "stream": "https://a57e9c69976649b582a8d7604c00e69a.mediatailor.us-east-1.amazonaws.com/v1/master/44f73ba4d03e9607dcd9bebdcb8494d86964f1d8/RlaxxTV-eu_AdventureEarth/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6533e9b1df3ccc650a965646"
+          }
+        },
+        {
+          "id": "Backstage.us",
+          "name": "Backstage",
+          "country": "US",
+          "website": "https://www.fuse.tv/v/fuse-backstage/a4068154335cc15ab055a34979c5e1c4",
+          "logo": "https://i.imgur.com/qcTNvNU.png",
+          "stream": "https://d2ah48mnofquik.cloudfront.net/Backstage.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "608aec5fa09205002da4f28f"
+          }
+        },
+        {
+          "id": "BBCEarth.uk",
+          "name": "BBC Earth",
+          "country": "UK",
+          "website": "",
+          "logo": "https://upload.wikimedia.org/wikipedia/commons/7/7e/BBC_Earth_2023.svg",
+          "stream": "https://aegis-cloudfront-1.tubi.video/bb1fc6ad-9948-42ea-aaf3-20acfcdeecac/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6414a73254c537d12d8073d7"
+          }
+        },
+        {
+          "id": "BritBoxMysteries.us",
+          "name": "BritBox Mysteries",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/britbox-mysteries",
+          "logo": "https://i.imgur.com/PJdzoLN.png",
+          "stream": "https://aegis-cloudfront-1.tubi.video/c95700f8-e51c-4a36-ad46-56f70fc9f1d9/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "639a0b83812b6c1429f7acd1"
+          }
+        },
+        {
+          "id": "DocumentaryPlus.us",
+          "name": "Documentary+",
+          "country": "US",
+          "website": "https://docplus.com/live-channels",
+          "logo": "https://i.imgur.com/x57klfS.png",
+          "stream": "https://1d153317c8db4250b3789601274e2402.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-887-DOCUMENTARYINTERNATIONAL-DOCUMENTARYPLUS/mt/documentaryplus/887/hls/master/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "614e286b2bac097ffd6fd6ab"
+          }
+        },
+        {
+          "id": "Getfactual.us",
+          "name": "Get.factual",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/get-factual-gb",
+          "logo": "https://i.imgur.com/4oVcjLd.png",
+          "stream": "https://d1nhni5l2n8hjt.cloudfront.net/gf.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6699937717c9985deeb74e39"
+          }
+        },
+        {
+          "id": "HistoryHit.uk",
+          "name": "History Hit",
+          "country": "UK",
+          "website": "https://www.historyhit.com/",
+          "logo": "https://i.imgur.com/ulHoqlP.png",
+          "stream": "https://ldsaaaaaa-timeline-samsungau-awedz.amagi.tv/playlist/ldsAAAAAA-timeline-samsungau/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5f74cf83ffbe690040689f50"
+          }
+        },
+        {
+          "id": "InWonder.nl",
+          "name": "InWonder",
+          "country": "NL",
+          "website": "https://in.tv/channel/inwonder",
+          "logo": "https://cdn.uc.assets.prezly.com/4b12c878-0f30-47e1-9ca8-d5828e81e18e/InWonder_landscape-white.png",
+          "stream": "https://amg00861-terninternation-inwonder-samsungau-1k63k.amagi.tv/playlist/amg00861-terninternation-inwonder-samsungau/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6668b2b5e4f56766e556a413"
+          }
+        },
+        {
+          "id": "LovePets.ca",
+          "name": "Love Pets",
+          "country": "CA",
+          "website": "https://lovepetstv.com/",
+          "logo": "https://lovepetstv.com/wp-content/uploads/2022/12/LovePets_Logo_SecondaryColor.png",
+          "stream": "https://amg01576-blueskyeenterta-lovepetsemea-samsungse-ctamh.amagi.tv/playlist/amg01576-blueskyeenterta-lovepetsemea-samsungse/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "63fe7d7eb6312779f56504d3"
+          }
+        },
+        {
+          "id": "LoveThePlanet.es",
+          "name": "Love The Planet",
+          "country": "ES",
+          "website": "https://lovetvchannels.com/en/our-channels/#planet",
+          "logo": "https://i.imgur.com/RBcD49X.png",
+          "stream": "https://amg01821-lovetvchannels-lovetheplanetuksamsung-samsunguk-apopw.amagi.tv/playlist/amg01821-lovetvchannels-lovetheplanetuksamsung-samsunguk/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "671ffe75769d5ec4bf51d63c"
+          }
+        }
+      ]
+    },
+    {
+      "id": "movies",
+      "name": "Movies",
+      "emoji": "🎬",
+      "iptv": [
+        "movies"
+      ],
+      "channels": [
+        {
+          "id": "24HourFreeMovies.us",
+          "name": "24 Hour Free Movies",
+          "country": "US",
+          "website": "https://channelstore.roku.com/en-ca/details/9901df514a904063a91fd54fb1f2971c/24-hour-movie-channel",
+          "logo": "https://i.imgur.com/iSVnzR1.png",
+          "stream": "https://d1j2u714xk898n.cloudfront.net/scheduler/scheduleMaster/145.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5fd115bab7ef8d002dcf181d"
+          }
+        },
+        {
+          "id": "CineRomantico.us",
+          "name": "Cine Romantico",
+          "country": "US",
+          "website": "https://cineromantico.com/",
+          "logo": "https://i.imgur.com/FUrrDrb.png",
+          "stream": "https://d1si3n1st4nkgb.cloudfront.net/10502/88886011/hls/master.m3u8?ads.xumo_channelId=88886011",
+          "guide": {
+            "site": "plex.tv",
+            "id": "67db0a3892cb453db28ab020"
+          }
+        },
+        {
+          "id": "EbonyTVbyLionsgate.us",
+          "name": "Ebony TV by Lionsgate",
+          "country": "US",
+          "website": "https://lionsgatechannels.com/ebonytv",
+          "logo": "https://provider-static.plex.tv/epg/cms/production/234d5377-ab07-41bf-acd6-34c17c1c051a/EbonyTV_Plex_Logo_Light_1500x1000.png",
+          "stream": "https://aegis-cloudfront-1.tubi.video/a0ad4b53-ab3a-48dd-be12-bc7f533c372c/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6533de63bd43e1c8b1865152"
+          }
+        },
+        {
+          "id": "FilmRiseWestern.us",
+          "name": "FilmRise Western",
+          "country": "US",
+          "website": "https://filmrise.com/",
+          "logo": "https://provider-static.plex.tv/epg/cms/production/924cac96-f0da-4eea-aab9-87c708a87f99/FilmRise_Western_1500x1000_Light_Logo.png",
+          "stream": "https://dz05z8iljgvbe.cloudfront.net/master.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6627ab12580825e8a7bc4f05"
+          }
+        },
+        {
+          "id": "GravitasMovies.us",
+          "name": "Gravitas Movies",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/H2hD4vT.png",
+          "stream": "https://d6dg3ebeih71x.cloudfront.net/Gravitas_Movies.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5efe1de7e0b3f5003f5d9f8e"
+          }
+        },
+        {
+          "id": "GREATmovies.uk",
+          "name": "GREAT! movies",
+          "country": "UK",
+          "website": "https://www.greatnetwork.com/movies/",
+          "logo": "https://d2n0069hmnqmmx.cloudfront.net/epgdata/1.0/newchanlogos/512/512/skychb3709.png",
+          "stream": "https://amg01753-narrativeuk-amg01753c3-lg-gb-1833.playouts.now.amagi.tv/playlist/amg01753-narrativeuk-greatmovies-lggb/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "664e9d95e8824b0c34762787"
+          }
+        },
+        {
+          "id": "GREATromance.uk",
+          "name": "GREAT! romance",
+          "country": "UK",
+          "website": "https://www.greatnetwork.com/moviesclassic/",
+          "logo": "https://d2n0069hmnqmmx.cloudfront.net/epgdata/1.0/newchanlogos/512/512/skychb3643.png",
+          "stream": "https://amg01753-narrativeuk-amg01753c2-lg-gb-1832.playouts.now.amagi.tv/playlist/amg01753-narrativeuk-greatchristmas-lggb/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6648d6f0a16b3a50177f4dc0"
+          }
+        },
+        {
+          "id": "GrjngoWesternMovies.de",
+          "name": "Grjngo Western Movies",
+          "country": "DE",
+          "website": "https://www.grjngo.com/",
+          "logo": "https://i.imgur.com/wFqhK3p.png",
+          "stream": "https://amogonetworx-grjngo-3-dk.samsung.wurl.tv/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "63489a771159f6a5ce819b7b"
+          }
+        },
+        {
+          "id": "HallmarkMoviesMore.us",
+          "name": "Hallmark Movies & More",
+          "country": "US",
+          "website": "",
+          "logo": "https://provider-static.plex.tv/epg/cms/production/29af70d1-d3ba-4a16-bc4d-bd99e7e7def4/hallmark-movies-and-more_color.png",
+          "stream": "https://dbrb49pjoymg4.cloudfront.net/v1/master/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-ams-aws/master.m3u8?ads.xumo_channelId=99991709",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6244cf3c742b0d58cd4f2514"
+          }
+        },
+        {
+          "id": "MadeInHollywood.us",
+          "name": "Made In Hollywood",
+          "country": "US",
+          "website": "https://www.moviefone.com/made-in-hollywood/",
+          "logo": "https://i.imgur.com/p16HNIM.png",
+          "stream": "https://connection3-ent-nz.samsung.wurl.tv/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "60db63d29ec966002c9ea6f0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "shows",
+      "name": "TV favourites",
+      "emoji": "📺",
+      "iptv": [
+        "classic",
+        "series"
+      ],
+      "channels": [
+        {
+          "id": "AllWeddingsWEtv.us",
+          "name": "All Weddings WE tv",
+          "country": "US",
+          "website": "https://watch.plex.tv/live-tv/channel/all-weddings-we-tv",
+          "logo": "https://i.imgur.com/zKcaFcm.png",
+          "stream": "https://amc-allweddings-1-us.xumo.wurl.tv/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "60de0520281b17002cd1d4c4"
+          }
+        },
+        {
+          "id": "AntiquesRoadshowUK.us",
+          "name": "Antiques Roadshow UK",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/antiques-roadshow-uk",
+          "logo": "https://i.imgur.com/rKWLv48.png",
+          "stream": "https://bbc-antiquesroadshowuk-1-us.roku.wurl.tv/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "630902bf0417b7074a4ad95c"
+          }
+        },
+        {
+          "id": "AreWeThereYet.us",
+          "name": "Are We There Yet?",
+          "country": "US",
+          "website": "https://lionsgatechannels.com/channel/are-we-there-yet",
+          "logo": "https://i.imgur.com/3BJQiHP.png",
+          "stream": "https://amg00353-lionsgatestudio-arewethereyet-samsunguk-6h2ju.amagi.tv/playlist/amg00353-lionsgatestudio-arewethereyet-samsunguk/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "612919784f53e1002c9aa219"
+          }
+        },
+        {
+          "id": "AtHomewithFamilyHandyman.us",
+          "name": "At Home with Family Handyman",
+          "country": "US",
+          "website": "https://familyhandyman.tv/",
+          "logo": "https://i.imgur.com/WfKlGbX.png",
+          "stream": "https://d1ik2p49apxqjf.cloudfront.net/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "632270e3e67cf9cd9011fce1"
+          }
+        },
+        {
+          "id": "Baywatch.us",
+          "name": "Baywatch",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/baywatch",
+          "logo": "https://i.imgur.com/c2esKHg.png",
+          "stream": "https://aegis-cloudfront-1.tubi.video/9d1cd886-32b9-41ce-a7de-3babb46506aa/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "63e63f20abacad42ed3d1acf"
+          }
+        },
+        {
+          "id": "Choppertown.us",
+          "name": "Choppertown",
+          "country": "US",
+          "website": "https://www.choppertown.com/",
+          "logo": "https://i.imgur.com/U6cu5Ms.png",
+          "stream": "https://linear-11.frequency.stream/dist/glewedtv/11/hls/master/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5ef11487d33ab9004048a1d3"
+          }
+        },
+        {
+          "id": "DarkMatterTV.us",
+          "name": "Dark Matter TV",
+          "country": "US",
+          "website": "https://www.darkmattertv.com/",
+          "logo": "https://i.imgur.com/9K8T3ND.png",
+          "stream": "https://tricoast-tv-dark-matter-01-us.ono.wurl.tv/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5eea605674085f0040ddc7a6"
+          }
+        },
+        {
+          "id": "DealorNoDeal.us",
+          "name": "Deal or No Deal",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/deal-or-no-deal",
+          "logo": "https://i.imgur.com/lZvNXA1.png",
+          "stream": "https://amg00627-banijaygroup-dealornodeal-samsungau-si7xg.amagi.tv/playlist/amg00627-banijaygroup-dealornodeal-samsungau/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "66855a2a714fe577eb7db920"
+          }
+        },
+        {
+          "id": "Degrassi.us",
+          "name": "Degrassi",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/degrassi",
+          "logo": "https://i.imgur.com/vhSzfDC.png",
+          "stream": "https://d3537vnymvfque.cloudfront.net/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "636d5aa3dc2c550b145ed422"
+          }
+        },
+        {
+          "id": "DoctorWhoClassic.us",
+          "name": "Doctor Who Classic",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/doctor-who-classic-de",
+          "logo": "https://i.imgur.com/JIqJQQM.png",
+          "stream": "https://bbc-classicdrwho-1-us.roku.wurl.tv/playlist.m3u8",
+          "guide": {
+            "site": "pluto.tv",
+            "id": "5ce4475cd43850831ca91ce7"
+          }
+        }
+      ]
+    },
+    {
+      "id": "family",
+      "name": "Family & kids",
+      "emoji": "🧸",
+      "iptv": [
+        "family",
+        "kids",
+        "animation"
+      ],
+      "channels": [
+        {
+          "id": "BabySharkTV.us",
+          "name": "Baby Shark TV",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/baby-shark-tv",
+          "logo": "https://i.imgur.com/SbBKr8L.png",
+          "stream": "https://c0c65b821b3542c3a4dca92702f59944.mediatailor.us-east-1.amazonaws.com/v1/master/04fd913bb278d8775298c26fdca9d9841f37601f/RakutenTV-eu_BabySharkTV/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "60d4eddeb2fdec002c141137"
+          }
+        },
+        {
+          "id": "BratTV.us",
+          "name": "Brat TV",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/Kkcp9Bk.png",
+          "stream": "https://streams2.sofast.tv/v1/master/611d79b11b77e2f571934fd80ca1413453772ac7/04072b68-dc6a-4d5e-98af-f356ba8d5063/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "63d6f6c5a9e88ee909e7ee1f"
+          }
+        },
+        {
+          "id": "CampSpoopy.us",
+          "name": "Camp Spoopy",
+          "country": "US",
+          "website": "",
+          "logo": "https://img2.static-ottera.com/prod/tg/linear_channel/logo/640x360/camp-spoopy-2021_1920-x-1080_option-5.jpg",
+          "stream": "https://stream.ads.ottera.tv/playlist.m3u8?network_id=269",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6164a963766ab4f9f57e81b1"
+          }
+        },
+        {
+          "id": "EstrellaGames.us",
+          "name": "Estrella Games",
+          "country": "US",
+          "website": "https://estrellatv.com/live/estrella-games/",
+          "logo": "https://i.imgur.com/Z52nEnH.png",
+          "stream": "https://cdn-uw2-prod.tsv2.amagi.tv/linear/amg00567-estrellamedia-estrellagames-distrotv/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "64fb9149bb3e0baa5dcc0944"
+          }
+        },
+        {
+          "id": "FilmRiseAnime.us",
+          "name": "FilmRise Anime",
+          "country": "US",
+          "website": "https://filmrise.com/",
+          "logo": "https://i.imgur.com/3wqeGXM.png",
+          "stream": "https://dvu7aia8rjlfm.cloudfront.net/master.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "65e9d0ad8fe4ef7053c3c876"
+          }
+        },
+        {
+          "id": "KartoonChannel.us",
+          "name": "Kartoon Channel!",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/kartoon-channel",
+          "logo": "https://i.imgur.com/1luzP3T.png",
+          "stream": "https://cdn-apse1-prod.tsv2.amagi.tv/linear/amg01076-lightningintern-kartoonchannel-samsungnz/playlist.m3u8",
+          "guide": {
+            "site": "pluto.tv",
+            "id": "60fb040d4795a6000762fe8f"
+          }
+        },
+        {
+          "id": "MrBeanAnimated.uk",
+          "name": "Mr Bean Animated",
+          "country": "UK",
+          "website": "",
+          "logo": "https://static.wikia.nocookie.net/logopedia/images/2/25/Mr._Bean_Animated_Series_stacked_logo.png",
+          "stream": "https://amg00627-amg00627c23-samsung-au-4110.playouts.now.amagi.tv/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "66a9367b99bb0f3a78c0a32b"
+          }
+        },
+        {
+          "id": "Naruto.us",
+          "name": "Naruto",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/naruto",
+          "logo": "https://i.imgur.com/M8X3Kvc.png",
+          "stream": "https://d21vn5eki5qsdi.cloudfront.net/playlist.m3u8",
+          "guide": {
+            "site": "pluto.tv",
+            "id": "5f6df5a173d7340007c559f7"
+          }
+        },
+        {
+          "id": "NinjaKidzTV.us",
+          "name": "Ninja Kidz TV",
+          "country": "US",
+          "website": "https://www.ninja-kidz.com/",
+          "logo": "https://i.imgur.com/7EngqUi.png",
+          "stream": "https://d3868b4ny0rgdf.cloudfront.net/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "627ec46a92d8e6a705784bd1"
+          }
+        },
+        {
+          "id": "RetroCrush.us",
+          "name": "RetroCrush",
+          "country": "US",
+          "website": "https://www.retrocrush.tv/",
+          "logo": "https://i.imgur.com/M40b4YI.png",
+          "stream": "https://linear-899.frequency.stream/dist/cineverse/899/hls/master/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5ef4e1b40d9ad000423c442a"
+          }
+        }
+      ]
+    },
+    {
+      "id": "home",
+      "name": "Home & lifestyle",
+      "emoji": "🏡",
+      "iptv": [
+        "lifestyle"
+      ],
+      "channels": [
+        {
+          "id": "AntiquesRoadTrip.us",
+          "name": "Antiques Road Trip",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/antiques-road-trip",
+          "logo": "https://i.imgur.com/kkm7VqV.png",
+          "stream": "https://amg02333-pbs-amg02333c1-samsung-au-1253.playouts.now.amagi.tv/PBSD-AntiquesRoadTripSF-samsung/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "65d907f49c7a6da8c3ce57e9"
+          }
+        },
+        {
+          "id": "BBCHomeGarden.us",
+          "name": "BBC Home & Garden",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/bbc-home",
+          "logo": "https://i.imgur.com/rC0pi1D.png",
+          "stream": "https://d11r33s5i066xh.cloudfront.net/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6308eda9ac9983739c8a29bb"
+          }
+        },
+        {
+          "id": "CinePride.us",
+          "name": "CinePride",
+          "country": "US",
+          "website": "https://watch.plex.tv/live-tv/channel/cinepride-2",
+          "logo": "https://i.imgur.com/Y4Wgq8I.png",
+          "stream": "https://stream-us-east-1.getpublica.com/playlist.m3u8?network_id=2223",
+          "guide": {
+            "site": "plex.tv",
+            "id": "62167144ab2095ca85353ad6"
+          }
+        },
+        {
+          "id": "INFAST.nl",
+          "name": "INFAST",
+          "country": "NL",
+          "website": "https://www.in.tv/channel/infast",
+          "logo": "https://cdn.uc.assets.prezly.com/42ab0c78-fd11-4b3c-88cb-64d9dd642f23/InFast_landscape-red.png",
+          "stream": "https://amg00861-terninternation-lifestyle-samsungau-kdlyy.amagi.tv/playlist/amg00861-terninternation-lifestyle-samsungau/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "6674c3c0a9c715b93ca6ca94"
+          }
+        },
+        {
+          "id": "PBSTravel.us",
+          "name": "PBS Travel",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/A6GXhta.png",
+          "stream": "https://d3hqevbyoxtkoi.cloudfront.net/PBS_Travel.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "684c201a3496598cf4003fbc"
+          }
+        },
+        {
+          "id": "Revry.us",
+          "name": "Revry",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/XuTUaq4.png",
+          "stream": "https://99d8b4b6.wurl.com/master/f36d25e7e52f1ba8d7e56eb859c636563214f541/UmFrdXRlblRWLWV1X1JldnJ5X0hMUw/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5ef11487d33ab9004048a1d9"
+          }
+        },
+        {
+          "id": "SoReal.us",
+          "name": "So... Real",
+          "country": "US",
+          "website": "",
+          "logo": "https://i.imgur.com/wZ2uj9d.png",
+          "stream": "https://all3media-soreal-1-gb.samsung.wurl.tv/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5f0ff262d71dcb00449ec012"
+          }
+        },
+        {
+          "id": "TheDesignNetwork.us",
+          "name": "The Design Network",
+          "country": "US",
+          "website": "https://pluto.tv/en/live-tv/the-design-network",
+          "logo": "https://i.imgur.com/J5YJ3r3.png",
+          "stream": "https://amg00441-amg00441c1-rakuten-us-6050.playouts.now.amagi.tv/playlist/amg00441-thedesignnetworkllcfast-thedesignnetwork-rakutenus/playlist.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "5f0641d3e8ffda004033b16e"
+          }
+        },
+        {
+          "id": "TheJamieOliverChannel.us",
+          "name": "The Jamie Oliver Channel",
+          "country": "US",
+          "website": "https://www.xumo.tv/live-guide/the-jamie-oliver-channel",
+          "logo": "https://i.imgur.com/4v93XUB.png",
+          "stream": "https://d3i68hpvh19xjd.cloudfront.net/JamieOliver_GB.m3u8",
+          "guide": {
+            "site": "plex.tv",
+            "id": "64b7170c4612b1f48e9ad31e"
+          }
+        },
+        {
+          "id": "30ALuxeLifeDiscovered.us",
+          "name": "30A Luxe Life Discovered",
+          "country": "US",
+          "website": "https://30a-tv.com/m3u8-channels/",
+          "logo": "https://m.media-amazon.com/images/I/51FJ5A0mEyL.jpg",
+          "stream": "https://30a-tv.com/feeds/vidaa/luxelife.m3u8",
+          "guide": null
+        }
+      ]
+    }
+  ]
+}

@@ -13,28 +13,52 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as DecideRouteImport } from './routes/decide'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as HonestyRouteImport } from './routes/honesty'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as InfoRouteImport } from './routes/info'
 import { Route as OrderCompleteRouteImport } from './routes/order-complete'
 import { Route as PremiumRouteImport } from './routes/premium'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ApiBriefingRouteImport } from './routes/api/briefing'
+import { Route as ApiBudgetRouteImport } from './routes/api/budget'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiCheckinRouteImport } from './routes/api/checkin'
+import { Route as ApiCookbookRouteImport } from './routes/api/cookbook'
 import { Route as ApiDailyRouteImport } from './routes/api/daily'
+import { Route as ApiDbHealthRouteImport } from './routes/api/db-health'
+import { Route as ApiFridgeRouteImport } from './routes/api/fridge'
+import { Route as ApiHouseholdRouteImport } from './routes/api/household'
+import { Route as ApiJournalRouteImport } from './routes/api/journal'
 import { Route as ApiMenuRouteImport } from './routes/api/menu'
 import { Route as ApiNewsRouteImport } from './routes/api/news'
+import { Route as ApiNutritionRouteImport } from './routes/api/nutrition'
 import { Route as ApiOrderTogetherRouteImport } from './routes/api/order-together'
+import { Route as ApiPartyRouteImport } from './routes/api/party'
+import { Route as ApiPlannerRouteImport } from './routes/api/planner'
+import { Route as ApiPlannerAiRouteImport } from './routes/api/planner-ai'
 import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-status'
+import { Route as ApiRadioRouteImport } from './routes/api/radio'
+import { Route as ApiRecipeImportRouteImport } from './routes/api/recipe-import'
+import { Route as ApiScanRouteImport } from './routes/api/scan'
 import { Route as ApiSuggestRouteImport } from './routes/api/suggest'
+import { Route as ApiTriviaRouteImport } from './routes/api/trivia'
+import { Route as ApiTvRouteImport } from './routes/api/tv'
+import { Route as ApiWhopEventsRouteImport } from './routes/api/whop-events'
 import { Route as CheckoutPlanIdRouteImport } from './routes/checkout.$planId'
 import { Route as DecideSplatRouteImport } from './routes/decide/$'
 import { Route as EatIndexRouteImport } from './routes/eat.index'
 import { Route as EatDishRouteImport } from './routes/eat.$dish'
 import { Route as ExperiencesExperienceIdRouteImport } from './routes/experiences.$experienceId'
+import { Route as OauthAuthorizeRouteImport } from './routes/oauth.authorize'
+import { Route as PhotosFileRouteImport } from './routes/photos.$file'
+import { Route as SeatIdRouteImport } from './routes/seat.$id'
 import { Route as TogetherCodeRouteImport } from './routes/together.$code'
 import { Route as ApiOauthCallbackRouteImport } from './routes/api/oauth/callback'
 import { Route as ApiOauthLoginRouteImport } from './routes/api/oauth/login'
 import { Route as ApiOauthLogoutRouteImport } from './routes/api/oauth/logout'
+import { Route as ApiReferralPingRouteImport } from './routes/api/referral/ping'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -56,9 +80,19 @@ const FaqRoute = FaqRouteImport.update({
   path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HonestyRoute = HonestyRouteImport.update({
+  id: '/honesty',
+  path: '/honesty',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const HowItWorksRoute = HowItWorksRouteImport.update({
   id: '/how-it-works',
   path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InfoRoute = InfoRouteImport.update({
+  id: '/info',
+  path: '/info',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OrderCompleteRoute = OrderCompleteRouteImport.update({
@@ -86,14 +120,54 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiBriefingRoute = ApiBriefingRouteImport.update({
+  id: '/api/briefing',
+  path: '/api/briefing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiBudgetRoute = ApiBudgetRouteImport.update({
+  id: '/api/budget',
+  path: '/api/budget',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCheckinRoute = ApiCheckinRouteImport.update({
+  id: '/api/checkin',
+  path: '/api/checkin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCookbookRoute = ApiCookbookRouteImport.update({
+  id: '/api/cookbook',
+  path: '/api/cookbook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDailyRoute = ApiDailyRouteImport.update({
   id: '/api/daily',
   path: '/api/daily',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDbHealthRoute = ApiDbHealthRouteImport.update({
+  id: '/api/db-health',
+  path: '/api/db-health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiFridgeRoute = ApiFridgeRouteImport.update({
+  id: '/api/fridge',
+  path: '/api/fridge',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHouseholdRoute = ApiHouseholdRouteImport.update({
+  id: '/api/household',
+  path: '/api/household',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiJournalRoute = ApiJournalRouteImport.update({
+  id: '/api/journal',
+  path: '/api/journal',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiMenuRoute = ApiMenuRouteImport.update({
@@ -106,9 +180,29 @@ const ApiNewsRoute = ApiNewsRouteImport.update({
   path: '/api/news',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiNutritionRoute = ApiNutritionRouteImport.update({
+  id: '/api/nutrition',
+  path: '/api/nutrition',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiOrderTogetherRoute = ApiOrderTogetherRouteImport.update({
   id: '/api/order-together',
   path: '/api/order-together',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPartyRoute = ApiPartyRouteImport.update({
+  id: '/api/party',
+  path: '/api/party',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPlannerRoute = ApiPlannerRouteImport.update({
+  id: '/api/planner',
+  path: '/api/planner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPlannerAiRoute = ApiPlannerAiRouteImport.update({
+  id: '/api/planner-ai',
+  path: '/api/planner-ai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPremiumStatusRoute = ApiPremiumStatusRouteImport.update({
@@ -116,9 +210,39 @@ const ApiPremiumStatusRoute = ApiPremiumStatusRouteImport.update({
   path: '/api/premium-status',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRadioRoute = ApiRadioRouteImport.update({
+  id: '/api/radio',
+  path: '/api/radio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRecipeImportRoute = ApiRecipeImportRouteImport.update({
+  id: '/api/recipe-import',
+  path: '/api/recipe-import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiScanRoute = ApiScanRouteImport.update({
+  id: '/api/scan',
+  path: '/api/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiSuggestRoute = ApiSuggestRouteImport.update({
   id: '/api/suggest',
   path: '/api/suggest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTriviaRoute = ApiTriviaRouteImport.update({
+  id: '/api/trivia',
+  path: '/api/trivia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTvRoute = ApiTvRouteImport.update({
+  id: '/api/tv',
+  path: '/api/tv',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWhopEventsRoute = ApiWhopEventsRouteImport.update({
+  id: '/api/whop-events',
+  path: '/api/whop-events',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CheckoutPlanIdRoute = CheckoutPlanIdRouteImport.update({
@@ -146,6 +270,21 @@ const ExperiencesExperienceIdRoute = ExperiencesExperienceIdRouteImport.update({
   path: '/experiences/$experienceId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OauthAuthorizeRoute = OauthAuthorizeRouteImport.update({
+  id: '/oauth/authorize',
+  path: '/oauth/authorize',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PhotosFileRoute = PhotosFileRouteImport.update({
+  id: '/photos/$file',
+  path: '/photos/$file',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SeatIdRoute = SeatIdRouteImport.update({
+  id: '/seat/$id',
+  path: '/seat/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TogetherCodeRoute = TogetherCodeRouteImport.update({
   id: '/together/$code',
   path: '/together/$code',
@@ -166,62 +305,115 @@ const ApiOauthLogoutRoute = ApiOauthLogoutRouteImport.update({
   path: '/api/oauth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReferralPingRoute = ApiReferralPingRouteImport.update({
+  id: '/api/referral/ping',
+  path: '/api/referral/ping',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
+  '/honesty': typeof HonestyRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/info': typeof InfoRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/briefing': typeof ApiBriefingRoute
+  '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/checkin': typeof ApiCheckinRoute
+  '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/db-health': typeof ApiDbHealthRoute
+  '/api/fridge': typeof ApiFridgeRoute
+  '/api/household': typeof ApiHouseholdRoute
+  '/api/journal': typeof ApiJournalRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
+  '/api/nutrition': typeof ApiNutritionRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
+  '/api/party': typeof ApiPartyRoute
+  '/api/planner': typeof ApiPlannerRoute
+  '/api/planner-ai': typeof ApiPlannerAiRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/radio': typeof ApiRadioRoute
+  '/api/recipe-import': typeof ApiRecipeImportRoute
+  '/api/scan': typeof ApiScanRoute
   '/api/suggest': typeof ApiSuggestRoute
+  '/api/trivia': typeof ApiTriviaRoute
+  '/api/tv': typeof ApiTvRoute
+  '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/photos/$file': typeof PhotosFileRoute
+  '/seat/$id': typeof SeatIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/eat/': typeof EatIndexRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
+  '/api/referral/ping': typeof ApiReferralPingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
+  '/honesty': typeof HonestyRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/info': typeof InfoRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/briefing': typeof ApiBriefingRoute
+  '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/checkin': typeof ApiCheckinRoute
+  '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/db-health': typeof ApiDbHealthRoute
+  '/api/fridge': typeof ApiFridgeRoute
+  '/api/household': typeof ApiHouseholdRoute
+  '/api/journal': typeof ApiJournalRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
+  '/api/nutrition': typeof ApiNutritionRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
+  '/api/party': typeof ApiPartyRoute
+  '/api/planner': typeof ApiPlannerRoute
+  '/api/planner-ai': typeof ApiPlannerAiRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/radio': typeof ApiRadioRoute
+  '/api/recipe-import': typeof ApiRecipeImportRoute
+  '/api/scan': typeof ApiScanRoute
   '/api/suggest': typeof ApiSuggestRoute
+  '/api/trivia': typeof ApiTriviaRoute
+  '/api/tv': typeof ApiTvRoute
+  '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/photos/$file': typeof PhotosFileRoute
+  '/seat/$id': typeof SeatIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/eat': typeof EatIndexRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
+  '/api/referral/ping': typeof ApiReferralPingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -229,28 +421,52 @@ export interface FileRoutesById {
   '/account': typeof AccountRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
+  '/honesty': typeof HonestyRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/info': typeof InfoRoute
   '/order-complete': typeof OrderCompleteRoute
   '/premium': typeof PremiumRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/briefing': typeof ApiBriefingRoute
+  '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/checkin': typeof ApiCheckinRoute
+  '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/db-health': typeof ApiDbHealthRoute
+  '/api/fridge': typeof ApiFridgeRoute
+  '/api/household': typeof ApiHouseholdRoute
+  '/api/journal': typeof ApiJournalRoute
   '/api/menu': typeof ApiMenuRoute
   '/api/news': typeof ApiNewsRoute
+  '/api/nutrition': typeof ApiNutritionRoute
   '/api/order-together': typeof ApiOrderTogetherRoute
+  '/api/party': typeof ApiPartyRoute
+  '/api/planner': typeof ApiPlannerRoute
+  '/api/planner-ai': typeof ApiPlannerAiRoute
   '/api/premium-status': typeof ApiPremiumStatusRoute
+  '/api/radio': typeof ApiRadioRoute
+  '/api/recipe-import': typeof ApiRecipeImportRoute
+  '/api/scan': typeof ApiScanRoute
   '/api/suggest': typeof ApiSuggestRoute
+  '/api/trivia': typeof ApiTriviaRoute
+  '/api/tv': typeof ApiTvRoute
+  '/api/whop-events': typeof ApiWhopEventsRoute
   '/checkout/$planId': typeof CheckoutPlanIdRoute
   '/decide/$': typeof DecideSplatRoute
   '/eat/$dish': typeof EatDishRoute
   '/experiences/$experienceId': typeof ExperiencesExperienceIdRoute
+  '/oauth/authorize': typeof OauthAuthorizeRoute
+  '/photos/$file': typeof PhotosFileRoute
+  '/seat/$id': typeof SeatIdRoute
   '/together/$code': typeof TogetherCodeRoute
   '/eat/': typeof EatIndexRoute
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
+  '/api/referral/ping': typeof ApiReferralPingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -259,84 +475,156 @@ export interface FileRouteTypes {
     | '/account'
     | '/decide'
     | '/faq'
+    | '/honesty'
     | '/how-it-works'
+    | '/info'
     | '/order-complete'
     | '/premium'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/briefing'
+    | '/api/budget'
     | '/api/chat'
+    | '/api/checkin'
+    | '/api/cookbook'
     | '/api/daily'
+    | '/api/db-health'
+    | '/api/fridge'
+    | '/api/household'
+    | '/api/journal'
     | '/api/menu'
     | '/api/news'
+    | '/api/nutrition'
     | '/api/order-together'
+    | '/api/party'
+    | '/api/planner'
+    | '/api/planner-ai'
     | '/api/premium-status'
+    | '/api/radio'
+    | '/api/recipe-import'
+    | '/api/scan'
     | '/api/suggest'
+    | '/api/trivia'
+    | '/api/tv'
+    | '/api/whop-events'
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
     | '/experiences/$experienceId'
+    | '/oauth/authorize'
+    | '/photos/$file'
+    | '/seat/$id'
     | '/together/$code'
     | '/eat/'
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
+    | '/api/referral/ping'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/account'
     | '/decide'
     | '/faq'
+    | '/honesty'
     | '/how-it-works'
+    | '/info'
     | '/order-complete'
     | '/premium'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/briefing'
+    | '/api/budget'
     | '/api/chat'
+    | '/api/checkin'
+    | '/api/cookbook'
     | '/api/daily'
+    | '/api/db-health'
+    | '/api/fridge'
+    | '/api/household'
+    | '/api/journal'
     | '/api/menu'
     | '/api/news'
+    | '/api/nutrition'
     | '/api/order-together'
+    | '/api/party'
+    | '/api/planner'
+    | '/api/planner-ai'
     | '/api/premium-status'
+    | '/api/radio'
+    | '/api/recipe-import'
+    | '/api/scan'
     | '/api/suggest'
+    | '/api/trivia'
+    | '/api/tv'
+    | '/api/whop-events'
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
     | '/experiences/$experienceId'
+    | '/oauth/authorize'
+    | '/photos/$file'
+    | '/seat/$id'
     | '/together/$code'
     | '/eat'
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
+    | '/api/referral/ping'
   id:
     | '__root__'
     | '/'
     | '/account'
     | '/decide'
     | '/faq'
+    | '/honesty'
     | '/how-it-works'
+    | '/info'
     | '/order-complete'
     | '/premium'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/briefing'
+    | '/api/budget'
     | '/api/chat'
+    | '/api/checkin'
+    | '/api/cookbook'
     | '/api/daily'
+    | '/api/db-health'
+    | '/api/fridge'
+    | '/api/household'
+    | '/api/journal'
     | '/api/menu'
     | '/api/news'
+    | '/api/nutrition'
     | '/api/order-together'
+    | '/api/party'
+    | '/api/planner'
+    | '/api/planner-ai'
     | '/api/premium-status'
+    | '/api/radio'
+    | '/api/recipe-import'
+    | '/api/scan'
     | '/api/suggest'
+    | '/api/trivia'
+    | '/api/tv'
+    | '/api/whop-events'
     | '/checkout/$planId'
     | '/decide/$'
     | '/eat/$dish'
     | '/experiences/$experienceId'
+    | '/oauth/authorize'
+    | '/photos/$file'
+    | '/seat/$id'
     | '/together/$code'
     | '/eat/'
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
+    | '/api/referral/ping'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -344,27 +632,51 @@ export interface RootRouteChildren {
   AccountRoute: typeof AccountRoute
   DecideRoute: typeof DecideRouteWithChildren
   FaqRoute: typeof FaqRoute
+  HonestyRoute: typeof HonestyRoute
   HowItWorksRoute: typeof HowItWorksRoute
+  InfoRoute: typeof InfoRoute
   OrderCompleteRoute: typeof OrderCompleteRoute
   PremiumRoute: typeof PremiumRoute
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiBriefingRoute: typeof ApiBriefingRoute
+  ApiBudgetRoute: typeof ApiBudgetRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiCheckinRoute: typeof ApiCheckinRoute
+  ApiCookbookRoute: typeof ApiCookbookRoute
   ApiDailyRoute: typeof ApiDailyRoute
+  ApiDbHealthRoute: typeof ApiDbHealthRoute
+  ApiFridgeRoute: typeof ApiFridgeRoute
+  ApiHouseholdRoute: typeof ApiHouseholdRoute
+  ApiJournalRoute: typeof ApiJournalRoute
   ApiMenuRoute: typeof ApiMenuRoute
   ApiNewsRoute: typeof ApiNewsRoute
+  ApiNutritionRoute: typeof ApiNutritionRoute
   ApiOrderTogetherRoute: typeof ApiOrderTogetherRoute
+  ApiPartyRoute: typeof ApiPartyRoute
+  ApiPlannerRoute: typeof ApiPlannerRoute
+  ApiPlannerAiRoute: typeof ApiPlannerAiRoute
   ApiPremiumStatusRoute: typeof ApiPremiumStatusRoute
+  ApiRadioRoute: typeof ApiRadioRoute
+  ApiRecipeImportRoute: typeof ApiRecipeImportRoute
+  ApiScanRoute: typeof ApiScanRoute
   ApiSuggestRoute: typeof ApiSuggestRoute
+  ApiTriviaRoute: typeof ApiTriviaRoute
+  ApiTvRoute: typeof ApiTvRoute
+  ApiWhopEventsRoute: typeof ApiWhopEventsRoute
   CheckoutPlanIdRoute: typeof CheckoutPlanIdRoute
   EatDishRoute: typeof EatDishRoute
   ExperiencesExperienceIdRoute: typeof ExperiencesExperienceIdRoute
+  OauthAuthorizeRoute: typeof OauthAuthorizeRoute
+  PhotosFileRoute: typeof PhotosFileRoute
+  SeatIdRoute: typeof SeatIdRoute
   TogetherCodeRoute: typeof TogetherCodeRoute
   EatIndexRoute: typeof EatIndexRoute
   ApiOauthCallbackRoute: typeof ApiOauthCallbackRoute
   ApiOauthLoginRoute: typeof ApiOauthLoginRoute
   ApiOauthLogoutRoute: typeof ApiOauthLogoutRoute
+  ApiReferralPingRoute: typeof ApiReferralPingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -397,11 +709,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/honesty': {
+      id: '/honesty'
+      path: '/honesty'
+      fullPath: '/honesty'
+      preLoaderRoute: typeof HonestyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/how-it-works': {
       id: '/how-it-works'
       path: '/how-it-works'
       fullPath: '/how-it-works'
       preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/info': {
+      id: '/info'
+      path: '/info'
+      fullPath: '/info'
+      preLoaderRoute: typeof InfoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/order-complete': {
@@ -439,6 +765,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/briefing': {
+      id: '/api/briefing'
+      path: '/api/briefing'
+      fullPath: '/api/briefing'
+      preLoaderRoute: typeof ApiBriefingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/budget': {
+      id: '/api/budget'
+      path: '/api/budget'
+      fullPath: '/api/budget'
+      preLoaderRoute: typeof ApiBudgetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -446,11 +786,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/checkin': {
+      id: '/api/checkin'
+      path: '/api/checkin'
+      fullPath: '/api/checkin'
+      preLoaderRoute: typeof ApiCheckinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cookbook': {
+      id: '/api/cookbook'
+      path: '/api/cookbook'
+      fullPath: '/api/cookbook'
+      preLoaderRoute: typeof ApiCookbookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/daily': {
       id: '/api/daily'
       path: '/api/daily'
       fullPath: '/api/daily'
       preLoaderRoute: typeof ApiDailyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/db-health': {
+      id: '/api/db-health'
+      path: '/api/db-health'
+      fullPath: '/api/db-health'
+      preLoaderRoute: typeof ApiDbHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/fridge': {
+      id: '/api/fridge'
+      path: '/api/fridge'
+      fullPath: '/api/fridge'
+      preLoaderRoute: typeof ApiFridgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/household': {
+      id: '/api/household'
+      path: '/api/household'
+      fullPath: '/api/household'
+      preLoaderRoute: typeof ApiHouseholdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/journal': {
+      id: '/api/journal'
+      path: '/api/journal'
+      fullPath: '/api/journal'
+      preLoaderRoute: typeof ApiJournalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/menu': {
@@ -467,11 +849,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiNewsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/nutrition': {
+      id: '/api/nutrition'
+      path: '/api/nutrition'
+      fullPath: '/api/nutrition'
+      preLoaderRoute: typeof ApiNutritionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/order-together': {
       id: '/api/order-together'
       path: '/api/order-together'
       fullPath: '/api/order-together'
       preLoaderRoute: typeof ApiOrderTogetherRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/party': {
+      id: '/api/party'
+      path: '/api/party'
+      fullPath: '/api/party'
+      preLoaderRoute: typeof ApiPartyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/planner': {
+      id: '/api/planner'
+      path: '/api/planner'
+      fullPath: '/api/planner'
+      preLoaderRoute: typeof ApiPlannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/planner-ai': {
+      id: '/api/planner-ai'
+      path: '/api/planner-ai'
+      fullPath: '/api/planner-ai'
+      preLoaderRoute: typeof ApiPlannerAiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/premium-status': {
@@ -481,11 +891,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPremiumStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/radio': {
+      id: '/api/radio'
+      path: '/api/radio'
+      fullPath: '/api/radio'
+      preLoaderRoute: typeof ApiRadioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/recipe-import': {
+      id: '/api/recipe-import'
+      path: '/api/recipe-import'
+      fullPath: '/api/recipe-import'
+      preLoaderRoute: typeof ApiRecipeImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/scan': {
+      id: '/api/scan'
+      path: '/api/scan'
+      fullPath: '/api/scan'
+      preLoaderRoute: typeof ApiScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/suggest': {
       id: '/api/suggest'
       path: '/api/suggest'
       fullPath: '/api/suggest'
       preLoaderRoute: typeof ApiSuggestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/trivia': {
+      id: '/api/trivia'
+      path: '/api/trivia'
+      fullPath: '/api/trivia'
+      preLoaderRoute: typeof ApiTriviaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tv': {
+      id: '/api/tv'
+      path: '/api/tv'
+      fullPath: '/api/tv'
+      preLoaderRoute: typeof ApiTvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/whop-events': {
+      id: '/api/whop-events'
+      path: '/api/whop-events'
+      fullPath: '/api/whop-events'
+      preLoaderRoute: typeof ApiWhopEventsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/checkout/$planId': {
@@ -523,6 +975,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExperiencesExperienceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/oauth/authorize': {
+      id: '/oauth/authorize'
+      path: '/oauth/authorize'
+      fullPath: '/oauth/authorize'
+      preLoaderRoute: typeof OauthAuthorizeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/photos/$file': {
+      id: '/photos/$file'
+      path: '/photos/$file'
+      fullPath: '/photos/$file'
+      preLoaderRoute: typeof PhotosFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/seat/$id': {
+      id: '/seat/$id'
+      path: '/seat/$id'
+      fullPath: '/seat/$id'
+      preLoaderRoute: typeof SeatIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/together/$code': {
       id: '/together/$code'
       path: '/together/$code'
@@ -551,6 +1024,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOauthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/referral/ping': {
+      id: '/api/referral/ping'
+      path: '/api/referral/ping'
+      fullPath: '/api/referral/ping'
+      preLoaderRoute: typeof ApiReferralPingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -570,27 +1050,51 @@ const rootRouteChildren: RootRouteChildren = {
   AccountRoute: AccountRoute,
   DecideRoute: DecideRouteWithChildren,
   FaqRoute: FaqRoute,
+  HonestyRoute: HonestyRoute,
   HowItWorksRoute: HowItWorksRoute,
+  InfoRoute: InfoRoute,
   OrderCompleteRoute: OrderCompleteRoute,
   PremiumRoute: PremiumRoute,
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiBriefingRoute: ApiBriefingRoute,
+  ApiBudgetRoute: ApiBudgetRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiCheckinRoute: ApiCheckinRoute,
+  ApiCookbookRoute: ApiCookbookRoute,
   ApiDailyRoute: ApiDailyRoute,
+  ApiDbHealthRoute: ApiDbHealthRoute,
+  ApiFridgeRoute: ApiFridgeRoute,
+  ApiHouseholdRoute: ApiHouseholdRoute,
+  ApiJournalRoute: ApiJournalRoute,
   ApiMenuRoute: ApiMenuRoute,
   ApiNewsRoute: ApiNewsRoute,
+  ApiNutritionRoute: ApiNutritionRoute,
   ApiOrderTogetherRoute: ApiOrderTogetherRoute,
+  ApiPartyRoute: ApiPartyRoute,
+  ApiPlannerRoute: ApiPlannerRoute,
+  ApiPlannerAiRoute: ApiPlannerAiRoute,
   ApiPremiumStatusRoute: ApiPremiumStatusRoute,
+  ApiRadioRoute: ApiRadioRoute,
+  ApiRecipeImportRoute: ApiRecipeImportRoute,
+  ApiScanRoute: ApiScanRoute,
   ApiSuggestRoute: ApiSuggestRoute,
+  ApiTriviaRoute: ApiTriviaRoute,
+  ApiTvRoute: ApiTvRoute,
+  ApiWhopEventsRoute: ApiWhopEventsRoute,
   CheckoutPlanIdRoute: CheckoutPlanIdRoute,
   EatDishRoute: EatDishRoute,
   ExperiencesExperienceIdRoute: ExperiencesExperienceIdRoute,
+  OauthAuthorizeRoute: OauthAuthorizeRoute,
+  PhotosFileRoute: PhotosFileRoute,
+  SeatIdRoute: SeatIdRoute,
   TogetherCodeRoute: TogetherCodeRoute,
   EatIndexRoute: EatIndexRoute,
   ApiOauthCallbackRoute: ApiOauthCallbackRoute,
   ApiOauthLoginRoute: ApiOauthLoginRoute,
   ApiOauthLogoutRoute: ApiOauthLogoutRoute,
+  ApiReferralPingRoute: ApiReferralPingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

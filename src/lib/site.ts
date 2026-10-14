@@ -1,7 +1,9 @@
+import tvLineup from './tv-lineup.json'
+
 export const SITE_NAME = 'morsels45'
 export const SITE_URL = 'https://morsels45-app.whop.site'
 export const SITE_CARD = `${SITE_URL}/site-card.png`
-export const SITE_CARD_ALT = 'morsels45 — stop scrolling, start eating'
+export const SITE_CARD_ALT = 'morsels45 — an assistant for working out what to eat'
 
 /*
  * The Android build — a signed release APK served from this site rather than
@@ -23,22 +25,108 @@ export const SITE_CARD_ALT = 'morsels45 — stop scrolling, start eating'
  * "112" did: that number outlived three separate batches of new dishes,
  * on the front page, the FAQ, the premium list and both social cards.
  */
-export const DISH_COUNT = 133
+export const DISH_COUNT = 450
 
 /*
- * The affiliate programme.
+ * The Whop page for this business, which is where account, payment and refund
+ * questions actually get answered.
  *
- * One constant because it now appears in several places, and a money link
- * copy-pasted around a codebase is a money link that goes stale in three of
- * them. The game has its own copy of this in decide/js/app.js, which is a
- * separate static app and cannot import from here.
+ * This was AFFILIATES_URL, and everything that pointed at the affiliate
+ * programme has been taken out — the prompt in the game, the three cards in
+ * the rotation and the footer link. What is left is the one honest use it
+ * always had underneath: the privacy page telling somebody where to go about
+ * their own money.
  */
-export const AFFILIATES_URL = 'https://whop.com/morsels45/affiliates'
+export const WHOP_PAGE_URL = 'https://whop.com/morsels45'
 
 
 export const ANDROID_APK = '/morsels45.apk'
 export const ANDROID_VERSION = '1.0.0'
 export const ANDROID_SIZE = '6.0 MB'
+
+/*
+ * MICROSOFT CLARITY — SESSION REPLAY, AND THE SWITCH THAT KEEPS THE PRIVACY
+ * PAGE HONEST ABOUT IT.
+ *
+ * Five days of ad traffic sent 513 people into the app and 34 on to the
+ * Premium page. Numbers say where they stopped; they do not say why, and the
+ * cheapest way to see why is to watch a few sessions. Clarity is free and
+ * does that.
+ *
+ * It is also a third party recording what people do, which is a bigger deal
+ * than a counter and is exactly the sort of thing /honesty promises not to
+ * do quietly. So ONE constant drives three things: whether the script loads,
+ * whether Clarity appears in the list of everyone this app talks to, and
+ * whether the privacy page says session replay is on. Leave it empty and all
+ * three are off and the page is silent about it; paste an id and all three
+ * turn on together.
+ *
+ * That coupling is the whole design. The failure it exists to prevent is the
+ * ordinary one: somebody pastes a tracking id, ships, and updates the
+ * privacy page next week.
+ *
+ * TO TURN IT ON: make a project at clarity.microsoft.com, take the id out of
+ * the install snippet, and put it here. Nothing else to wire.
+ */
+export const CLARITY_ID = 'ymncebz070'
+
+/*
+ * GOOGLE ANALYTICS 4, ON THE SAME TERMS AS EVERYTHING ELSE HERE.
+ *
+ * One constant decides whether the gtag script exists on any page, whether
+ * the funnel events are mirrored to it, whether Google Analytics is listed
+ * among the third parties on the privacy page, and what that page's "is
+ * there advertising or cross-site tracking" card says. Empty, and all four
+ * are off and the page is silent about it; paste a measurement id and all
+ * four turn on together.
+ *
+ * THE COUPLING IS THE POINT, and it matters more here than it did for
+ * replay. The privacy page currently answers "no Google Analytics here" in
+ * the largest type on the page. Shipping a tag without that sentence
+ * changing in the same commit would not be an oversight, it would be the
+ * page lying — and a standards page that lies is worth less than no
+ * standards page at all.
+ *
+ * WHAT IT IS NOT SET UP TO DO. No Google Signals, no advertising features,
+ * no user-id, no demographics: this is here to count pages and the five
+ * funnel events that already exist, nothing more. Those are switches in the
+ * GA console rather than in this file, so the privacy copy says what this
+ * app sends and leaves the rest to Google's own policy — turn any of them on
+ * over there and the wording here stops being true.
+ *
+ * TO TURN IT ON: make a GA4 property at analytics.google.com, take the
+ * measurement id from Admin -> Data streams (it looks like G-XXXXXXXXXX),
+ * and put it here. Nothing else to wire.
+ */
+export const GA4_ID = 'G-M5PMRS475E'
+
+/*
+ * ADSTERRA IS GONE.
+ *
+ * There was a cluster of its banner ads here, on five site pages and two
+ * screens in the game, sandboxed so a creative could not read a visitor's
+ * cookies or this page's DOM and could not redirect the tab out from
+ * under them. The sandboxing worked exactly as built and verified. What
+ * never worked was the ads themselves: every placement rendered at the
+ * right size and showed nothing — no fill, for as long as it ran, on a
+ * brand-new site with no track record on that network. Removed rather
+ * than debugged further, the same call this codebase already made once
+ * about a different network (HilltopAds, see the privacy page's history
+ * of that decision) — for the same reason that call still holds: an ad
+ * exchange serves whatever wins its auction and that roster cannot be
+ * vetted, and here it could not even be made to show anything in
+ * exchange for accepting that risk.
+ *
+ * If ads come back, they come back as their own decision again, not as
+ * this flipped back on — the unit ids and keys here were specific to one
+ * now-abandoned integration and are not preserved anywhere.
+ */
+
+/** Everything downstream reads this rather than testing the string itself. */
+export const GA4_ON = GA4_ID.length > 0
+
+/** Everything downstream reads this rather than testing the string itself. */
+export const REPLAY_ON = CLARITY_ID.length > 0
 
 /*
  * IndexNow — telling the search engines that take a push that a page changed.
@@ -70,6 +158,8 @@ type PageHead = {
   ogTitle?: string
   ogDescription?: string
   noindex?: boolean
+  /** A page's own picture for shared links — a dish's photo — instead of the site card. */
+  image?: { url: string; width: number; height: number; alt: string }
 }
 
 export function pageHead(page: PageHead) {
@@ -82,13 +172,13 @@ export function pageHead(page: PageHead) {
     { property: 'og:type', content: 'website' },
     { property: 'og:site_name', content: SITE_NAME },
     { property: 'og:title', content: ogTitle },
-    { property: 'og:image', content: SITE_CARD },
-    { property: 'og:image:width', content: '1200' },
-    { property: 'og:image:height', content: '630' },
-    { property: 'og:image:alt', content: SITE_CARD_ALT },
+    { property: 'og:image', content: page.image?.url ?? SITE_CARD },
+    { property: 'og:image:width', content: String(page.image?.width ?? 1200) },
+    { property: 'og:image:height', content: String(page.image?.height ?? 630) },
+    { property: 'og:image:alt', content: page.image?.alt ?? SITE_CARD_ALT },
     { name: 'twitter:card', content: 'summary_large_image' },
     { name: 'twitter:title', content: ogTitle },
-    { name: 'twitter:image', content: SITE_CARD },
+    { name: 'twitter:image', content: page.image?.url ?? SITE_CARD },
   ]
   if (url) meta.push({ property: 'og:url', content: url })
   if (page.description) meta.push({ name: 'description', content: page.description })
@@ -106,7 +196,7 @@ export function pageHead(page: PageHead) {
  *
  * The trial is not a claim this file gets to make on its own — it is
  * trial_period_days on the Whop plan, and Whop is what actually gives the
- * three days away. These constants exist so the page and the checkout cannot
+ * days away. These constants exist so the page and the checkout cannot
  * drift apart: a site still promising a trial that the plan no longer grants
  * is worse than never having offered one. Change it on the plan, then here.
  *
@@ -122,12 +212,103 @@ export function pageHead(page: PageHead) {
  * want. A trial shorter than the habit it is trying to start proves nothing.
  */
 export const TRIAL_DAYS = 7
-export const PRICE_VALUE = 4.99
-export const PRICE = '$4.99'
+export const PRICE_VALUE = 3.45
+export const PRICE = '$3.45'
 export const PRICE_MONTHLY = `${PRICE}/month`
 
-/** "3 days free, then $4.99/month" — the whole offer, for body copy. */
+/*
+ * THE YEARLY PRICE.
+ *
+ * $19.99 against $41.40 of monthly payments (PRICE_VALUE x 12) is the real
+ * discount this plan carries — computed below, not written as "half price" or
+ * any other fixed claim, because the two prices it is computed from have
+ * already drifted once (see products.ts) and will again.
+ *
+ * PRICE_ANNUAL_PER_MONTH is the yearly price divided by twelve and rounded,
+ * for the line that makes it comparable to the monthly one at a glance.
+ */
+export const PRICE_ANNUAL_VALUE = 19.99
+export const PRICE_ANNUAL = '$19.99'
+export const PRICE_YEARLY = `${PRICE_ANNUAL}/year`
+export const PRICE_ANNUAL_PER_MONTH = `$${(PRICE_ANNUAL_VALUE / 12).toFixed(2)}`
+export const ANNUAL_SAVING = Math.round((1 - PRICE_ANNUAL_VALUE / (PRICE_VALUE * 12)) * 100)
+
+/*
+ * THE ANCHOR, AND WHY IT IS ALLOWED TO BE ONE.
+ *
+ * People judge a price against whatever number they saw first, so a pricing
+ * page that shows the yearly price alone is being read against nothing. The
+ * number put beside it here is twelve payments at the monthly price, on this
+ * product, which is the actual other way to buy the same thing and is sitting
+ * one tap away on the same switch.
+ *
+ * That is the whole test for an anchor: it has to be a real alternative the
+ * reader could take. An invented "was $99" would be the identical technique
+ * and a lie, and the difference is not subtle to anybody who checks.
+ *
+ * Computed, not written down, for the same reason ANNUAL_SAVING is: two
+ * prices and a claim about the gap between them is three numbers that can
+ * disagree, and the one that gets caught is the claim.
+ */
+export const PRICE_ANNUAL_IF_MONTHLY = `$${(PRICE_VALUE * 12).toFixed(2)}`
+export const ANNUAL_SAVED = `$${(PRICE_VALUE * 12 - PRICE_ANNUAL_VALUE).toFixed(2)}`
+
+/*
+ * HOUSEHOLD IS GONE.
+ *
+ * There was a two-person plan here: one subscription, two accounts, the
+ * second handed over as an invitation link. It had four explanatory steps,
+ * four pre-emptive answers, six price constants and a seat-granting service
+ * behind it, and in its whole life it had nought members. Withdrawing an
+ * offer nobody has taken costs nobody anything, and that window closes the
+ * day somebody buys.
+ *
+ * What is NOT gone is the part people actually wanted from it: two of you
+ * can still settle dinner together. Together does it on one phone, and the
+ * shared browser orders it with a cursor each. Those are features of the one
+ * Premium plan, and they always were — the second subscription seat was a
+ * billing arrangement wrapped round them.
+ *
+ * See lib/products.ts for the three Whop plan ids left to archive by hand.
+ */
+
+/*
+ * THE GIFT, SAID OUT LOUD BEFORE THE ASK.
+ *
+ * Reciprocity is give-then-ask, and this product gives a great deal: the
+ * whole decide game, every dish, a recipe behind each one, and every dietary
+ * rule — permanently, with no account. All of that was already true and none
+ * of it was ever stated next to the price, which is reciprocity with the
+ * receipt thrown away. Nobody feels given-to by something they were never
+ * told they were given.
+ *
+ * No numbers in it that are not checked elsewhere on the page.
+ */
+export const THE_GIFT =
+  'Deciding is free. Every dish, every recipe, and everything you do not eat — free, ' +
+  'permanently, with no account and no card. Premium is the part that keeps up with you.'
+
+/*
+ * HOW TO LEAVE, NEXT TO THE ASK RATHER THAN IN THE SMALL PRINT.
+ *
+ * Partly because an easy exit is the single most load-bearing trust signal on
+ * a page that wants a card, and a reader who cannot find one assumes the worst
+ * correctly. Partly because the FTC's amended Negative Option Rule requires
+ * cancelling to be as easy as subscribing, and a product that meets that bar
+ * may as well get credit for meeting it.
+ *
+ * Every clause here is checkable: Account → "Manage or cancel your
+ * subscription" is one link, and the same link is on the Premium strip inside
+ * the game.
+ */
+export const HOW_TO_LEAVE =
+  'Cancel from your account page — one link, no email to write and nobody to talk to. ' +
+  'Cancel during the trial and you are not charged at all.'
+
+/** "7 days free, then $4.99/month" — the whole offer, for body copy. */
 export const OFFER = `${TRIAL_DAYS} days free, then ${PRICE_MONTHLY}`
+/** The same offer, yearly. */
+export const OFFER_ANNUAL = `${TRIAL_DAYS} days free, then ${PRICE_YEARLY}`
 /** For a title or a button, where the price alone is the wrong emphasis. */
 export const OFFER_SHORT = `${TRIAL_DAYS} days free`
 /*
@@ -140,14 +321,116 @@ export const OFFER_SHORT = `${TRIAL_DAYS} days free`
  * only what is certainly true — the number on the checkout page is the number
  * that gets charged.
  */
-export const TAX_NOTE = `Tax may be added depending on where you are, so the total can come to a little over ${PRICE}. Checkout shows exactly what you will pay before you pay it.`
+export const TAX_NOTE =
+  'Tax may be added depending on where you are, so the total can come to a little over the price shown. Checkout shows exactly what you will pay before you pay it.'
 
 /** Said wherever somebody is about to hand over a card. */
 export const TRIAL_TERMS = `Free for ${TRIAL_DAYS} days, then ${PRICE_MONTHLY}. Cancel any time before it ends and you are not charged.`
+/** The same terms for the yearly plan, which has the same trial. */
+export const TRIAL_TERMS_ANNUAL = `Free for ${TRIAL_DAYS} days, then ${PRICE_YEARLY}. Cancel any time before it ends and you are not charged.`
 
-export const SITE_TITLE = 'morsels45 — stop scrolling, start eating'
+/*
+ * WHAT THIS IS, IN ONE SENTENCE, AND WHY IT IS WRITTEN DOWN.
+ *
+ * The site used to promise to know what you wanted — "you don't know what you
+ * want; that's alright, I might" — which is a claim to read minds, and one
+ * nothing can keep. It also meant every feature could be justified as another
+ * way of guessing, so the thing sprawled: news, chat, six games, a shared
+ * browser, none of them answerable to anything.
+ *
+ * So the promise is a job rather than a gift. An assistant does not know what
+ * you want; it asks, it remembers what you told it, and it gets the thing
+ * done. Three jobs, in that order, and the test for anything new is which of
+ * the three it serves. Anything that serves none of them is not the product,
+ * however good it is.
+ */
+/*
+ * WHAT IT IS, SINCE IT STOPPED BEING ONLY A GAME.
+ *
+ * It was "an assistant for working out what to eat", and every page sold it
+ * as that: $3.45 a month for a questionnaire, which nobody pays. What it is
+ * now is a food hub — deciding, planning the week, shopping, cooking, the
+ * news and food TV — and the deciding is the front door, not the house.
+ */
+export const WHAT_IT_IS =
+  'Your food hub: decide what to eat, plan the week, shop for it, cook it hands-free, and keep up with food news, TV and radio — all built around what you do and do not eat.'
+
+/*
+ * THE INSIGHT, WHICH IS THE ONE THING THIS SITE KNOWS THAT THE READER DOES NOT.
+ *
+ * The Heaths' four families of defining moment are elevation, insight, pride
+ * and connection, and of the four, insight is the one a landing page can
+ * actually deliver: a sentence that rearranges something the reader already
+ * believed. This site had elevation (the reveal) and nothing else.
+ *
+ * The rearrangement is real and it is the product's whole thesis. People who
+ * cannot decide what to eat conclude they are indecisive. They are not. They
+ * are being asked an open question with several hundred answers and no
+ * shortlist, at the exact hour of the day when they have least left to think
+ * with — and open questions are the hardest kind for anybody. Change the
+ * question to a closed one and the same person answers instantly and
+ * correctly, every time.
+ *
+ * It is allowed to be here because it is true, it is checkable against the
+ * reader's own memory of last Tuesday, and believing it makes them better off
+ * whether or not they ever pay for anything.
+ */
+export const THE_INSIGHT = {
+  eyebrow: 'Why this works',
+  heading: 'You are not indecisive. It is a badly asked question.',
+  body:
+    '“What do you want to eat?” is an open question with hundreds of right answers, asked at the ' +
+    'hour of the day when you have the least left to think with. Nobody is good at those. Ask the ' +
+    'same person a closed one — hot or cold, now or later — and they answer in half a second and ' +
+    'they are never wrong, because there are no wrong ones.',
+  kicker:
+    'So this does not ask you the hard question. It asks you eight easy ones and does the hard ' +
+    'part itself.',
+}
+
+/** The three jobs, which every page is arranged around. */
+export const THE_JOBS: { name: string; blurb: string }[] = [
+  {
+    /*
+     * This used to be "It decides with you", which described a conversation the
+     * app was not actually having: it asked, it answered, and the only thing
+     * you could say back was no. Steering is the thing that makes the name
+     * true, so the name says it.
+     */
+    name: 'You never have to know what you want',
+    blurb:
+      'A few either-ors, no wrong answers, one dish at the end of it — and if it is close but not right, you point. Lighter. Spicier. Sooner. It answers again in that direction instead of starting over. Knowing which way to lean is easy; knowing what you want is the hard thing nobody can do on an empty stomach.',
+  },
+  {
+    name: 'It remembers what you don’t eat',
+    blurb:
+      'Halal, kosher, vegetarian, vegan, an allergy, or the one ingredient you cannot stand. Told once, applied to every decision, every mode and every list — free on every profile, and free for good. It lives in the browser you play in; a new device starts fresh.',
+  },
+  {
+    name: 'It gets you fed',
+    blurb:
+      'An answer is not dinner. There is a recipe behind every dish, a shopping list you can take to the shop, a cook mode that walks you through it, and somewhere near you that serves it if you would rather not cook.',
+  },
+]
+
+/*
+ * The home page's title. Whop's hosting puts the app's own listing name over
+ * the home page's <title>, so this is also the app's name on Whop (set with
+ * `whop apps update --name`), and Whop caps that at thirty characters. Brand
+ * first, then the question people actually type into a search box.
+ */
+export const SITE_TITLE = 'morsels45: What Should I Eat?'
+
+/*
+ * The description search results show: under 160 characters, or Google cuts
+ * it mid-sentence. SITE_DESCRIPTION below is the long version, for structured
+ * data, which has no such limit. Also the app's description on Whop, for the
+ * same reason as the title.
+ */
+export const SITE_META_DESCRIPTION =
+  'Can’t decide what to eat? Answer a few quick questions and get one dish with its recipe. Then plan your week, shop for it and cook it. Free to start.'
 export const SITE_DESCRIPTION =
-  `A 20-second food-decision game. Free to play, and free to tell it what you do not eat. Premium learns what you like, stops repeating itself, and opens a real browser two people can order in at once \u2014 ${OFFER}.`
+  `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner and TV and radio to cook and eat to are free with an account; Premium adds the shopping list, nutrition, budget, your own recipes, recipes from websites, a food scanner that says how healthy something is, and more.`
 
 declare global {
   interface Window {
@@ -158,14 +441,70 @@ declare global {
 export function track(event: string, data?: Record<string, unknown>) {
   if (typeof window === 'undefined') return
   window.whop?.track(event, data)
+  /*
+   * And to GA4, when it is on, so the funnel is readable in a dashboard we
+   * control rather than only in Whop's aggregates. Same event names and the
+   * same payloads — there is no second, richer copy going anywhere, which is
+   * what lets the privacy page describe one list and mean it.
+   */
+  if (GA4_ON) {
+    const w = window as unknown as { gtag?: (...args: unknown[]) => void }
+    try {
+      w.gtag?.('event', event, data ?? {})
+    } catch {
+      /* analytics may never break the thing it is measuring */
+    }
+  }
 }
 
+/*
+ * WHAT A FREE PROFILE CAN RULE OUT, written once.
+ *
+ * This is here for the same reason AFFILIATES_URL is: it appeared on five
+ * pages, and a claim copy-pasted around a codebase is a claim that goes stale
+ * on four of them. It did. Every one of those pages sold this as Premium and
+ * said, in as many words, that it "does not run on Standard" — while the game
+ * had been applying it free to everybody since the day the rules were made
+ * free. A site telling somebody to pay for what they already have is worse
+ * than a site with a typo on it, and it stayed up for weeks because the fix
+ * touched one file and the claim lived in five.
+ *
+ * So the claim lives here now, and the pages read it.
+ *
+ * NO NUMBERS IN IT, deliberately. It said "the six standing rules" for as long
+ * as there were six; there are fourteen now, and thirteen named diets over the
+ * top of them, and the next time that changes this sentence should not need to.
+ */
+export const DIET_FREE =
+  'Everything you do not eat is free, and always will be. Vegetarian, vegan and pescatarian; ' +
+  'halal, kosher, Hindu, Jain, Sattvic, Buddhist, Sikh, Adventist, Word of Wisdom and Ital; ' +
+  'or any single thing you would rather not be handed — pork, dairy, onion, shellfish, heat. ' +
+  'Pick it once and nothing here offers it to you again.'
+
+/** The short form, for a line in a list. */
+export const DIET_FREE_SHORT =
+  'Everything you do not eat — diets, faiths, or one ingredient at a time. Free, and applied ' +
+  'to every decision, every mode and every list.'
+
+/*
+ * Why it is not a paid feature, in the app's own words. Said on the page that
+ * is asking for money, because that is the only page where it is worth
+ * anything.
+ */
+export const DIET_FREE_WHY =
+  'An app that keeps offering a vegetarian a steak until they pay is not a trial, it is broken — ' +
+  'and one that offers a Muslim pork until the card clears has not built a funnel, it has built ' +
+  'an insult. Premium is what you can layer on top: banning a whole style of food, striking a ' +
+  'named dish off for good, a guest’s rules for one sitting, and the heat dial.'
+
 export const STANDARD = [
-  'The 20-question Decide game',
+  'The decide game — about eight questions, and never more than twenty',
+  'Quick decide — the same game over the 100 dishes everyone knows, and it gets there in about eight questions instead of eleven',
   'Endless — two dishes and a clock. Every pick buys time back, and buys back less each time. 200 picks a day',
   `All ${DISH_COUNT} dishes in the catalogue`,
-  'Ask anything — three free questions, then it is Premium',
-  'Food news — the latest six headlines a day',
+  DIET_FREE_SHORT,
+  'Ask anything — three free questions a day, unlimited on Premium',
+  'Food news — the latest six headlines a day, with the publishers’ own summaries. Opening the pieces themselves is Premium',
   'Write me a menu — one every couple of days',
   'Browse, search, and filter the menu',
   'XP, levels, streaks, and badges',
@@ -174,8 +513,72 @@ export const STANDARD = [
   'How many plates, and share a verdict',
   'Installs to your home screen, and opens straight into the game',
   'Playable entirely from the keyboard',
-  'Nearby — everywhere you could eat, sorted by what kind of place it is',
   'An Android app, if you would rather have one than a tab',
+]
+
+/*
+ * WHAT SIGNING IN ADDS, for nothing. Its own list rather than more lines on
+ * STANDARD, because "free" and "free once you have an account" are different
+ * asks: one is nothing, the other is a sign-in, and the pages should say which
+ * is which instead of letting somebody find out when the radio asks them to
+ * log in.
+ */
+/*
+ * Named from the lineup the TV actually has (lib/tv-lineup.json, rebuilt by
+ * scripts/tv-lineup.mjs), so this line cannot go on promising a channel that
+ * stopped playing and was dropped from it.
+ */
+type LineupGroup = { id: string; name: string; channels: { name: string }[] }
+const TV_GROUPS = (tvLineup as { categories: LineupGroup[] }).categories
+const TV_NAMES = (TV_GROUPS.find((g) => g.id === 'food')?.channels ?? []).map((c) => c.name)
+const TV_EXAMPLES = TV_NAMES.slice(0, 3).join(', ')
+const TV_TOTAL = TV_GROUPS.reduce((n, g) => n + g.channels.length, 0)
+const TV_OTHER_GROUPS = TV_GROUPS.filter((g) => g.id !== 'food' && g.channels.length).map((g) => g.name.toLowerCase())
+
+export const ACCOUNT = [
+  'Meal-prep calendar — breakfast, lunch, dinner and a snack for every day of the week, synced to your account, with a calendar AI that fills the gaps, plans your prep session and checks the balance',
+  `TV to cook and eat to — ${TV_TOTAL} free live channels in groups: food (${TV_EXAMPLES} and more), then ${TV_OTHER_GROUPS.slice(0, -1).join(', ')} and ${TV_OTHER_GROUPS.at(-1)}. What is on now and next, and each channel checked from your own browser before it is listed`,
+  'Radio to cook and eat to — food and dining stations, plus jazz, chill and lounge, lo-fi, classical, soul, oldies, acoustic, bossa nova and feel-good hits, about ten in each. It keeps playing while you look up the recipe',
+  'Kitchen timers and converter — several named timers at once that ring wherever you are in the app, plus cups to grams, ounces, °F and gas marks',
+  'In season — what is at its best this month, and the dishes that use it',
+  'The daily three — a mood check-in, one good thing, and a food question everybody gets the same day, with streaks that follow you between devices',
+]
+
+/*
+ * WHAT PREMIUM IS, IN THREE SENTENCES.
+ *
+ * PREMIUM_SECTIONS below is thirty-odd features in five groups, and it is the
+ * right thing for somebody who has decided to pay and wants to know what they
+ * are getting. It is the wrong thing for somebody deciding — thirty bullets
+ * is a list nobody finishes, and offering thirty choices to somebody whose
+ * whole complaint is that choosing is exhausting argues against the product.
+ *
+ * So the front of the pitch is three, and they are three OUTCOMES rather than
+ * three features: what stops happening, what you end up eating, and who else
+ * it covers. Each one is true of several of the features below, which is the
+ * test for whether it belongs here at all.
+ */
+export const PREMIUM_HEADLINES: { name: string; blurb: string }[] = [
+  {
+    name: 'Your week, sorted',
+    blurb:
+      'Plan the week in the calendar — that part is free with an account — and Premium turns it into one shopping list merged and sorted by aisle, a nutrition count against your own targets, and a budget with cheaper swaps for the priciest nights.',
+  },
+  {
+    name: 'A smarter kitchen',
+    blurb:
+      'Your family recipes on every device — copied from a photo of the card, even handwriting. Any recipe from a website without the life story. Scan food and see in plain words how healthy it is. Dinner from a photo of the fridge. Cook mode that reads the steps aloud.',
+  },
+  {
+    /*
+     * The one line on this page that names who "you" is — the argument this
+     * product exists to settle happens between people, and so does most
+     * cooking for anyone but yourself.
+     */
+    name: 'Cooking for more than you',
+    blurb:
+      'A dinner-party menu every guest can eat, with a timeline that works back from when you sit down. A real browser two of you drive at once — to order, shop or cook along. And it remembers what you like, so it stops offering the same thing twice.',
+  },
 ]
 
 /*
@@ -190,6 +593,34 @@ export const STANDARD = [
  */
 export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, string][] }[] = [
   {
+    name: 'Plan the week',
+    blurb: 'The meal calendar is free with an account. Premium is everything that runs off it.',
+    items: [
+      ['Shopping list from your week', 'Every ingredient in every recipe on your calendar, scaled to your household, merged into one list and sorted by aisle. Tick it off in the shop and it syncs to your other devices; copy or share it in one tap.'],
+      ['Nutrition for the week', 'Roughly what each planned day adds up to — energy, protein, carbs, fat and fibre — against targets you set. Estimated from the recipe each dish actually uses, and labelled as an estimate.'],
+      ['Budget for the week', 'Roughly what the week costs to cook, in your currency and for your household, against a budget you set — with cheaper dishes that keep your food rules, swapped in with one tap.'],
+      ['Dinner party planner', 'Each guest’s rules — vegetarian, vegan, no pork, no dairy, nothing spicy — and a menu every one of them can eat, with a clock-time timeline that works back from when you sit down, and the shopping list for it.'],
+    ],
+  },
+  {
+    name: 'Your kitchen',
+    blurb: 'The tools for the cooking itself — in Recipes & kitchen, and Scan food.',
+    items: [
+      ['Your own recipes', 'Keep the family recipes safe, on every device: type them in, copy them from a photo of a cookbook page or a handwritten card, or paste them from an email and it tidies them up. Change the number of people and the amounts change too.'],
+      ['Recipes from websites', 'Paste the address of a recipe on almost any site and get just the ingredients and the steps — no long story, no pop-ups, no adverts. It reads the site’s recipe card, the page itself, or the recipe plugins food blogs use, and the AI reads the page when nothing else can.'],
+      ['Scan food — is it healthy?', 'Scan the barcode on anything in the shop or the cupboard: a score out of 100, a green, amber or red answer, sugar in teaspoons and salt as a share of your daily limit — and a warning if it has something you do not eat. Data from Open Food Facts.'],
+      ['Dinner from a photo of your fridge', 'Photograph the fridge or the cupboard. It lists what it can see and which dishes you can make, what each one uses and what you would still need. The photo is not kept.'],
+      ['Hands-free cook mode', 'The steps read aloud, and voice commands for “next”, “back”, “repeat” and “start timer” — for when your hands are covered in flour.'],
+    ],
+  },
+  {
+    name: 'Stay in the know',
+    blurb: 'The news section is free to browse. Premium reads it for you.',
+    items: [
+      ['Daily food briefing', 'The five food stories worth knowing today, boiled down by AI to a sentence or two each with a link to the publisher’s own article — and one thing to cook today because of them.'],
+    ],
+  },
+  {
     name: 'It gets to know you',
     blurb: 'Everything above works better the longer you use it.',
     items: [
@@ -201,23 +632,23 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
   },
   {
     name: 'The shared browser',
-    blurb: 'A real browser running somewhere else, that two people drive at once with a cursor each. This is the part that costs money to run, and the part a subscription actually pays for.',
+    blurb: 'A real browser running in the cloud that two people use at once, each from their own phone with their own cursor. You open it from one of the buttons below, send the other person the link, and you both see and do the same thing. It is the part that costs money to run by the minute.',
     items: [
-      ['Order it together', 'A real browser you both drive, opened on the dish you landed on. Send the link and you get a cursor each.'],
-      ['Order from here', 'Pick a place in Nearby and order from its own site, in the same shared browser — no phone call, no queue.'],
-      ['Cook along', 'Two kitchens, one video, in step. "Wait, go back" means the same frame for both of you.'],
-      ['Shop the list together', 'One basket, filled by both of you, from the shopping list the recipe made.'],
+      ['Order it together — on the answer screen', 'Once you accept a dish, open a delivery site on it in a browser you both drive, and fill one basket.'],
+      ['Order from here — in Nearby', 'Pick a restaurant near you and order from its own site, in the same shared browser — no phone call, no queue.'],
+      ['Cook along — in cook mode', 'Two kitchens, one cooking video, in step. "Wait, go back" means the same frame for both of you.'],
+      ['Shop it together — on any shopping list', 'A recipe’s list, or your whole week’s from the planner: one supermarket basket, filled by both of you.'],
     ],
   },
   {
     name: 'Control what comes up',
     blurb: 'The difference between a game that guesses and one that knows the rules.',
     items: [
-      ['Ban anything, not just the six', 'No meat, no seafood, no cheese, nothing spicy, nothing fried, no caffeine — those six are free, because an app that keeps offering a vegetarian steak is not a trial, it is broken. Premium bans any tag you like on top of them, and never-agains a named dish for good.'],
+      ['Ban a whole style of food', `Not what is in it — what it is. Anything the questions ask about: hot, sweet, soupy, handheld, whatever you like, struck off before it is asked. ${DIET_FREE} Premium is the layer over the top, and never-agains a named dish for good.`],
       ['Meal slot', 'Lock breakfast, lunch, dinner or late. Every mode respects it.'],
       ['Heat dial', 'Keep spice off, or ask for a kick — applied to every decision.'],
       ['Mix it up', 'Stick to what you like, keep the usual mix, or reach for the long tail.'],
-      ['Guest at the table', 'Extra avoids for this sitting only. Always avoid stays as it is.'],
+      ['Guest at the table', 'Extra avoids for this sitting only. What you do not eat stays exactly as it is.'],
       ['Themed Endless runs', 'Pick what a run is made of before it starts — quick things, comfort food, vegetarian, spicy, sweet. Pairs that would almost never meet in the full catalogue, and a fiftieth run that does not play like the fifth.'],
       ['Don’t repeat this week', 'Accept a dish and it is off the table for seven days.'],
     ],
@@ -231,7 +662,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Somewhere that serves it', 'Find the dish near you, matched on what a place actually sells rather than on being open and close by.'],
       ['A side with that', 'A drink or a light plate that actually sits next to the answer.'],
       ['A planned week', 'Seven dishes, no two alike.'],
-      ['Write me a menu', 'A starter, a main and a pudding that belong on the same table — not three heavy things, and not three cold ones. Tell it the situation in your own words, or answer three quick questions, and it picks all three from the catalogue with a reason for each. Standard gets one every couple of days; Premium as many as you like.'],
+      ['Write me a menu', 'Five courses that belong on the same table — something to pick at, a starter, a main, a pudding and something to finish. Not five heavy things, and not five from the same kitchen unless that is the point of it. Tell it the situation in your own words, or answer three quick questions, and it picks all five from the catalogue with a reason for each. Standard gets one every couple of days; Premium as many as you like.'],
     ],
   },
   {

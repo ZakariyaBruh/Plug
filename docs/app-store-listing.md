@@ -8,7 +8,12 @@ it is **daily retention**. A community owner's problem is members going quiet; M
 a twenty-second habit with a streak attached, which is exactly the shape of thing that gets
 someone to open a whop on a day they had no other reason to.
 
-Everything claimed below is real and in the app today — checked against `lib/site.ts`.
+Everything claimed below is real and in the app today. The dish count is checked by the
+build (see `recipeBook` in `vite.config.ts`); the free/paid split is `STANDARD` and
+`PREMIUM_SECTIONS` in `lib/site.ts`. Re-read both before editing this. This file has now
+twice been left describing an app that had moved on — first saying 112 dishes and selling
+the dietary rules as Premium, then saying 327 and selling cook mode, the shopping list and
+Nearby as free — so treat every number here as something to re-check rather than to trust.
 
 ---
 
@@ -28,37 +33,59 @@ do. 118 characters.
 
 ## App store description (the in-depth view)
 
-> **"What do you want to eat?" "I don't mind."**
+This is the text set on the live `app_store_description` field. Every number in it is
+produced by the build or read off `lib/site.ts`: 450 dishes and 780 recipes are what
+`recipeBook` prints, 200 picks a day is `ENDLESS_DAY`, three questions a day is `CHAT_PER_DAY` in lib/allowance.ts, the
+prices and the seven days are `PRICE`, `PRICE_ANNUAL` and `TRIAL_DAYS`, and the free/paid
+split is `STANDARD` and `PREMIUM_SECTIONS`.
+
+**What the previous version got wrong**, which is the reason this section now says where
+each claim comes from:
+
+- **112 dishes.** Stale by two catalogue intakes. It is 450.
+- **Cook mode, the shopping list and Nearby listed under what members get free.** All three
+  are Premium, and the listing was selling the paid half as the free half.
+- **"The two-phone version of Together is free."** That version does not exist — it is an
+  unbuilt task, and the listing was describing it as shipped.
+- **"A streak that breaks if they skip one."** True of the mechanic, and the wrong way round
+  for this product: nothing in the app is built to make somebody feel bad for missing a day,
+  which is written down as a refusal in `docs/persuasion.md`. The streak is named as
+  something that climbs, not something to lose.
+
+> "What do you want to eat?" "I don't mind."
 >
 > Everybody has had that conversation. Morsels45 ends it in twenty seconds.
 >
-> Members answer a handful of either-or questions — hot or cold, quick or slow, something new
-> or something they already know — and get one dish. Not a list of forty to scroll past. One.
+> Members answer a handful of either-or questions — hot or cold, quick or slow, something new or something they already know — and get one dish. Not a list of forty to scroll past. One. If the answer is close but not right, they can point at it — lighter, spicier, sooner — and it answers again in that direction instead of starting over.
 >
-> ### Why put it in your community
+> WHY PUT IT IN YOUR COMMUNITY
 >
-> The hard part of running a community is the members who quietly stop showing up. Morsels45
-> gives them a small reason to come back: a fresh decision every day, a streak that breaks if
-> they skip one, XP and levels that climb, badges to chase. It takes twenty seconds — which is
-> the point. It is a habit, not a time sink.
+> The hard part of running a community is the members who quietly stop showing up. Morsels45 gives them a small reason to come back: a fresh decision every day, XP and levels that climb, a streak, badges to chase. It takes twenty seconds — which is the point. It is a habit, not a time sink.
 >
-> **Together mode** makes it a group thing. Up to six people round one phone answer five
-> questions each, and it lands on the one dish the whole table can live with, then shows what
-> everyone turned out to agree on. Every invite is a link that travels outside your community
-> and points back into it.
+> WHAT IS FREE, PERMANENTLY
 >
-> ### What members get
+> • The decide game — about eight questions, never more than twenty
+> • All 450 dishes, with 780 recipes to read, browse, search and filter
+> • Rules that stick — vegetarian, vegan or pescatarian; halal, kosher, Hindu, Jain, Sattvic, Buddhist, Sikh, Adventist, Word of Wisdom or Ital; or one ingredient at a time. Answered once on the way in, then never asked again on any screen in the app
+> • Endless — two dishes and a clock, every pick buying back a little less time. 200 picks a day
+> • Tonight's pick — one dish, no questions
+> • Ask it anything — three free questions a day, unlimited on Premium
+> • Food news — six headlines a day with the publishers' own summaries
+> • XP, levels, streaks and badges
+> • No account, no card. Works with no signal, installs to the home screen, plays entirely from the keyboard, and there is an Android app if a tab is not enough
 >
-> - **112 dishes**, each with a recipe, a step-by-step cook mode and a shopping list
-> - **Nearby** — everywhere near them that serves it, sorted by what kind of place it is
-> - **Six more ways to play** — Knockout brackets, thirty-second Blitz, Swipe, Shortlist,
->   This-or-that, and Endless
-> - **Rules that stick** — ban meat, seafood, spice or anything else once, and never be asked
->   again
-> - Works with no signal, installs to the home screen, and plays entirely from the keyboard
+> The dietary rules are free on purpose. An app that keeps offering a member food they do not eat does not get paid — it gets deleted.
 >
-> Free to play. Everything above is included — Premium adds extra modes and a shared browser
-> for ordering or cooking together, but nobody has to pay to get the daily habit.
+> WHAT PREMIUM ADDS
+>
+> • It remembers you. Strike a dish off and it never comes back; accept one and it is off the table for a week; everything it offers leans towards what you have actually liked
+> • It gets you fed, not just decided — cook mode one step at a time with the timer built in, the shopping list, and somewhere near you that actually serves the thing
+> • Six more ways to play — Knockout brackets, thirty-second Blitz, This-or-that, Shortlist, Swipe, and Together
+> • Together — up to six people round one phone, five either-ors each, then the one dish the whole table can live with, and what everyone turned out to agree on. Every invite is a link that travels outside your community and points back into it
+> • The shared browser — a real browser somewhere else that two people drive at once with a cursor each, opened on the dish you landed on. Order it together, shop the list together, or cook along to the same video in step
+> • A planned week, a written menu whenever you like, and the dials: meal slot, heat, how adventurous, a guest at the table
+>
+> Premium is $3.45 a month or $19.99 a year, with seven days free and one link to cancel.
 
 ---
 

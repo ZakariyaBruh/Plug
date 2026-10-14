@@ -124,14 +124,25 @@
   // middle, so both ends excluded it and only the third reply found it. That is
   // a fair description of a club sandwich, and a disastrous one of the
   // catalogue, because 0.5 is also where every dish lands that nobody has
-  // tagged at either end. Forty of 112 dishes sit in the middle of the
-  // crunchy/soft axis — pizza, tacos, buffalo wings, spring rolls — not because
-  // they are texturally ambiguous but because `soft` was only ever put on 48
-  // dishes. Answering "Crunchy" faulted 88 of 112, "Soft and tender" faulted
-  // 64, and a player who wanted a taco could not reach one by either route.
-  // Measured against somebody answering from appetite rather than from the tag
-  // table, the app found the right dish 55.6% of the time and 48 dishes were
-  // unreachable outright.
+  // tagged at either end.
+  //
+  // The counts below are of the catalogue as it stands, not of the one this was
+  // found in — an argument resting on numbers from three intakes ago is an
+  // argument nobody can check. They have all grown, and the shape of the
+  // problem has not: 45 of the 133 dishes sit in the middle of the crunchy/soft
+  // axis — pizza, tacos, buffalo wings, spring rolls — not because they are
+  // texturally ambiguous but because `soft` is only ever put on 60 of them and
+  // `crunchy` on 29. Under the old reading, answering "Crunchy" would fault 107
+  // of the 133 and "Soft and tender" 74, and a player who wanted a taco could
+  // not reach one by either route. Under this one they fault 59 and 26: the
+  // ends still exclude each other, and the middle is left alone.
+  //
+  // What the change was actually made on was a simulation of somebody answering
+  // from appetite rather than from the tag table — 2,800 games over the
+  // 112-dish catalogue of the time, in which the app found the right dish 55.6%
+  // of the time and 48 dishes were unreachable outright. Those two are left at
+  // the figures that run produced, because they are what it measured and there
+  // is no honest way to restate them without running it again.
   //
   // An untagged middle is a fact about the catalogue, not about the food, and
   // it must never be read as the player being contradicted. So the end answers
@@ -325,16 +336,33 @@
     this.recompute();
   };
 
-  // Standing dietary rules. A dish tagged 0.5 — "depends how it's made" —
-  // survives, the same latitude a stated requirement gives it. Counted at the
-  // same weight as a strike: a rule you set on purpose outranks an answer you
-  // gave in passing.
+/*
+ * A STANDING RULE EXCLUDES "MAYBE" AS WELL AS "YES".
+ *
+ * A tag of 0.5 means "depends how it's made", and everywhere else in this
+ * engine that earns a dish the benefit of the doubt: somebody who asked for
+ * something spicy is happy to be shown a dish that CAN be spicy.
+ *
+ * A standing rule is not a preference, it is a promise, and the benefit of
+ * the doubt runs the wrong way. "No meat" met a maybe-meat dish and served
+ * it — so a vegetarian was offered Caesar salad, a Jain was offered dumplings
+ * and somebody keeping Ital was offered bibimbap, each of them by a rule they
+ * had set precisely so they would not have to check. A dish that MIGHT have
+ * pork in it is not an answer you can give somebody who does not eat pork.
+ *
+ * The cost is a shorter menu for the strictest profiles, and activeBans()
+ * below is what stops that becoming an empty one: a rule with nothing left to
+ * offer is not enforced at all, which is a visible, explicable outcome rather
+ * than a silent wrong answer.
+ */
+  // Counted at the same weight as a strike: a rule you set on purpose
+  // outranks an answer you gave in passing.
   Game.prototype.countBans = function () {
     if (!this.bans || !this.bans.length) return;
     var self = this;
     this.items.forEach(function (item, i) {
       self.bans.forEach(function (tag) {
-        if ((item.tags[tag] || 0) === 1) self.faults[i] += 4;
+        if ((item.tags[tag] || 0) > 0) self.faults[i] += 4;
       });
     });
   };
@@ -344,7 +372,7 @@
     if (!this.bans || !this.bans.length) return [];
     var self = this;
     return this.bans.filter(function (tag) {
-      return self.items.some(function (item) { return (item.tags[tag] || 0) !== 1; });
+      return self.items.some(function (item) { return (item.tags[tag] || 0) === 0; });
     });
   };
 
@@ -638,12 +666,71 @@
   // has — which is what the taste profile is for.
   var SHRUGS = 3;
 
+  /*
+   * ...BUT NOT WHILE THE ANSWER WOULD STILL BE A GUESS.
+   *
+   * The rule above reads three shrugs as "I have nothing to tell you". It is
+   * usually right and it was sometimes catastrophic, because a shrug is not
+   * only what somebody with no opinion says — it is also what a truthful
+   * person says about a dish that genuinely sits in the middle of an axis.
+   *
+   * Bibimbap is the case that found this. It is 0.5 on homemade, meat and
+   * spicy, all honestly: it is a bowl you can make at home or buy, with or
+   * without beef, hot or not depending on the gochujang. Somebody who wants
+   * bibimbap therefore shrugs at three questions in a row through no fault of
+   * their own — and the game stopped at question seven and said "pizza", with
+   * the leader holding 0.8% of the probability and bibimbap nineteenth.
+   *
+   * Every other way out of this game has a standard: twenty questions, or
+   * nothing left worth asking, or 85% confidence. This one had none, so it
+   * was the only door through which a wrong answer could leave.
+   *
+   * The floor is deliberately low. It is not "be sure" — CONFIDENT already
+   * means that. It is "do not answer at random", and below a quarter of the
+   * probability on the leader that is exactly what the answer is.
+   *
+   * SHRUG_PATIENCE keeps the original promise for the person the original
+   * rule was written for. Somebody who shrugs at everything never narrows
+   * anything, so the floor alone would march them to all twenty questions —
+   * which is the behaviour that was being fixed. Twelve is enough to be sure
+   * they mean it and well short of the wall.
+   */
+  var GAVE_UP_FLOOR = 0.25;
+  var SHRUG_PATIENCE = 12;
+  var ALL_SHRUGS = 6;   // shrugs from the very first question before we believe it
+
   Game.prototype.hasGivenUp = function () {
     if (this.answers.length < SHRUGS) return false;
     for (var i = this.answers.length - SHRUGS; i < this.answers.length; i++) {
       if (this.answers[i].value !== 'either') return false;
     }
-    return true;
+    /*
+     * Somebody who has shrugged at EVERYTHING is telling us about themselves
+     * rather than about this dish, and they are the person the rule was
+     * written for. They keep the short game: nothing below can narrow a field
+     * that has been told nothing, so making them sit through twelve questions
+     * would be the original complaint back again with extra steps.
+     *
+     * BUT NOT AT THE FIRST THREE, which is where this went wrong. The opening
+     * questions are drink, sweet and hot, in that order, and plenty of people
+     * do not mind about any of them — somebody who has decided only that they
+     * want to eat well shrugs at all three honestly. At SHRUGS alone this
+     * fired on them at question five and handed back fish and chips, having
+     * never asked whether they wanted something healthy. They had not refused
+     * to answer; they had not been asked anything they cared about yet.
+     *
+     * So the shortcut needs a real run of them. Six is two full rounds of
+     * shrugging, which nobody does by accident, and it still lets somebody
+     * who genuinely does not mind out in six questions rather than twelve.
+     */
+    var told = false;
+    for (var j = 0; j < this.answers.length; j++) {
+      if (this.answers[j].value !== 'either') { told = true; break; }
+    }
+    if (!told) return this.answers.length >= ALL_SHRUGS;
+
+    if (this.best().score >= GAVE_UP_FLOOR) return true;
+    return this.answers.length >= SHRUG_PATIENCE;
   };
 
   // The answers that did most to single this dish out — used for "why this?".
