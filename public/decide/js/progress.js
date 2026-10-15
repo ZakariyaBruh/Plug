@@ -247,6 +247,7 @@
       badges: [],
       muted: false,
       history: [],            // [{ name, icon, at }], newest first
+      dailyDish: null,        // { day, offset, ate } — the Daily page's dish of the day
       recent: [],             // [{ name, icon }], newest first
       favourites: [],         // [{ name, icon }] the player saved, newest first
       rules: [],              // tags never to be served, e.g. ['meat']

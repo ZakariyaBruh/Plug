@@ -288,14 +288,58 @@ const TRIVIA_BANK: { q: string; choices: string[]; answer: number }[] = [
 ]
 
 /*
- * Index into the bank, stable for the whole UTC day and the same for
- * everyone. Days since the Unix epoch, mod the bank length, so it is a
- * plain integer with no hashing to keep in sync between a read and the
- * answer check later.
+ * THE FOOD BANK. Every other day's question comes from here, so the daily
+ * question is half about the thing this app is for and half a reason to open
+ * it on a day with no dinner to decide. Same rule as the bank above: one
+ * correct answer that is plainly a fact, never a matter of taste.
  */
+const FOOD_TRIVIA_BANK: { q: string; choices: string[]; answer: number }[] = [
+  { q: 'Which spice comes from the dried stigmas of a crocus flower?', choices: ['Turmeric', 'Saffron', 'Cardamom', 'Paprika'], answer: 1 },
+  { q: 'What is the main ingredient of guacamole?', choices: ['Avocado', 'Cucumber', 'Lime', 'Green pepper'], answer: 0 },
+  { q: 'Which country is the home of paella?', choices: ['Portugal', 'Mexico', 'Spain', 'Italy'], answer: 2 },
+  { q: 'What is tofu made from?', choices: ['Rice', 'Soybeans', 'Wheat', 'Chickpeas'], answer: 1 },
+  { q: 'Which type of rice is classically used for risotto?', choices: ['Basmati', 'Jasmine', 'Arborio', 'Wild rice'], answer: 2 },
+  { q: 'What is the main ingredient of hummus?', choices: ['Lentils', 'Chickpeas', 'Black beans', 'Peas'], answer: 1 },
+  { q: 'Which fruit is dried to make raisins?', choices: ['Plums', 'Dates', 'Grapes', 'Figs'], answer: 2 },
+  { q: 'Pho is a noodle soup from which country?', choices: ['Thailand', 'Vietnam', 'Cambodia', 'Laos'], answer: 1 },
+  { q: 'Kimchi is a staple of which country’s cooking?', choices: ['Japan', 'China', 'Korea', 'Mongolia'], answer: 2 },
+  { q: 'Which cheese is traditionally crumbled over a Greek salad?', choices: ['Brie', 'Feta', 'Cheddar', 'Gouda'], answer: 1 },
+  { q: 'Which nut is ground to make marzipan?', choices: ['Almond', 'Cashew', 'Walnut', 'Hazelnut'], answer: 0 },
+  { q: 'Which herb is the main ingredient of pesto?', choices: ['Parsley', 'Coriander', 'Basil', 'Mint'], answer: 2 },
+  { q: 'Baklava is layered with which kind of pastry?', choices: ['Puff', 'Choux', 'Shortcrust', 'Filo'], answer: 3 },
+  { q: 'What gives chilli peppers their heat?', choices: ['Capsaicin', 'Piperine', 'Allicin', 'Curcumin'], answer: 0 },
+  { q: 'Which vitamin are citrus fruits most famous for?', choices: ['Vitamin A', 'Vitamin B12', 'Vitamin C', 'Vitamin K'], answer: 2 },
+  { q: 'Which flatbread is traditionally cooked on the wall of a tandoor?', choices: ['Naan', 'Tortilla', 'Pita', 'Injera'], answer: 0 },
+  { q: 'A classic Wiener schnitzel is made from which meat?', choices: ['Pork', 'Chicken', 'Veal', 'Lamb'], answer: 2 },
+  { q: 'Which beans is chocolate made from?', choices: ['Coffee', 'Cacao', 'Vanilla', 'Carob'], answer: 1 },
+  { q: 'Miso is made by fermenting which ingredient?', choices: ['Soybeans', 'Rice vinegar', 'Seaweed', 'Mushrooms'], answer: 0 },
+  { q: 'Which vegetable is the base of a traditional Spanish gazpacho?', choices: ['Tomato', 'Cabbage', 'Carrot', 'Spinach'], answer: 0 },
+  { q: 'Which spice gives curry its yellow colour?', choices: ['Cumin', 'Turmeric', 'Coriander', 'Fenugreek'], answer: 1 },
+  { q: 'Tomato, mozzarella and which herb make a caprese salad?', choices: ['Basil', 'Thyme', 'Dill', 'Rosemary'], answer: 0 },
+  { q: 'A bao is a type of what?', choices: ['Dumpling soup', 'Steamed bun', 'Rice cake', 'Noodle'], answer: 1 },
+  { q: 'Which country grows the most coffee?', choices: ['Colombia', 'Vietnam', 'Ethiopia', 'Brazil'], answer: 3 },
+  { q: 'Fermented cabbage is called what in German cooking?', choices: ['Sauerkraut', 'Kimchi', 'Coleslaw', 'Pickle'], answer: 0 },
+  { q: 'Which prized fungus is traditionally hunted with trained dogs or pigs?', choices: ['Morel', 'Shiitake', 'Truffle', 'Chanterelle'], answer: 2 },
+  { q: 'Dal is a dish made mostly from which ingredient?', choices: ['Lentils and other pulses', 'Rice flour', 'Potatoes', 'Yoghurt'], answer: 0 },
+  { q: 'Pasta shaped like “little worms” is called what?', choices: ['Farfalle', 'Vermicelli', 'Penne', 'Orzo'], answer: 1 },
+  { q: 'Falafel is traditionally made from chickpeas or which other bean?', choices: ['Black beans', 'Fava beans', 'Kidney beans', 'Green beans'], answer: 1 },
+  { q: 'Which country is pizza from?', choices: ['Greece', 'France', 'Italy', 'Spain'], answer: 2 },
+]
+
+/*
+ * Which question today. Days since the Unix epoch: even days draw from the
+ * food bank and odd days from the general one, each read in order, so a given
+ * calendar day is the same question for every single person who opens the app,
+ * and the index stored with an answer is simply a position in ALL_TRIVIA.
+ * No hashing to keep in sync between a read and the answer check later.
+ */
+const ALL_TRIVIA = [...TRIVIA_BANK, ...FOOD_TRIVIA_BANK]
+
 function triviaIndexFor(day: string): number {
   const epochDay = Math.floor(Date.parse(day + 'T00:00:00Z') / 86_400_000)
-  return ((epochDay % TRIVIA_BANK.length) + TRIVIA_BANK.length) % TRIVIA_BANK.length
+  const step = Math.floor(epochDay / 2)
+  if (epochDay % 2 === 0) return TRIVIA_BANK.length + (step % FOOD_TRIVIA_BANK.length)
+  return step % TRIVIA_BANK.length
 }
 
 export type TriviaState = {
@@ -313,7 +357,7 @@ export type TriviaState = {
 
 async function triviaStateFor(client: NonNullable<ReturnType<typeof db>>, userId: string, day: string): Promise<TriviaState> {
   const index = triviaIndexFor(day)
-  const question = TRIVIA_BANK[index]
+  const question = ALL_TRIVIA[index]
 
   const rs = await client.execute({
     sql: 'select day, choice_index, correct from trivia_answers where user_id = ? order by day desc limit 90',
@@ -360,7 +404,7 @@ export async function recordTriviaAnswer(userId: string, choiceIndex: number): P
     await ensureSchema(client)
     const day = today()
     const index = triviaIndexFor(day)
-    const question = TRIVIA_BANK[index]
+    const question = ALL_TRIVIA[index]
     if (!Number.isInteger(choiceIndex) || choiceIndex < 0 || choiceIndex >= question.choices.length) return null
 
     const correct = choiceIndex === question.answer ? 1 : 0
@@ -376,5 +420,78 @@ export async function recordTriviaAnswer(userId: string, choiceIndex: number): P
   } catch (err) {
     console.error('habits: trivia write failed', err)
     return null
+  }
+}
+
+/* ------------------------------------------------------- activity summary */
+
+/*
+ * What the Daily page draws its calendar and streak from: for each of the
+ * last SUMMARY_DAYS days, how many of the three things (mood check-in, one
+ * good thing, the day's question) were done. The streak here is "any of the
+ * three", which is the streak that matters for coming back at all; the
+ * per-feature streaks above stay as they were.
+ */
+const SUMMARY_DAYS = 42
+
+export type DailySummary = {
+  today: string
+  days: Record<string, number> // day -> 0..3, only days with something done
+  doneToday: { checkin: boolean; journal: boolean; trivia: boolean }
+  streak: number
+  best: number
+  activeThisWeek: number
+}
+
+export async function dailySummary(userId: string): Promise<DailySummary> {
+  const day = today()
+  const empty: DailySummary = {
+    today: day,
+    days: {},
+    doneToday: { checkin: false, journal: false, trivia: false },
+    streak: 0,
+    best: 0,
+    activeThisWeek: 0,
+  }
+  const client = db()
+  if (!client) return empty
+  try {
+    await ensureSchema(client)
+    const since = new Date(Date.parse(day + 'T00:00:00Z') - (SUMMARY_DAYS - 1) * 86_400_000).toISOString().slice(0, 10)
+    const [a, b, c] = await Promise.all(
+      ['checkins', 'journal_entries', 'trivia_answers'].map((table) =>
+        client.execute({ sql: `select day from ${table} where user_id = ? and day >= ?`, args: [userId, since] }),
+      ),
+    )
+    const sets = [a, b, c].map((rs) => new Set(rs.rows.map((r) => String(r.day))))
+    const days: Record<string, number> = {}
+    for (const set of sets) for (const d of set) days[d] = (days[d] ?? 0) + 1
+
+    // Best run in the window, walking forwards.
+    let best = 0
+    let run = 0
+    for (let i = 0; i < SUMMARY_DAYS; i++) {
+      const d = new Date(Date.parse(since + 'T00:00:00Z') + i * 86_400_000).toISOString().slice(0, 10)
+      run = days[d] ? run + 1 : 0
+      best = Math.max(best, run)
+    }
+
+    let activeThisWeek = 0
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(Date.parse(day + 'T00:00:00Z') - i * 86_400_000).toISOString().slice(0, 10)
+      if (days[d]) activeThisWeek += 1
+    }
+
+    return {
+      today: day,
+      days,
+      doneToday: { checkin: sets[0].has(day), journal: sets[1].has(day), trivia: sets[2].has(day) },
+      streak: streakFrom(new Set(Object.keys(days)), day),
+      best,
+      activeThisWeek,
+    }
+  } catch (err) {
+    console.error('habits: summary read failed', err)
+    return empty
   }
 }

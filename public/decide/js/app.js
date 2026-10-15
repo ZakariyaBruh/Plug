@@ -8352,21 +8352,212 @@
    * sync, since the point of all three is that they are the same wherever
    * you sign in, not whatever this one tab last saw.
    */
-  var daily = { busy: false };
+  var dayPage = {
+    busy: false,
+    summary: null,
+    done: { decide: false, dish: false, mood: false, good: false, question: false }
+  };
   var MOOD_FACES = { great: '\u{1F525}', good: '\u{1F642}', okay: '\u{1F610}', rough: '\u{1F615}', bad: '\u{1F629}' };
 
-  function renderDaily() {
-    var signedIn = premiumApi.status.signedIn;
-    $('daily-signedout').hidden = signedIn;
-    $('daily-signedin').hidden = !signedIn;
-    if (!signedIn) return;
-    loadCheckin();
-    loadJournal();
-    loadTrivia();
+  /*
+   * THE FIVE THINGS. Two are about food and live on this device (decide,
+   * the dish of the day); three are kept with an account (mood, one good
+   * thing, the day's question). The ring counts all five, so somebody who is
+   * not signed in sees exactly what signing in would add rather than a page
+   * that looks complete and quietly is not.
+   */
+  var QUESTS = [
+    { id: 'decide', icon: '\u{1F3B2}', title: 'Decide what to eat', hint: 'One decision, any way you like.', account: false },
+    { id: 'dish', icon: '\u{1F37D}\u{FE0F}', title: 'Have the dish of the day', hint: 'Cook it, order it or find it nearby.', account: false },
+    { id: 'mood', icon: '\u{1F642}', title: 'Log how today is going', hint: 'Five faces, one tap.', account: true, target: 'checkin-wrap' },
+    { id: 'good', icon: '✨', title: 'Write one good thing', hint: 'One line is enough.', account: true, target: 'journal-wrap' },
+    { id: 'question', icon: '❓', title: 'Answer today’s question', hint: 'The same one for everybody.', account: true, target: 'trivia-wrap' }
+  ];
+
+  function dayPageKey() { return ProgressLib.dayKey(new Date()); }
+
+  // The same dish for everybody on a given day (and a given "show me another"),
+  // chosen from what this player has not ruled out.
+  function dishOfTheDay() {
+    var rules = effectiveRules();
+    var pool = Data.ITEMS.filter(function (dish) {
+      if (progress.isBanned(dish.name)) return false;
+      return !rules.some(function (tag) { return (dish.tags[tag] || 0) > 0; });
+    });
+    if (!pool.length) pool = Data.ITEMS.slice();
+    var state = progress.state.dailyDish;
+    var day = dayPageKey();
+    var offset = state && state.day === day ? (state.offset || 0) : 0;
+    var h = 2166136261;
+    var seed = day + ':' + offset;
+    for (var i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return pool[(h >>> 0) % pool.length];
   }
+
+  function dishState() {
+    var st = progress.state.dailyDish;
+    return st && st.day === dayPageKey() ? st : { day: dayPageKey(), offset: 0, ate: false };
+  }
+
+  function decidedToday() {
+    var last = (progress.state.history || [])[0];
+    return !!(last && last.at && ProgressLib.dayKey(new Date(last.at)) === dayPageKey());
+  }
+
+  function paintDish() {
+    var dish = dishOfTheDay();
+    var st = dishState();
+    $('daily-dish').hidden = false;
+    $('daily-dish-icon').textContent = dish.icon;
+    $('daily-dish-name').textContent = dish.name;
+    $('daily-dish-blurb').textContent = dish.blurb;
+    $('daily-dish-ate').textContent = st.ate ? 'Had it ✓' : 'I had it today';
+    $('daily-dish-ate').classList.toggle('is-on', !!st.ate);
+    dayPage.done.dish = !!st.ate;
+  }
+
+  $('daily-dish-open').addEventListener('click', function () { openSheet(dishOfTheDay()); });
+  $('daily-dish-ate').addEventListener('click', function () {
+    var st = dishState();
+    st.ate = !st.ate;
+    progress.state.dailyDish = st;
+    progress.save();
+    Sound[st.ate ? 'win' : 'tick']();
+    paintDish();
+    paintDayPage();
+  });
+  $('daily-dish-skip').addEventListener('click', function () {
+    var st = dishState();
+    st.offset = (st.offset || 0) + 1;
+    st.ate = false;
+    progress.state.dailyDish = st;
+    progress.save();
+    Sound.tick();
+    paintDish();
+    paintDayPage();
+  });
 
   function dayLabel(streak) {
     return streak + ' day' + (streak === 1 ? '' : 's') + ' in a row.';
+  }
+
+  // Ring, streak line, checklist. Called after anything that can change them.
+  function paintDayPage() {
+    var signedIn = premiumApi.status.signedIn;
+    dayPage.done.decide = decidedToday();
+    var count = QUESTS.filter(function (q) { return dayPage.done[q.id]; }).length;
+    $('daily-ring-n').textContent = count + '/' + QUESTS.length;
+    $('daily-ring-fill').style.strokeDasharray = (count / QUESTS.length * 100) + ' 100';
+    $('daily-ring').classList.toggle('is-full', count === QUESTS.length);
+    $('daily-ring').setAttribute('aria-label', count + ' of ' + QUESTS.length + ' done today');
+
+    var streak = signedIn && dayPage.summary ? dayPage.summary.streak : (progress.state.streak || 0);
+    $('daily-streak').textContent = streak + ' day streak';
+    var sub = $('daily-streak-sub');
+    if (signedIn && dayPage.summary) {
+      sub.textContent = dayPage.summary.best > streak
+        ? 'Best this month: ' + dayPage.summary.best + '. ' + dayPage.summary.activeThisWeek + ' of the last 7 days.'
+        : dayPage.summary.activeThisWeek + ' of the last 7 days.';
+    } else {
+      sub.textContent = streak > 0 ? 'From your decisions. Sign in to count check-ins too.' : 'Make a decision today to start it.';
+    }
+    $('daily-sub').textContent = count === QUESTS.length
+      ? 'All five done. See you tomorrow.'
+      : (QUESTS.length - count) + ' to go today.';
+
+    var list = $('daily-quests');
+    list.innerHTML = '';
+    QUESTS.forEach(function (q) {
+      var li = document.createElement('li');
+      var locked = q.account && !signedIn;
+      var done = !!dayPage.done[q.id];
+      li.className = 'daily-quest' + (done ? ' is-done' : '') + (locked ? ' is-locked' : '');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'daily-quest-btn';
+      var tick = document.createElement('span');
+      tick.className = 'daily-quest-tick';
+      tick.setAttribute('aria-hidden', 'true');
+      tick.textContent = done ? '✓' : q.icon;
+      var text = document.createElement('span');
+      text.className = 'daily-quest-text';
+      var title = document.createElement('b');
+      title.textContent = q.title;
+      var hint = document.createElement('small');
+      hint.textContent = locked ? 'Sign in to unlock' : q.hint;
+      text.appendChild(title);
+      text.appendChild(hint);
+      btn.appendChild(tick);
+      btn.appendChild(text);
+      btn.addEventListener('click', function () {
+        Sound.tick();
+        if (q.id === 'decide') { hideLanding(); setView('decide'); return; }
+        if (q.id === 'dish') { var d = $('daily-dish'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+        var target = $(signedIn ? q.target : 'daily-signedout');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  }
+
+  // Six weeks, Monday first, the most recent week last. Days come from the
+  // server's own calendar (UTC), so it agrees with the three things it counts.
+  function paintCalendar() {
+    var grid = $('daily-cal');
+    var s = dayPage.summary;
+    if (!grid || !s) return;
+    grid.innerHTML = '';
+    var end = new Date(s.today + 'T00:00:00Z');
+    var mondayOffset = (end.getUTCDay() + 6) % 7;
+    var start = new Date(end.getTime() - (mondayOffset + 35) * 864e5);
+    ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(function (d) {
+      var head = document.createElement('span');
+      head.className = 'daily-cal-head';
+      head.textContent = d;
+      grid.appendChild(head);
+    });
+    for (var i = 0; i < 42; i++) {
+      var day = new Date(start.getTime() + i * 864e5).toISOString().slice(0, 10);
+      var cell = document.createElement('span');
+      var level = s.days[day] || 0;
+      cell.className = 'daily-cal-cell lv' + level + (day === s.today ? ' is-today' : '') + (day > s.today ? ' is-future' : '');
+      cell.title = day + (level ? ' — ' + level + ' of 3 things' : '');
+      grid.appendChild(cell);
+    }
+    var active = Object.keys(s.days).length;
+    $('daily-cal-note').textContent = active === 0
+      ? 'Nothing yet. The first tap fills the first square.'
+      : active + ' active day' + (active === 1 ? '' : 's') + ' in the last six weeks. Darker means more of the three done.';
+  }
+
+  function loadSummary() {
+    fetch('/api/daily-summary', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.signedIn) return;
+        dayPage.summary = data;
+        dayPage.done.mood = !!data.doneToday.checkin;
+        dayPage.done.good = !!data.doneToday.journal;
+        dayPage.done.question = !!data.doneToday.trivia;
+        paintDayPage();
+        paintCalendar();
+      })
+      .catch(function () {});
+  }
+
+  function renderDaily() {
+    var signedIn = premiumApi.status.signedIn;
+    $('daily-date').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+    $('daily-signedout').hidden = signedIn;
+    $('daily-signedin').hidden = !signedIn;
+    paintDish();
+    paintDayPage();
+    if (!signedIn) return;
+    loadSummary();
+    loadCheckin();
+    loadJournal();
+    loadTrivia();
   }
 
   /* -- check-in -- */
@@ -8379,6 +8570,8 @@
   }
 
   function paintCheckin(state) {
+    dayPage.done.mood = !!state.today;
+    paintDayPage();
     $$('#mood-row .mood-btn').forEach(function (btn) {
       btn.classList.toggle('is-picked', btn.dataset.mood === state.today);
     });
@@ -8398,8 +8591,8 @@
 
   $$('#mood-row .mood-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      if (daily.busy) return;
-      daily.busy = true;
+      if (dayPage.busy) return;
+      dayPage.busy = true;
       fetch('/api/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -8407,12 +8600,13 @@
       })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          daily.busy = false;
+          dayPage.busy = false;
           if (data.error) return;
           paintCheckin(data);
+          loadSummary();
           Sound.tick();
         })
-        .catch(function () { daily.busy = false; });
+        .catch(function () { dayPage.busy = false; });
     });
   });
 
@@ -8426,6 +8620,8 @@
   }
 
   function paintJournal(state) {
+    dayPage.done.good = !!state.today;
+    paintDayPage();
     var input = $('journal-input');
     // Not disabled once written: the day's row is an upsert server-side (see
     // lib/habits.ts), so editing today's line back is really just saving it
@@ -8452,8 +8648,8 @@
   $('journal-save').addEventListener('click', function () {
     var input = $('journal-input');
     var text = input.value.trim();
-    if (!text || daily.busy) return;
-    daily.busy = true;
+    if (!text || dayPage.busy) return;
+    dayPage.busy = true;
     fetch('/api/journal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -8461,12 +8657,13 @@
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        daily.busy = false;
+        dayPage.busy = false;
         if (data.error) return;
         paintJournal(data);
+        loadSummary();
         Sound.tick();
       })
-      .catch(function () { daily.busy = false; });
+      .catch(function () { dayPage.busy = false; });
   });
 
   /* -- trivia -- */
@@ -8479,8 +8676,8 @@
   }
 
   function answerTrivia(index) {
-    if (daily.busy) return;
-    daily.busy = true;
+    if (dayPage.busy) return;
+    dayPage.busy = true;
     fetch('/api/trivia', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -8488,15 +8685,18 @@
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        daily.busy = false;
+        dayPage.busy = false;
         if (data.error) return;
         paintTrivia(data);
+        loadSummary();
         Sound[data.correct ? 'win' : 'reject']();
       })
-      .catch(function () { daily.busy = false; });
+      .catch(function () { dayPage.busy = false; });
   }
 
   function paintTrivia(state) {
+    dayPage.done.question = !!state.answered;
+    paintDayPage();
     $('trivia-question').textContent = state.question;
     $('trivia-stats').textContent = state.totalAnswered > 0
       ? state.totalCorrect + ' of ' + state.totalAnswered + ' correct' +

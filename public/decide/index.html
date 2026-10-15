@@ -2241,25 +2241,55 @@
     </section>
 
     <!-- =========================================================================
-         THE DAILY THREE — three small, free things that have nothing to do
-         with dinner. Deciding what to eat is an episodic problem: most
-         people are not doing it every day, so there was nothing here to come
-         back for on the days they are not. These three are account-only, not
-         Premium (see lib/habits.ts) — what they need is to be the same
-         wherever you sign in, not something to pay for.
+         DAILY — one page for the day. A dish to have, five small things to
+         tick off, a streak and a calendar that show it adding up. Three of the
+         five (mood, one good thing, the day's question) are kept with an
+         account, free (see lib/habits.ts); the dish and the decision work
+         without one.
          ========================================================================= -->
     <section class="view" id="view-daily" aria-label="Daily">
       <header class="head">
-        <p class="mechanic">Every day</p>
-        <h1 class="head-title">Your daily three</h1>
-        <p class="head-sub">Nothing to do with dinner. A mood to log, one good thing to write
-        down, and a question nobody in the world answered differently today &mdash; three
-        small reasons to open this even on a day with no decision to make.</p>
+        <p class="mechanic" id="daily-date">Today</p>
+        <h1 class="head-title">Your day</h1>
+        <p class="head-sub" id="daily-sub">Five small things, a dish worth having, and a streak that
+        grows when you show up.</p>
       </header>
 
+      <div class="daily-hero">
+        <div class="daily-ring" id="daily-ring" role="img" aria-label="Done today">
+          <svg viewBox="0 0 36 36" aria-hidden="true">
+            <circle class="daily-ring-track" cx="18" cy="18" r="15.9"/>
+            <circle class="daily-ring-fill" id="daily-ring-fill" cx="18" cy="18" r="15.9" pathLength="100"/>
+          </svg>
+          <b id="daily-ring-n">0/5</b>
+        </div>
+        <div class="daily-hero-text">
+          <p class="daily-streak" id="daily-streak">0 day streak</p>
+          <p class="fine" id="daily-streak-sub">Do any one thing today to start it.</p>
+        </div>
+      </div>
+
+      <section class="strip daily-dish" id="daily-dish" hidden>
+        <p class="mechanic">Dish of the day</p>
+        <div class="daily-dish-row">
+          <span class="daily-dish-icon" id="daily-dish-icon" aria-hidden="true"></span>
+          <div>
+            <h2 class="strip-title" id="daily-dish-name"></h2>
+            <p class="fine" id="daily-dish-blurb"></p>
+          </div>
+        </div>
+        <div class="daily-dish-actions">
+          <button class="go go-sm" id="daily-dish-open" type="button"><span class="go-label">Read about it</span></button>
+          <button class="quiet" id="daily-dish-ate" type="button">I had it today</button>
+          <button class="quiet" id="daily-dish-skip" type="button">Show me another</button>
+        </div>
+      </section>
+
+      <ol class="daily-quests" id="daily-quests" aria-label="Today's list"></ol>
+
       <div id="daily-signedout">
-        <p class="fine">These come free with an account &mdash; not Premium, just signed in.</p>
-        <!-- target="_top": see the note on #invite-signin above. -->
+        <p class="fine">Mood, one good thing and the day&rsquo;s question come free with an account &mdash; not Premium, just signed in.</p>
+        <!-- target="_top": Whop's sign-in page refuses to render inside a frame. -->
         <a class="quiet" id="daily-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Ddaily" target="_top">Sign in with Whop</a>
       </div>
 
@@ -2296,6 +2326,12 @@
           <p class="trivia-q" id="trivia-question"></p>
           <div class="trivia-choices" id="trivia-choices"></div>
           <p class="fine" id="trivia-result" hidden></p>
+        </section>
+
+        <section class="strip daily-cal" id="daily-cal-wrap">
+          <h2 class="strip-title">The last six weeks</h2>
+          <div class="daily-cal-grid" id="daily-cal" role="img" aria-label="Days you did something, over the last six weeks"></div>
+          <p class="fine" id="daily-cal-note"></p>
         </section>
       </div>
     </section>

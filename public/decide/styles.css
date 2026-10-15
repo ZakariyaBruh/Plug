@@ -5819,3 +5819,53 @@ body.is-lang-gate { overflow: hidden; }
 /* The row the browser's own language points at, offered not applied. */
 .lang-row.is-suggested .lang-btn { border-color: var(--amber); }
 .welcome .lang-list { margin: var(--s3) 0; }
+
+/* ===========================================================================
+   Daily — the page for the day: ring, streak, dish of the day, checklist,
+   calendar. The three account things below it keep their own styles above.
+   =========================================================================== */
+.daily-hero { display: flex; align-items: center; gap: var(--s4); margin: var(--s4) 0; }
+.daily-ring { position: relative; width: 5.5rem; height: 5.5rem; flex: none; }
+.daily-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.daily-ring circle { fill: none; stroke-width: 3.2; }
+.daily-ring-track { stroke: var(--hair); }
+.daily-ring-fill { stroke: var(--amber); stroke-linecap: round; stroke-dasharray: 0 100; transition: stroke-dasharray var(--mid) var(--ease); }
+.daily-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-size: var(--t-lg); }
+.daily-ring.is-full b { color: var(--amber); }
+.daily-streak { margin: 0; font-family: var(--display); font-size: var(--t-xl, 1.6rem); font-weight: 700; color: var(--ink); }
+.daily-hero-text .fine { margin: var(--s1) 0 0; }
+
+.daily-dish { margin-top: var(--s3); }
+.daily-dish-row { display: flex; gap: var(--s3); align-items: center; margin: var(--s2) 0 var(--s3); }
+.daily-dish-icon { font-size: 2.6rem; line-height: 1; }
+.daily-dish-actions { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: center; }
+.daily-dish-actions .is-on { color: var(--amber); border-color: var(--amber); }
+
+.daily-quests { list-style: none; margin: var(--s4) 0; padding: 0; display: grid; gap: var(--s2); }
+.daily-quest-btn {
+  display: flex; align-items: center; gap: var(--s3); width: 100%; text-align: start;
+  padding: var(--s3); min-height: var(--tap);
+  border: 1px solid var(--hair); border-radius: 2px; background: none; color: var(--ink); cursor: pointer;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.daily-quest-btn:hover { border-color: var(--ink-3); background: var(--raise); }
+.daily-quest-tick {
+  flex: none; width: 2.2rem; height: 2.2rem; display: grid; place-items: center;
+  border-radius: 50%; border: 1px solid var(--hair); font-size: 1.1rem; line-height: 1;
+}
+.daily-quest-text { display: grid; gap: 2px; }
+.daily-quest-text small { color: var(--ink-3); font-size: var(--t-xs); }
+.daily-quest.is-done .daily-quest-btn { border-color: var(--amber); }
+.daily-quest.is-done .daily-quest-tick { background: var(--amber); border-color: var(--amber); color: var(--bg, #131315); font-weight: 700; }
+.daily-quest.is-done .daily-quest-text b { text-decoration: line-through; text-decoration-color: var(--ink-3); color: var(--ink-2); }
+.daily-quest.is-locked .daily-quest-btn { opacity: .75; }
+
+.daily-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; max-width: 20rem; margin: var(--s3) 0; }
+.daily-cal-head { text-align: center; font-size: var(--t-xs); color: var(--ink-3); }
+.daily-cal-cell { aspect-ratio: 1; border-radius: 3px; background: var(--hair); }
+.daily-cal-cell.lv1 { background: color-mix(in srgb, var(--amber) 35%, var(--hair)); }
+.daily-cal-cell.lv2 { background: color-mix(in srgb, var(--amber) 65%, var(--hair)); }
+.daily-cal-cell.lv3 { background: var(--amber); }
+.daily-cal-cell.is-today { outline: 2px solid var(--ink-2); outline-offset: 1px; }
+.daily-cal-cell.is-future { opacity: .3; }
+@media (prefers-reduced-motion: reduce) { .daily-ring-fill { transition: none; } }
