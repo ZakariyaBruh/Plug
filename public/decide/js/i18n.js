@@ -237,6 +237,7 @@ window.I18n = (function () {
     document.documentElement.setAttribute('lang', lang);
     // Arabic runs right to left; every other language here runs left to right.
     document.documentElement.setAttribute('dir', dirOf(lang));
+    if (document.body) { walk(document.body); watch(); }
 
     var text = document.querySelectorAll('[data-i18n]');
     for (var i = 0; i < text.length; i++) swap(text[i], 'data-i18n', false);
@@ -262,6 +263,152 @@ window.I18n = (function () {
     if (asHtml) el.innerHTML = out; else el.textContent = out;
   }
 
+
+  /*
+   * THE REST OF THE APP: every other word on the screen.
+   *
+   * The curated STRINGS above are keyed by data-i18n; everything else - the
+   * hundreds of lines in the markup and the ones the scripts write at run
+   * time - is translated by its own English. A dictionary per language, in
+   * js/lang-<id>.js, maps an English line to its translation; this walks the
+   * page, swaps any text node whose whole text is in it, and keeps watching so
+   * a line written later is swapped as it appears. English stays the source:
+   * the original is remembered on each node, so going back is a restore, and
+   * a line with no translation simply stays English rather than showing a key.
+   *
+   * Lines with a number or a name in them are matched by pattern instead -
+   * "{0} in a row" - see PATTERNS in the dictionary files.
+   */
+  var DICTS = {};
+  var PATTERNS = {};
+  var seen = new WeakMap();      // text node -> { en, out }
+  var seenAttr = new WeakMap();  // element -> { attr: { en, out } }
+  var observer = null;
+  var ATTRS = ['placeholder', 'aria-label', 'title', 'alt'];
+
+  var here = document.currentScript;
+  var version = here && here.src ? (here.src.match(/[?&]v=([^&]+)/) || [])[1] : '';
+
+  function norm(text) { return text.replace(/\s+/g, ' ').trim(); }
+
+  function patternsFor(id) {
+    if (PATTERNS[id]) return PATTERNS[id];
+    var list = [];
+    var src = (window.I18N_PATTERNS && window.I18N_PATTERNS[id]) || [];
+    src.forEach(function (pair) {
+      var re = pair[0].replace(/[.*+?^$()|[\]\\]/g, '\\$&').replace(/\{(\d)\}/g, '(.+?)');
+      list.push({ re: new RegExp('^' + re + '$'), to: pair[1] });
+    });
+    PATTERNS[id] = list;
+    return list;
+  }
+
+  /* The translation of one line, or null when there is none. */
+  function lookup(en) {
+    var table = window.I18N_DICT && window.I18N_DICT[lang];
+    if (!table) return null;
+    var key = norm(en);
+    if (!key) return null;
+    var hit = table[key];
+    if (typeof hit === 'string') return hit;
+    var pats = patternsFor(lang);
+    for (var i = 0; i < pats.length; i++) {
+      var m = key.match(pats[i].re);
+      if (m) return pats[i].to.replace(/\{(\d)\}/g, function (_, n) {
+        var part = m[Number(n) + 1];
+        if (part === undefined) return '';
+        // A captured name that has its own translation ("Meal planner") gets it.
+        return typeof table[part] === 'string' ? table[part] : part;
+      });
+    }
+    // A line that leads with an emoji ("\u{1F3B7} Jazz"): the words are translated, the emoji kept.
+    var lead = key.match(/^(\p{Extended_Pictographic}[\uFE0F\u200D\p{Extended_Pictographic}]*)\s+(.+)$/u);
+    if (lead && typeof table[lead[2]] === 'string') return lead[1] + ' ' + table[lead[2]];
+    return null;
+  }
+
+  function skipped(node) {
+    var el = node.parentElement;
+    if (!el) return true;
+    var tag = el.tagName;
+    if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEXTAREA' || tag === 'NOSCRIPT') return true;
+    // Curated lines are the dictionary's own business, not this walker's.
+    return !!el.closest('[data-i18n],[data-i18n-html],[data-no-i18n]');
+  }
+
+  function syncText(node) {
+    if (skipped(node)) return;
+    var s = seen.get(node);
+    var en = s && node.nodeValue === s.out ? s.en : node.nodeValue;
+    var out = lang === 'en' ? null : lookup(en);
+    if (out === null) {
+      if (s) { seen.delete(node); if (node.nodeValue !== en) node.nodeValue = en; }
+      return;
+    }
+    // Keep the whitespace around the line: it is layout, and not ours to drop.
+    var lead = en.match(/^\s*/)[0];
+    var trail = en.match(/\s*$/)[0];
+    out = lead + out + trail;
+    seen.set(node, { en: en, out: out });
+    if (node.nodeValue !== out) node.nodeValue = out;
+  }
+
+  function syncAttr(el, attr) {
+    var cur = el.getAttribute(attr);
+    if (cur === null) return;
+    var rec = seenAttr.get(el) || {};
+    var s = rec[attr];
+    var en = s && cur === s.out ? s.en : cur;
+    var out = lang === 'en' ? null : lookup(en);
+    if (out === null) {
+      if (s) { delete rec[attr]; if (cur !== en) el.setAttribute(attr, en); }
+      return;
+    }
+    rec[attr] = { en: en, out: out };
+    seenAttr.set(el, rec);
+    if (cur !== out) el.setAttribute(attr, out);
+  }
+
+  function walk(root) {
+    if (root.nodeType === 3) return syncText(root);
+    if (root.nodeType !== 1) return;
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    var n;
+    var nodes = [];
+    while ((n = w.nextNode())) nodes.push(n);
+    for (var i = 0; i < nodes.length; i++) syncText(nodes[i]);
+    var withAttrs = [root].concat([].slice.call(root.querySelectorAll('[placeholder],[aria-label],[title],[alt]')));
+    withAttrs.forEach(function (el) {
+      ATTRS.forEach(function (a) { if (el.hasAttribute && el.hasAttribute(a)) syncAttr(el, a); });
+    });
+  }
+
+  function watch() {
+    if (observer || !window.MutationObserver) return;
+    observer = new MutationObserver(function (records) {
+      records.forEach(function (r) {
+        if (r.type === 'characterData') syncText(r.target);
+        else if (r.type === 'attributes') syncAttr(r.target, r.attributeName);
+        else r.addedNodes.forEach(function (n) { walk(n); });
+      });
+    });
+    observer.observe(document.body, {
+      childList: true, characterData: true, subtree: true,
+      attributes: true, attributeFilter: ATTRS
+    });
+  }
+
+  function loadDict(id, done) {
+    if (id === 'en' || (window.I18N_DICT && window.I18N_DICT[id])) return done();
+    var tag = document.createElement('script');
+    tag.src = 'js/lang-' + id + '.js' + (version ? '?v=' + version : '');
+    tag.onload = done;
+    // A dictionary that will not load leaves the app in English, which is the
+    // fallback it was always going to have.
+    tag.onerror = done;
+    document.head.appendChild(tag);
+  }
+
   return {
     LANGS: LANGS,
     t: t,
@@ -277,6 +424,10 @@ window.I18n = (function () {
     set: function (id) {
       lang = known(id) ? id : 'en';
       apply();
+      // The dictionary for the rest of the page arrives after the first paint
+      // of the curated lines; when it lands the page is walked again.
+      var asked = lang;
+      loadDict(asked, function () { if (lang === asked) apply(); });
       return lang;
     }
   };

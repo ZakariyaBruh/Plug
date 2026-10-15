@@ -40,6 +40,7 @@ const SHELL = [
   'js/flavor.js', 'js/i18n.js', 'js/mapview.js', 'js/places.js', 'js/premium.js', 'js/progress.js',
   'js/recipes.js', 'js/sound.js',
   'js/taste.js', 'js/hub.js',
+  'js/lang-ms.js', 'js/lang-th.js', 'js/lang-hi.js', 'js/lang-ar.js',
 ]
 
 /*

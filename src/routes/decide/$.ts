@@ -18,6 +18,10 @@ import dataJs from '../../../public/decide/js/data.js?raw'
 import engineJs from '../../../public/decide/js/engine.js?raw'
 import flavorJs from '../../../public/decide/js/flavor.js?raw'
 import i18nJs from '../../../public/decide/js/i18n.js?raw'
+import langMS from '../../../public/decide/js/lang-ms.js?raw'
+import langTH from '../../../public/decide/js/lang-th.js?raw'
+import langHI from '../../../public/decide/js/lang-hi.js?raw'
+import langAR from '../../../public/decide/js/lang-ar.js?raw'
 import mapviewJs from '../../../public/decide/js/mapview.js?raw'
 import placesJs from '../../../public/decide/js/places.js?raw'
 import premiumJs from '../../../public/decide/js/premium.js?raw'
@@ -63,6 +67,7 @@ const VERSIONED = [
   'js/engine.js', 'js/flavor.js', 'js/i18n.js', 'js/mapview.js', 'js/places.js', 'js/premium.js',
   'js/progress.js', 'js/recipes.js', 'js/sound.js',
   'js/taste.js', 'js/hub.js',
+  'js/lang-ms.js', 'js/lang-th.js', 'js/lang-hi.js', 'js/lang-ar.js',
 ]
 
 function stampUrls(text: string, quote: string): string {
@@ -134,6 +139,10 @@ const FILES: Record<string, { body: string; type: string }> = {
   'js/engine.js': { body: engineJs, type: 'text/javascript; charset=utf-8' },
   'js/flavor.js': { body: flavorJs, type: 'text/javascript; charset=utf-8' },
   'js/i18n.js': { body: i18nJs, type: 'text/javascript; charset=utf-8' },
+  'js/lang-ms.js': { body: langMS, type: 'text/javascript; charset=utf-8' },
+  'js/lang-th.js': { body: langTH, type: 'text/javascript; charset=utf-8' },
+  'js/lang-hi.js': { body: langHI, type: 'text/javascript; charset=utf-8' },
+  'js/lang-ar.js': { body: langAR, type: 'text/javascript; charset=utf-8' },
   'js/mapview.js': { body: mapviewJs, type: 'text/javascript; charset=utf-8' },
   'js/places.js': { body: placesJs, type: 'text/javascript; charset=utf-8' },
   'js/premium.js': { body: premiumJs, type: 'text/javascript; charset=utf-8' },
