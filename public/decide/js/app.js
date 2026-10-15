@@ -11488,10 +11488,27 @@
       THIN_SWIPE);
     var ranked = favouredDishes();
     if (ranked.length < 4) {
-      ranked = shuffled(Data.ITEMS, Math.random).slice(0, SWIPE_DECK)
+      ranked = shuffled(Data.ITEMS, Math.random)
         .map(function (item) { return { item: item }; });
     }
-    var pool = ranked.slice(0, SWIPE_DECK);
+    /*
+     * A deck of the profile's top 24, in order, is the same deck every time —
+     * which is what this was, and what "always the same deck" means. The
+     * profile still decides what is likely to be in it, but each dish's place
+     * in line gets a good deal of noise first, so the cut is drawn from the
+     * whole ranking and not only its head. Anything dealt in the last deck
+     * goes to the back, so "deal another deck" is another deck.
+     */
+    var seen = swipe.dealt || {};
+    var last = Math.max(1, ranked.length - 1);
+    var noisy = ranked.map(function (entry, i) {
+      var key = i / last + Math.random() * 0.7 + (seen[entry.item.name] ? 1 : 0);
+      return { item: entry.item, key: key };
+    });
+    noisy.sort(function (a, b) { return a.key - b.key; });
+    var pool = noisy.slice(0, SWIPE_DECK);
+    swipe.dealt = {};
+    pool.forEach(function (entry) { swipe.dealt[entry.item.name] = 1; });
     return pool.map(function (entry, i) {
       return { item: entry.item, base: pool.length > 1 ? i / (pool.length - 1) : 0, cool: 0 };
     });

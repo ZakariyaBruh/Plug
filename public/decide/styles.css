@@ -1878,12 +1878,16 @@ kbd {
 .clip-title { display: block; color: var(--ink); font-family: var(--display); }
 
 .swipe-status { margin-top: var(--s3); color: var(--ink-3); }
-.swipe-empty { text-align: center; }
-.swipe-empty-face { font-size: 3.5rem; line-height: 1; margin: 0 0 var(--s3); }
+.swipe-empty { text-align: center; display: grid; gap: var(--s3); justify-items: center; margin-top: var(--s6); }
+.swipe-empty .q-title, .swipe-picks .q-title { margin: 0; }
+.swipe-empty .pane-line, .swipe-picks .pane-line { margin: 0; max-width: 34ch; }
+.swipe-empty .opening-actions, .swipe-picks .opening-actions { justify-content: center; margin: 0; }
+.swipe-empty-face { font-size: 3.5rem; line-height: 1; margin: 0; }
 
 /* The shortlist: the three cards this sitting said yes to, laid out flat so
    they can be compared rather than remembered. */
-.swipe-picks { display: grid; gap: var(--s4); text-align: center; }
+.swipe-picks { display: grid; gap: var(--s3); justify-items: center; text-align: center; margin-top: var(--s5); }
+.swipe-picks .swipe-picked { width: 100%; }
 
 .swipe-picked {
   list-style: none;
@@ -1920,6 +1924,24 @@ kbd {
 .swipe-pick:focus-visible { border-color: var(--amber); transform: translateY(-2px); }
 
 .swipe-pick-face { font-size: 2.75rem; line-height: 1; }
+
+/* Phone: a row each, so all three fit on one screen and can be compared
+   without scrolling past the one you are about to pick. */
+@media (max-width: 45.99rem) {
+  .swipe-pick {
+    grid-template-columns: auto 1fr;
+    grid-template-areas: "face name" "face blurb";
+    column-gap: var(--s4);
+    row-gap: 0;
+    justify-items: start;
+    align-content: center;
+    padding: var(--s3) var(--s4);
+    text-align: left;
+  }
+  .swipe-pick-face { grid-area: face; font-size: 2.25rem; align-self: center; }
+  .swipe-pick-name { grid-area: name; align-self: end; }
+  .swipe-pick-blurb { grid-area: blurb; align-self: start; }
+}
 
 .swipe-pick-name {
   font-family: var(--display);
