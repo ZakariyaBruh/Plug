@@ -844,140 +844,6 @@
     }
   })();
 
-  /* ------------------------------------------------------- the comeback */
-  /*
-   * SAID ONCE, EVER, TO SOMEBODY ACTUALLY COMING BACK.
-   *
-   * This is what replaced the old ad rotation's job of telling a free
-   * profile something is new — but only the one honest version of that
-   * sentence: it fires at most once in a profile's whole lifetime, only on
-   * a genuine later-day return (see returningDay() above), and it is not a
-   * pitch. Nothing here asks for money, and there is nothing to refuse
-   * twice or silence for good, because there is no second one coming.
-   *
-   * FIVE SECONDS BEFORE THE WAY OUT, not an instant close. Not a dark
-   * pattern — the delay is short and the reason is the opposite of one: a
-   * message said exactly once in somebody's whole time here is worth the
-   * length of two sentences, and the hold is shown two ways at once rather
-   * than left to a digit nobody is watching: a solid bar under the button
-   * that visibly drains over the same five seconds, as one CSS transition
-   * set going below rather than a width recomputed on every tick, so the
-   * motion reads as continuous — and the count, printed on the button
-   * itself, alongside it.
-   */
-  var COMEBACK_HOLD = 5;
-  var comebackTimer = null;
-
-  function openComeback(preview) {
-    if (!preview) {
-      progress.state.comebackShown = true;
-      progress.save();
-    }
-
-    $('comeback-title').textContent = 'Something new, since you were last here';
-    $('comeback-body').textContent =
-      'You can now invite a friend and earn a free day of Premium once they sign in and ' +
-      'play for ten minutes — no limit on how many friends. Invite three and you get two ' +
-      'extra days on top; invite ten and you get five more. It is tied to your account, ' +
-      'not this browser, so it is already on wherever you sign in next.';
-    // What the button actually does differs by whether there is already a
-    // link to show — "Take a look" was true of neither case and told
-    // nobody what tapping it would do.
-    $('comeback-go').textContent = premiumApi.status.signedIn
-      ? 'See my invite link'
-      : 'Sign in for my link';
-    $('comeback-play').textContent = 'Play the game';
-
-    var skip = $('comeback-skip');
-    var fill = $('comeback-skip-fill');
-    var left = COMEBACK_HOLD;
-    skip.disabled = true;
-    skip.textContent = 'Skip (' + left + ')';
-
-    // The fill: snapped to full with no transition, then — after the browser
-    // has actually painted that frame — eased down to empty over the whole
-    // hold in one go. Setting the end state in the same tick as the start
-    // state is the classic way this silently does nothing: the browser
-    // coalesces both and there is no transition to see, only the final value.
-    fill.style.transition = 'none';
-    fill.style.transform = 'scaleX(1)';
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        fill.style.transition = 'transform ' + COMEBACK_HOLD + 's linear';
-        fill.style.transform = 'scaleX(0)';
-      });
-    });
-
-    clearInterval(comebackTimer);
-    comebackTimer = setInterval(function () {
-      left -= 1;
-      if (left > 0) { skip.textContent = 'Skip (' + left + ')'; return; }
-      clearInterval(comebackTimer);
-      skip.disabled = false;
-      skip.textContent = 'Skip';
-    }, 1000);
-
-    var dlg = $('comeback-sheet');
-    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
-  }
-
-  function closeComeback() {
-    clearInterval(comebackTimer);
-    var dlg = $('comeback-sheet');
-    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
-  }
-
-  $('comeback-skip').addEventListener('click', function () {
-    if ($('comeback-skip').disabled) return;
-    Sound.tick();
-    closeComeback();
-  });
-
-  $('comeback-go').addEventListener('click', function () {
-    closeComeback();
-    // Signed in already: the link is a tap away, no need to leave. Not
-    // signed in: there is no link to show yet, so this goes to the one
-    // place that can make one — real sign-in, not the profile view, which
-    // would only show the same "sign in for your own link" note again.
-    if (premiumApi.status.signedIn) {
-      setView('profile');
-      highlightInvite();
-    } else {
-      // window.location.href would only move the iframe: this page is
-      // always inside Whop's own frame when opened from an experience (see
-      // `framed` above), and Whop's sign-in page refuses to render inside
-      // one — so the click would look like it did nothing at all. Writing
-      // to the TOP frame's location is allowed even across origins
-      // specifically so a page like this one can break out for sign-in.
-      var url = '/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile';
-      try { window.top.location.href = url; } catch (err) { window.location.href = url; }
-    }
-  });
-
-  $('comeback-play').addEventListener('click', function () {
-    closeComeback();
-    hideLanding();
-    setView('decide');
-    restart();
-  });
-
-  // ESC is refused while the countdown still holds the button — the one
-  // other way most dialogs close, and it would otherwise skip the count
-  // entirely.
-  $('comeback-sheet').addEventListener('cancel', function (e) {
-    if ($('comeback-skip').disabled) { e.preventDefault(); return; }
-    closeComeback();
-  });
-
-  function maybeShowComeback() {
-    if (progress.state.comebackShown) return;
-    if (!returningDay()) return;
-    var last = (progress.state.history || [])[0];
-    if (!last || !last.name) return;
-    if (anySheetOpen()) return;
-    openComeback();
-  }
-
   function renderIntro() {
     var state = progress.state;
     var played = state.decisions > 0;
@@ -1014,7 +880,6 @@
     paintHello(state, played);
     // After the landing has actually painted, so it never competes with the
     // entrance animation for the one thing somebody looks at first.
-    setTimeout(maybeShowComeback, 1200);
     paintEndlessCard();
 
     // "Surprise me" and the week plan need a profile worth shortcutting to:
@@ -5456,7 +5321,7 @@
   ];
 
   function anySheetOpen() {
-    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet', 'comeback-sheet'];
+    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet'];
     for (var i = 0; i < ids.length; i++) {
       var dlg = document.getElementById(ids[i]);
       if (dlg && dlg.open) return true;
@@ -8196,7 +8061,6 @@
 
     renderKnown();
     renderPlus();
-    renderInvite();
     renderFavourites();
     renderDietGroups('diet-groups', 'diet-caveats');
     renderCustomRules();
@@ -8448,41 +8312,6 @@
 
   window.addEventListener('focus', function () { syncPremium(true); });
 
-  /* --------------------------------------------------------- invite a friend */
-  /*
-   * EARN A DAY OF PREMIUM BY GETTING A FRIEND PLAYING.
-   *
-   * The code in the link is simply the referrer's own Whop user id (see
-   * lib/referrals.ts) — there is nothing to decode here and nothing this
-   * file invents. Captured at most once, from the first ?ref= this profile
-   * ever saw: a later link from somebody else never overwrites it, matching
-   * the server's own rule that whoever's row was created first is who a
-   * friend's play time counts for.
-   *
-   * THE HEARTBEAT only runs for someone who is both referred and signed in.
-   * Signing in is the "make an account" step this depends on, and it is what
-   * turns an anonymous visit into a play time worth paying a real day out
-   * on — an anonymous profile can be reset and replayed for free in a way a
-   * Whop account cannot. It stops once ten minutes are in, by the server's
-   * own reply, and there is nothing left to gain by continuing to ping.
-   */
-  var QUALIFY_SECONDS = 600;
-  var HEARTBEAT_MS = 20e3;
-
-  (function captureReferral() {
-    var params = new URLSearchParams(window.location.search);
-    var ref = params.get('ref');
-    if (ref && !progress.state.referredBy) {
-      progress.state.referredBy = ref;
-      progress.save();
-    }
-    if (params.has('ref')) {
-      params.delete('ref');
-      var rest = params.toString();
-      window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''));
-    }
-  })();
-
   /*
    * SIGN-IN THAT DID NOT FINISH. The callback sends people back here with
    * ?signin=failed rather than dropping them on the home page with nothing
@@ -8509,108 +8338,6 @@
     box.querySelector('a').href = '/api/oauth/login?redirect_to=' + encodeURIComponent(back);
     box.querySelector('button').addEventListener('click', function () { box.remove(); });
     document.body.appendChild(box);
-  })();
-
-  function inviteLink(userId) {
-    return window.location.origin + '/decide/?ref=' + encodeURIComponent(userId);
-  }
-
-  function renderInvite() {
-    var wrap = $('invite-wrap');
-    if (!wrap) return;
-    var status = premiumApi.status;
-    var signedOutWrap = $('invite-signedout');
-    var mineWrap = $('invite-mine');
-
-    if (!status.signedIn) {
-      signedOutWrap.hidden = false;
-      mineWrap.hidden = true;
-      $('invite-note').textContent = progress.state.referredBy
-        ? 'A friend invited you — sign in free and play for ten minutes to get them a day of Premium.'
-        : 'Sign in free to get your own invite link.';
-      return;
-    }
-
-    signedOutWrap.hidden = true;
-    mineWrap.hidden = false;
-    $('referral-link').textContent = status.userId ? inviteLink(status.userId) : '…';
-
-    var referredBy = progress.state.referredBy;
-    var progressLine = $('invite-progress');
-    if (referredBy && referredBy !== status.userId && (progress.state.referralSeconds || 0) < QUALIFY_SECONDS) {
-      var minutes = Math.min(10, Math.floor((progress.state.referralSeconds || 0) / 60));
-      progressLine.hidden = false;
-      progressLine.textContent = minutes + ' of 10 minutes played for whoever invited you.';
-    } else {
-      progressLine.hidden = true;
-    }
-
-    $('invite-stats').textContent = status.invited === 0
-      ? 'Nobody has used your link yet.'
-      : status.qualified + ' of ' + status.invited + ' invited friend' +
-        (status.invited === 1 ? '' : 's') + ' have played long enough to earn you a day.';
-
-    var bonus = $('invite-bonus');
-    if (status.bonusUntil) {
-      bonus.hidden = false;
-      bonus.textContent = 'Free Premium is active until ' +
-        new Date(status.bonusUntil).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) + '.';
-    } else {
-      bonus.hidden = true;
-    }
-  }
-
-  /*
-   * THE LINK, HANDED OVER RATHER THAN LEFT TO BE FOUND.
-   *
-   * Called once, right after a sign-in that was specifically for this —
-   * see ?go=profile above. Scrolling to the card and giving it a moment's
-   * glow is the honest version of "automatically give you a link": the
-   * actual link still has to come from the server once signed in, so this
-   * cannot hand over text that is not real yet, but it can make sure
-   * nobody has to go looking for where it landed.
-   */
-  function highlightInvite() {
-    var wrap = $('invite-wrap');
-    if (!wrap) return;
-    setTimeout(function () {
-      wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      wrap.classList.add('is-highlighted');
-      setTimeout(function () { wrap.classList.remove('is-highlighted'); }, 2600);
-    }, 300);
-  }
-
-  (function wireInvite() {
-    // Named referral-link rather than invite-link: that id already belonged
-    // to the Together feature's own share-link input (line ~1396), and
-    // getElementById silently returns whichever comes first in the
-    // document — which was never this one. A collision on an id does not
-    // throw; it just means two different features were quietly fighting
-    // over the same element, and this half of that fight always lost.
-    var link = $('referral-link');
-    if (link) link.addEventListener('click', function () {
-      var text = link.textContent;
-      var flash = function () {
-        var flag = $('invite-copied');
-        flag.hidden = false;
-        Sound.tick();
-        setTimeout(function () { flag.hidden = true; }, 1600);
-      };
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(flash, function () {});
-          return;
-        }
-      } catch (err) { /* falls through to the old way */ }
-      try {
-        var range = document.createRange();
-        range.selectNodeContents(link);
-        var sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-        flash();
-      } catch (err) { /* never */ }
-    });
   })();
 
   /* ------------------------------------------------------------ daily three */
@@ -9904,44 +9631,6 @@
       } catch (err) {}
     }
   })();
-
-  var referralTimer = null;
-
-  function stopReferralHeartbeat() {
-    clearTimeout(referralTimer);
-    referralTimer = null;
-  }
-
-  function referralHeartbeat() {
-    var status = premiumApi.status;
-    var code = progress.state.referredBy;
-    var done = !code || !status.signedIn || code === status.userId ||
-      (progress.state.referralSeconds || 0) >= QUALIFY_SECONDS;
-    if (done) return stopReferralHeartbeat();
-
-    if (document.hidden) {
-      referralTimer = setTimeout(referralHeartbeat, HEARTBEAT_MS);
-      return;
-    }
-
-    fetch('/api/referral/ping', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: code, seconds: HEARTBEAT_MS / 1000 })
-    })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (result) {
-        if (!result || typeof result.secondsPlayed !== 'number') return;
-        progress.state.referralSeconds = result.secondsPlayed;
-        progress.save();
-        renderInvite();
-        if (result.justQualified) {
-          toast('\u{1F389}', 'A day of Premium, sent', 'The friend who invited you just earned it — thanks for playing.');
-        }
-      })
-      .catch(function () { /* missed this heartbeat; the next one tries again */ })
-      .then(function () { referralTimer = setTimeout(referralHeartbeat, HEARTBEAT_MS); });
-  }
 
   // Tag -> the words the questions actually use, so the profile reads back in
   // the app's own language: "Actual food", not "drink".
@@ -14207,12 +13896,8 @@
     else if (go === 'dishes') { hideLanding(); setView('dishes'); }
     else if (go === 'news') { hideLanding(); setView('news'); }
     else if (go === 'ask') { hideLanding(); setView('chat'); }
-    // Where the sign-in redirect sends somebody back to: straight onto the
-    // Profile view, with the invite card drawing the eye to itself rather
-    // than left for them to go find — see highlightInvite(). The only two
-    // links that ever point here are #invite-signin and the comeback
-    // dialog's signed-out "Sign in for my link", both below.
-    else if (go === 'profile') { hideLanding(); setView('profile'); highlightInvite(); }
+    // Where a sign-in redirect lands somebody on the Profile view.
+    else if (go === 'profile') { hideLanding(); setView('profile'); }
     // Where #daily-signin sends somebody back to, for the same reason.
     else if (go === 'daily') { hideLanding(); setView('daily'); }
     // The hub's two sections, and where their sign-in links send people back to.
@@ -14237,15 +13922,15 @@
      * and you have not said you like it", which is not something anybody
      * should have to take on trust.
      *
-     * So: ?prompt=enjoy, ?prompt=share, ?prompt=comeback, or ?prompt=all to
-     * walk through all three. It spends nothing — no showing is counted and
+     * So: ?prompt=enjoy, ?prompt=share, or ?prompt=all to
+     * walk through both. It spends nothing — no showing is counted and
      * nothing is saved — so previewing one does not use up a real one, and it
      * cannot be stumbled into, because nobody types a query string by
      * accident.
      */
     var wanted = (here.searchParams.get('prompt') || '').toLowerCase();
     if (wanted) {
-      previewPrompts(wanted === 'all' ? ['enjoy', 'share', 'comeback'] : [wanted]);
+      previewPrompts(wanted === 'all' ? ['enjoy', 'share'] : [wanted]);
     }
   })();
 
@@ -14255,7 +13940,7 @@
    * timer, so a slow read does not stack two sheets on top of each other.
    */
   function previewPrompts(names) {
-    var openers = { enjoy: openEnjoy, share: openShare, comeback: openComeback };
+    var openers = { enjoy: openEnjoy, share: openShare };
     var queue = names.filter(function (n) { return openers[n]; });
     if (!queue.length) return;
 
@@ -14284,7 +13969,5 @@
   // account that owns Premium. No key to paste, no purchase to "claim" — the
   // checkout at /premium already attached access to the account directly, so
   // this is the same check every later load makes, just running once early.
-  syncPremium(true).then(function (status) {
-    referralHeartbeat();
-  });
+  syncPremium(true);
 })();

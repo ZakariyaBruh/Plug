@@ -9,9 +9,8 @@ import { today } from '#/lib/allowance'
  * signed-in visitor a reason to open it on the days they are not deciding
  * anything: a one-tap mood check-in, a one-line "good thing" journal, and a
  * daily trivia question everybody gets asked the same day. None of them are
- * Premium — they come with having an account at all, same as the invite
- * link (see lib/referrals.ts), because what they need is something to be
- * true across devices, not something to be paid for.
+ * Premium — they come with having an account at all, because what they
+ * need is something to be true across devices, not something to be paid for.
  *
  * ONE ROW PER PERSON PER DAY, for all three, keyed on the UTC calendar day
  * from lib/allowance.ts — the same day boundary the AI allowance already
