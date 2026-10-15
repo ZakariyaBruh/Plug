@@ -8837,9 +8837,10 @@
   function paintFreeNote(free) {
     var note = $('media-free-note');
     if (!note) return;
-    if (!free || !free.name) { note.hidden = true; return; }
-    note.textContent = 'Today\u2019s free pick: ' + (free.emoji ? free.emoji + ' ' : '') + free.name +
-      ' (' + (free.medium === 'tv' ? 'TV' : 'radio') + '). Every other group is Premium, and the free one changes every day.';
+    if (!free || !free.tv || !free.radio) { note.hidden = true; return; }
+    var label = function (g) { return (g.emoji ? g.emoji + ' ' : '') + g.name; };
+    note.textContent = 'Today\u2019s free picks \u2014 TV: ' + label(free.tv) + ' \u00b7 radio: ' + label(free.radio) +
+      '. Every other group is Premium, and the free ones change every day.';
     note.hidden = false;
   }
 

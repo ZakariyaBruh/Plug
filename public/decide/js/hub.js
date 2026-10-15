@@ -2989,7 +2989,7 @@
       what: 'Ask any food question in your own words, the way you would ask a friend — “what can I make with eggs and spinach?”' },
     { view: 'news', icon: '\u{1F4F0}', name: 'News', tier: 'free', extra: 'Premium adds a short summary of the day’s food news at the top.',
       what: 'The latest food stories from newspapers and food websites.' },
-    { view: 'radio', icon: '\u{1F4FA}', name: 'TV & radio', tier: 'mixed', extra: 'One group is free each day, picked at random; Premium has every group.',
+    { view: 'radio', icon: '\u{1F4FA}', name: 'TV & radio', tier: 'mixed', extra: 'One TV group and one radio group are free each day, picked at random; Premium has every group.',
       what: 'Something to watch or listen to while you cook and eat. Tap a group — cooking shows, music, comedy, travel, calm nature and more on the TV; jazz, classical, oldies, lo-fi and more on the radio.' },
     { view: 'daily', icon: '☀️', name: 'Daily', tier: 'account',
       what: 'A one-minute check-in each day: how you are feeling, one good thing, and a food question everybody gets the same day.' },

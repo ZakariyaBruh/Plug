@@ -1109,6 +1109,7 @@ window.I18N_DICT.hi = {
 "One decision, any way you like.": "एक फ़ैसला, जैसे भी चाहें।",
 "One dish at a time. Right for yes, left for no. Like three, then pick between them.": "एक बार में एक व्यंजन। दाएँ हाँ, बाएँ नहीं। तीन पसंद कीजिए, फिर उन्हीं में से चुनिए।",
 "One every couple of days": "हर कुछ दिन में एक",
+"One free TV group and one free radio group a day": "रोज़ एक मुफ़्त टीवी ग्रुप और एक मुफ़्त रेडियो ग्रुप",
 "One good thing that happened today…": "आज हुई एक अच्छी बात…",
 "One good thing today": "आज की एक अच्छी बात",
 "One group free a day": "रोज़ एक ग्रुप मुफ़्त",
@@ -1415,6 +1416,7 @@ window.I18N_DICT.hi = {
 "Sign in to see what’s on": "अभी क्या चल रहा है देखने के लिए साइन इन करें",
 "Sign in to unlock": "अनलॉक करने के लिए साइन इन करें",
 "Sign in to use this.": "इसे इस्तेमाल करने के लिए साइन इन करें।",
+"Sign in to watch and listen. One TV group and one radio group are free every day; the rest is Premium.": "देखने और सुनने के लिए साइन इन करें। रोज़ एक टीवी ग्रुप और एक रेडियो ग्रुप मुफ़्त है; बाकी Premium है।",
 "Sign in to watch and listen. One group is free every day; the rest is Premium.": "देखने और सुनने के लिए साइन इन करें। रोज़ एक ग्रुप मुफ़्त है; बाकी Premium है।",
 "Sign in with Whop": "Whop से साइन इन करें",
 "Sign in with Whop to watch and listen": "देखने और सुनने के लिए Whop से साइन इन करें",
@@ -2144,10 +2146,6 @@ window.I18N_PATTERNS.hi = [
 "आपको {0} पीना चाहिए"
 ],
 [
-"Today’s free pick: {0} ({1}). Every other group is Premium, and the free one changes every day.",
-"आज का मुफ़्त चुनाव: {0} ({1})। बाकी हर ग्रुप Premium है, और मुफ़्त वाला रोज़ बदलता है।"
-],
-[
 "{0} left",
 "{0} बाकी"
 ],
@@ -2202,5 +2200,9 @@ window.I18N_PATTERNS.hi = [
 [
 "{0} of 3 things",
 "3 में से {0} काम"
+],
+[
+"Today’s free picks — TV: {0} · radio: {1}. Every other group is Premium, and the free ones change every day.",
+"आज के मुफ़्त चुनाव — टीवी: {0} · रेडियो: {1}। बाकी हर ग्रुप Premium है, और मुफ़्त वाले रोज़ बदलते हैं।"
 ]
 ];

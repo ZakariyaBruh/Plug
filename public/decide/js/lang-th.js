@@ -1109,6 +1109,7 @@ window.I18N_DICT.th = {
 "One decision, any way you like.": "หนึ่งการตัดสินใจ วิธีไหนก็ได้",
 "One dish at a time. Right for yes, left for no. Like three, then pick between them.": "ทีละเมนู ปัดขวาคือใช่ ปัดซ้ายคือไม่ ชอบสามจาน แล้วเลือกจากสามจานนั้น",
 "One every couple of days": "หนึ่งครั้งทุกสองสามวัน",
+"One free TV group and one free radio group a day": "กลุ่มทีวีฟรีหนึ่งกลุ่มและกลุ่มวิทยุฟรีหนึ่งกลุ่มต่อวัน",
 "One good thing that happened today…": "เรื่องดี ๆ หนึ่งเรื่องที่เกิดขึ้นวันนี้…",
 "One good thing today": "เรื่องดี ๆ หนึ่งเรื่องวันนี้",
 "One group free a day": "ฟรีหนึ่งกลุ่มต่อวัน",
@@ -1415,6 +1416,7 @@ window.I18N_DICT.th = {
 "Sign in to see what’s on": "เข้าสู่ระบบเพื่อดูว่ากำลังฉายอะไร",
 "Sign in to unlock": "เข้าสู่ระบบเพื่อปลดล็อก",
 "Sign in to use this.": "เข้าสู่ระบบเพื่อใช้งานสิ่งนี้",
+"Sign in to watch and listen. One TV group and one radio group are free every day; the rest is Premium.": "เข้าสู่ระบบเพื่อดูและฟัง กลุ่มทีวีหนึ่งกลุ่มและกลุ่มวิทยุหนึ่งกลุ่มฟรีทุกวัน ที่เหลือเป็น Premium",
 "Sign in to watch and listen. One group is free every day; the rest is Premium.": "เข้าสู่ระบบเพื่อดูและฟัง ฟรีหนึ่งกลุ่มทุกวัน ที่เหลือเป็น Premium",
 "Sign in with Whop": "เข้าสู่ระบบด้วย Whop",
 "Sign in with Whop to watch and listen": "เข้าสู่ระบบด้วย Whop เพื่อดูและฟัง",
@@ -2144,10 +2146,6 @@ window.I18N_PATTERNS.th = [
 "คุณควรดื่ม {0}"
 ],
 [
-"Today’s free pick: {0} ({1}). Every other group is Premium, and the free one changes every day.",
-"ตัวเลือกฟรีของวันนี้: {0} ({1}) กลุ่มอื่นทั้งหมดเป็น Premium และกลุ่มฟรีเปลี่ยนทุกวัน"
-],
-[
 "{0} left",
 "เหลือ {0}"
 ],
@@ -2202,5 +2200,9 @@ window.I18N_PATTERNS.th = [
 [
 "{0} of 3 things",
 "{0} จาก 3 อย่าง"
+],
+[
+"Today’s free picks — TV: {0} · radio: {1}. Every other group is Premium, and the free ones change every day.",
+"ตัวเลือกฟรีของวันนี้ — ทีวี: {0} · วิทยุ: {1} กลุ่มอื่นทั้งหมดเป็น Premium และกลุ่มฟรีเปลี่ยนทุกวัน"
 ]
 ];

@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { isPremium } from '#/lib/allowance'
-import { freePick, isFree } from '#/lib/free-channel'
+import { freePicks, isFree } from '#/lib/free-channel'
 import { identifyVisitor } from '#/lib/session'
 import { RADIO_CATEGORIES, categoryStations, countPlay, isRadioCategory, isStationId } from '#/lib/radio'
 
@@ -13,8 +13,8 @@ function json(body: unknown, status = 200, cache = 'no-store') {
 }
 
 /*
- * /api/radio — the radio. Premium, except for one group a day that is free
- * with an account (lib/free-channel.ts): see lib/radio.ts for where the stations come from and how each group is chosen.
+ * /api/radio — the radio. Premium, except for one TV group and one radio group a day that are
+ * free with an account (lib/free-channel.ts): see lib/radio.ts for where the stations come from and how each group is chosen.
  *
  *   GET  /api/radio?cat=jazz   one group's stations (food when none is
  *                              named), with the list of groups: names to
@@ -31,7 +31,7 @@ export const Route = createFileRoute('/api/radio')({
         const userId = await identifyVisitor(request)
         const asked = new URL(request.url).searchParams.get('cat') ?? 'food'
         const category = isRadioCategory(asked) ? asked : 'food'
-        const groups = { categories: RADIO_CATEGORIES, category, free: freePick() }
+        const groups = { categories: RADIO_CATEGORIES, category, free: freePicks() }
         let stations
         try {
           stations = await categoryStations(category)

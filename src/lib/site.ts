@@ -430,7 +430,7 @@ export const SITE_TITLE = 'morsels45: What Should I Eat?'
 export const SITE_META_DESCRIPTION =
   'Can’t decide what to eat? Answer a few quick questions and get one dish with its recipe. Then plan your week, shop for it and cook it. Free to start.'
 export const SITE_DESCRIPTION =
-  `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner is free with an account, which also brings one TV or radio group to cook and eat to every day; Premium adds every TV and radio group, the shopping list, nutrition, budget, your own recipes, recipes from websites, a food scanner that says how healthy something is, and more.`
+  `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner is free with an account, which also brings one TV group and one radio group to cook and eat to every day; Premium adds every TV and radio group, the shopping list, nutrition, budget, your own recipes, recipes from websites, a food scanner that says how healthy something is, and more.`
 
 declare global {
   interface Window {

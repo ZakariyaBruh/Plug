@@ -1089,6 +1089,7 @@ window.I18N_DICT.ms = {
 "One decision, any way you like.": "Satu keputusan, dengan cara apa pun.",
 "One dish at a time. Right for yes, left for no. Like three, then pick between them.": "Satu hidangan pada satu masa. Kanan untuk ya, kiri untuk tidak. Suka tiga, kemudian pilih antara mereka.",
 "One every couple of days": "Satu setiap beberapa hari",
+"One free TV group and one free radio group a day": "Satu kumpulan TV dan satu kumpulan radio percuma sehari",
 "One good thing that happened today…": "Satu perkara baik yang berlaku hari ini…",
 "One good thing today": "Satu perkara baik hari ini",
 "One group free a day": "Satu kumpulan percuma sehari",
@@ -1391,6 +1392,7 @@ window.I18N_DICT.ms = {
 "Sign in to see what’s on": "Log masuk untuk melihat apa yang sedang bersiaran",
 "Sign in to unlock": "Log masuk untuk membuka",
 "Sign in to use this.": "Log masuk untuk menggunakan ini.",
+"Sign in to watch and listen. One TV group and one radio group are free every day; the rest is Premium.": "Log masuk untuk menonton dan mendengar. Satu kumpulan TV dan satu kumpulan radio percuma setiap hari; selebihnya ialah Premium.",
 "Sign in to watch and listen. One group is free every day; the rest is Premium.": "Log masuk untuk menonton dan mendengar. Satu kumpulan percuma setiap hari; selebihnya ialah Premium.",
 "Sign in with Whop": "Log masuk dengan Whop",
 "Sign in with Whop to watch and listen": "Log masuk dengan Whop untuk menonton dan mendengar",
@@ -2110,10 +2112,6 @@ window.I18N_PATTERNS.ms = [
 "Anda patut minum {0}"
 ],
 [
-"Today’s free pick: {0} ({1}). Every other group is Premium, and the free one changes every day.",
-"Pilihan percuma hari ini: {0} ({1}). Setiap kumpulan lain ialah Premium, dan yang percuma berubah setiap hari."
-],
-[
 "{0} left",
 "{0} berbaki"
 ],
@@ -2168,5 +2166,9 @@ window.I18N_PATTERNS.ms = [
 [
 "{0} of 3 things",
 "{0} daripada 3 perkara"
+],
+[
+"Today’s free picks — TV: {0} · radio: {1}. Every other group is Premium, and the free ones change every day.",
+"Pilihan percuma hari ini — TV: {0} · radio: {1}. Setiap kumpulan lain ialah Premium, dan yang percuma berubah setiap hari."
 ]
 ];

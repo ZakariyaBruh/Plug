@@ -1109,6 +1109,7 @@ window.I18N_DICT.ar = {
 "One decision, any way you like.": "قرار واحد، بالطريقة التي تحب.",
 "One dish at a time. Right for yes, left for no. Like three, then pick between them.": "طبق واحد في كل مرة. يمينًا للموافقة ويسارًا للرفض. أعجب بثلاثة، ثم اختر بينها.",
 "One every couple of days": "واحدة كل بضعة أيام",
+"One free TV group and one free radio group a day": "مجموعة تلفاز مجانية واحدة ومجموعة راديو مجانية واحدة كل يوم",
 "One good thing that happened today…": "شيء جيد حدث اليوم…",
 "One good thing today": "شيء جيد واحد اليوم",
 "One group free a day": "مجموعة واحدة مجانية كل يوم",
@@ -1415,6 +1416,7 @@ window.I18N_DICT.ar = {
 "Sign in to see what’s on": "سجّل الدخول لترى ما يُعرض الآن",
 "Sign in to unlock": "سجّل الدخول لتفتح",
 "Sign in to use this.": "سجّل الدخول لتستخدم هذا.",
+"Sign in to watch and listen. One TV group and one radio group are free every day; the rest is Premium.": "سجّل الدخول لتشاهد وتستمع. مجموعة تلفاز واحدة ومجموعة راديو واحدة مجانيتان كل يوم، والباقي Premium.",
 "Sign in to watch and listen. One group is free every day; the rest is Premium.": "سجّل الدخول لتشاهد وتستمع. مجموعة واحدة مجانية كل يوم، والباقي Premium.",
 "Sign in with Whop": "سجّل الدخول عبر Whop",
 "Sign in with Whop to watch and listen": "سجّل الدخول عبر Whop لتشاهد وتستمع",
@@ -2145,10 +2147,6 @@ window.I18N_PATTERNS.ar = [
 "عليك أن تشرب {0}"
 ],
 [
-"Today’s free pick: {0} ({1}). Every other group is Premium, and the free one changes every day.",
-"اختيار اليوم المجاني: {0} ({1}). كل مجموعة أخرى هي Premium، والمجانية تتغيّر كل يوم."
-],
-[
 "{0} left",
 "متبقٍّ {0}"
 ],
@@ -2203,5 +2201,9 @@ window.I18N_PATTERNS.ar = [
 [
 "{0} of 3 things",
 "{0} من 3 أشياء"
+],
+[
+"Today’s free picks — TV: {0} · radio: {1}. Every other group is Premium, and the free ones change every day.",
+"اختيارات اليوم المجانية — التلفاز: {0} · الراديو: {1}. كل مجموعة أخرى هي Premium، والمجانية تتغيّر كل يوم."
 ]
 ];

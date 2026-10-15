@@ -148,7 +148,7 @@ function InfoPage() {
                 See Premium — {OFFER_SHORT}
               </Link>
             </div>
-            <p className="mt-6 text-sm text-[var(--text-dim)]">No account needed to start. A free account adds the meal planner and one TV or radio group a day to cook and eat to. Premium is the rest of the hub, including every TV and radio group.</p>
+            <p className="mt-6 text-sm text-[var(--text-dim)]">No account needed to start. A free account adds the meal planner and one TV group and one radio group a day to cook and eat to. Premium is the rest of the hub, including every TV and radio group.</p>
             <a href="#try-it" className="mt-3 inline-block text-sm text-[var(--amber)] underline underline-offset-4">
               Or try five questions right here ↓
             </a>
@@ -261,7 +261,7 @@ function InfoPage() {
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Free, account and Premium</p>
             <h2 className="mt-2 text-3xl font-bold">Free decides. An account plans. Premium does the rest.</h2>
             <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              {THE_GIFT} A free account adds the meal calendar and its AI, and one TV or radio group a day to cook and eat to. Premium
+              {THE_GIFT} A free account adds the meal calendar and its AI, and one TV group and one radio group a day to cook and eat to. Premium
               adds every TV and radio group, the shopping list, nutrition and budget, the dinner-party planner, your own recipes
               and recipes from websites, the food scanner, the fridge photo, hands-free cooking, the
               daily briefing and the shared browser.

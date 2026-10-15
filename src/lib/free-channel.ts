@@ -5,9 +5,9 @@ import { TV_CATEGORIES } from '#/lib/tv'
 /*
  * TODAY'S ONE FREE CHANNEL.
  *
- * TV and radio are Premium, with a single exception that changes daily: one
- * group, picked at random from every TV group and every radio group together,
- * is free to anybody signed in. Everything else needs Premium.
+ * TV and radio are Premium, with an exception that changes daily: one TV group
+ * and one radio group, each picked at random, are free to anybody signed in.
+ * Everything else needs Premium.
  *
  * "Random" is a hash of the UTC date rather than a roll of the dice, so it is
  * the same pick for everybody all day, the same on every server that answers,
@@ -34,12 +34,20 @@ function hash(text: string): number {
   return h >>> 0
 }
 
-export function freePick(day = today()): FreePick {
+export type FreePicks = { tv: FreePick; radio: FreePick }
+
+// One for each medium, each picked on its own: a day with a free TV group is
+// not a day without a free radio one. The medium is part of what is hashed, so
+// the two are not tied together.
+export function freePicks(day = today()): FreePicks {
   const all = pool()
-  return all[hash(day) % all.length]
+  const pickFrom = (medium: 'tv' | 'radio') => {
+    const mine = all.filter((p) => p.medium === medium)
+    return mine[hash(`${medium}:${day}`) % mine.length]
+  }
+  return { tv: pickFrom('tv'), radio: pickFrom('radio') }
 }
 
 export function isFree(medium: 'tv' | 'radio', category: string, day = today()): boolean {
-  const pick = freePick(day)
-  return pick.medium === medium && pick.id === category
+  return freePicks(day)[medium].id === category
 }

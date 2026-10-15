@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { isPremium } from '#/lib/allowance'
-import { freePick, isFree } from '#/lib/free-channel'
+import { freePicks, isFree } from '#/lib/free-channel'
 import { identifyVisitor } from '#/lib/session'
 import { candidates, isTvCategory, tvCategoryList, tvTeaser, whatsOn } from '#/lib/tv'
 
@@ -13,8 +13,8 @@ function json(body: unknown, status = 200, cache = 'no-store') {
 }
 
 /*
- * /api/tv — the TV. Premium, except for one group a day that is free with an
- * account (lib/free-channel.ts), beside the radio: see lib/tv.ts.
+ * /api/tv — the TV. Premium, except for one TV group and one radio group a day that are
+ * free with an account (lib/free-channel.ts), beside the radio: see lib/tv.ts.
  *
  *   GET /api/tv?cat=music          one group's channels (food when none is
  *                                  named), with the list of groups: names and
@@ -36,7 +36,7 @@ export const Route = createFileRoute('/api/tv')({
         const category = isTvCategory(asked) ? asked : 'food'
 
         if (!wantsGuide) {
-          const groups = { categories: tvCategoryList(), category, free: freePick() }
+          const groups = { categories: tvCategoryList(), category, free: freePicks() }
           if (!userId) return json({ signedIn: false, ...groups, channels: tvTeaser(category) })
           // Every group but today's free one is Premium. Premium is looked up
           // only when it matters, so the free group costs no call to Whop.
