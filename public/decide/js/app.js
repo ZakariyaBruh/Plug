@@ -900,6 +900,7 @@
     $('spin-btn').classList.toggle('is-locked', !isPlus());
     $('together-btn').classList.toggle('is-locked', !isPlus());
     $('swipe-btn').classList.toggle('is-locked', !isPlus());
+    ['drop-btn', 'whack-btn', 'slice-btn'].forEach(function (id) { $(id).classList.toggle('is-locked', !isPlus()); });
     $('mood-wrap').classList.toggle('is-locked', !isPlus());
     $('week-wrap').classList.toggle('is-locked', !isPlus());
     $('surprise-btn').classList.toggle('is-locked', !isPlus());
@@ -8171,6 +8172,7 @@
         'Shortlist: eight dishes, tap out the ones you are not in the mood for',
         'Together: up to six of you round one phone, one dish you can all live with',
         'Swipe: like three out of the deck, then choose between the three',
+        'Dish Drop, Whack-a-Dish and Slice: three action games where what you go for most is dinner',
         'Endless with no daily count on it \u2014 free stops at ' + ENDLESS_DAY + ' picks a day',
         'A second wind: one run-ending clock, survived, every run',
         'Themed runs \u2014 an evening of nothing but quick, or comfort, or veg'
@@ -10448,6 +10450,7 @@
     swipe.live = false;
     swipe.choosing = false;
     swipe.drag = null;
+    stopArcade();
     leaveEndless();
   }
 
@@ -11896,6 +11899,512 @@
     renderSwipe();
   });
   $('swipe-ask').addEventListener('click', function () { swipe.live = false; restart(); });
+
+  /* ----------------------------------------------------------------- arcade */
+  /*
+   * THREE MODES THAT ARE NOT A QUESTION.
+   *
+   * Everything else in this app asks "this or that" in some costume. These are
+   * the other thing: a clock, a hand, and a reason to be quick.
+   *
+   *   Dish Drop     dishes fall, steer a basket under the ones you want
+   *   Whack-a-Dish  dishes pop out of nine holes, tap them before they duck
+   *   Slice         dishes are thrown up, swipe through the ones you want
+   *
+   * Bombs (and spoiled dishes) cost a life; letting a dish go by only breaks
+   * the combo. What makes it a decision rather than a score: every dish you
+   * catch is counted, and the run ends with the three you went for most. The
+   * hand picked them while the head was busy, which is the point.
+   *
+   * Like Swipe, none of this is written to the profile. A frantic ninety
+   * seconds is not a statement about what somebody likes to eat.
+   */
+  var ARCADE = {
+    drop:  { name: 'Dish Drop', icon: '\u{1F9FA}', time: 40, lives: 3,
+             how: 'Dishes fall, and so do bombs. Slide your finger (or the arrow keys) to steer the basket under what you fancy. Catch a dish to build a combo; catch a bomb and you lose a heart. Golden ones count double.' },
+    whack: { name: 'Whack-a-Dish', icon: '\u{1F528}', time: 30, lives: 3,
+             how: 'Dishes pop out of nine holes and duck back fast. Tap the ones you want before they go. Spoiled ones cost a heart, so leave them. Golden ones count double.' },
+    slice: { name: 'Slice', icon: '⚔️', time: 35, lives: 3,
+             how: 'Dishes are thrown up from the bottom. Drag across the ones you want to slice them — and keep clear of the bombs. Golden ones count double.' }
+  };
+  var ARCADE_POOL = 14;
+  var arcade = {
+    mode: '', live: false, raf: 0, last: 0, elapsed: 0, left: 0, lives: 0, max: 3,
+    score: 0, combo: 0, bestCombo: 0, tally: {}, pool: [], things: [], spawnIn: 0,
+    w: 0, h: 0, px: 0, target: 0, keys: {}, holes: [], sl: null, plate: null
+  };
+
+  // Today's pick of what is going to fall, fly or pop: the profile decides what
+  // is likely, noise decides what is actually on the table, so two runs differ.
+  function arcadePool(n) {
+    var ranked = favouredDishes();
+    if (ranked.length < n) ranked = shuffled(Data.ITEMS, Math.random).map(function (item) { return { item: item }; });
+    var last = Math.max(1, ranked.length - 1);
+    return ranked.map(function (entry, i) { return { item: entry.item, key: i / last + Math.random() * 0.8 }; })
+      .sort(function (a, b) { return a.key - b.key; })
+      .slice(0, n).map(function (entry) { return entry.item; });
+  }
+
+  function arcadeBest(mode, set) {
+    var all = {};
+    try { all = JSON.parse(localStorage.getItem('morsels-arcade-best') || '{}') || {}; } catch (err) { all = {}; }
+    if (set === undefined) return all[mode] || 0;
+    if (set > (all[mode] || 0)) {
+      all[mode] = set;
+      try { localStorage.setItem('morsels-arcade-best', JSON.stringify(all)); } catch (err) { /* fine */ }
+      return true;
+    }
+    return false;
+  }
+
+  function startArcade(mode) {
+    if (!premium(ARCADE[mode].name)) return;
+    hideLanding();
+    resetGame();
+    setView('decide');
+    stopArcade();
+    arcade.mode = mode;
+    arcade.pool = arcadePool(ARCADE_POOL);
+    setPanel('arcade');
+    var spec = ARCADE[mode];
+    $('arc-name').textContent = spec.name;
+    $('arc-title').textContent = spec.name;
+    $('arc-icon').textContent = spec.icon;
+    $('arc-how').textContent = spec.how;
+    var best = arcadeBest(mode);
+    $('arc-best').hidden = !best;
+    $('arc-best').textContent = 'Your best: ' + best;
+    $('arc-intro').hidden = false;
+    $('arc-stage').hidden = true;
+    $('arc-hud').hidden = true;
+    $('arc-end').hidden = true;
+    $('arc-cancel').hidden = false;
+  }
+
+  function stopArcade() {
+    arcade.live = false;
+    if (arcade.raf) cancelAnimationFrame(arcade.raf);
+    arcade.raf = 0;
+    arcade.keys = {};
+    arcade.sl = null;
+  }
+
+  function beginArcade() {
+    var spec = ARCADE[arcade.mode];
+    var stage = $('arc-stage');
+    $('arc-intro').hidden = true;
+    $('arc-end').hidden = true;
+    $('arc-hud').hidden = false;
+    $('arc-cancel').hidden = true;
+    stage.hidden = false;
+    stage.innerHTML = '';
+    stage.className = 'arc-stage arc-' + arcade.mode;
+    arcade.elapsed = 0;
+    arcade.left = spec.time;
+    arcade.lives = arcade.max = spec.lives;
+    arcade.score = 0; arcade.combo = 0; arcade.bestCombo = 0;
+    arcade.tally = {}; arcade.things = []; arcade.spawnIn = 0.5;
+    arcade.holes = []; arcade.sl = null;
+    measureArcade();
+    ARC_MODES[arcade.mode].setup(stage);
+    arcadeHud();
+    window.scrollTo(0, 0);
+    arcade.live = true;
+    arcade.last = performance.now();
+    arcade.raf = requestAnimationFrame(arcadeLoop);
+  }
+
+  function measureArcade() {
+    var r = $('arc-stage').getBoundingClientRect();
+    arcade.w = r.width; arcade.h = r.height;
+  }
+
+  function arcadeLoop(ts) {
+    if (!arcade.live) return;
+    // Walked away to another tab or screen mid-run: put it down, rather than
+    // playing on (and eating the arrow keys) behind something else.
+    if (panel !== 'arcade' || view !== 'decide') return stopArcade();
+    // Capped, so a backgrounded tab pauses the game rather than fast-forwarding it.
+    var dt = Math.max(0, Math.min(0.05, (ts - arcade.last) / 1000));
+    arcade.last = ts;
+    arcade.elapsed += dt;
+    arcade.left -= dt;
+    ARC_MODES[arcade.mode].step(dt);
+    arcadeHud();
+    if (arcade.left <= 0 || arcade.lives <= 0) return endArcade();
+    arcade.raf = requestAnimationFrame(arcadeLoop);
+  }
+
+  var arcLastTime = -1;
+  function arcadeHud() {
+    var mult = 1 + Math.min(4, Math.floor(arcade.combo / 5));
+    $('arc-score').textContent = arcade.score;
+    $('arc-combo').textContent = 'x' + mult + (arcade.combo > 1 ? ' · ' + arcade.combo : '');
+    var t = Math.max(0, Math.ceil(arcade.left));
+    $('arc-time').textContent = t;
+    $('arc-time').classList.toggle('is-low', t <= 5);
+    if (t <= 5 && t !== arcLastTime && arcade.live) Sound.warn();
+    arcLastTime = t;
+    var hearts = '';
+    for (var i = 0; i < arcade.max; i++) hearts += i < arcade.lives ? '♥' : '♡';
+    $('arc-lives').textContent = hearts;
+  }
+
+  // A thing on the stage: an emoji (and a name for dishes, so what you are
+  // going for is what you read). Positioned by transform from its own x/y.
+  function arcThing(emoji, label, cls) {
+    var node = document.createElement('div');
+    node.className = 'arc-thing ' + (cls || '');
+    var face = document.createElement('b');
+    face.textContent = emoji;
+    node.appendChild(face);
+    if (label) {
+      var name = document.createElement('span');
+      name.textContent = label;
+      node.appendChild(name);
+    }
+    $('arc-stage').appendChild(node);
+    return node;
+  }
+
+  function arcPlace(t) { t.el.style.transform = 'translate3d(' + Math.round(t.x) + 'px,' + Math.round(t.y) + 'px,0)'; }
+
+  function arcPopup(x, y, text, cls) {
+    var node = document.createElement('div');
+    node.className = 'arc-pop ' + (cls || '');
+    node.textContent = text;
+    node.style.left = Math.round(x) + 'px';
+    node.style.top = Math.round(y) + 'px';
+    $('arc-stage').appendChild(node);
+    setTimeout(function () { if (node.parentNode) node.parentNode.removeChild(node); }, 700);
+  }
+
+  function arcadeCatch(dish, base, weight, x, y) {
+    arcade.combo++;
+    if (arcade.combo > arcade.bestCombo) arcade.bestCombo = arcade.combo;
+    var mult = 1 + Math.min(4, Math.floor(arcade.combo / 5));
+    var gain = base * mult;
+    arcade.score += gain;
+    var row = arcade.tally[dish.name] || (arcade.tally[dish.name] = { dish: dish, n: 0, at: arcade.pool.indexOf(dish) });
+    row.n += weight;
+    Sound.climb(arcade.combo);
+    arcPopup(x, y, '+' + gain, weight > 1 ? 'is-gold' : '');
+  }
+
+  function arcadeMiss() { arcade.combo = 0; }
+
+  function arcadeHurt(x, y) {
+    arcade.lives--;
+    arcade.combo = 0;
+    Sound.bust();
+    arcPopup(x, y, '♥−', 'is-bad');
+    var stage = $('arc-stage');
+    stage.classList.remove('is-hit');
+    void stage.offsetWidth;
+    stage.classList.add('is-hit');
+    try { if (navigator.vibrate) navigator.vibrate(60); } catch (err) { /* fine */ }
+  }
+
+  // What to put on the table next: a dish from this run's pool, now and then
+  // golden, with `bad` as the share that is a bomb or a spoiled one.
+  function arcadeKind(bad) {
+    var roll = Math.random();
+    if (roll < bad) return { bad: true };
+    var dish = arcade.pool[Math.floor(Math.random() * arcade.pool.length)];
+    return { dish: dish, gold: Math.random() < 0.08 };
+  }
+
+  var ARC_MODES = {
+    drop: {
+      setup: function (stage) {
+        arcade.plate = document.createElement('div');
+        arcade.plate.className = 'arc-plate';
+        arcade.plate.textContent = '\u{1F9FA}';
+        stage.appendChild(arcade.plate);
+        arcade.px = arcade.target = arcade.w / 2;
+      },
+      step: function (dt) {
+        var w = arcade.w, h = arcade.h, a = arcade;
+        if (a.keys.left) a.target -= w * 1.2 * dt;
+        if (a.keys.right) a.target += w * 1.2 * dt;
+        a.target = Math.max(28, Math.min(w - 28, a.target));
+        a.px += (a.target - a.px) * Math.min(1, dt * 20);
+        a.plate.style.transform = 'translate3d(' + Math.round(a.px - 28) + 'px,0,0)';
+
+        a.spawnIn -= dt;
+        if (a.spawnIn <= 0) {
+          a.spawnIn = Math.max(0.34, 0.85 - a.elapsed * 0.011) * (0.75 + Math.random() * 0.5);
+          var kind = arcadeKind(Math.min(0.3, 0.14 + a.elapsed * 0.004));
+          var t = { x: 32 + Math.random() * (w - 64), y: -40, vy: h * (0.5 + a.elapsed * 0.009 + Math.random() * 0.14), kind: kind };
+          t.el = kind.bad ? arcThing('\u{1F4A3}', '', 'is-bomb') : arcThing(kind.dish.icon, kind.dish.name, kind.gold ? 'is-gold' : '');
+          a.things.push(t);
+        }
+        for (var i = a.things.length - 1; i >= 0; i--) {
+          var thing = a.things[i];
+          thing.y += thing.vy * dt;
+          arcPlace(thing);
+          var inReach = thing.y >= h - 74 && thing.y <= h - 26 && Math.abs(thing.x - a.px) < 50;
+          if (inReach) {
+            if (thing.kind.bad) arcadeHurt(thing.x, h - 80);
+            else arcadeCatch(thing.kind.dish, thing.kind.gold ? 30 : 10, thing.kind.gold ? 2 : 1, thing.x, h - 90);
+            thing.el.remove(); a.things.splice(i, 1);
+          } else if (thing.y > h + 40) {
+            if (!thing.kind.bad) arcadeMiss();
+            thing.el.remove(); a.things.splice(i, 1);
+          }
+        }
+      },
+      move: function (x) { arcade.target = x; }
+    },
+
+    whack: {
+      setup: function (stage) {
+        var board = document.createElement('div');
+        board.className = 'arc-board';
+        for (var i = 0; i < 9; i++) {
+          (function () {
+            var hole = { el: document.createElement('button'), item: null, ttl: 0 };
+            hole.el.type = 'button';
+            hole.el.className = 'arc-hole';
+            hole.el.setAttribute('aria-label', 'Hole');
+            hole.face = document.createElement('span');
+            hole.face.className = 'arc-hole-item';
+            hole.el.appendChild(hole.face);
+            hole.el.addEventListener('pointerdown', function (event) { event.preventDefault(); whackHit(hole); });
+            board.appendChild(hole.el);
+            arcade.holes.push(hole);
+          })();
+        }
+        stage.appendChild(board);
+      },
+      step: function (dt) {
+        var a = arcade;
+        a.spawnIn -= dt;
+        var life = Math.max(0.6, 1.35 - a.elapsed * 0.017);
+        if (a.spawnIn <= 0) {
+          a.spawnIn = Math.max(0.3, 0.75 - a.elapsed * 0.011) * (0.7 + Math.random() * 0.6);
+          var free = a.holes.filter(function (h) { return !h.item; });
+          if (free.length) {
+            var hole = free[Math.floor(Math.random() * free.length)];
+            var kind = arcadeKind(Math.min(0.28, 0.12 + a.elapsed * 0.004));
+            hole.item = kind; hole.ttl = life;
+            hole.face.innerHTML = '';
+            var b = document.createElement('b');
+            b.textContent = kind.bad ? '\u{1F9A0}' : kind.dish.icon;
+            hole.face.appendChild(b);
+            var name = document.createElement('span');
+            name.textContent = kind.bad ? 'Spoiled' : kind.dish.name;
+            hole.face.appendChild(name);
+            hole.el.classList.toggle('is-bomb', !!kind.bad);
+            hole.el.classList.toggle('is-gold', !!kind.gold);
+            hole.el.classList.add('is-up');
+          }
+        }
+        a.holes.forEach(function (hole) {
+          if (!hole.item) return;
+          hole.ttl -= dt;
+          if (hole.ttl <= 0) {
+            if (!hole.item.bad) arcadeMiss();
+            hole.item = null;
+            hole.el.classList.remove('is-up', 'is-bomb', 'is-gold');
+          }
+        });
+      }
+    },
+
+    slice: {
+      setup: function () {},
+      step: function (dt) {
+        var a = arcade, w = a.w, h = a.h;
+        var speed = 1 + a.elapsed * 0.01;
+        a.spawnIn -= dt;
+        if (a.spawnIn <= 0) {
+          a.spawnIn = Math.max(0.55, 1.25 - a.elapsed * 0.014);
+          var n = 1 + (Math.random() < Math.min(0.7, 0.2 + a.elapsed * 0.012) ? 1 : 0) + (a.elapsed > 18 && Math.random() < 0.4 ? 1 : 0);
+          for (var k = 0; k < n; k++) {
+            var kind = arcadeKind(Math.min(0.3, 0.14 + a.elapsed * 0.004));
+            var x = w * (0.15 + Math.random() * 0.7);
+            var g = h * 1.6 * speed;
+            var t = {
+              x: x, y: h + 30, g: g, kind: kind,
+              vy: -Math.sqrt(2 * g * h * (0.6 + Math.random() * 0.18)),
+              vx: (w / 2 - x) * (0.25 + Math.random() * 0.35)
+            };
+            t.el = kind.bad ? arcThing('\u{1F4A3}', '', 'is-bomb') : arcThing(kind.dish.icon, kind.dish.name, kind.gold ? 'is-gold' : '');
+            a.things.push(t);
+          }
+        }
+        for (var i = a.things.length - 1; i >= 0; i--) {
+          var thing = a.things[i];
+          thing.vy += thing.g * dt;
+          thing.x += thing.vx * dt;
+          thing.y += thing.vy * dt;
+          arcPlace(thing);
+          if (thing.vy > 0 && thing.y > h + 50) {
+            if (!thing.kind.bad) arcadeMiss();
+            thing.el.remove(); a.things.splice(i, 1);
+          }
+        }
+      },
+      cut: function (x0, y0, x1, y1) {
+        var a = arcade;
+        for (var i = a.things.length - 1; i >= 0; i--) {
+          var t = a.things[i];
+          if (segDist(t.x, t.y, x0, y0, x1, y1) > 36) continue;
+          if (t.kind.bad) arcadeHurt(t.x, t.y);
+          else arcadeCatch(t.kind.dish, t.kind.gold ? 30 : 10, t.kind.gold ? 2 : 1, t.x, t.y - 20);
+          t.el.classList.add('is-cut');
+          (function (node) { setTimeout(function () { node.remove(); }, 260); })(t.el);
+          a.things.splice(i, 1);
+        }
+      }
+    }
+  };
+
+  // Distance from a point to a line segment: did the swipe pass through it.
+  function segDist(px, py, x0, y0, x1, y1) {
+    var dx = x1 - x0, dy = y1 - y0;
+    var len = dx * dx + dy * dy;
+    var u = len ? Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / len)) : 0;
+    var cx = x0 + u * dx, cy = y0 + u * dy;
+    return Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
+  }
+
+  function whackHit(hole) {
+    if (!arcade.live || !hole.item) return;
+    var item = hole.item;
+    var r = hole.el.getBoundingClientRect(), s = $('arc-stage').getBoundingClientRect();
+    var x = r.left - s.left + r.width / 2, y = r.top - s.top + 10;
+    if (item.bad) arcadeHurt(x, y);
+    else arcadeCatch(item.dish, item.gold ? 30 : 10, item.gold ? 2 : 1, x, y);
+    hole.item = null;
+    hole.el.classList.remove('is-up', 'is-bomb', 'is-gold');
+  }
+
+  function stagePoint(event) {
+    var r = $('arc-stage').getBoundingClientRect();
+    return { x: event.clientX - r.left, y: event.clientY - r.top };
+  }
+
+  (function wireArcade() {
+    var stage = $('arc-stage');
+    stage.addEventListener('pointerdown', function (event) {
+      if (!arcade.live) return;
+      var p = stagePoint(event);
+      if (arcade.mode === 'drop') ARC_MODES.drop.move(p.x);
+      else if (arcade.mode === 'slice') arcade.sl = { x: p.x, y: p.y, id: event.pointerId };
+      try { stage.setPointerCapture(event.pointerId); } catch (err) { /* fine */ }
+    });
+    stage.addEventListener('pointermove', function (event) {
+      if (!arcade.live) return;
+      var p = stagePoint(event);
+      if (arcade.mode === 'drop') ARC_MODES.drop.move(p.x);
+      else if (arcade.mode === 'slice' && arcade.sl) {
+        ARC_MODES.slice.cut(arcade.sl.x, arcade.sl.y, p.x, p.y);
+        var dot = document.createElement('i');
+        dot.className = 'arc-trail';
+        dot.style.left = Math.round(p.x) + 'px';
+        dot.style.top = Math.round(p.y) + 'px';
+        stage.appendChild(dot);
+        setTimeout(function () { if (dot.parentNode) dot.parentNode.removeChild(dot); }, 280);
+        arcade.sl.x = p.x; arcade.sl.y = p.y;
+      }
+    });
+    var lift = function () { arcade.sl = null; };
+    stage.addEventListener('pointerup', lift);
+    stage.addEventListener('pointercancel', lift);
+    window.addEventListener('resize', function () { if (arcade.live) measureArcade(); });
+
+    var arrow = function (event, down) {
+      if (!arcade.live || arcade.mode !== 'drop' || panel !== 'arcade') return;
+      var k = event.key;
+      if (k === 'ArrowLeft' || k === 'a' || k === 'A') arcade.keys.left = down;
+      else if (k === 'ArrowRight' || k === 'd' || k === 'D') arcade.keys.right = down;
+      else return;
+      event.preventDefault();
+    };
+    document.addEventListener('keydown', function (event) { arrow(event, true); });
+    document.addEventListener('keyup', function (event) { arrow(event, false); });
+  })();
+
+  function endArcade() {
+    var mode = arcade.mode;
+    stopArcade();
+    Sound.reveal();
+    var beat = arcadeBest(mode, arcade.score);
+    var picks = Object.keys(arcade.tally).map(function (k) { return arcade.tally[k]; })
+      .sort(function (a, b) { return b.n - a.n || a.at - b.at; })
+      .slice(0, 3);
+
+    $('arc-hud').hidden = true;
+    $('arc-stage').hidden = true;
+    $('arc-stage').innerHTML = '';
+    $('arc-end').hidden = false;
+    $('arc-cancel').hidden = false;
+
+    var died = arcade.lives <= 0;
+    $('arc-end-title').textContent = !picks.length
+      ? 'Nothing caught.'
+      : picks.length === 1 ? 'You went for this one.' : 'You went for these. Pick one.';
+    $('arc-end-line').textContent = picks.length
+      ? 'Whichever you pick is the answer.'
+      : 'Go again, or let the questions decide.';
+    $('arc-end-stats').textContent = (died ? 'Out of hearts. ' : 'Time. ') + 'Score ' + arcade.score +
+      ' \u00b7 best combo ' + arcade.bestCombo;
+    $('arc-end-new').hidden = beat !== true;
+
+    var list = $('arc-picked');
+    list.innerHTML = '';
+    picks.forEach(function (row) {
+      var dish = row.dish;
+      var li = document.createElement('li');
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'swipe-pick';
+      var face = document.createElement('span');
+      face.className = 'swipe-pick-face';
+      face.setAttribute('aria-hidden', 'true');
+      face.textContent = dish.icon;
+      var name = document.createElement('span');
+      name.className = 'swipe-pick-name';
+      name.textContent = dish.name;
+      var blurb = document.createElement('span');
+      blurb.className = 'swipe-pick-blurb';
+      blurb.textContent = dish.blurb;
+      [face, name, blurb].forEach(function (el) { button.appendChild(el); });
+      button.addEventListener('click', function () { landArcade(dish, picks); });
+      li.appendChild(button);
+      list.appendChild(li);
+    });
+    if (beat === true && !reduceMotion) Confetti.burst({ y: window.innerHeight * 0.3 });
+  }
+
+  // Same landing as Swipe: the one you pick is the answer, the others and the
+  // rest of this run's pool are the "check again" list behind it.
+  function landArcade(dish, picks) {
+    var mode = arcade.mode;
+    resetGame();
+    shortcut = true;
+    rankedItems = [dish]
+      .concat(picks.map(function (r) { return r.dish; }).filter(function (d) { return d !== dish; }))
+      .concat(arcade.pool.filter(function (d) { return d !== dish; }).slice(0, 5));
+    setPanel('result');
+    $('result-icon').classList.add('is-landed');
+    showResult(dish, { animate: false });
+    $('result-eyebrow').textContent = 'From ' + ARCADE[mode].name + ', you went for';
+    $('accept-btn').disabled = false;
+    $('reject-btn').disabled = false;
+    Sound.reveal();
+    Confetti.burst({ y: window.innerHeight * 0.3 });
+  }
+
+  [['drop-btn', 'drop'], ['whack-btn', 'whack'], ['slice-btn', 'slice']].forEach(function (pair) {
+    $(pair[0]).addEventListener('click', function () { startArcade(pair[1]); });
+  });
+  $('arc-start').addEventListener('click', beginArcade);
+  $('arc-again').addEventListener('click', function () { startArcade(arcade.mode); });
+  $('arc-ask').addEventListener('click', function () { stopArcade(); restart(); });
+  $('arc-cancel').addEventListener('click', function () { stopArcade(); goHome(); });
 
   /* --------------------------------------------------------------- endless */
   /*

@@ -551,6 +551,24 @@
         <span class="mode-name">Swipe</span>
         <span class="mode-hook">One dish at a time. Right for yes, left for no. Like three, then pick between them.</span>
       </button>
+      <button class="mode-card" id="drop-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#129530;</span>
+        <span class="mode-name">Dish Drop</span>
+        <span class="mode-hook">Dishes rain down, bombs too. Steer the basket, catch what you fancy, dodge the rest. Whatever you caught most is dinner.</span>
+      </button>
+      <button class="mode-card" id="whack-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#128296;</span>
+        <span class="mode-name">Whack-a-Dish</span>
+        <span class="mode-hook">Dishes pop out of nine holes, gone in a blink. Whack the ones you want before they duck &mdash; and leave the spoiled ones.</span>
+      </button>
+      <button class="mode-card" id="slice-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#9876;&#65039;</span>
+        <span class="mode-name">Slice</span>
+        <span class="mode-hook">Dishes fly up. Swipe through the ones you want, miss the bombs. Chain slices for a combo.</span>
+      </button>
     </div>
 
     <section class="strip" id="mood-wrap" hidden>
@@ -1262,6 +1280,47 @@
 
         <p class="pane-line swipe-status" id="swipe-status">Right for yes, left for no. Like three and you choose between them.</p>
         <button class="plain" id="swipe-cancel">Never mind, take me back</button>
+      </div>
+
+
+      <!-- arcade: three action modes sharing one stage. Dish Drop, Whack-a-Dish
+           and Slice all end the same way: whatever you went for most is
+           offered, with the runners-up, and one of them is dinner. -->
+      <div class="panel" id="panel-arcade">
+        <p class="mechanic"><span id="arc-name">Dish Drop</span> <span class="tag-premium">Premium</span></p>
+
+        <div class="arc-hud" id="arc-hud" hidden>
+          <p><span class="arc-k">Score</span> <b id="arc-score">0</b></p>
+          <p><span class="arc-k">Combo</span> <b id="arc-combo">x1</b></p>
+          <p><span class="arc-k">Time</span> <b id="arc-time">0</b></p>
+          <p><span class="arc-k">Lives</span> <b id="arc-lives" aria-live="polite">&#9829;&#9829;&#9829;</b></p>
+        </div>
+
+        <div class="arc-intro" id="arc-intro">
+          <p class="swipe-empty-face" id="arc-icon" aria-hidden="true">&#129530;</p>
+          <h2 class="q-title" id="arc-title">Dish Drop</h2>
+          <p class="pane-line" id="arc-how"></p>
+          <p class="fine" id="arc-best" hidden></p>
+          <div class="opening-actions">
+            <button class="go" id="arc-start">Go</button>
+          </div>
+        </div>
+
+        <div class="arc-stage" id="arc-stage" hidden role="application" aria-label="Game area. Needs a mouse, finger or the arrow keys."></div>
+
+        <div class="swipe-picks arc-end" id="arc-end" hidden>
+          <h2 class="q-title" id="arc-end-title">Pick one.</h2>
+          <p class="pane-line" id="arc-end-line"></p>
+          <p class="fine" id="arc-end-stats"></p>
+          <p class="arc-new" id="arc-end-new" hidden>A new best!</p>
+          <ul class="swipe-picked" id="arc-picked"></ul>
+          <div class="opening-actions">
+            <button class="plain" id="arc-again">Play again</button>
+            <button class="plain" id="arc-ask">Ask me questions instead</button>
+          </div>
+        </div>
+
+        <button class="plain" id="arc-cancel">Never mind, take me back</button>
       </div>
 
       <!-- ==================================================================
