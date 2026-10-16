@@ -245,7 +245,8 @@ function InfoPage() {
                 ['💘', 'Swipe', 'One dish at a time. Right for yes, left for no — and every no sharpens what comes next.'],
                 ['🧺', 'Dish Drop', 'Dishes and bombs rain down. Steer the basket, build a combo — what you caught most is dinner.'],
                 ['🔨', 'Whack-a-Dish', 'Dishes pop out of nine holes. Whack the ones you want before they duck.'],
-                ['⚔️', 'Slice', 'Dishes fly up. Swipe through the ones you want, miss the bombs.'],
+                ['⚔️', 'Slice', 'Dishes fly across the screen and a rule says which to slice. Wrong one, or a bomb, and you lose a heart.'],
+                ['💸', 'Budget Max', 'Extreme budget maxing: $50, forty-five seconds, prices that only go up. Grab the best value off the belt.'],
               ].map(([icon, name, hook]) => (
                 <div key={name} className="rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-6">
                   <p className="text-2xl" aria-hidden="true">

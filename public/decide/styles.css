@@ -6039,3 +6039,68 @@ body.is-lang-gate { overflow: hidden; }
 
 .arc-end .fine, .arc-end .arc-new { margin: 0; }
 .arc-new { color: var(--amber); font-family: var(--display); font-weight: 600; }
+
+#arc-lives.is-low { color: var(--danger); }
+#arc-lives { min-width: 3ch; }
+
+/* Events: the banner that says the rules just changed. */
+.arc-banner {
+  position: absolute; left: 50%; top: .6rem; z-index: 3;
+  transform: translateX(-50%);
+  padding: .3rem .9rem;
+  border-radius: 999px;
+  font-family: var(--display); font-weight: 700; font-size: var(--t-sm);
+  letter-spacing: .04em; white-space: nowrap;
+  background: var(--paper); color: var(--paper-ink);
+  pointer-events: none;
+  animation: arc-banner .35s var(--ease);
+}
+.arc-banner[hidden] { display: none; }
+.arc-banner.is-bad { background: var(--danger); }
+.arc-banner.is-good { background: var(--amber); }
+@keyframes arc-banner { from { transform: translateX(-50%) scale(.6); opacity: 0; } }
+
+/* Slice: the standing rule */
+.arc-rule {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 2;
+  display: flex; justify-content: center; align-items: baseline; gap: .4rem;
+  padding: .45rem .6rem;
+  background: linear-gradient(var(--char), transparent);
+  pointer-events: none;
+  font-size: var(--t-sm);
+}
+.arc-rule span { color: var(--ink-3); }
+.arc-rule b { color: var(--amber); font-family: var(--display); font-size: var(--t-md); }
+.arc-rule.is-new b { animation: arc-flash .6s var(--ease); }
+@keyframes arc-flash { 0% { transform: scale(1.5); } 100% { transform: scale(1); } }
+
+/* Budget Max: a belt of price tags */
+.arc-budget { cursor: pointer; }
+.arc-card {
+  position: absolute; left: 0; top: 0;
+  display: grid; align-content: center; justify-items: center; gap: .1rem;
+  padding: .25rem;
+  border: 1px solid var(--hair-lit);
+  border-radius: 8px;
+  background: var(--raise);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  will-change: transform;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+.arc-card b { font-size: 2rem; line-height: 1; font-weight: 400; }
+.arc-card-name { font-size: .64rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+.arc-card-price { font-family: var(--display); font-weight: 700; font-size: var(--t-md); }
+.arc-card-yum { font-size: .7rem; color: var(--amber); }
+.arc-card:not(.is-afford):not(.is-coupon) { opacity: .55; }
+.arc-card.is-deal { border-color: var(--amber); box-shadow: 0 0 .8rem rgba(224, 163, 64, .45); }
+.arc-card.is-sale .arc-card-price { color: #8fd18f; }
+.arc-card.is-surge .arc-card-price { color: var(--danger); }
+.arc-card.is-coupon { border-style: dashed; border-color: var(--amber); }
+.arc-card.is-coupon .arc-card-price { color: var(--amber); }
+.arc-card.is-bought { opacity: 0; transition: opacity .25s var(--ease); }
+.arc-card.is-nope { animation: arc-shake .32s var(--ease); }
+#arc-lives.is-cash { color: var(--ink); letter-spacing: 0; }
+#arc-lives.is-cash.is-low { color: var(--danger); }

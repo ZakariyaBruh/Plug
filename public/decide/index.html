@@ -567,7 +567,13 @@
         <span class="mode-lock">&#128274; Premium</span>
         <span class="mode-icon" aria-hidden="true">&#9876;&#65039;</span>
         <span class="mode-name">Slice</span>
-        <span class="mode-hook">Dishes fly up. Swipe through the ones you want, miss the bombs. Chain slices for a combo.</span>
+        <span class="mode-hook">Dishes fly across the screen and a rule says which to slice. Slice the wrong one or a bomb and you lose a heart. The rule keeps changing.</span>
+      </button>
+      <button class="mode-card" id="budget-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#128184;</span>
+        <span class="mode-name">Budget Max</span>
+        <span class="mode-hook">EXTREME budget maxing. $50, forty-five seconds, and prices that only go up. Grab the best value off the belt &mdash; flash sales, surge pricing and coupons included.</span>
       </button>
     </div>
 
@@ -1290,10 +1296,10 @@
         <p class="mechanic"><span id="arc-name">Dish Drop</span> <span class="tag-premium">Premium</span></p>
 
         <div class="arc-hud" id="arc-hud" hidden>
-          <p><span class="arc-k">Score</span> <b id="arc-score">0</b></p>
-          <p><span class="arc-k">Combo</span> <b id="arc-combo">x1</b></p>
+          <p><span class="arc-k" id="arc-k-score">Score</span> <b id="arc-score">0</b></p>
+          <p><span class="arc-k" id="arc-k-combo">Combo</span> <b id="arc-combo">x1</b></p>
           <p><span class="arc-k">Time</span> <b id="arc-time">0</b></p>
-          <p><span class="arc-k">Lives</span> <b id="arc-lives" aria-live="polite">&#9829;&#9829;&#9829;</b></p>
+          <p><span class="arc-k" id="arc-k-lives">Lives</span> <b id="arc-lives" aria-live="polite">&#9829;&#9829;&#9829;</b></p>
         </div>
 
         <div class="arc-intro" id="arc-intro">
