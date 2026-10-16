@@ -551,29 +551,29 @@
         <span class="mode-name">Swipe</span>
         <span class="mode-hook">One dish at a time. Right for yes, left for no. Like three, then pick between them.</span>
       </button>
-      <button class="mode-card" id="drop-btn">
+      <button class="mode-card" id="darts-btn">
         <span class="mode-lock">&#128274; Premium</span>
-        <span class="mode-icon" aria-hidden="true">&#129530;</span>
-        <span class="mode-name">Dish Drop</span>
-        <span class="mode-hook">Dishes rain down, bombs too. Steer the basket, catch what you fancy, dodge the rest. Whatever you caught most is dinner.</span>
+        <span class="mode-icon" aria-hidden="true">&#127919;</span>
+        <span class="mode-name">Dish Darts</span>
+        <span class="mode-hook">Dishes slide past on three belts. You get eight darts, so every throw is a choice. Hit one and you have voted for it.</span>
       </button>
-      <button class="mode-card" id="whack-btn">
+      <button class="mode-card" id="dash-btn">
         <span class="mode-lock">&#128274; Premium</span>
-        <span class="mode-icon" aria-hidden="true">&#128296;</span>
-        <span class="mode-name">Whack-a-Dish</span>
-        <span class="mode-hook">Dishes pop out of nine holes, gone in a blink. Whack the ones you want before they duck &mdash; and leave the spoiled ones.</span>
+        <span class="mode-icon" aria-hidden="true">&#127939;</span>
+        <span class="mode-name">Dish Dash</span>
+        <span class="mode-hook">Run down three lanes. Every row puts different dishes in front of you, and the lane you pick is the dish you want.</span>
       </button>
       <button class="mode-card" id="slice-btn">
         <span class="mode-lock">&#128274; Premium</span>
         <span class="mode-icon" aria-hidden="true">&#9876;&#65039;</span>
         <span class="mode-name">Slice</span>
-        <span class="mode-hook">Dishes fly across the screen and a rule says which to slice. Slice the wrong one or a bomb and you lose a heart. The rule keeps changing.</span>
+        <span class="mode-hook">Dishes fly across the screen. Swipe through the ones you want and let the rest go. Bombs cost a heart.</span>
       </button>
-      <button class="mode-card" id="budget-btn">
+      <button class="mode-card mode-card-wide" id="budget-btn">
         <span class="mode-lock">&#128274; Premium</span>
         <span class="mode-icon" aria-hidden="true">&#128184;</span>
         <span class="mode-name">Budget Max</span>
-        <span class="mode-hook">EXTREME budget maxing. $50, forty-five seconds, and prices that only go up. Grab the best value off the belt &mdash; flash sales, surge pricing and coupons included.</span>
+        <span class="mode-hook">Twenty-three dishes on the shelf, $60, one minute. Prices move, so buy on the dip. Haggle with the needle, build a balanced table for bonuses, and lock it in &mdash; then see how close you got to the best basket anyone could have bought.</span>
       </button>
     </div>
 
@@ -1289,11 +1289,11 @@
       </div>
 
 
-      <!-- arcade: three action modes sharing one stage. Dish Drop, Whack-a-Dish
+      <!-- arcade: four action modes sharing one stage. Dish Darts, Dish Dash, Budget Max
            and Slice all end the same way: whatever you went for most is
            offered, with the runners-up, and one of them is dinner. -->
       <div class="panel" id="panel-arcade">
-        <p class="mechanic"><span id="arc-name">Dish Drop</span> <span class="tag-premium">Premium</span></p>
+        <p class="mechanic"><span id="arc-name">Dish Darts</span> <span class="tag-premium">Premium</span></p>
 
         <div class="arc-hud" id="arc-hud" hidden>
           <p><span class="arc-k" id="arc-k-score">Score</span> <b id="arc-score">0</b></p>
@@ -1304,7 +1304,7 @@
 
         <div class="arc-intro" id="arc-intro">
           <p class="swipe-empty-face" id="arc-icon" aria-hidden="true">&#129530;</p>
-          <h2 class="q-title" id="arc-title">Dish Drop</h2>
+          <h2 class="q-title" id="arc-title">Dish Darts</h2>
           <p class="pane-line" id="arc-how"></p>
           <p class="fine" id="arc-best" hidden></p>
           <div class="opening-actions">
@@ -1325,6 +1325,8 @@
             <button class="plain" id="arc-ask">Ask me questions instead</button>
           </div>
         </div>
+
+        <div class="arc-lockbar"><button class="go" id="arc-lock" hidden>Lock it in</button></div>
 
         <button class="plain" id="arc-cancel">Never mind, take me back</button>
       </div>

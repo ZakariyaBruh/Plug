@@ -486,7 +486,14 @@ button { font-family: inherit; }
    is 3 + 2 and needs no help. */
 @media (max-width: 45.99rem) {
   .mode-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  /* Nine cards and a wide one: two-up, the ninth takes a row to itself so the
+     wide card does not leave a gap beside it. */
+  #slice-btn { grid-column: 1 / -1; }
 }
+
+/* The flagship takes the width of the three above it, whatever the width. */
+.mode-card-wide { grid-column: 1 / -1; }
+.mode-card-wide .mode-hook { max-width: 52rem; }
 
 .mode-card {
   position: relative;
@@ -6104,3 +6111,88 @@ body.is-lang-gate { overflow: hidden; }
 .arc-card.is-nope { animation: arc-shake .32s var(--ease); }
 #arc-lives.is-cash { color: var(--ink); letter-spacing: 0; }
 #arc-lives.is-cash.is-low { color: var(--danger); }
+
+/* ----------------------------------------------------- arcade, second pass */
+.arc-lockbar { display: flex; justify-content: center; margin: var(--s2) 0; }
+.arc-lockbar [hidden] { display: none; }
+
+.arc-hint {
+  position: absolute; left: 0; right: 0; bottom: .6rem; text-align: center;
+  font-size: var(--t-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3);
+  pointer-events: none;
+}
+.arc-darts, .arc-dash { cursor: crosshair; }
+.arc-darts .arc-thing { margin: -1.9rem 0 0 -2.25rem; }
+.arc-darts .arc-thing b { transform: scale(var(--size, 1)); }
+.arc-dart {
+  position: absolute; width: .9rem; height: .9rem; margin: -.45rem 0 0 -.45rem;
+  border-radius: 50%; border: 2px solid var(--amber); background: var(--void);
+  pointer-events: none; animation: arc-dart .7s ease-out forwards;
+}
+@keyframes arc-dart { from { transform: scale(2.2); opacity: 1; } 25% { transform: scale(1); } to { opacity: 0; } }
+
+.arc-laneline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--hair); pointer-events: none; }
+.arc-runner {
+  position: absolute; left: 0; top: 0; width: 3rem; height: 3rem;
+  font-size: 2.4rem; line-height: 3rem; text-align: center; pointer-events: none; will-change: transform;
+}
+
+/* Budget Max: a shelf, not a belt */
+.arc-feast {
+  height: auto; overflow: visible; background: none; border: 0; cursor: default;
+  touch-action: manipulation; width: min(34rem, 100%);
+}
+.arc-feast .arc-banner { position: static; transform: none; margin: 0 auto var(--s2); width: max-content; max-width: 100%; animation: none; }
+.arc-shelf { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4rem; }
+.arc-tile {
+  position: relative;
+  display: grid; justify-items: center; align-content: center; gap: .05rem;
+  min-height: 5.1rem; padding: .3rem .15rem;
+  border: 1px solid var(--hair); border-radius: 8px;
+  background: var(--raise); color: var(--ink); font: inherit; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; user-select: none;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.arc-tile b { font-size: 1.5rem; line-height: 1.1; font-weight: 400; }
+.arc-tile-name { font-size: .58rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-2); }
+.arc-tile-price { font-family: var(--display); font-weight: 700; font-size: .78rem; }
+.arc-tile-yum { font-size: .62rem; color: var(--amber); }
+.arc-tile:not(.is-afford):not(.arc-haggle) { opacity: .45; }
+.arc-tile.is-in { border-color: var(--amber); background: var(--paper); color: var(--paper-ink); }
+.arc-tile.is-in .arc-tile-name { color: var(--paper-ink); }
+.arc-tile.is-in .arc-tile-yum { color: var(--paper-ink); }
+.arc-tile.is-up .arc-tile-price { color: var(--danger); }
+.arc-tile.is-down .arc-tile-price { color: #8fd18f; }
+.arc-tile.is-sale { border-color: #8fd18f; box-shadow: 0 0 .6rem rgba(143, 209, 143, .45); }
+.arc-tile.is-surge .arc-tile-price { color: var(--danger); }
+.arc-tile.is-hag { border-style: dashed; border-color: var(--amber); animation: arc-pulse .8s ease-in-out infinite alternate; }
+@keyframes arc-pulse { to { box-shadow: 0 0 .8rem var(--amber); } }
+.arc-tile.is-nope { animation: arc-shake .32s var(--ease); }
+.arc-haggle { border-style: dashed; border-color: var(--amber-dim); }
+.arc-haggle.is-armed { border-color: var(--amber); background: var(--amber-dim); }
+.arc-haggle.is-spent { opacity: .45; }
+
+.arc-chips { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: var(--s3); justify-content: center; }
+.arc-chip {
+  display: inline-flex; gap: .35rem; padding: .2rem .6rem; border-radius: 999px;
+  border: 1px solid var(--hair); font-size: var(--t-xs); color: var(--ink-3);
+}
+.arc-chip.is-on { border-color: var(--amber); color: var(--ink); background: var(--raise); }
+.arc-chip.is-on b { color: var(--amber); }
+
+.arc-needle {
+  position: absolute; left: 50%; top: 40%; z-index: 4; transform: translate(-50%, -50%);
+  width: min(22rem, 92%); display: grid; gap: var(--s3); justify-items: center;
+  padding: var(--s4); border: 1px solid var(--amber); border-radius: 10px;
+  background: var(--void); box-shadow: 0 1rem 3rem rgba(0, 0, 0, .7);
+}
+.arc-needle-title { margin: 0; font-family: var(--display); font-weight: 600; text-align: center; }
+.arc-needle-bar { position: relative; width: 100%; height: 2rem; border-radius: 6px; background: #5a2f2f; overflow: hidden; }
+.arc-zone { position: absolute; top: 0; bottom: 0; }
+.arc-zone.is-yellow { background: #8a7a2e; }
+.arc-zone.is-green { background: #4f9a4f; }
+.arc-pin { position: absolute; top: 0; bottom: 0; width: 4px; margin-left: -2px; background: var(--paper); box-shadow: 0 0 .5rem var(--paper); }
+
+.mode-card-wide { border-color: var(--amber-dim); background: linear-gradient(135deg, var(--raise), var(--char)); }
+.mode-card-wide .mode-icon { font-size: 2.2rem; }
+.mode-card-wide .mode-name { font-size: var(--t-lg); }
