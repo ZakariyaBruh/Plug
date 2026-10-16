@@ -5288,6 +5288,17 @@ body.has-radio .toasts { bottom: calc(var(--s5) + 4.75rem); }
 }
 .hub-day.is-today .hub-day-name { color: var(--amber); }
 .hub-day-name { margin: 0; font-family: var(--display); font-weight: 600; }
+.hub-day-head { display: grid; align-content: start; justify-items: start; gap: .25rem; }
+.hub-copy {
+  min-height: 2rem; padding: .1rem .55rem; border: 1px solid var(--hair-lit); border-radius: 999px;
+  background: none; color: var(--ink-3); font: inherit; font-size: var(--t-xs); cursor: pointer;
+}
+.hub-copy:hover, .hub-copy:focus-visible { color: var(--amber); border-color: var(--amber); }
+.hub-copy-dialog[open] { display: grid; grid-template-rows: none; gap: var(--s3); max-height: none; }
+.hub-copy-quick { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.hub-copy-days { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); }
+.hub-copy-day, .hub-copy-modes label { display: flex; align-items: center; gap: .4rem; min-height: 2.5rem; cursor: pointer; }
+.hub-copy-modes { display: grid; gap: var(--s1); }
 .hub-day-name span { display: block; font-family: var(--text); font-weight: 400; font-size: var(--t-xs); color: var(--ink-3); }
 .hub-slot {
   display: grid;
@@ -5483,7 +5494,7 @@ body.has-radio .toasts { bottom: calc(var(--s5) + 4.75rem); }
 
 @media (max-width: 60rem) {
   .hub-day { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hub-day-name { grid-column: 1 / -1; }
+  .hub-day-head { grid-column: 1 / -1; grid-auto-flow: column; justify-content: space-between; align-items: center; }
   .hub-day-name span { display: inline; margin-left: .35rem; }
   .hub-nutri-day { grid-template-columns: minmax(0, 1fr); gap: var(--s2); }
 }
