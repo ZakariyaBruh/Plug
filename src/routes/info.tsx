@@ -243,10 +243,10 @@ function InfoPage() {
                 ['🎲', 'Shortlist', 'Eight dishes from what you like. One of them lands. No questions.'],
                 ['👥', 'Together', 'Up to six of you, one phone. Five either-ors each, then one dish the whole table can live with.'],
                 ['💘', 'Swipe', 'One dish at a time. Right for yes, left for no — and every no sharpens what comes next.'],
-                ['🎯', 'Dish Darts', 'Dishes slide past on three belts. Eight darts, so every throw is a choice.'],
-                ['🏃', 'Dish Dash', 'Run down three lanes. The lane you pick is the dish you want.'],
+                ['🧱', 'Smash', 'A wall of dishes and a ball. Smash what you do not want; what is left is dinner.'],
+                ['🎱', 'Drop Zone', 'Drop balls down a pegboard into dishes and nudge them on the way.'],
                 ['⚔️', 'Slice', 'Dishes fly across the screen. Swipe the ones you want, let the rest go.'],
-                ['💸', 'Budget Max', 'Twenty-three dishes, $60, one minute. Buy on the dip, haggle, and see how close you got to the best basket.'],
+                ['🏇', 'Dish Derby', 'Eight dishes race. Cheer your favourite, sabotage the rest, reroll the field if you do not fancy it.'],
               ].map(([icon, name, hook]) => (
                 <div key={name} className="rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-6">
                   <p className="text-2xl" aria-hidden="true">

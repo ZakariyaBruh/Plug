@@ -6196,3 +6196,58 @@ body.is-lang-gate { overflow: hidden; }
 .mode-card-wide { border-color: var(--amber-dim); background: linear-gradient(135deg, var(--raise), var(--char)); }
 .mode-card-wide .mode-icon { font-size: 2.2rem; }
 .mode-card-wide .mode-name { font-size: var(--t-lg); }
+
+/* -------------------------------------------------- arcade, third pass */
+.arc-canvas { display: block; touch-action: none; }
+.arc-smash, .arc-drop { cursor: pointer; }
+.arc-derby { height: auto; overflow: visible; background: none; border: 0; cursor: default; touch-action: manipulation; width: min(34rem, 100%); }
+.dv { display: grid; gap: var(--s3); }
+.dv-title { margin: 0; text-align: center; font-family: var(--display); font-weight: 600; font-size: var(--t-md); }
+.dv-hint { text-align: center; margin: 0; }
+.dv-field { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4rem; }
+@media (max-width: 30rem) { .dv-field { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.dv-card {
+  display: grid; justify-items: center; gap: .15rem; padding: .5rem .35rem;
+  border: 1px solid var(--hair); border-radius: 10px; background: var(--raise); color: var(--ink);
+  font: inherit; cursor: pointer; transition: border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.dv-card:hover { border-color: var(--amber); transform: translateY(-2px); }
+.dv-card.is-champ { border-color: var(--amber); background: var(--paper); color: var(--paper-ink); box-shadow: 0 0 .9rem rgba(224, 163, 64, .5); }
+.dv-card b { font-size: 2rem; line-height: 1.1; font-weight: 400; }
+.dv-name { font-size: var(--t-xs); font-weight: 600; text-align: center; min-height: 2.2em; display: grid; align-items: center; }
+.dv-stat { display: grid; grid-template-columns: 3.1rem 1fr; align-items: center; gap: .3rem; width: 100%; }
+.dv-stat i { font-style: normal; font-size: .55rem; text-align: left; opacity: .75; }
+.dv-stat em { display: block; height: .3rem; border-radius: 2px; background: var(--amber); }
+.dv-card.is-champ .dv-stat em { background: var(--paper-ink); }
+.dv-actions { display: flex; flex-wrap: wrap; gap: var(--s3); justify-content: center; align-items: center; }
+
+.dv-track { display: grid; gap: 3px; position: relative; }
+.dv-lane {
+  position: relative; height: 2.7rem; border-radius: 6px; overflow: hidden; cursor: pointer;
+  background: repeating-linear-gradient(90deg, var(--raise) 0 9.9%, var(--char) 9.9% 10%);
+  border: 1px solid var(--hair); touch-action: manipulation;
+}
+.dv-lane.is-champ { border-color: var(--amber); }
+.dv-lane.is-lead { box-shadow: inset 0 0 0 1px var(--paper); }
+.dv-runner { position: absolute; top: 0; left: 0; display: grid; justify-items: center; width: 3.2rem; will-change: left; transition: filter .15s; }
+.dv-runner b { font-size: 1.55rem; line-height: 1.55rem; font-weight: 400; }
+.dv-runner span { font-size: .5rem; line-height: .8rem; color: var(--ink-2); max-width: 3.6rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dv-runner.is-boost b { filter: drop-shadow(0 0 .5rem #ff8a3d); }
+.dv-runner.is-slow b { filter: grayscale(1) blur(.5px); }
+.dv-obst { position: absolute; top: .55rem; font-style: normal; font-size: 1rem; opacity: .85; }
+.dv-finish { position: absolute; right: 0; top: 0; bottom: 0; width: .55rem; background: repeating-conic-gradient(var(--paper) 0 25%, var(--char) 0 50%) 0 0 / .55rem .55rem; }
+.dv-puff { position: absolute; top: .1rem; font-style: normal; font-size: 1.1rem; pointer-events: none; animation: arc-pop .6s var(--ease) forwards; }
+.dv-count {
+  position: absolute; left: 50%; top: 9rem; transform: translateX(-50%);
+  font-family: var(--display); font-weight: 700; font-size: 4.5rem; color: var(--amber);
+  text-shadow: 0 .2rem 1rem rgba(0, 0, 0, .8); pointer-events: none; z-index: 3;
+}
+.dv-tools { display: flex; gap: var(--s2); justify-content: center; }
+.dv-tool {
+  display: inline-flex; align-items: center; gap: .4rem; padding: .5rem 1rem; min-height: var(--tap);
+  border: 1px solid var(--hair-lit); border-radius: 999px; background: var(--raise); color: var(--ink); font: inherit; cursor: pointer;
+}
+.dv-tool b { font-weight: 400; }
+.dv-tool.is-on { border-color: var(--amber); background: var(--paper); color: var(--paper-ink); }
+.arc-derby .arc-banner { position: static; transform: none; margin: 0 auto; }
+.arc-lockbar .quiet b { color: var(--amber); }
