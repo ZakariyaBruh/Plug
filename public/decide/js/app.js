@@ -4015,6 +4015,42 @@
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 900);
   }
 
+  /*
+   * A small burst from the thing you just touched. Six dots out on straight
+   * lines, gone in 450ms. Motion that answers a tap, built on the Web Animations
+   * API so there is no stylesheet to keep in step and nothing left in the DOM.
+   */
+  function sparkle(source, count) {
+    if (reduceMotion || !source || !source.animate) return;
+    var box = source.getBoundingClientRect();
+    var cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+    var n = count || 7;
+    for (var i = 0; i < n; i++) {
+      var dot = document.createElement('i');
+      dot.className = 'spark';
+      dot.style.left = cx + 'px'; dot.style.top = cy + 'px';
+      document.body.appendChild(dot);
+      var ang = (Math.PI * 2 * i) / n + Math.random() * 0.5, dist = 34 + Math.random() * 26;
+      var a = dot.animate([
+        { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+        { transform: 'translate(calc(-50% + ' + Math.cos(ang) * dist + 'px), calc(-50% + ' + Math.sin(ang) * dist + 'px)) scale(.2)', opacity: 0 }
+      ], { duration: 460, easing: 'cubic-bezier(.2,0,0,1)' });
+      a.onfinish = (function (d) { return function () { if (d.parentNode) d.parentNode.removeChild(d); }; })(dot);
+    }
+  }
+
+  // A number that arrives rather than appears.
+  function countUp(el, to, prefix) {
+    if (reduceMotion || !el.animate) { el.textContent = (prefix || '') + to; return; }
+    var start = performance.now(), dur = 700;
+    (function frame(now) {
+      var t = Math.min(1, (now - start) / dur);
+      var eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = (prefix || '') + Math.round(to * eased);
+      if (t < 1) requestAnimationFrame(frame);
+    })(start);
+  }
+
   function replay(el) {
     el.classList.remove('is-new');
     void el.offsetWidth;
@@ -4131,6 +4167,7 @@
     var line = Flavor.reaction(current.tag, value, Math.random);
     if (value === 'either') Sound.shrug(); else Sound.tick();
     floatXp(gained, source);
+    if (source) { sparkle(source); source.classList.remove('is-chosen'); void source.offsetWidth; source.classList.add('is-chosen'); }
 
     game.answer(current.tag, value);
     step();
@@ -4139,7 +4176,6 @@
     // After step(), so the new question's render doesn't clear it.
     $('reaction').textContent = line;
     replay($('reaction'));
-    Morsel.mood($('mascot-q'), value === 'yes' || value === 'no' ? 'happy' : 'shrug', 1400);
     try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) { /* fine */ }
   }
 
@@ -4331,7 +4367,6 @@
       });
     }
 
-    Morsel.mood($('mascot-r'), 'excited', 1800);
     fillAlternates(item);
     paintPair(item);
     // Which directions are worth offering depends on what is on screen, so
@@ -4582,7 +4617,7 @@
       if (panel !== 'reward') return;
       fillSlot();
     }, 1400);
-    $('xp-total').textContent = '+' + outcome.total;
+    countUp($('xp-total'), outcome.total, '+');
 
     var list = $('awards');
     list.innerHTML = '';
@@ -4608,7 +4643,6 @@
     paintWhy();
     paintPlan(item);
     setPanel('reward');
-    Morsel.mood($('mascot-d'), 'celebrate', 2600);
     paintStreak();
     Sound.win();
     Confetti.burst({ y: window.innerHeight * 0.3 });
@@ -10405,58 +10439,6 @@
     return new Date(time).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   }
 
-  /* ----------------------------------------------------------------- Morsel */
-  /*
-   * A small character, and the reason it exists.
-   *
-   * What makes an app feel alive is not the features, it is that it answers you
-   * as if somebody were there. A tap that gets a flat state change is a form;
-   * a tap that gets a raised eyebrow is a conversation. Morsel is the raised
-   * eyebrow: it reacts to the thing you just did, instantly, with the same dry
-   * temperament as the copy. Happy when you pick, a shrug when you cannot, a
-   * wince when you turn a dish down, and a small jump when dinner is sorted.
-   *
-   * It only ever reacts. It never idles for attention, never pops up with
-   * advice, and never blocks anything: it is decorative, aria-hidden, and holds
-   * perfectly still under prefers-reduced-motion.
-   */
-  var Morsel = (function () {
-    var SVG =
-      '<svg viewBox="0 0 64 64" class="mo" focusable="false">' +
-      '<g class="mo-sparks"><path d="M10 12l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/><path d="M54 8l1.6 3.2L59 13l-3.4 1.8L54 18l-1.6-3.2L49 13l3.4-1.8z"/><path d="M58 30l1.2 2.4 2.4 1.2-2.4 1.2L58 37l-1.2-2.4-2.4-1.2 2.4-1.2z"/></g>' +
-      '<g class="mo-body">' +
-      '<path class="mo-arm mo-arm-l" d="M11 40Q3 38 3 30"/><path class="mo-arm mo-arm-r" d="M53 40Q61 38 61 30"/>' +
-      '<ellipse class="mo-skin" cx="32" cy="38" rx="22" ry="20"/>' +
-      '<circle class="mo-cheek" cx="17" cy="43" r="3.6"/><circle class="mo-cheek" cx="47" cy="43" r="3.6"/>' +
-      '<g class="mo-eyes"><ellipse cx="24" cy="35" rx="2.5" ry="3.3"/><ellipse cx="40" cy="35" rx="2.5" ry="3.3"/></g>' +
-      '<g class="mo-eyes-up"><path d="M21 36Q24 32 27 36"/><path d="M37 36Q40 32 43 36"/></g>' +
-      '<path class="mo-m mo-m-smile" d="M26 44Q32 50 38 44"/>' +
-      '<path class="mo-m mo-m-grin" d="M24.5 43Q32 55 39.5 43Z"/>' +
-      '<path class="mo-m mo-m-flat" d="M27 46.5H37"/>' +
-      '<path class="mo-m mo-m-sad" d="M26 48.5Q32 42.5 38 48.5"/>' +
-      '<ellipse class="mo-m mo-m-o" cx="32" cy="46.5" rx="3" ry="3.6"/>' +
-      '</g></svg>';
-
-    function mount(node) {
-      if (!node || node.firstChild) return;
-      node.innerHTML = SVG;
-      node.setAttribute('data-mood', 'idle');
-    }
-    // Plays `mood` and settles back to idle. Setting the attribute afresh (after a
-    // reflow) is what restarts the animation when the same mood fires twice.
-    function mood(node, name, hold) {
-      if (!node) return;
-      mount(node);
-      clearTimeout(node._moodTimer);
-      node.setAttribute('data-mood', 'idle');
-      void node.offsetWidth;
-      node.setAttribute('data-mood', name);
-      if (hold !== 0) node._moodTimer = setTimeout(function () { node.setAttribute('data-mood', 'idle'); }, hold || 1500);
-    }
-    return { mount: mount, mood: mood };
-  })();
-  Array.prototype.forEach.call(document.querySelectorAll('.mascot'), Morsel.mount);
-
   /* ------------------------------------------------------------- lifecycle */
   function resetGame() {
     /*
@@ -10593,7 +10575,7 @@
     Sound.tick();
     paintPlan();
   });
-  $('reject-btn').addEventListener('click', function () { Morsel.mood($('mascot-r'), 'sad', 1400); rejectCurrent(); });
+  $('reject-btn').addEventListener('click', rejectCurrent);
   $('again-btn').addEventListener('click', goHome);
   $('done-again-btn').addEventListener('click', restart);
   // Sharing the dish they just accepted, not the one they were offered.
@@ -14836,7 +14818,6 @@
     welcomeEl.hidden = false;
     document.body.classList.add('is-welcoming');
     paintWelcome();
-    Morsel.mood($('mascot-w'), 'celebrate', 2200);
   }
 
   /*

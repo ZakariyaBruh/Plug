@@ -6447,60 +6447,62 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus, sele
 .plain.go-sm, .opening-actions .plain { margin-left: 0; }
 #panel-result .quiet, #panel-result .link-btn { margin-left: -.8rem; justify-content: flex-start; }
 
-/* ==========================================================================
-   Morsel, the progress bar, and the rows that hold them.
-   ========================================================================== */
-.mascot { display: inline-block; width: 3rem; height: 3rem; flex: none; }
-.mascot-lg { width: 4.5rem; height: 4.5rem; margin-bottom: var(--s2); }
-.mascot-row, .reaction-row { display: flex; align-items: center; gap: var(--s3); }
-.reaction-row .reaction { margin: 0; min-height: 0; }
-.mascot .mo { width: 100%; height: 100%; overflow: visible; display: block; }
-.mo-skin { fill: var(--paper); }
-.mo-cheek { fill: var(--amber); opacity: .5; }
-.mo-eyes ellipse { fill: var(--paper-ink); transform-box: fill-box; transform-origin: center; animation: mo-blink 5.5s infinite; }
-.mo-eyes-up path, .mo-m-smile, .mo-m-flat, .mo-m-sad, .mo-arm { fill: none; stroke: var(--paper-ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.mo-arm { stroke: var(--paper); stroke-width: 4; }
-.mo-m-grin, .mo-m-o { fill: var(--paper-ink); }
-.mo-sparks path { fill: var(--amber); }
-.mo-eyes-up, .mo-m-grin, .mo-m-flat, .mo-m-sad, .mo-m-o { display: none; }
-.mo-sparks { opacity: 0; }
-.mo-body, .mo-sparks { transform-box: fill-box; transform-origin: 50% 90%; }
-
-/* moods: which parts show, and one short animation each */
-.mascot[data-mood="happy"] .mo-eyes, .mascot[data-mood="excited"] .mo-eyes, .mascot[data-mood="celebrate"] .mo-eyes { display: none; }
-.mascot[data-mood="happy"] .mo-eyes-up, .mascot[data-mood="excited"] .mo-eyes-up, .mascot[data-mood="celebrate"] .mo-eyes-up { display: block; }
-.mascot[data-mood="happy"] .mo-m-smile, .mascot[data-mood="excited"] .mo-m-smile, .mascot[data-mood="celebrate"] .mo-m-smile,
-.mascot[data-mood="shrug"] .mo-m-smile, .mascot[data-mood="sad"] .mo-m-smile, .mascot[data-mood="surprised"] .mo-m-smile { display: none; }
-.mascot[data-mood="excited"] .mo-m-grin, .mascot[data-mood="celebrate"] .mo-m-grin, .mascot[data-mood="happy"] .mo-m-smile { display: block; }
-.mascot[data-mood="happy"] .mo-m-smile { display: block; }
-.mascot[data-mood="shrug"] .mo-m-flat { display: block; }
-.mascot[data-mood="sad"] .mo-m-sad { display: block; }
-.mascot[data-mood="surprised"] .mo-m-o { display: block; }
-
-.mascot[data-mood="happy"] .mo-body { animation: mo-hop .5s var(--spring); }
-.mascot[data-mood="excited"] .mo-body { animation: mo-hop .6s var(--spring) 2; }
-.mascot[data-mood="celebrate"] .mo-body { animation: mo-jump .7s var(--spring) 3; }
-.mascot[data-mood="celebrate"] .mo-arm-l { transform-box: fill-box; transform-origin: 100% 100%; animation: mo-wave-l .35s ease-in-out infinite alternate; }
-.mascot[data-mood="celebrate"] .mo-arm-r { transform-box: fill-box; transform-origin: 0 100%; animation: mo-wave-r .35s ease-in-out infinite alternate; }
-.mascot[data-mood="celebrate"] .mo-sparks { animation: mo-sparks 1.4s var(--out) both; }
-.mascot[data-mood="shrug"] .mo-body { animation: mo-tilt .6s var(--out); }
-.mascot[data-mood="sad"] .mo-body { animation: mo-droop .7s var(--out) both; }
-.mascot[data-mood="surprised"] .mo-body { animation: mo-hop .35s var(--spring); }
-
-@keyframes mo-blink { 0%, 93%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
-@keyframes mo-hop { 40% { transform: translateY(-14%) scale(1.06, .96); } 70% { transform: translateY(0) scale(.96, 1.05); } }
-@keyframes mo-jump { 35% { transform: translateY(-26%) scale(.96, 1.08); } 65% { transform: translateY(0) scale(1.06, .94); } }
-@keyframes mo-tilt { 30% { transform: rotate(-9deg) translateX(-3%); } 60% { transform: rotate(7deg); } }
-@keyframes mo-droop { 0% { transform: none; } 40% { transform: scale(1.03, .9) translateY(4%); } 100% { transform: scale(1, .95) translateY(2%); } }
-@keyframes mo-wave-l { from { transform: rotate(0); } to { transform: rotate(-24deg); } }
-@keyframes mo-wave-r { from { transform: rotate(0); } to { transform: rotate(24deg); } }
-@keyframes mo-sparks { 0% { opacity: 0; transform: scale(.4); } 30% { opacity: 1; } 100% { opacity: 0; transform: scale(1.25) translateY(-8%); } }
-
 /* progress that visibly grows */
 .q-progress { height: 3px; border-radius: 3px; background: var(--wash-2); overflow: hidden; margin: var(--s2) 0 var(--s3); }
 .q-progress i { display: block; height: 100%; width: 0; border-radius: 3px; background: linear-gradient(90deg, color-mix(in srgb, var(--amber) 55%, transparent), var(--amber)); transition: width .55s var(--out); }
 
+@media (prefers-reduced-motion: reduce) { .q-progress i { transition: none; } .spark { display: none; } .pick.is-chosen .pick-icon { animation: none; } }
+
+/* ==========================================================================
+   Motion, second pass (LottieFiles motion-design principles).
+
+   One identity for the whole app, so it feels like one hand made it:
+     personality   premium UI, playful only for food (the reveal, a pick, a win)
+     easing        (.2, 0, 0, 1) for almost everything; the spring only where a
+                   thing is meant to feel like it has weight and bounces
+     durations     quick 140ms, standard 260ms, slow 480ms
+     entrance      rise 12px and fade, decelerating; exits are shorter than entrances
+     choreography  stagger 40ms, never more than ~400ms in total, hero first
+   ========================================================================== */
+:root { --snap: cubic-bezier(.2, 0, 0, 1); --t-quick: 140ms; --t-std: 260ms; --t-slow: 480ms; }
+
+.spark { position: fixed; width: .42rem; height: .42rem; border-radius: 50%; background: var(--amber); pointer-events: none; z-index: 60; }
+
+/* a pick: anticipation (press), the icon pops, the label settles */
+.pick { transition: transform var(--t-quick) var(--snap), background var(--t-std) var(--snap), border-color var(--t-quick) var(--snap), color var(--t-std) var(--snap); }
+.pick:active { transform: scale(.985); }
+.pick.is-chosen .pick-icon { display: inline-block; animation: pick-pop .46s cubic-bezier(.175, .885, .32, 1.275) both; }
+.pick.is-chosen .pick-label { animation: pick-slide var(--t-std) var(--snap) both; }
+@keyframes pick-pop { 0% { transform: scale(1); } 35% { transform: scale(1.35) rotate(-8deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes pick-slide { from { transform: translateX(-4px); opacity: .6; } to { transform: none; opacity: 1; } }
+
+/* dialogs and sheets are heavy: they scale in from slightly under, over a soft backdrop */
+dialog[open], .welcome-card { animation: dialog-in var(--t-slow) var(--snap) both; }
+dialog::backdrop { animation: fade-in var(--t-std) var(--snap) both; }
+.welcome { animation: fade-in var(--t-std) var(--snap) both; }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* the answer, choreographed: hero first, then the line, then the reasons */
+.verdict-note { animation-delay: .2s; }
+#reasons li:nth-child(1) { animation-delay: .3s; } #reasons li:nth-child(2) { animation-delay: .34s; }
+#reasons li:nth-child(3) { animation-delay: .38s; } #reasons li:nth-child(n+4) { animation-delay: .42s; }
+.accept-row, #accept-btn { animation: rise var(--t-slow) var(--snap) .45s both; }
+
+/* errors are firm: a short shake, no overshoot */
+.is-error, .hub-note.is-error { animation: shake-x 360ms var(--snap); }
+@keyframes shake-x { 20% { transform: translateX(-8px); } 40% { transform: translateX(7px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(2px); } }
+
+/* loading is calm, not frozen: a slow sweep across a note that says it is working */
+.hub-note:not(.is-error):not(.is-good) { background: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--ink) 7%, transparent) 50%, transparent 70%) 0 0 / 250% 100%; animation: sweep 2.2s linear infinite; }
+@keyframes sweep { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+
+/* tabs underline slides in rather than snapping */
+[role="tab"], .hub-tab { position: relative; }
+[role="tab"]::after, .hub-tab::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--amber); transform: scaleX(0); transform-origin: left; transition: transform var(--t-std) var(--snap); }
+[role="tab"][aria-selected="true"]::after, .hub-tab.is-current::after, .hub-tab[aria-current="true"]::after { transform: scaleX(1); }
+
 @media (prefers-reduced-motion: reduce) {
-  .mascot *, .mascot { animation: none !important; }
-  .q-progress i { transition: none; }
+  dialog[open], .welcome-card, dialog::backdrop, .welcome, .accept-row, #accept-btn, .is-error, .hub-note, [role="tab"]::after, .hub-tab::after,
+  .pick.is-chosen .pick-label { animation: none !important; transition: none !important; }
 }
