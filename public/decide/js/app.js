@@ -605,8 +605,11 @@
   }
 
   function setPanel(name) {
+    // The same panel repainting (the next question) is not a change of screen,
+    // so it gets no screen transition: its own cards move instead.
+    var same = panel === name;
     panel = name;
-    vt(function () {
+    (same ? function (f) { f(); } : vt)(function () {
       $$('#view-decide .panel').forEach(function (el) {
         el.classList.toggle('is-current', el.id === 'panel-' + name);
       });
@@ -4109,6 +4112,39 @@
     fill.style.width = Math.min(100, Math.round(game.answers.length / total * 100)) + '%';
   }
 
+  /*
+   * The question changes like a card being dealt. The one you answered is lifted
+   * off as a copy and flies toward the button you pressed, tilting a degree, while
+   * the real next question comes in from the other side. Going back reverses it.
+   */
+  var qDir = 1;
+  function qLeave(dir) {
+    if (reduceMotion) return;
+    var title = $('q-text'), picks = document.querySelector('#panel-question .picks');
+    if (!title || !picks || !picks.animate) return;
+    var a = title.getBoundingClientRect(), b = picks.getBoundingClientRect();
+    if (!b.width) return;
+    var ghost = document.createElement('div');
+    ghost.className = 'q-ghost';
+    ghost.style.cssText = 'left:' + b.left + 'px;top:' + a.top + 'px;width:' + b.width + 'px';
+    var t = title.cloneNode(true), p = picks.cloneNode(true);
+    [t, p].forEach(function (n) { n.removeAttribute('id'); Array.prototype.forEach.call(n.querySelectorAll('[id]'), function (x) { x.removeAttribute('id'); }); ghost.appendChild(n); });
+    document.body.appendChild(ghost);
+    var run = ghost.animate([
+      { transform: 'none', opacity: 1 },
+      { transform: 'translateX(' + (dir * 70) + 'px) rotate(' + (dir * 1.6) + 'deg)', opacity: 0 }
+    ], { duration: 280, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' });
+    run.onfinish = function () { if (ghost.parentNode) ghost.parentNode.removeChild(ghost); };
+  }
+
+  function swapQuestion() {
+    var pq = $('panel-question');
+    pq.style.setProperty('--qdir', String(qDir));
+    pq.classList.remove('q-swap');
+    void pq.offsetWidth;
+    pq.classList.add('q-swap');
+  }
+
   function renderQuestion(q) {
     current = q;
     $('q-now').textContent = game.answers.length + 1;
@@ -4122,6 +4158,7 @@
       : Math.min(Engine.MAX_QUESTIONS, Data.QUESTIONS.length));
     paintProgress();
     $('q-text').textContent = q.text;
+    swapQuestion();
     $('yes-icon').textContent = q.yesIcon;
     $('yes-label').textContent = q.yes;
     $('no-icon').textContent = q.noIcon;
@@ -4212,6 +4249,8 @@
     if (value === 'either') Sound.shrug(); else Sound.tick();
     floatXp(gained, source);
     if (source) { sparkle(source); source.classList.remove('is-chosen'); void source.offsetWidth; source.classList.add('is-chosen'); }
+    qDir = value === 'no' ? -1 : 1;
+    qLeave(value === 'yes' ? -1 : value === 'no' ? 1 : 0);
 
     game.answer(current.tag, value);
     step();
@@ -10688,7 +10727,7 @@
 
   function undo() {
     if (busy || shortcut) return;
-    if (game.undo()) { Sound.back(); step(); $('reaction').textContent = ''; return; }
+    if (game.undo()) { Sound.back(); qDir = -1; qLeave(1); step(); $('reaction').textContent = ''; return; }
     // Nothing behind question one — back means home, not a dead button.
     goHome();
   }
@@ -11099,8 +11138,8 @@
     return pool[hashDay(key) % pool.length];
   }
 
-  function showTonight() {
-    var dish = tonightDish();
+  function showTonight(chosen) {
+    var dish = chosen && chosen.name ? chosen : tonightDish();
     if (!dish) return;
     hideLanding();
     resetGame();
@@ -11119,13 +11158,13 @@
     setPanel('result');
     $('result-icon').classList.add('is-landed');
     showResult(dish, { animate: false });
-    $('result-eyebrow').textContent = 'Tonight\u2019s pick';
+    $('result-eyebrow').textContent = chosen && chosen.name ? 'Off the reel' : 'Tonight\u2019s pick';
     $('accept-btn').disabled = false;
     $('reject-btn').disabled = false;
     Sound.reveal();
   }
 
-  $('tonight-btn').addEventListener('click', showTonight);
+  $('tonight-btn').addEventListener('click', function () { showTonight(); });
 
   /* ------------------------------------------------- five to try today */
   /*
@@ -15051,39 +15090,93 @@
   var shell = document.querySelector('.content');
   var landed = false;
 
-  // The reel is decoration, and it is here on purpose: the catalogue as a
-  // number does not land the way the dishes themselves going past does.
-  var reelTimer = null;
+  /*
+   * THE HOOK, FIRST TEN SECONDS.
+   *
+   * The front door used to describe what the app does. This one does it: a reel
+   * spins as the page arrives, slows, and lands on a dish that already respects
+   * the profile — one tap from being the answer, no questions asked. The first
+   * thing a visitor sees move is the thing they came for, and "not that" costs
+   * one tap and teaches the next spin (a rejected dish and its lookalikes sink).
+   * Under reduced motion it simply arrives, already landed.
+   */
+  var hook = { dish: null, seen: [], timer: 0 };
+  var HOOK_LEADS = ['How about', 'Hear me out:', 'Radical idea:', 'Possibly:'];
 
+  function hookPick() {
+    var ranked = favouredDishes().filter(function (r) {
+      return !hook.seen.some(function (d) { return d.name === r.item.name; });
+    });
+    if (ranked.length < 6) { hook.seen = []; ranked = favouredDishes(); }
+    var no = hook.seen.slice(-4);
+    var scored = ranked.slice(0, 60).map(function (r) {
+      var sim = 0;
+      no.forEach(function (d) { sim = Math.max(sim, Taste.similarity(r.item, d)); });
+      return { item: r.item, score: Math.max(0.001, r.score * (1 - 0.7 * sim)) };
+    }).sort(function (x, y) { return y.score - x.score; });
+    return pickFavoured(scored, 10);
+  }
+
+  function hookLand(dish) {
+    var face = $('hook-face');
+    face.classList.remove('is-spinning', 'is-landed');
+    face.textContent = dish.icon;
+    void face.offsetWidth;
+    face.classList.add('is-landed');
+    $('hook-lead').textContent = HOOK_LEADS[Math.floor(Math.random() * HOOK_LEADS.length)];
+    $('hook-name').textContent = dish.name;
+    $('hook-blurb').textContent = dish.blurb;
+    ['hook-lead', 'hook-name', 'hook-blurb'].forEach(function (id, i) {
+      var el = $(id);
+      el.classList.remove('is-in');
+      void el.offsetWidth;
+      el.style.animationDelay = (i * 60) + 'ms';
+      el.classList.add('is-in');
+    });
+    $('hook-go').disabled = false;
+    $('hook-spin').disabled = false;
+  }
+
+  function hookSpin(first) {
+    clearTimeout(hook.timer);
+    var dish = hookPick();
+    if (!dish) return;
+    hook.dish = dish;
+    $('hook-go').disabled = true;
+    $('hook-spin').disabled = true;
+    if (reduceMotion) return hookLand(dish);
+    var face = $('hook-face');
+    $('hook-lead').textContent = first ? 'Spinning for you\u2026' : 'Fine. Again\u2026';
+    $('hook-name').textContent = '\u00a0';
+    $('hook-blurb').textContent = '';
+    face.classList.remove('is-landed');
+    var step = 0, steps = 11, wait = 50;
+    (function tick() {
+      if (step++ >= steps) return hookLand(dish);
+      face.classList.add('is-spinning');
+      face.textContent = Data.ITEMS[Math.floor(Math.random() * Data.ITEMS.length)].icon;
+      if (!first && step % 3 === 0) Sound.roll();
+      wait *= 1.15;
+      hook.timer = setTimeout(tick, wait);
+    })();
+  }
+
+  $('hook-go').addEventListener('click', function () { if (hook.dish) showTonight(hook.dish); });
+  $('hook-spin').addEventListener('click', function () {
+    if (hook.dish) hook.seen.push(hook.dish);
+    hookSpin(false);
+  });
+
+  var reelTimer = null;
   function startReel() {
-    if (reduceMotion || reelTimer) return;
-    var reel = $('reel');
-    var pool = Data.ITEMS.slice();
-    var at = Math.floor(Math.random() * pool.length);
-    reelTimer = setInterval(function () {
-      at = (at + 1 + Math.floor(Math.random() * 5)) % pool.length;
-      var span = document.createElement('span');
-      span.className = 'reel-item';
-      span.textContent = pool[at].icon;
-      reel.appendChild(span);
-      // Two frames, so the class change is a transition rather than a jump.
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          span.classList.add('is-on');
-          var old = reel.querySelector('.reel-item:not(:last-child)');
-          if (old) {
-            old.classList.add('is-gone');
-            setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 420);
-          }
-        });
-      });
-    }, 1400);
+    if (reelTimer) return;
+    reelTimer = true;
+    hookSpin(true);
   }
 
   function stopReel() {
-    if (!reelTimer) return;
-    clearInterval(reelTimer);
     reelTimer = null;
+    clearTimeout(hook.timer);
   }
 
   function showLanding() {

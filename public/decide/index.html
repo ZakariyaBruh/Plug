@@ -313,9 +313,7 @@
     <!-- The reel spins through real dishes from the catalogue. It is the one
          piece of pure decoration in the app, and it is here because the
          catalogue told as a number lands differently from the dishes going past. -->
-    <div class="reel" id="reel" aria-hidden="true">
-      <span class="reel-item is-on">🍜</span>
-    </div>
+
 
     <!-- Only for somebody who has been here before. A first-timer gets the
          pitch clean, with nothing in front of it. -->
@@ -328,6 +326,19 @@
     <p class="landing-sub" data-i18n="landing.sub">A few easy either-ors &mdash; sweet or savoury, hot or cold. Then one
     answer, with the recipe behind it. Close but not quite? Point me lighter, spicier, sooner, and
     I answer again that way.</p>
+
+        <section class="hook" id="hook" aria-label="A quick pick">
+      <div class="hook-face-wrap" aria-hidden="true"><span class="hook-face" id="hook-face">🍜</span></div>
+      <div class="hook-body" aria-live="polite">
+        <p class="hook-lead" id="hook-lead">Spinning for you&hellip;</p>
+        <p class="hook-name" id="hook-name">&nbsp;</p>
+        <p class="hook-blurb" id="hook-blurb"></p>
+      </div>
+      <div class="hook-actions">
+        <button class="go go-sm" id="hook-go" type="button" disabled><span class="go-label">Go with it</span></button>
+        <button class="plain" id="hook-spin" type="button" disabled>Not that &mdash; spin again</button>
+      </div>
+    </section>
 
     <!--
       AN INTERRUPTED DECISION, OFFERED BACK.
@@ -1745,7 +1756,7 @@
          ========================================================================= -->
     <section class="view" id="view-nearby" aria-label="Nearby">
       <header class="head">
-        <p class="mechanic">Around you</p>
+        <p class="mechanic kicker">Around you</p>
         <h1 class="head-title">Nearby</h1>
       </header>
 
@@ -1865,7 +1876,7 @@
 
     <section class="view" id="view-news" aria-label="Food news">
       <header class="head">
-        <p class="mechanic">Worth reading</p>
+        <p class="mechanic kicker">Worth reading</p>
         <h1 class="head-title">Food news</h1>
         <p class="head-sub">Recipes, restaurants and the odd argument about bread &mdash;
         from <b>the Guardian</b>, <b>Eater</b>, <b>NYT Dining</b>, <b>The Kitchn</b>,
@@ -2084,7 +2095,7 @@
          scrolling the opening screen to the bottom and finding one button. -->
     <section class="view" id="view-menu" aria-label="Tonight&rsquo;s menu">
       <header class="head">
-        <p class="mechanic">Feeding people</p>
+        <p class="mechanic kicker">Feeding people</p>
         <h1 class="head-title">Tonight&rsquo;s menu</h1>
         <p class="head-sub">Five courses that actually go together &mdash; something to pick at, a starter, a main, a pudding and something to finish. Not five heavy things, and not five from the same kitchen unless that is the point of it. They come <b>one at a time</b>:
         say yes to the starter before you are shown the main, and each one is chosen to go
@@ -2262,7 +2273,7 @@
 
     <section class="view" id="view-dishes" aria-label="Dishes">
       <header class="head">
-        <p class="mechanic">The list</p>
+        <p class="mechanic kicker">The list</p>
         <h1 class="head-title">Dishes</h1>
       </header>
 
@@ -2411,7 +2422,7 @@
     <!-- ------------------------- PROFILE ------------------------- -->
     <section class="view" id="view-profile" aria-label="Your profile">
       <header class="head">
-        <p class="mechanic">You</p>
+        <p class="mechanic kicker">You</p>
         <h1 class="head-title" id="profile-name">Snacker</h1>
         <p class="head-sub"><b id="profile-xp">0</b> XP &middot; <span id="profile-next">keep going</span></p>
         <i class="thread thread-wide"><span id="profile-xp-fill"></span></i>
