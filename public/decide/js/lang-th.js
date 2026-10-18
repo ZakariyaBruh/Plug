@@ -1849,6 +1849,7 @@ window.I18N_DICT.th = {
 "There is more in here than the game.": "ที่นี่มีมากกว่าเกม",
 "There is no wrong one, and nothing is final — every question has an": "ไม่มีคำตอบที่ผิด และไม่มีอะไรเป็นที่สิ้นสุด — ทุกคำถามมี",
 "There it is. Off you go.": "นั่นไงล่ะ ไปได้เลย",
+"There you are. Better already.": "มาแล้วนี่เอง ดีขึ้นทันที",
 "These are the ones you swiped right on.": "นี่คือจานที่คุณปัดขวา",
 "These come free with an account — not Premium, just signed in.": "ฟรีเมื่อมีบัญชี — ไม่ใช่ Premium แค่เข้าสู่ระบบ",
 "These survived. Pick one.": "จานเหล่านี้รอดมา เลือกหนึ่งจาน",
@@ -2476,5 +2477,17 @@ window.I18N_PATTERNS.th = [
 [
 "Back already. Yesterday was {0}. Any regrets?",
 "กลับมาเร็วนัก เมื่อวานคือ {0} เสียใจไหม"
+],
+[
+"{0} days. It was quiet. I reorganised the dishes. Twice.",
+"{0} วัน เงียบมาก ฉันจัดเมนูใหม่ สองรอบ"
+],
+[
+"{0} days. I did not wait by the door. Okay, I did.",
+"{0} วัน ฉันไม่ได้รอหน้าประตูหรอก โอเค รอ"
+],
+[
+"Oh. You’re back. {0} days. I’m fine. Slightly dusty.",
+"อ้าว กลับมาแล้ว {0} วัน ฉันสบายดี แค่ฝุ่นนิดหน่อย"
 ]
 ];

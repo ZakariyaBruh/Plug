@@ -6745,3 +6745,35 @@ a:hover, .link-btn:hover { text-decoration-thickness: 2px; }
 @keyframes q-title-in { from { opacity: 0; transform: translateX(calc(var(--qdir, 1) * 26px)); } to { opacity: 1; transform: none; } }
 @keyframes q-pick-in { from { opacity: 0; transform: translateX(calc(var(--qdir, 1) * 44px)) scale(.97); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .q-swap .q-title, .q-swap .picks > *, .hook-face, .hook-body > .is-in { animation: none !important; } .hook-face.is-spinning { filter: none; } }
+
+/* ==========================================================================
+   Dot when it has missed you, and a tidier front door.
+   ========================================================================== */
+.mascot[data-mood="wistful"] .dot-eyes { display: none; }
+.mascot[data-mood="wistful"] .dot-m-smile { display: none; }
+.mascot[data-mood="wistful"] .dot-m-sad { display: block; }
+.mascot[data-mood="wistful"] .dot-eyes-down { display: block; }
+.mascot[data-mood="wistful"] .dot-face { fill: color-mix(in srgb, var(--paper) 82%, var(--ink-3)); }
+.mascot[data-mood="wistful"] .dot-blush { opacity: .15; }
+.mascot[data-mood="wistful"] .dot-body { animation: dot-slump 3.6s ease-in-out infinite; }
+.mascot[data-mood="wistful"] .dot-tuft { transform-box: fill-box; transform-origin: 50% 100%; transform: rotate(-24deg); }
+.dot-eyes-down { display: none; }
+.dot-eyes-down path { fill: none; stroke: var(--paper-ink); stroke-width: 2.2; stroke-linecap: round; }
+@keyframes dot-slump { 0%, 100% { transform: translateY(2%) scale(1.02, .94); } 50% { transform: translateY(0) scale(1, .97); } }
+@media (prefers-reduced-motion: reduce) { .mascot[data-mood="wistful"] .dot-body { animation: none; } }
+.mascot[data-mood="celebrate"] .dot-face { transition: fill .4s var(--snap); }
+
+.landing-hello-row .mascot { width: 3.25rem; height: 3.25rem; }
+.landing-hello-row .landing-hello { font-size: var(--t-md); color: var(--ink); }
+
+/* the quiet links under the buttons become a tidy row of small chips */
+.landing-plain, .landing-inner .plain {
+  margin-left: 0; padding: .35rem .8rem; min-height: 2.25rem; border: 1px solid var(--line); border-radius: 999px; font-size: var(--t-sm);
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+}
+.landing-plain:hover, .landing-inner .plain:hover { border-color: color-mix(in srgb, var(--amber) 55%, transparent); background: color-mix(in srgb, var(--amber) 7%, transparent); }
+.landing-second { color: var(--ink); border-color: var(--line-2); }
+.landing-sub { font-size: var(--t-base); max-width: 30rem; color: var(--ink-2); }
+.hook { box-shadow: 0 24px 40px -30px rgb(0 0 0 / .9); }
+.hook-face-wrap { width: 5.5rem; height: 5.5rem; }
+.hook-face { font-size: 4rem; }

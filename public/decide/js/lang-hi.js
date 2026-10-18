@@ -1849,6 +1849,7 @@ window.I18N_DICT.hi = {
 "There is more in here than the game.": "यहाँ गेम से कहीं ज़्यादा कुछ है।",
 "There is no wrong one, and nothing is final — every question has an": "कोई गलत जवाब नहीं, और कुछ भी अंतिम नहीं — हर सवाल में",
 "There it is. Off you go.": "यह रहा। अब जाइए।",
+"There you are. Better already.": "आप आ गए। अब बेहतर है।",
 "These are the ones you swiped right on.": "ये वे हैं जिन्हें आपने दाएँ स्वाइप किया।",
 "These come free with an account — not Premium, just signed in.": "ये अकाउंट के साथ मुफ़्त हैं — Premium नहीं, बस साइन इन करें।",
 "These survived. Pick one.": "ये बच गए। एक चुनिए।",
@@ -2476,5 +2477,17 @@ window.I18N_PATTERNS.hi = [
 [
 "Back already. Yesterday was {0}. Any regrets?",
 "अभी वापस? कल {0} था। कोई पछतावा?"
+],
+[
+"{0} days. It was quiet. I reorganised the dishes. Twice.",
+"{0} दिन। बहुत शांति थी। मैंने व्यंजन दोबारा सजाए। दो बार।"
+],
+[
+"{0} days. I did not wait by the door. Okay, I did.",
+"{0} दिन। मैं दरवाज़े पर इंतज़ार नहीं कर रहा था। ठीक है, कर रहा था।"
+],
+[
+"Oh. You’re back. {0} days. I’m fine. Slightly dusty.",
+"अरे। आप लौट आए। {0} दिन। मैं ठीक हूँ। थोड़ा धूल भरा।"
 ]
 ];

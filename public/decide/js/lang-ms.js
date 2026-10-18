@@ -1821,6 +1821,7 @@ window.I18N_DICT.ms = {
 "There is more in here than the game.": "Ada lebih banyak di sini daripada permainan.",
 "There is no wrong one, and nothing is final — every question has an": "Tiada yang salah, dan tiada yang muktamad — setiap soalan ada",
 "There it is. Off you go.": "Itu dia. Silakan pergi.",
+"There you are. Better already.": "Itu dia anda. Dah lebih baik.",
 "These are the ones you swiped right on.": "Ini yang anda leret ke kanan.",
 "These come free with an account — not Premium, just signed in.": "Ini percuma dengan akaun — bukan Premium, cukup log masuk.",
 "These survived. Pick one.": "Ini yang terselamat. Pilih satu.",
@@ -2442,5 +2443,17 @@ window.I18N_PATTERNS.ms = [
 [
 "Back already. Yesterday was {0}. Any regrets?",
 "Dah balik. Semalam {0}. Ada menyesal?"
+],
+[
+"{0} days. It was quiet. I reorganised the dishes. Twice.",
+"{0} hari. Sunyi sepi. Saya susun semula hidangan. Dua kali."
+],
+[
+"{0} days. I did not wait by the door. Okay, I did.",
+"{0} hari. Saya tak tunggu di pintu. Okay, saya tunggu."
+],
+[
+"Oh. You’re back. {0} days. I’m fine. Slightly dusty.",
+"Oh. Awak dah balik. {0} hari. Saya okay. Sedikit berhabuk."
 ]
 ];

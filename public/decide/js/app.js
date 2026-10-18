@@ -783,7 +783,7 @@
     var row = $('landing-hello-row');
     if (row) row.hidden = !played;
     if (!played) return;
-    if (typeof Dot !== 'undefined' && Dot) Dot.mood($('mascot-l'), 'happy', 1800);
+
 
     var hour = new Date().getHours();
     var band = HELLOS.filter(function (h) { return hour < h.until; })[0] || HELLOS[HELLOS.length - 1];
@@ -824,6 +824,30 @@
      */
     var back = returningDay();
     var last = (state.history || [])[0];
+    /*
+     * A LONG ABSENCE, ACKNOWLEDGED, NOT HELD AGAINST ANYBODY.
+     *
+     * After four days or more, Dot is a little flat when the page opens: the
+     * mouth turns down, it slumps, and the line is dry about itself rather than
+     * about the person ("It was quiet. I reorganised the dishes. Twice."). The
+     * moment anybody touches anything, it perks up. That is the whole of it:
+     * nothing is sent while you are away, there is no counter of days missed,
+     * and no line ever suggests you owed it a visit. It is a face that is glad
+     * you are back, which is the only version of this that is kind.
+     */
+    if (back && awayDays >= 4) {
+      var quiet = [
+        awayDays + ' days. It was quiet. I reorganised the dishes. Twice.',
+        awayDays + ' days. I did not wait by the door. Okay, I did.',
+        'Oh. You\u2019re back. ' + awayDays + ' days. I\u2019m fine. Slightly dusty.'
+      ];
+      el.textContent = quiet[Math.floor(Math.random() * quiet.length)];
+      wistful = true;
+      dotMood('mascot-l', 'wistful', 0);
+      return;
+    }
+    wistful = false;
+    dotMood('mascot-l', 'happy', 1800);
     if (back && last && last.name) {
       /*
        * A friend, not a form. These are the things a person who had been paying
@@ -859,7 +883,11 @@
    * line never appeared for anybody. The stamp keeps the old value here
    * instead, where it survives for the rest of the visit.
    */
+  // Dot lives further down the file; the front door can paint before it exists.
+  function dotMood(id, mood, hold) { if (typeof Dot !== 'undefined' && Dot) Dot.mood($(id), mood, hold); }
   var cameBackFrom = null;
+  var awayDays = 0;       // whole days since the visit before this one
+  var wistful = false;    // Dot is still waiting for somebody to say hello
 
   function returningDay() {
     return !!cameBackFrom;
@@ -880,6 +908,7 @@
     if (st.seen === today) return;
     var previous = st.seen;
     cameBackFrom = previous && previous !== today ? previous : null;
+    awayDays = cameBackFrom ? Math.round((Date.parse(today) - Date.parse(previous)) / 864e5) : 0;
     st.seen = today;
     progress.save();
     if (previous && (st.decisions || 0) > 0) {
@@ -10541,6 +10570,7 @@
       '<circle class="dot-face" cx="24" cy="26" r="18"/>' +
       '<circle class="dot-blush" cx="13.5" cy="30" r="3"/><circle class="dot-blush" cx="34.5" cy="30" r="3"/>' +
       '<g class="dot-eyes"><circle cx="18" cy="23" r="2.2"/><circle cx="30" cy="23" r="2.2"/></g>' +
+      '<g class="dot-eyes-down"><path d="M15.5 23Q18 25.5 20.5 23"/><path d="M27.5 23Q30 25.5 32.5 23"/></g>' +
       '<g class="dot-happy"><path d="M15.5 24Q18 20.5 20.5 24"/><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
       '<path class="dot-m dot-m-smile" d="M20 30Q24 34 28 30"/>' +
       '<path class="dot-m dot-m-open" d="M19.5 29.5Q24 37 28.5 29.5Z"/>' +
@@ -10561,7 +10591,7 @@
       node.setAttribute('data-mood', 'idle');
       void node.offsetWidth;
       node.setAttribute('data-mood', name);
-      node._t = setTimeout(function () { node.setAttribute('data-mood', 'idle'); }, hold || 1400);
+      if (hold !== 0) node._t = setTimeout(function () { node.setAttribute('data-mood', 'idle'); }, hold || 1400);
     }
     return { mount: mount, mood: mood };
   })();
@@ -10574,6 +10604,16 @@
     if (event.target.closest && event.target.closest('.go, .pick, .mode-card, .choice, .dv-card, .arc-tile')) {
       try { navigator.vibrate(6); } catch (err) { /* fine */ }
     }
+  }, { passive: true });
+
+  // The first thing anybody does on the front door, Dot is glad of it.
+  document.addEventListener('pointerdown', function () {
+    if (!wistful) return;
+    wistful = false;
+    dotMood('mascot-l', 'celebrate', 2200);
+    var hello = $('landing-hello');
+    if (hello) hello.textContent = 'There you are. Better already.';
+    Sound.tick();
   }, { passive: true });
 
   /* ------------------------------------------------------------- lifecycle */

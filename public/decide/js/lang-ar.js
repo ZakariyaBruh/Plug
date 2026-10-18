@@ -1849,6 +1849,7 @@ window.I18N_DICT.ar = {
 "There is more in here than the game.": "هنا أكثر بكثير من اللعبة.",
 "There is no wrong one, and nothing is final — every question has an": "لا إجابة خاطئة، ولا شيء نهائي — لكل سؤال",
 "There it is. Off you go.": "ها هو. انطلق.",
+"There you are. Better already.": "ها أنت ذا. أفضل بالفعل.",
 "These are the ones you swiped right on.": "هذه هي التي سحبتها يمينًا.",
 "These come free with an account — not Premium, just signed in.": "هذه مجانية مع الحساب — ليست Premium، يكفي تسجيل الدخول.",
 "These survived. Pick one.": "هذه نجت. اختر واحدًا.",
@@ -2477,5 +2478,17 @@ window.I18N_PATTERNS.ar = [
 [
 "Back already. Yesterday was {0}. Any regrets?",
 "عدت بسرعة. أمس كان {0}. أي ندم؟"
+],
+[
+"{0} days. It was quiet. I reorganised the dishes. Twice.",
+"{0} أيام. كان الهدوء مطبقًا. أعدت ترتيب الأطباق. مرتين."
+],
+[
+"{0} days. I did not wait by the door. Okay, I did.",
+"{0} أيام. لم أنتظر عند الباب. حسنًا، انتظرت."
+],
+[
+"Oh. You’re back. {0} days. I’m fine. Slightly dusty.",
+"آه. لقد عدت. {0} أيام. أنا بخير. مغبرّ قليلًا."
 ]
 ];
