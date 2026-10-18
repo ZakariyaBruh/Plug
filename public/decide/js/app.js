@@ -628,12 +628,12 @@
     // so it gets no screen transition: its own cards move instead.
     var same = panel === name;
     panel = name;
-    if (typeof Buddy !== 'undefined' && Buddy) Buddy.onPanel();
     (same ? function (f) { f(); } : vt)(function () {
       $$('#view-decide .panel').forEach(function (el) {
         el.classList.toggle('is-current', el.id === 'panel-' + name);
       });
       window.scrollTo(0, 0);
+      if (typeof Buddy !== 'undefined' && Buddy) Buddy.onPanel();
     });
   }
 
@@ -4310,8 +4310,7 @@
     $('reaction').textContent = line;
     replay($('reaction'));
     Buddy.react(value === 'yes' || value === 'no' ? 'happy' : 'shrug', 1300);
-    Buddy.onAnswer();
-    Buddy.idle();
+    Buddy.onAnswer(value);
     try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) { /* fine */ }
   }
 
@@ -10632,57 +10631,469 @@
 
   /* ---------------------------------------------------------------- Buddy */
   /*
-   * Dot, as a companion rather than a decoration: one small face that lives in
-   * the corner of every screen, glances at your pointer, goes sleepy when it is
-   * late, says one dry thing the first time you walk into each part of the app,
-   * and reacts to what you do. It stays out of the way: hidden on the front door
-   * (which has its own Dot), during the welcome, and while a game is being
-   * played; it never speaks twice in a few seconds; it never asks for anything;
-   * and it can be switched off from the profile. A companion that cannot be
-   * dismissed is just an advert with eyes.
+   * Dot, as a companion rather than a decoration. It lives in the corner of
+   * every screen, remembers the days you have spent together, gets closer the
+   * more you use the app (Just met, Pals, Friends, Best friends), can be patted
+   * with a long press, falls asleep when you leave it alone, and has something
+   * to say about the page you are on, the dish you landed on, and how a game
+   * went. It has a library of lines and never says the same one twice in a row.
+   *
+   * How it stays out of the way:
+   *  - it speaks only now and then (a cooldown of half a minute, a cap per
+   *    visit), the first time you see a page far more often than the fifth;
+   *  - Quiet mode: it speaks only when you tap it, and it is always one switch
+   *    away in the profile;
+   *  - it does not chase your taps unless you ask it to;
+   *  - it is hidden on the front door and during the welcome, and on a phone
+   *    while a game is being played;
+   *  - it never asks for anything, never guilts you for being away, and sends
+   *    nothing while you are gone. It is a small round thing that is glad you
+   *    came back, and it says so once.
+   *
+   * It does not move when the page does: during a screen change it is its own
+   * named element (see `html.vt-active .buddy` in the stylesheet), so the page
+   * slides under it rather than carrying a snapshot of it away.
+   *
+   * Lines are plain English; every one has a translation in each language, and
+   * in a language it has none for it simply stays quiet rather than switching
+   * to English halfway through a sentence.
    */
   var Buddy = (function () {
-    var KEY = 'morsels-buddy', POS = 'morsels-buddy-home', PLAY = 'morsels-buddy-play', QUIET = 'morsels-buddy-quiet';
-    var on = true, playful = true, home = null, quiet = false;
+    var KEY = 'morsels-buddy', POS = 'morsels-buddy-home', PLAY = 'morsels-buddy-play', TALK = 'morsels-buddy-talk', OLDQUIET = 'morsels-buddy-quiet', MEM = 'morsels-buddy-memory';
+    var on = true, playful = false, home = null, talk = 'normal';
+    var mem = { first: 0, days: [], pats: 0, patDay: '', seen: {}, said: [], lvl: 0, hint: 0, ms: {} };
     try {
       on = localStorage.getItem(KEY) !== 'off';
-      playful = localStorage.getItem(PLAY) !== 'off';
-      quiet = localStorage.getItem(QUIET) === 'on';
+      playful = localStorage.getItem(PLAY) === 'on';
       home = JSON.parse(localStorage.getItem(POS) || 'null');
+      var t = localStorage.getItem(TALK);
+      talk = t === 'quiet' || t === 'normal' || t === 'chatty' ? t : (localStorage.getItem(OLDQUIET) === 'on' ? 'quiet' : 'normal');
+      var m = JSON.parse(localStorage.getItem(MEM) || 'null');
+      if (m && typeof m === 'object') for (var key in mem) if (m[key] !== undefined) mem[key] = m[key];
     } catch (err) { /* fine */ }
-    var told = {};          // views already greeted this visit
-    var lastSpoke = 0, hideTimer = 0, boops = 0, idleTimer = 0, asked = 0, returnTimer = 0;
-    var SIZE = 50, at = { x: 0, y: 0 }, drag = null, nommed = {};
+    function save() { try { localStorage.setItem(MEM, JSON.stringify(mem)); } catch (err) { /* fine */ } }
 
-    var VIEW = {
-      dishes:  ['450 dishes. I have opinions about all of them.', 'Every one of these is described with total confidence.'],
-      planner: ['A plan for the week. Brave.', 'Nobody has ever planned past Wednesday. Prove me wrong.'],
-      kitchen: ['Recipes. I cannot smell anything, but I support this.'],
-      scan:    ['Point it at some food. I will pretend to be impressed.'],
-      menu:    ['A whole menu. Starter, main, dessert. Very civilised.'],
-      nearby:  ['Somewhere near you is a plate with your name on it.'],
-      chat:    ['Ask me anything. I will pass it on to someone cleverer.'],
-      news:    ['News about food. The only kind I can handle.'],
-      radio:   ['Dinner and a show. Excellent.'],
-      daily:   ['Five little things a day. Nobody is counting. (We are counting.)'],
-      profile: ['This is you, according to your dinners.'],
-      help:    ['Lost? Same, most days.']
+    var LINES = {
+      "first": [
+            "Hi. I am Dot. I live down here. Tap me if you like. Or do not."
+      ],
+      "morning": [
+            "Morning. Breakfast is a decision too.",
+            "Good morning. I have been awake for exactly one second.",
+            "Morning. Eggs? Toast? Both? Fine."
+      ],
+      "day": [
+            "Afternoon. Lunch is either happening or it is a regret.",
+            "Hello. Midday is prime snacking time.",
+            "Hi. The middle of the day. Dangerous for diets."
+      ],
+      "evening": [
+            "Evening. This is where dinner usually goes wrong. Not today.",
+            "Hello. Dinner o'clock, I believe.",
+            "Evening. You look hungry. I am a circle, I would not know."
+      ],
+      "night": [
+            "Late. The fridge light is not a meal plan.",
+            "Still up? Same. Something small, then bed.",
+            "Night shift. Snacks are allowed."
+      ],
+      "back1": [
+            "Welcome back. I kept your seat.",
+            "Oh, hello. I only noticed a little."
+      ],
+      "back3": [
+            "Oh, hello. It has been a couple of days. I did not count. (Two.)",
+            "You are back. Everything is where you left it, including me."
+      ],
+      "back7": [
+            "Still here. Always here. Hello.",
+            "There you are. I was getting sleepy."
+      ],
+      "dishes": [
+            "450 dishes. I have opinions about all of them.",
+            "Every one of these is described with total confidence.",
+            "Scroll as long as you like. The dishes are not going anywhere.",
+            "Tap one to see more. I will pretend not to watch.",
+            "Somewhere in here is the thing you want. Probably.",
+            "Fun fact: I have never eaten any of these."
+      ],
+      "planner": [
+            "A plan for the week. Brave.",
+            "Nobody has ever planned past Wednesday. Prove me wrong.",
+            "Future you will be so grateful. Or hungry. Mostly grateful.",
+            "Copy a day across the week if you are feeling efficient.",
+            "Empty slots are just meals waiting to happen.",
+            "A planned dinner is a dinner nobody argues about."
+      ],
+      "kitchen": [
+            "Recipes. I cannot smell anything, but I support this.",
+            "Cooking at home. Bold. Admirable. Slightly messy.",
+            "Step one of every recipe: pretend you read it first.",
+            "I would help, but I have no hands. It is a design choice.",
+            "Somewhere, a pan is warming up for you.",
+            "Wash as you go. Said every cook, once."
+      ],
+      "scan": [
+            "Point it at some food. I will pretend to be impressed.",
+            "Scanning food. The future is strange and tasty.",
+            "Hold still. The dish, not you.",
+            "Good lighting helps. Food is vain.",
+            "Show me what you have. I promise not to judge. Much.",
+            "Camera on. Appetite on."
+      ],
+      "menu": [
+            "A whole menu. Starter, main, dessert. Very civilised.",
+            "Three courses. I am practically a waiter.",
+            "Dessert first is not allowed. (It is allowed.)",
+            "Planning a feast? I am emotionally prepared.",
+            "A good menu has a story. Yours starts with soup, apparently.",
+            "Pick a starter and we will take it from there."
+      ],
+      "nearby": [
+            "Somewhere near you is a plate with your name on it.",
+            "Looking for food around you. I will wait here.",
+            "Local food is just food that is easy to walk to.",
+            "I cannot come with you. I can wave from in here.",
+            "The best place is probably the one you have not tried.",
+            "Leave a little room. There is always a dessert nearby."
+      ],
+      "chat": [
+            "Ask me anything. I will pass it on to someone cleverer.",
+            "Questions about food go here. Questions about me are weird.",
+            "Tell it what you fancy. It listens better than I do.",
+            "Go on. No question is too small. Or too specific.",
+            "Craving something strange? Typing it counts as research.",
+            "It is a very patient assistant. I am a very patient circle."
+      ],
+      "news": [
+            "News about food. The only kind I can handle.",
+            "Headlines, but make them edible.",
+            "Reading counts as snacking, spiritually.",
+            "Today in food: it is still food.",
+            "Catch up on the world. Come back for dinner.",
+            "I only read the headlines. And the recipes. And the headlines."
+      ],
+      "radio": [
+            "Dinner and a show. Excellent.",
+            "Something to watch while you chew.",
+            "Pick a channel. Any channel. Snacks optional.",
+            "Cooking shows make everything look easy. Do not trust them.",
+            "Turn it up. I will sway.",
+            "Free to watch, and I do not take a cut."
+      ],
+      "daily": [
+            "Five little things a day. Nobody is counting. (We are counting.)",
+            "Small tasks, small wins, one slowly growing streak.",
+            "No pressure. A streak is just a habit with a scoreboard.",
+            "Today is a fresh page. A good one, I think.",
+            "Do the easy one first. I always do.",
+            "Come back tomorrow for five more. Or do not. I will be fine."
+      ],
+      "profile": [
+            "This is you, according to your dinners.",
+            "Your whole food personality, in one place.",
+            "Look at all this progress. I am rather proud.",
+            "Turn me down, move me, silence me. I will not be offended. Slightly offended.",
+            "Statistics about you. Mostly flattering.",
+            "Every dish you chose is in here somewhere."
+      ],
+      "help": [
+            "Lost? Same, most days.",
+            "Questions are welcome. I will not know the answers.",
+            "If all else fails, have a snack.",
+            "The answers are here. I am just the company.",
+            "Read slowly. It is a good page.",
+            "Nobody reads the help page. You are special."
+      ],
+      "decide": [
+            "Time to decide. I will stay out of the way.",
+            "A few yes or no questions and dinner is sorted.",
+            "Answer honestly. Your stomach already knows.",
+            "No wrong answers. Some wrong dishes.",
+            "Let us find something good.",
+            "Your move. Mine is blinking."
+      ],
+      "boop1": [
+            "Hello.",
+            "Hi again.",
+            "Yes?",
+            "At your service. Loosely.",
+            "That tickles. Slightly."
+      ],
+      "boop2": [
+            "Please continue. Actually, stop. No, continue.",
+            "I have a job, you know.",
+            "I was in the middle of nothing. But still.",
+            "Careful. I am round. I roll."
+      ],
+      "boop3": [
+            "Okay. That is enough. (It is not.)",
+            "We are getting very close. Emotionally.",
+            "You must really like me.",
+            "I am going to start charging. In compliments."
+      ],
+      "boopHint": [
+            "Tip: hold me instead of tapping. Just a thought."
+      ],
+      "sleepy": [
+            "Zzz... huh? I was resting my eyes.",
+            "Five more minutes. Then dinner.",
+            "Shh. Dreaming about noodles."
+      ],
+      "wake": [
+            "Oh. Hi. I was resting my eyes.",
+            "I was not asleep. I was thinking. Very still.",
+            "Back. Did I miss anything delicious?"
+      ],
+      "pet": [
+            "Oh. That is nice.",
+            "Okay, that is very nice.",
+            "I could get used to this.",
+            "Do not stop. Please stop. No, do not stop.",
+            "Soft. I feel soft.",
+            "This is the best part of my day. Do not tell the dishes."
+      ],
+      "petAgain": [
+            "Still nice. Still counting.",
+            "You can do that all day.",
+            "Again? Yes. Again."
+      ],
+      "fried": [
+            "Crispy. Respect.",
+            "Fried food. Honest food.",
+            "The sound of that is excellent. I assume.",
+            "Golden brown is a personality."
+      ],
+      "sweet": [
+            "Dessert-adjacent. Bold.",
+            "Sweet tooth confirmed.",
+            "Sugar is a valid food group in this house.",
+            "Pudding energy. I respect it."
+      ],
+      "veg": [
+            "Vegetables. Look at you.",
+            "Green things. Your future self says thanks.",
+            "Colourful. Very responsible. Very you.",
+            "A salad is just a hopeful sandwich."
+      ],
+      "cheap": [
+            "Easy on the wallet.",
+            "Thrifty and delicious. A rare combo.",
+            "Budget friendly. Tastes like a win.",
+            "Your bank balance sends its thanks."
+      ],
+      "drink": [
+            "A drink. Hydration counts.",
+            "Sipping is an activity.",
+            "Cheers. I mean that sincerely.",
+            "Liquid dinner. Sometimes right."
+      ],
+      "spicy": [
+            "Spicy. I admire your confidence.",
+            "Keep milk nearby. I am only saying.",
+            "Brave. Truly brave.",
+            "Hot. I will stand back."
+      ],
+      "soupy": [
+            "Soup. Sensible.",
+            "Warm bowl, warm mood.",
+            "Soup solves most things. Not all. Most.",
+            "Slurping is encouraged."
+      ],
+      "cheesy": [
+            "Cheese. No notes.",
+            "Melty. Stretchy. Perfect.",
+            "Cheese is love in edible form.",
+            "I will not ask how much cheese. Enough."
+      ],
+      "plain": [
+            "Oh, good one.",
+            "That one suits you.",
+            "Strong choice.",
+            "I would pick it. If I ate."
+      ],
+      "quip": [
+            "Interesting.",
+            "Noted.",
+            "I see where this is going.",
+            "Mm. Okay.",
+            "You are very decisive today.",
+            "Good answer. Not that there are bad ones.",
+            "I am learning things about you.",
+            "Hmm. That narrows it down.",
+            "Somewhere a dish just got nervous."
+      ],
+      "manyNo": [
+            "Lots of no today. Picky is fine.",
+            "So many noes. The dish will be great, then."
+      ],
+      "manyYes": [
+            "Lots of yes. Easy to please. Great quality.",
+            "Yes, yes, yes. I like this mood."
+      ],
+      "reject": [
+            "Fair. The next one is better.",
+            "Noted. That one is out.",
+            "Not today, then.",
+            "I will never speak of it again.",
+            "Picky. I like it.",
+            "Rejected dishes go to a better place. A cupboard."
+      ],
+      "done": [
+            "Sorted. Go and eat it.",
+            "Dinner is decided. Take the rest of the day off.",
+            "Good choice. I mean it.",
+            "One more decision you did not have to lose sleep over.",
+            "Another dinner solved. We are a good team.",
+            "Go on. Eat. I will be here."
+      ],
+      "m1": [
+            "That is your first dish together. I am keeping it."
+      ],
+      "m10": [
+            "Ten decisions. We are officially in a routine."
+      ],
+      "m25": [
+            "Twenty five. I know your tastes better than my own. I do not have any."
+      ],
+      "m50": [
+            "Fifty. I would say I am running out of jokes. Not really."
+      ],
+      "m100": [
+            "A hundred decisions. I think we are friends now."
+      ],
+      "lvl1": [
+            "I think we are pals now. I am keeping this moment."
+      ],
+      "lvl2": [
+            "Friend. I said it. It is out there."
+      ],
+      "lvl3": [
+            "Best friend. Do not tell the others. There are no others."
+      ],
+      "nom": [
+            "Quality control. Looks fine.",
+            "Nom. Seems legitimate.",
+            "I had a bite. For safety.",
+            "Mm. Approved. Mostly.",
+            "Crumbs. I mean, pixels.",
+            "Ten out of ten. Would nibble again.",
+            "Do not tell the chef.",
+            "Tastes like a pixel. A good one."
+      ],
+      "nomAgain": [
+            "I already had mine.",
+            "One bite is the rule. I made the rule."
+      ],
+      "drag": [
+            "Wheee.",
+            "Put me down. Gently.",
+            "Where are we going?",
+            "Okay, I can see everything from up here.",
+            "This is fine. I am fine.",
+            "Nice view."
+      ],
+      "drop": [
+            "Home sweet here.",
+            "This spot is mine now.",
+            "Good spot. Slightly drafty.",
+            "Perfect. Do not move me again. (Move me again.)"
+      ],
+      "search": [
+            "Nothing. Even I am disappointed.",
+            "No matches. Try fewer words, or a snack.",
+            "That dish does not exist. Yet."
+      ],
+      "music": [
+            "Ooh. A tune.",
+            "I cannot clap. I will sway.",
+            "Good taste in music. And in dishes."
+      ],
+      "theme": [
+            "Ooh. New look.",
+            "Fancy. Do not tell the old one.",
+            "I like it. Very you."
+      ],
+      "home": [
+            "Home again.",
+            "Back in my corner. Cosy."
+      ],
+      "back": [
+            "Back again. Miss me?",
+            "Hello again. I never left."
+      ],
+      "combo": [
+            "Hot streak.",
+            "Show off.",
+            "Keep going. I am watching.",
+            "Unreal. Do it again."
+      ],
+      "gameWin": [
+            "That was good. Properly good.",
+            "High score energy.",
+            "Okay, you are better at this than me. Everyone is."
+      ],
+      "gameLose": [
+            "Everyone drops one. Or six.",
+            "It was the dish's fault.",
+            "Again? I believe in you. A bit."
+      ],
+      "menuNext": [
+            "Next course. Pace yourself."
+      ],
+      "menuLast": [
+            "Last one. Nearly civilised."
+      ]
     };
-    var BOOP = ['Hello.', 'That tickles. Slightly.', 'Please continue. Actually, stop. No, continue.', 'I have a job, you know.', 'Okay. That is enough. (It is not.)'];
-    var DISH = {
-      fried: 'Crispy. Respect.', sweet: 'Dessert-adjacent. Bold.', veg: 'Vegetables. Look at you.',
-      cheap: 'Easy on the wallet.', drink: 'A drink. Hydration counts.', spicy: 'Spicy. I admire your confidence.',
-      soupy: 'Soup. Sensible.', cheesy: 'Cheese. No notes.'
-    };
-    var QUIP = ['Interesting.', 'Noted.', 'I see where this is going.', 'Mm. Okay.'];
-    var NOM = ['Quality control. Looks fine.', 'Nom. Seems legitimate.', 'I had a bite. For safety.', 'Mm. Approved. Mostly.'];
-    var DRAG = ['Wheee.', 'Put me down. Gently.', 'Where are we going?'];
+
+    function pad(n) { return n < 10 ? '0' + n : String(n); }
+    function ymd(d) { d = d || new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+    function dayNumber(s) { var p = s.split('-'); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }
+
+    // How long it has been since the last visit, read before today is written.
+    var gap = -1;
+    (function visit() {
+      var today = ymd(), last = mem.days.length ? mem.days[mem.days.length - 1] : null;
+      if (last) gap = dayNumber(today) - dayNumber(last);
+      if (last !== today) { mem.days.push(today); if (mem.days.length > 500) mem.days.shift(); save(); }
+    })();
+
+    var LEVELS = [{ name: 'Just met', at: 0 }, { name: 'Pals', at: 12 }, { name: 'Friends', at: 50 }, { name: 'Best friends', at: 150 }];
+    function score() { return ((progress && progress.state && progress.state.decisions) || 0) + mem.days.length * 4 + mem.pats * 2; }
+    function levelOf(s) { var at = 0; for (var i = 0; i < LEVELS.length; i++) if (s >= LEVELS[i].at) at = i; return at; }
+
+    var lastSpoke = 0, spoke = 0, hideTimer = 0, returnTimer = 0, greetTimer = 0, helloStarted = false, helloDone = false;
+    var lastView = '', boops = 0, lastBoop = 0, asked = 0, run = { yes: 0, no: 0, said: false }, wasMusic = false;
+    var SIZE = 50, at = { x: 0, y: 0 }, drag = null, nommed = {}, asleep = false, lastInput = Date.now(), ctx = -1;
 
     function el() { return $('mascot-b'); }
     function box() { return $('buddy'); }
     function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
     function wide() { return window.innerWidth >= 1000; }
     function playing() { return view === 'decide' && /^(arcade|swipe|endless|duel|knockout|blitz|spin|together)$/.test(panel); }
+    function night() { var h = new Date().getHours(); return h >= 23 || h < 5; }
+    function rest() { return asleep || night() ? 'sleepy' : 'idle'; }
+
+    // The next line in a category: one that has a translation in this language,
+    // and the one said least recently (or a fresh one) so nothing repeats.
+    function speakable(text) { return typeof I18n === 'undefined' || !I18n.has || I18n.has(text); }
+    function line(cat) {
+      var pool = (LINES[cat] || []).filter(speakable);
+      if (!pool.length) return null;
+      var best = [], bestAt = Infinity;
+      pool.forEach(function (l) {
+        var i = mem.said.indexOf(l);
+        if (i < bestAt) { bestAt = i; best = [l]; } else if (i === bestAt) best.push(l);
+      });
+      var out = pick(best);
+      var i = mem.said.indexOf(out);
+      if (i >= 0) mem.said.splice(i, 1);
+      mem.said.push(out);
+      if (mem.said.length > 120) mem.said.shift();
+      save();
+      return out;
+    }
+    function fill(pattern, value) { return pattern.replace('{0}', value); }
 
     function visible() {
       if (!on) return false;
@@ -10716,33 +11127,54 @@
       b.classList.toggle('to-left', x > vw / 2);
       b.classList.toggle('to-below', y < 150);
     }
-
     function goHome(instant) { var h = homeSpot(); go(h.x, h.y, instant); }
 
+    // Only does anything when something that matters has changed: whether Dot
+    // should be on screen at all, or whether the screen has become a game. A
+    // page change on its own moves nothing, which is what keeps it steady.
     function sync() {
       var b = box();
       if (!b) return;
       Dot.mount(el());
-      b.hidden = !visible();
-      if (b.hidden) bubbleOff();
-      else if (!drag) { clearTimeout(returnTimer); goHome(!b.dataset.placed); b.dataset.placed = '1'; }
-      var h = new Date().getHours();
-      if (!el()._busy) el().setAttribute('data-mood', h >= 23 || h < 5 ? 'sleepy' : 'idle');
+      var show = visible();
+      if (show === b.hidden) {
+        b.hidden = !show;
+        if (!show) bubbleOff();
+        else {
+          if (!drag) goHome(true);
+          hello();
+        }
+        if (show && !el()._busy) el().setAttribute('data-mood', rest());
+      } else if (show && !drag) {
+        var key = playing() ? 1 : 0;
+        if (key !== ctx) goHome();
+      }
+      ctx = playing() ? 1 : 0;
     }
 
     function bubbleOff() {
       clearTimeout(hideTimer);
       var bb = $('buddy-bubble');
-      if (bb) bb.hidden = true;
+      if (bb) { bb.hidden = true; bb.classList.remove('has-action'); }
     }
 
+    // May Dot say something nobody asked it to? Not in Quiet mode; not twice
+    // within the cooldown; not past a cap for the visit.
+    function mayVolunteer() {
+      if (talk === 'quiet') return false;
+      var gapMs = talk === 'chatty' ? 12000 : 30000, cap = talk === 'chatty' ? 60 : 14;
+      return Date.now() - lastSpoke > gapMs && spoke < cap;
+    }
+
+    // force: 'asked' — you tapped it, always answers; true — a moment that
+    // deserves a word (a dish accepted), ignores the cooldown but not Quiet;
+    // otherwise it is a remark and is held to the cooldown.
     function say(text, mood, ms, force) {
       if (!visible() || !text) return;
-      // Quiet mode: nothing unprompted. Things you ask for (a tap on Dot) still answer.
-      if (quiet && force !== 'asked') return;
-      var now = Date.now();
-      if (!force && now - lastSpoke < 9000) return;
-      lastSpoke = now;
+      if (talk === 'quiet' && force !== 'asked') return;
+      if (!force && !mayVolunteer()) return;
+      lastSpoke = Date.now();
+      if (!force) spoke++;
       var bb = $('buddy-bubble');
       bb.textContent = text;
       bb.classList.remove('has-action');
@@ -10750,17 +11182,23 @@
       bb.classList.remove('is-in'); void bb.offsetWidth; bb.classList.add('is-in');
       if (mood) react(mood);
       clearTimeout(hideTimer);
-      hideTimer = setTimeout(bubbleOff, ms || 4600);
+      hideTimer = setTimeout(bubbleOff, Math.max(ms || 0, 2600 + text.length * 55));
+    }
+    function remark(cat, mood, ms, force) {
+      if (!force && (!visible() || !mayVolunteer())) return;
+      var l = line(cat);
+      if (l) say(l, mood, ms, force);
     }
 
     function react(mood, hold) {
       var node = el();
       if (!node || !visible()) return;
+      asleep = false;
       node._busy = true;
       Dot.mood(node, mood, hold || 1400);
-      setTimeout(function () { node._busy = false; sync2(); }, (hold || 1400) + 50);
+      clearTimeout(node._rest);
+      node._rest = setTimeout(function () { node._busy = false; node.setAttribute('data-mood', rest()); }, (hold || 1400) + 50);
     }
-    function sync2() { var h = new Date().getHours(); if (el() && !el()._busy) el().setAttribute('data-mood', h >= 23 || h < 5 ? 'sleepy' : 'idle'); }
 
     // Dot hops over to a spot, stays a while, and wanders home.
     function visit(x, y, stay) {
@@ -10769,8 +11207,6 @@
       clearTimeout(returnTimer);
       returnTimer = setTimeout(function () { if (!drag) goHome(); }, stay || 6500);
     }
-
-    // Beside an element, on whichever side has room.
     function beside(node, stay) {
       if (!node || !node.getBoundingClientRect) return;
       var r = node.getBoundingClientRect(), vw = window.innerWidth;
@@ -10778,50 +11214,148 @@
       visit(x, r.top + r.height / 2 - SIZE / 2, stay);
     }
 
-    // Dot follows your taps around, a little behind and to the side. Not while a
-    // question is open (it would be in the way of the answers) and not on controls
-    // where you are typing.
+    /* ---- the first word of a visit ---- */
+    function partOfDay() {
+      var h = new Date().getHours();
+      return h >= 5 && h < 11 ? 'morning' : h < 17 ? 'day' : h < 22 ? 'evening' : 'night';
+    }
+    function hello() {
+      if (helloStarted) return;
+      helloStarted = true;
+      setTimeout(function () {
+        if (!visible()) { helloStarted = false; return; }
+        helloDone = true;
+        var first = !mem.first;
+        if (first) mem.first = Date.now();
+        save();
+        if (talk === 'quiet') return;
+        var cat = first ? 'first' : gap >= 7 ? 'back7' : gap >= 3 ? 'back3' : gap >= 1 ? 'back1' : Math.random() < 0.55 ? partOfDay() : null;
+        if (cat) remark(cat, 'happy', 0, true);
+        checkLevel();
+      }, 1600);
+    }
+
+    // Closer: said once when the bond crosses a line.
+    function checkLevel(quietly) {
+      var lvl = levelOf(score());
+      if (lvl > mem.lvl) {
+        mem.lvl = lvl; save();
+        paintBond();
+        if (!quietly) remark('lvl' + lvl, 'celebrate', 5200, true);
+      }
+    }
+    function paintBond() {
+      var s = score(), lvl = levelOf(s), b = box();
+      if (b) b.setAttribute('data-bond', String(lvl));
+      var name = $('bond-level');
+      if (!name) return;
+      var from = LEVELS[lvl].at, to = LEVELS[lvl + 1] ? LEVELS[lvl + 1].at : from;
+      name.textContent = LEVELS[lvl].name;
+      $('bond-fill').style.width = (to === from ? 100 : Math.round(((s - from) / (to - from)) * 100)) + '%';
+      $('bond-days').textContent = String(mem.days.length);
+      $('bond-decisions').textContent = String((progress && progress.state && progress.state.decisions) || 0);
+      $('bond-pats').textContent = String(mem.pats);
+    }
+
+    /* ---- playing about ---- */
+    // Dot follows your taps around only if asked to (a switch in the profile),
+    // and never off the navigation or onto what you are typing in.
     document.addEventListener('pointerdown', function (event) {
       if (!on || !playful || drag || !visible()) return;
-      if (event.target.closest && event.target.closest('#buddy, input, textarea, select, [contenteditable], dialog, .welcome')) return;
+      if (event.target.closest && event.target.closest('#buddy, input, textarea, select, [contenteditable], dialog, .welcome, .rail, .topbar, nav, a')) return;
       if (view === 'decide' && panel === 'question') return;
       var vw = window.innerWidth;
       var x = event.clientX + 44 + SIZE < vw ? event.clientX + 44 : event.clientX - 44 - SIZE;
       visit(x, event.clientY - SIZE / 2 - 8, 5200);
     }, { passive: true });
 
-    // Dot gets curious about the big buttons.
     document.addEventListener('pointerover', function (event) {
       if (!on || drag || !visible() || !event.target.closest) return;
-      if (event.target.closest('.go') && Date.now() - lastSpoke > 3500) react('surprised', 900);
+      if (event.target.closest('.go') && Date.now() - lastSpoke > 3500 && !el()._busy) react('surprised', 900);
     }, { passive: true });
 
-    // Pick Dot up and put it somewhere: it stays there until you move it again.
-    (function dragging() {
-      var node = $('mascot-b'), start = null;
+    // Falls asleep when left alone, wakes when you come back.
+    function wake() {
+      lastInput = Date.now();
+      if (!asleep) return;
+      asleep = false;
+      var node = el();
+      if (node && !node._busy) Dot.mood(node, 'surprised', 700);
+      setTimeout(function () { if (el() && !el()._busy) el().setAttribute('data-mood', rest()); }, 760);
+      if (Math.random() < 0.5) remark('wake', null, 0);
+    }
+    ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (name) { window.addEventListener(name, wake, { passive: true }); });
+    window.addEventListener('pointermove', function () { if (asleep || Date.now() - lastInput > 1000) wake(); }, { passive: true });
+    setInterval(function () {
+      var node = el();
+      if (!node || !visible() || asleep || node._busy || drag) return;
+      if (Date.now() - lastInput > 150000) { asleep = true; Dot.mood(node, 'sleepy', 0); }
+    }, 15000);
+
+    function spawnHeart(b, i) {
+      var h = document.createElement('span');
+      h.className = 'buddy-heart';
+      h.textContent = '♥';
+      h.style.left = (6 + Math.random() * 32) + 'px';
+      b.appendChild(h);
+      var gone = function () { if (h.parentNode) h.parentNode.removeChild(h); };
+      if (h.animate && !reduceMotion) {
+        var a = h.animate([
+          { transform: 'translateY(0) scale(.4)', opacity: 0 },
+          { transform: 'translateY(-14px) scale(1)', opacity: 1, offset: 0.25 },
+          { transform: 'translate(' + (Math.random() * 30 - 15).toFixed(0) + 'px,-52px) scale(.9)', opacity: 0 }
+        ], { duration: 1200 + Math.random() * 400, delay: i * 130, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' });
+        a.onfinish = gone;
+      } else setTimeout(gone, 1100);
+    }
+    function pat() {
+      var b = box();
+      if (!b) return;
+      var first = mem.patDay !== ymd();
+      if (first) { mem.patDay = ymd(); mem.pats++; save(); }
+      for (var i = 0; i < (reduceMotion ? 1 : 4); i++) spawnHeart(b, i);
+      react('happy', 2200);
+      say(line(first ? 'pet' : 'petAgain'), null, 3800, 'asked');
+      try { if (navigator.vibrate) navigator.vibrate(first ? [10, 40, 10] : 8); } catch (err) { /* fine */ }
+      if (first) { paintBond(); setTimeout(function () { checkLevel(); }, 2600); }
+    }
+
+    // Pick Dot up and put it somewhere (it stays there), or hold it to pat it.
+    (function pointer() {
+      var node = $('mascot-b'), start = null, hold = 0;
+      node.addEventListener('contextmenu', function (event) { event.preventDefault(); });
       node.addEventListener('pointerdown', function (event) {
-        start = { x: event.clientX, y: event.clientY, ox: at.x, oy: at.y, moved: false };
+        start = { x: event.clientX, y: event.clientY, ox: at.x, oy: at.y, moved: false, patted: false };
         try { node.setPointerCapture(event.pointerId); } catch (err) { /* fine */ }
+        clearTimeout(hold);
+        hold = setTimeout(function () { if (start && !start.moved) { start.patted = true; pat(); } }, 520);
       });
       node.addEventListener('pointermove', function (event) {
         if (!start) return;
         var dx = event.clientX - start.x, dy = event.clientY - start.y;
         if (!start.moved && Math.sqrt(dx * dx + dy * dy) < 8) return;
-        if (!start.moved) { start.moved = true; drag = true; clearTimeout(returnTimer); box().classList.add('is-dragging'); Dot.mood(node, 'surprised', 0); say(pick(DRAG), null, 2200, true); }
+        if (!start.moved) {
+          start.moved = true; drag = true; clearTimeout(hold); clearTimeout(returnTimer);
+          box().classList.add('is-dragging'); Dot.mood(node, 'surprised', 0);
+          remark('drag', null, 2200, 'asked');
+        }
         go(start.ox + dx, start.oy + dy, true);
       });
       var drop = function (event) {
+        clearTimeout(hold);
         if (!start) return;
-        var moved = start.moved; start = null;
-        if (!moved) return;
+        var s = start; start = null;
+        if (s.patted) { node._justDragged = true; setTimeout(function () { node._justDragged = false; }, 60); return; }
+        if (!s.moved) return;
         drag = null;
         box().classList.remove('is-dragging');
         home = { x: at.x, y: at.y };
         try { localStorage.setItem(POS, JSON.stringify(home)); } catch (err) { /* fine */ }
         go(at.x, at.y);
         Dot.mood(node, 'happy', 1200);
+        remark('drop', null, 2400, 'asked');
         event.stopPropagation();
-        node._justDragged = true; setTimeout(function () { node._justDragged = false; }, 50);
+        node._justDragged = true; setTimeout(function () { node._justDragged = false; }, 60);
       };
       node.addEventListener('pointerup', drop);
       node.addEventListener('pointercancel', drop);
@@ -10836,16 +11370,16 @@
       var bb = $('buddy-bubble');
       bb.textContent = '';
       bb.appendChild(document.createTextNode(o.text + ' '));
-      var go = document.createElement('button');
-      go.type = 'button';
-      go.textContent = o.label;
-      go.addEventListener('click', function (event) { event.stopPropagation(); bubbleOff(); o.run(); });
-      bb.appendChild(go);
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = o.label;
+      btn.addEventListener('click', function (event) { event.stopPropagation(); bubbleOff(); o.run(); });
+      bb.appendChild(btn);
       bb.classList.add('has-action');
       bb.hidden = false;
       bb.classList.remove('is-in'); void bb.offsetWidth; bb.classList.add('is-in');
       clearTimeout(hideTimer);
-      hideTimer = setTimeout(function () { bubbleOff(); bb.classList.remove('has-action'); }, 7000);
+      hideTimer = setTimeout(bubbleOff, 7000);
     }
     var OFFERS = {
       dishes: { text: 'Want me to pick one?', label: 'Pick one', run: function () {
@@ -10868,49 +11402,101 @@
       chat: { text: 'Got a question?', label: 'Ask', run: function () { var f = $('chat-input'); if (f) f.focus(); } }
     };
 
+    var TAGS = ['fried', 'sweet', 'veg', 'cheap', 'drink', 'spicy', 'soupy', 'cheesy'];
+    function topPick() {
+      var picks = (progress && progress.state && progress.state.picks) || {}, best = null, n = 0;
+      Object.keys(picks).forEach(function (k) { if (picks[k] > n) { n = picks[k]; best = k; } });
+      return n >= 3 ? best : null;
+    }
+
     return {
       sync: sync, say: say, react: react, visit: visit, beside: beside,
       enabled: function () { return on; },
       playful: function () { return playful; },
+      talk: function () { return talk; },
       set: function (v) {
         on = !!v;
         try { localStorage.setItem(KEY, on ? 'on' : 'off'); } catch (err) { /* fine */ }
         sync();
-        if (on) say('Back again. Miss me?', 'happy', 3200, true);
+        if (on) remark('back', 'happy', 3200, 'asked');
       },
       setPlayful: function (v) {
         playful = !!v;
         try { localStorage.setItem(PLAY, playful ? 'on' : 'off'); } catch (err) { /* fine */ }
         if (!playful) goHome();
       },
+      setTalk: function (v) {
+        talk = v === 'quiet' || v === 'chatty' ? v : 'normal';
+        try { localStorage.setItem(TALK, talk); } catch (err) { /* fine */ }
+      },
       putBack: function () {
         home = null;
         try { localStorage.removeItem(POS); } catch (err) { /* fine */ }
         goHome();
-        say('Home again.', 'happy', 2400, true);
+        remark('home', 'happy', 2400, 'asked');
       },
+      bond: function () { return { level: levelOf(score()), score: score(), days: mem.days.length, pats: mem.pats }; },
+      paintBond: paintBond,
+      // A page opens: a few words the first times you see it, rarely after.
       onView: function (name) {
-        setTimeout(sync, 380);
-        var lines = VIEW[name];
-        if (!lines || told[name]) return;
-        told[name] = true;
-        setTimeout(function () { say(pick(lines), 'happy'); }, 1100);
+        // Not while Dot is off screen or still saying hello, and a page counts
+        // once however many times the app repaints it.
+        if (!visible() || !helloDone || name === lastView) return;
+        lastView = name;
+        var n = mem.seen[name] || 0;
+        mem.seen[name] = n + 1; save();
+        if (name === 'profile') paintBond();
+        var p = n < 1 ? 1 : n < 4 ? 0.4 : 0.12;
+        if (talk === 'chatty') p = Math.min(1, p * 2);
+        if (talk === 'quiet' || Math.random() > p) return;
+        clearTimeout(greetTimer);
+        greetTimer = setTimeout(function () {
+          if (view !== name || !mayVolunteer()) return;
+          var text = null, r = Math.random();
+          if (name === 'dishes' && topPick() && r < 0.3) text = fill('{0} is your most picked dish. I will not tell anyone.', topPick());
+          else if (name === 'daily' && progress.state.streak >= 3 && r < 0.5) text = fill('A {0} day streak. I am keeping count, quietly.', progress.state.streak);
+          else if (name === 'profile' && mem.days.length >= 3 && r < 0.5) text = fill('{0} days together. Not that I am counting.', mem.days.length);
+          if (text && !speakable(text)) text = null;
+          if (text) say(text, 'happy');
+          else remark(name, 'happy');
+        }, 1300);
       },
-      onPanel: function () { setTimeout(sync, 380); },
-      onAnswer: function () {
+      onPanel: function () { sync(); },
+      onAnswer: function (value) {
         asked++;
-        if (asked % 5 === 0 && Math.random() < 0.8) say(pick(QUIP), 'shrug', 2800);
+        if (value === 'yes') { run.yes++; run.no = 0; } else if (value === 'no') { run.no++; run.yes = 0; } else { run.yes = 0; run.no = 0; }
+        if (!run.said && run.no >= 4) { run.said = true; return remark('manyNo', 'shrug', 3200); }
+        if (!run.said && run.yes >= 4) { run.said = true; return remark('manyYes', 'happy', 3200); }
+        if (asked % 7 === 0 && Math.random() < 0.55) remark('quip', 'shrug', 2800);
       },
       onResult: function (dish) {
-        var tag = Object.keys(DISH).filter(function (t) { return dish.tags[t] === 1; })[0];
-        if (tag) say(DISH[tag], 'happy', 3600);
+        run = { yes: 0, no: 0, said: false };
+        var tag = TAGS.filter(function (t) { return dish.tags && dish.tags[t] === 1; })[0];
+        if (tag && Math.random() < 0.7) remark(tag, 'happy', 3600);
+        else if (!tag && Math.random() < 0.15) remark('plain', 'happy', 3200);
       },
-      onDone: function () { say('Sorted. Go and eat it.', 'celebrate', 3400, true); },
+      onReject: function () { if (Math.random() < 0.4) remark('reject', 'shrug', 3000); },
+      onDone: function () {
+        var n = (progress && progress.state && progress.state.decisions) || 0;
+        var ms = { 1: 'm1', 10: 'm10', 25: 'm25', 50: 'm50', 100: 'm100' }[n];
+        paintBond();
+        var up = levelOf(score()) > mem.lvl;
+        if (ms && !mem.ms[ms]) {
+          mem.ms[ms] = 1; save();
+          remark(ms, 'celebrate', 5200, true);
+          if (up) setTimeout(checkLevel, 5600);
+        } else if (up) checkLevel();
+        else remark('done', 'celebrate', 3400, true);
+      },
+      onGame: function (best) {
+        if (best) remark('gameWin', 'celebrate', 3600);
+        else if (Math.random() < 0.5) remark('gameLose', 'shrug', 3400);
+      },
       // Quality control: Dot hops over to the dish and takes a bite.
       nom: function (art) {
         if (!visible() || !art) return;
         var key = art.id + ':' + art.textContent;
-        if (nommed[key]) { say('I already had mine.', 'shrug', 2400, true); return; }
+        if (nommed[key]) { remark('nomAgain', 'shrug', 2400, 'asked'); return; }
         nommed[key] = true;
         var r = art.getBoundingClientRect();
         // Beside the dish if there is room on its left, otherwise above it: never
@@ -10921,39 +11507,45 @@
           react('celebrate', 900);
           if (art.animate && !reduceMotion) art.animate([{ transform: 'scale(1)' }, { transform: 'scale(.78) rotate(-8deg)' }, { transform: 'scale(1)' }], { duration: 520, easing: 'cubic-bezier(.34,1.56,.64,1)' });
           sparkle(art, 6);
-          say(pick(NOM), null, 3400, true);
+          remark('nom', null, 3400, 'asked');
         }, 650);
       },
       // From inside a game: it cheers, winces, and says when something big happens.
-      cheer: function (text) { say(text, 'celebrate', 2200); },
+      cheer: function (text) { if (speakable(text)) say(text, 'celebrate', 2200); else remark('combo', 'celebrate', 2200); },
       wince: function () { react('sad', 900); },
       boop: function () {
+        var now = Date.now();
+        if (now - lastBoop > 25000) boops = 0;
+        lastBoop = now; boops++;
         react('happy', 900);
+        // Asleep when tapped.
+        if (rest() === 'sleepy' && night()) return remark('sleepy', null, 3200, 'asked');
         // On pages that have something worth offering, the first tap offers it.
         var offer = OFFERS[view];
-        if (offer && (!offered[view] || Date.now() - offered[view] > 30000)) {
-          offered[view] = Date.now();
+        if (offer && boops === 1 && (!offered[view] || now - offered[view] > 30000) && speakable(offer.text) && speakable(offer.label)) {
+          offered[view] = now;
           return offerAction(offer);
         }
-        say(BOOP[Math.min(boops++, BOOP.length - 1)], null, 3200, 'asked');
-        if (boops > 7) boops = 0;
+        if (boops === 4 && !mem.hint) { mem.hint = 1; save(); if (speakable(LINES.boopHint[0])) return say(LINES.boopHint[0], null, 3800, 'asked'); }
+        remark(boops <= 3 ? 'boop1' : boops <= 7 ? 'boop2' : 'boop3', null, 3200, 'asked');
       },
       think: function (yes) {
         var node = el();
         if (!node || !visible()) return;
         node._busy = !!yes;
         if (yes) Dot.mood(node, 'thinking', 0);
-        else { Dot.mood(node, 'happy', 1000); }
+        else Dot.mood(node, 'happy', 1000);
       },
-      dance: function (yes) { var node = el(); if (node) node.classList.toggle('is-dancing', !!yes); },
-      setQuiet: function (v) { quiet = !!v; try { localStorage.setItem(QUIET, quiet ? 'on' : 'off'); } catch (err) { /* fine */ } },
-      quiet: function () { return quiet; },
-      idle: function () {
-        clearTimeout(idleTimer);
-        idleTimer = setTimeout(function () {
-          if (view === 'decide' && panel === 'question') say('Still here. No rush.', 'shrug', 3200);
-        }, 60000);
-      }
+      dance: function (yes) {
+        var node = el();
+        if (node) node.classList.toggle('is-dancing', !!yes);
+        if (yes && !wasMusic) { wasMusic = true; if (Math.random() < 0.7) remark('music', 'happy', 2800); }
+      },
+      // The old on/off switch, kept for anything still calling it.
+      setQuiet: function (v) { this.setTalk(v ? 'quiet' : 'normal'); },
+      quiet: function () { return talk === 'quiet'; },
+      idle: function () { /* Dot does not nag when you are slow. */ },
+      line: line
     };
   })();
 
@@ -10993,10 +11585,17 @@
     }
     var chat = $('buddy-quiet');
     if (chat) {
-      var paintChat = function () { chat.textContent = Buddy.quiet() ? 'Quiet: speaks when tapped' : 'Chatty: the odd remark'; chat.setAttribute('aria-pressed', String(!Buddy.quiet())); };
-      chat.addEventListener('click', function () { Buddy.setQuiet(!Buddy.quiet()); paintChat(); });
+      var TALKS = ['quiet', 'normal', 'chatty'];
+      var NAMES = { quiet: 'Quiet: only when tapped', normal: 'Balanced: now and then', chatty: 'Chatty: the odd remark' };
+      var paintChat = function () { chat.textContent = NAMES[Buddy.talk()]; chat.setAttribute('aria-pressed', String(Buddy.talk() !== 'quiet')); };
+      chat.addEventListener('click', function () {
+        Buddy.setTalk(TALKS[(TALKS.indexOf(Buddy.talk()) + 1) % TALKS.length]);
+        paintChat();
+        Buddy.say(Buddy.talk() === 'quiet' ? 'Okay. Not a word.' : Buddy.talk() === 'chatty' ? 'Oh, you want the commentary. Good.' : 'Just the odd remark. Got it.', 'happy', 2800, 'asked');
+      });
       paintChat();
     }
+    Buddy.paintBond();
     if (back) back.addEventListener('click', function () { Buddy.putBack(); });
   })();
 
@@ -11013,7 +11612,7 @@
     f.addEventListener('input', function () {
       clearTimeout(t);
       t = setTimeout(function () {
-        if (f.value.trim().length > 2 && !document.querySelector('#view-dishes .dish')) Buddy.say('Nothing. Even I am disappointed.', 'sad', 3200);
+        if (f.value.trim().length > 2 && !document.querySelector('#view-dishes .dish')) { var l = Buddy.line('search'); if (l) Buddy.say(l, 'sad', 3200); }
       }, 900);
     });
   })();
@@ -11174,7 +11773,7 @@
     Sound.tick();
     paintPlan();
   });
-  $('reject-btn').addEventListener('click', function () { Buddy.react('sad', 1300); rejectCurrent(); });
+  $('reject-btn').addEventListener('click', function () { Buddy.react('sad', 1300); Buddy.onReject(); rejectCurrent(); });
   $('again-btn').addEventListener('click', goHome);
   $('done-again-btn').addEventListener('click', restart);
   // Sharing the dish they just accepted, not the one they were offered.
@@ -13604,6 +14203,7 @@
     stopArcade();
     Sound.reveal();
     var beat = arcadeBest(mode, a.score);
+    Buddy.onGame(beat);
     picks = Object.keys(a.tally).map(function (k) { return a.tally[k]; })
       .sort(function (x, y) { return y.n - x.n || x.at - y.at; })
       .slice(0, 3);

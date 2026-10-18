@@ -6949,3 +6949,49 @@ html.vt-active .rail-link.is-current::before { view-transition-name: plate; }
 .buddy-bubble button:hover { transform: scale(1.06); }
 .buddy-bubble button:active { transform: scale(.94); }
 @media (prefers-reduced-motion: reduce) { .mascot.is-dancing .dot-body, .mascot[data-mood="thinking"] .dot-body { animation: none !important; } }
+
+/* ==========================================================================
+   Dot, second pass: steady through page changes, more alive, a bond.
+   ========================================================================== */
+/* During a screen change Dot is its own named layer, above the page. Without
+   this it was part of the page's snapshot and was carried off, covered and
+   revealed again as the page slid, which read as a flicker in the corner. */
+html.vt-active .buddy { view-transition-name: buddy; }
+@supports (view-transition-name: none) {
+  ::view-transition-group(buddy) { animation-duration: .2s; }
+  ::view-transition-old(buddy) { animation: none; opacity: 0; }
+  ::view-transition-new(buddy) { animation: none; }
+}
+.buddy-face { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+/* a blink every few seconds, never in step with anything */
+.buddy .dot-eyes circle { transform-box: fill-box; transform-origin: center; animation: dot-blink 6.5s ease-in-out infinite; }
+@keyframes dot-blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+.buddy[data-bond="2"] .dot-eyes circle { animation-duration: 5.2s; }
+
+/* the closer you are, the pinker the cheeks */
+.buddy .dot-blush { transition: opacity .6s ease; }
+.buddy[data-bond="0"] .dot-blush { opacity: .55; }
+.buddy[data-bond="2"] .dot-blush, .buddy[data-bond="3"] .dot-blush { opacity: 1; }
+.buddy[data-bond="3"] .dot-tuft { animation: dot-twinkle 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: bottom; }
+@keyframes dot-twinkle { 50% { transform: rotate(10deg) scale(1.15); } }
+
+.buddy-heart {
+  position: absolute; top: -2px; z-index: 2; font-size: 16px; line-height: 1; pointer-events: none;
+  color: color-mix(in srgb, var(--amber) 55%, #ff6b8a); text-shadow: 0 2px 8px rgb(0 0 0 / .45);
+}
+
+/* the bond, on the profile */
+.buddy-bond { margin: var(--s3) 0; padding: var(--s3); border: 1px solid var(--line, rgb(255 255 255 / .1)); border-radius: 14px; max-width: 28rem; }
+.buddy-bond-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .25rem var(--s3); }
+.buddy-bond-head strong { font-size: var(--t-lg, 1.1rem); }
+.buddy-bond-bar { height: 6px; margin: var(--s2) 0 var(--s3); border-radius: 99px; background: rgb(255 255 255 / .08); overflow: hidden; }
+.buddy-bond-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--amber); transition: width .9s var(--spring-soft); }
+.buddy-bond-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3); margin: 0; }
+.buddy-bond-stats div { min-width: 0; }
+.buddy-bond-stats dt { font-size: var(--t-xs); color: var(--ink-3); }
+.buddy-bond-stats dd { margin: .1rem 0 0; font-size: var(--t-lg, 1.1rem); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) {
+  .buddy .dot-eyes circle, .buddy[data-bond="3"] .dot-tuft { animation: none; }
+  .buddy-bond-bar i { transition: none; }
+}

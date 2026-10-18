@@ -416,6 +416,9 @@ window.I18n = (function () {
     guess: guess,
     known: known,
     get: function () { return lang; },
+    /* Whether a line can be shown in the current language: English always, any other
+       only when it has a translation, so nothing switches language halfway. */
+    has: function (en) { return lang === 'en' || lookup(en) !== null; },
     /* The name of a language, in that language. */
     nameOf: function (id) {
       for (var i = 0; i < LANGS.length; i++) if (LANGS[i].id === id) return LANGS[i].native;

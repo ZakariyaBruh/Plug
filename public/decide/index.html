@@ -2522,15 +2522,23 @@
            same three groups the welcome uses, and no badge on any of it. -->
       <section class="strip" id="strip-buddy">
         <h2 class="strip-title">Dot</h2>
-        <p class="fine">A small round companion who comments on what you are doing. It only reacts,
-        it never nags, and it keeps out of the way while you play.</p>
+        <p class="fine">A small round companion who remembers your days together, comments on what you are doing, and keeps out of the way while you play. It never nags and never sends anything while you are away.</p>
+        <div class="buddy-bond" id="buddy-bond">
+          <div class="buddy-bond-head"><strong id="bond-level">Just met</strong><span class="fine">Closer with every dish, visit and pat.</span></div>
+          <div class="buddy-bond-bar" aria-hidden="true"><i id="bond-fill"></i></div>
+          <dl class="buddy-bond-stats">
+            <div><dt>Days together</dt><dd id="bond-days">0</dd></div>
+            <div><dt>Decisions together</dt><dd id="bond-decisions">0</dd></div>
+            <div><dt>Pats</dt><dd id="bond-pats">0</dd></div>
+          </dl>
+        </div>
         <div class="buddy-controls">
           <button class="quiet" id="buddy-toggle" type="button" aria-pressed="true">Dot is here</button>
-          <button class="quiet" id="buddy-play" type="button" aria-pressed="true">Follows your taps</button>
-          <button class="quiet" id="buddy-quiet" type="button" aria-pressed="true">Chatty: the odd remark</button>
+          <button class="quiet" id="buddy-quiet" type="button" aria-pressed="true">Balanced: now and then</button>
+          <button class="quiet" id="buddy-play" type="button" aria-pressed="false">Stays put</button>
           <button class="quiet" id="buddy-home" type="button">Put Dot back</button>
         </div>
-        <p class="fine">Pick Dot up and drop it anywhere. Tap a dish on the answer screen and Dot will take a bite.</p>
+        <p class="fine">Press and hold Dot to pat it. Pick it up to move it. Tap a dish on the answer screen and Dot will take a bite.</p>
       </section>
 
       <section class="strip" id="strip-language">
