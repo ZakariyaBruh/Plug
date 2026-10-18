@@ -6590,24 +6590,6 @@ input[type="checkbox"], input[type="radio"], input[type="range"], progress { acc
 a, .link-btn { text-underline-offset: .22em; text-decoration-thickness: 1px; }
 a:hover, .link-btn:hover { text-decoration-thickness: 2px; }
 
-/* each dish is served on a plate */
-.verdict-art, .reel-item.is-on, .done-art {
-  --plate: 5.25rem;
-}
-.verdict-art {
-  display: inline-grid; place-items: center; width: var(--plate); height: var(--plate); flex: none;
-  font-size: 3.1rem; line-height: 1; border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--ink) 13%, transparent), color-mix(in srgb, var(--ink) 3%, transparent) 70%);
-  border: 1px solid var(--line-2);
-  box-shadow: 0 14px 26px -16px rgb(0 0 0 / .8);
-}
-.verdict-head { display: flex; align-items: center; gap: var(--s4); }
-.verdict-art.is-swapped::after, .verdict-art.is-landed::after { inset: -.3rem; }
-.reel { height: 5.75rem; }
-.reel-item { display: grid; place-items: center; width: 5.25rem; height: 5.25rem; font-size: 3.1rem; border-radius: 50%;
-  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--ink) 13%, transparent), color-mix(in srgb, var(--ink) 3%, transparent) 70%);
-  border: 1px solid var(--line-2); box-shadow: 0 14px 26px -16px rgb(0 0 0 / .8); }
-
 /* cards: a border at rest, a brighter border on hover, no halo */
 .mode-card { border-radius: 14px; background: color-mix(in srgb, var(--ink) 3%, transparent); box-shadow: none; padding: var(--s5); }
 .mode-card:hover { border-color: color-mix(in srgb, var(--amber) 60%, transparent); box-shadow: none; background: color-mix(in srgb, var(--amber) 6%, transparent); transform: translateY(-2px); }
@@ -6633,3 +6615,85 @@ a:hover, .link-btn:hover { text-decoration-thickness: 2px; }
 .mascot[data-mood="celebrate"] .dot-tuft { animation: dot-tuft .5s var(--spring) 3; transform-box: fill-box; transform-origin: 50% 100%; }
 @keyframes dot-tuft { 50% { transform: rotate(14deg); } }
 @media (prefers-reduced-motion: reduce) { .dot-tuft { animation: none !important; } }
+
+/* ==========================================================================
+   Motion, third pass: the twelve principles of animation, applied to an app.
+
+   It is meant to feel the way Revolut and Phantom feel: nothing cuts, everything
+   has weight, and the screen answers your thumb. Each principle, and where it
+   lives here:
+
+    1  Squash and stretch    a pressed button flattens and widens, then springs
+    2  Anticipation          the dip before the release (press scales under 1)
+    3  Staging               the hero enters first, dialogs dim what is behind
+    4  Straight-ahead/pose   springs are authored as poses and eased between them
+    5  Follow-through        things overshoot, then settle (the spring curve)
+    6  Slow in, slow out     one decelerating curve for everything that arrives
+    7  Arcs                  sparks and the dish travel on curves, not lines
+    8  Secondary action      the arrow leads, the sheen follows, the ring rings
+    9  Timing                three durations only: 140, 260 and 480ms
+   10  Exaggeration          wins are bigger than taps; errors are firmer
+   11  Solid drawing         one radius family, one border, one depth: no drift
+   12  Appeal                Dot, the dry copy, and a screen that is never dead
+
+   Authored once, as tokens, so all of it can be retuned in one place.
+   ========================================================================== */
+:root {
+  /* a spring authored as poses: overshoot ~9%, settles by ~60% of the time */
+  --spring-soft: linear(0, .006, .025 2.2%, .101 4.5%, .539 12.2%, .78 17%, .93 21.7%, 1.005 27%, 1.06 31%, 1.087 35%, 1.075 40%, 1.03 49%, 1.004 59%, 1);
+  --spring-snap: linear(0, .02 2%, .12 5%, .45 11%, .75 17%, .95 23%, 1.04 30%, 1.05 36%, 1.02 47%, 1);
+}
+
+/* 1, 2, 5: press and release */
+.go, .pick, .choice, .mode-card, .endless-card, .rail-link, .filter, .knob, .quiet, .plain, .hub-add, .dv-card, .swipe-pick, .arc-tile {
+  transition-timing-function: var(--snap);
+}
+.go:active:not(:disabled) { transform: scale(.955, .92); transition-duration: 90ms; }
+.pick:active, .choice:active { transform: scale(.975, .955); transition-duration: 90ms; }
+.mode-card:active, .endless-card:active { transform: translateY(0) scale(.975, .96); transition-duration: 90ms; }
+.go, .pick, .choice, .mode-card, .endless-card, .swipe-pick, .dv-card { transition-property: transform, background, border-color, color, box-shadow; }
+.go:not(:active), .pick:not(:active), .choice:not(:active), .mode-card:not(:active), .endless-card:not(:active), .swipe-pick:not(:active) {
+  transition-duration: var(--t-slow);
+  transition-timing-function: var(--spring-soft);
+}
+
+/* 3, 6: lists arrive in order, hero first, never more than ~400ms in total */
+:is(.hub-week, .daily-quests, .swipe-picked, .spin-list, .reasons, #reasons, .dishes-grid, .rec-grid, .picks, .dv-field, .hub-menu-courses) > * {
+  animation: rise var(--t-std) var(--snap) both;
+}
+:is(.hub-week, .daily-quests, .swipe-picked, .spin-list, #reasons, .dishes-grid, .rec-grid, .picks, .dv-field, .hub-menu-courses) > :nth-child(1) { animation-delay: 0ms; }
+:is(.hub-week, .daily-quests, .swipe-picked, .spin-list, #reasons, .dishes-grid, .rec-grid, .picks, .dv-field, .hub-menu-courses) > :nth-child(2) { animation-delay: 40ms; }
+:is(.hub-week, .daily-quests, .swipe-picked, .spin-list, #reasons, .dishes-grid, .rec-grid, .picks, .dv-field, .hub-menu-courses) > :nth-child(3) { animation-delay: 80ms; }
+:is(.hub-week, .daily-quests, .swipe-picked, .spin-list, #reasons, .dishes-grid, .rec-grid, .picks, .dv-field, .hub-menu-courses) > :nth-child(4) { animation-delay: 120ms; }
+:is(.hub-week, .daily-quests, .swipe-picked, .spin-list, #reasons, .dishes-grid, .rec-grid, .picks, .dv-field, .hub-menu-courses) > :nth-child(5) { animation-delay: 160ms; }
+:is(.hub-week, .daily-quests, .swipe-picked, .spin-list, #reasons, .dishes-grid, .rec-grid, .picks, .dv-field, .hub-menu-courses) > :nth-child(n+6) { animation-delay: 200ms; }
+
+/* 3, 9: screens change by View Transition where the browser has one. The
+   plain rise stays for browsers that do not, and the two are never stacked. */
+@supports (view-transition-name: none) {
+  .view.is-current, .panel.is-current { animation: none; }
+  ::view-transition-old(root) { animation: vt-out var(--t-quick) var(--snap) both; }
+  ::view-transition-new(root) { animation: vt-in var(--t-slow) var(--snap) both; }
+  ::view-transition-group(dish-art) { animation-duration: 520ms; animation-timing-function: var(--spring-soft); }
+  ::view-transition-old(dish-art), ::view-transition-new(dish-art) { animation-duration: 520ms; }
+}
+#panel-result.is-current #result-icon { view-transition-name: dish-art; }
+@keyframes vt-out { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes vt-in { from { opacity: 0; transform: translateY(14px); } }
+
+/* 5, 8: the ring rings, the number ticks */
+#daily-ring-fill { transition: stroke-dasharray .9s var(--spring-soft); }
+.daily-quest-tick { transition: transform var(--t-slow) var(--spring-soft), background var(--t-std) var(--snap); }
+.daily-quest.is-done .daily-quest-tick { transform: scale(1.08); }
+
+/* the friend's line on the front door */
+.landing-hello-row { display: flex; align-items: center; gap: var(--s3); }
+.landing-hello-row[hidden] { display: none; }
+.landing-hello-row .landing-hello { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.hub-week, .daily-quests, .swipe-picked, .spin-list, #reasons, .dishes-grid, .rec-grid, .picks, .dv-field, .hub-menu-courses) > * { animation: none !important; }
+  ::view-transition-old(root), ::view-transition-new(root), ::view-transition-group(dish-art) { animation: none !important; }
+  .go:active, .pick:active, .choice:active, .mode-card:active { transform: none !important; }
+  #daily-ring-fill, .daily-quest-tick { transition: none !important; }
+}

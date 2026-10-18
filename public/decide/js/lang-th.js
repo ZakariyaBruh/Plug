@@ -2451,5 +2451,21 @@ window.I18N_PATTERNS.th = [
 [
 "{0} days in a row",
 "ติดต่อกัน {0} วัน"
+],
+[
+"{0} again? No judgement. Okay, a little.",
+"{0} อีกแล้ว? ไม่ตัดสินนะ โอเค ตัดสินนิดหน่อย"
+],
+[
+"Look who it is. {0} days. You had {1}, last time.",
+"ดูสิใครมา {0} วันแล้ว ครั้งก่อนคุณกิน {1}"
+],
+[
+"{0} days. I kept your seat warm. You had {1}, last time.",
+"{0} วัน ฉันเก็บที่นั่งอุ่น ๆ ไว้ให้ ครั้งก่อนคุณกิน {1}"
+],
+[
+"Back already. Yesterday was {0}. Any regrets?",
+"กลับมาเร็วนัก เมื่อวานคือ {0} เสียใจไหม"
 ]
 ];

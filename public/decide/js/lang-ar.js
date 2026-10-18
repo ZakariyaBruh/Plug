@@ -2452,5 +2452,21 @@ window.I18N_PATTERNS.ar = [
 [
 "{0} days in a row",
 "{0} أيام متتالية"
+],
+[
+"{0} again? No judgement. Okay, a little.",
+"{0} مرة أخرى؟ بلا أحكام. حسنًا، قليلًا."
+],
+[
+"Look who it is. {0} days. You had {1}, last time.",
+"انظر من هنا. مرّت {0} أيام. آخر مرة تناولت {1}."
+],
+[
+"{0} days. I kept your seat warm. You had {1}, last time.",
+"{0} أيام. أبقيت مقعدك دافئًا. آخر مرة تناولت {1}."
+],
+[
+"Back already. Yesterday was {0}. Any regrets?",
+"عدت بسرعة. أمس كان {0}. أي ندم؟"
 ]
 ];

@@ -2417,5 +2417,21 @@ window.I18N_PATTERNS.ms = [
 [
 "{0} days in a row",
 "{0} hari berturut-turut"
+],
+[
+"{0} again? No judgement. Okay, a little.",
+"{0} lagi? Tiada penghakiman. Okay, sedikit."
+],
+[
+"Look who it is. {0} days. You had {1}, last time.",
+"Tengok siapa datang. {0} hari. Kali lepas anda makan {1}."
+],
+[
+"{0} days. I kept your seat warm. You had {1}, last time.",
+"{0} hari. Saya jaga tempat duduk anda. Kali lepas anda makan {1}."
+],
+[
+"Back already. Yesterday was {0}. Any regrets?",
+"Dah balik. Semalam {0}. Ada menyesal?"
 ]
 ];

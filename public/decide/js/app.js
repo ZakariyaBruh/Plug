@@ -551,6 +551,26 @@
     Recipes: Recipes
   };
 
+  /*
+   * Screens move like an app, not like a web page. Where the browser can do a
+   * View Transition, the change of screen is a short cross-fade with a little
+   * travel, and anything given a view-transition-name (the dish you chose, see
+   * landSwipe) glides from where it was to where it lands instead of cutting.
+   * Everywhere else, and for anybody who asked for less motion, it is simply
+   * the change. State is always set at once; only the painting is wrapped.
+   */
+  // Names the element the next screen will pick up, so the dish travels.
+  function carry(el) {
+    if (!el || !el.style || reduceMotion || !document.startViewTransition) return;
+    el.style.viewTransitionName = 'dish-art';
+    setTimeout(function () { el.style.viewTransitionName = ''; }, 900);
+  }
+
+  function vt(change) {
+    if (reduceMotion || !document.startViewTransition || document.visibilityState !== 'visible') return change();
+    try { document.startViewTransition(change); } catch (err) { change(); }
+  }
+
   function setView(name) {
     // Leaving the menu tab is a decision about the menu, so it is taken here,
     // before `view` moves on and the old one is unknowable. See leaveMenu.
@@ -558,13 +578,15 @@
     // Same for the TV: leaving it pauses it, unless it is in picture-in-picture.
     if (view === 'radio' && name !== 'radio') leaveTv();
     view = name;
-    $$('.view').forEach(function (el) {
-      el.classList.toggle('is-current', el.id === 'view-' + name);
-    });
-    $$('.rail-link').forEach(function (el) {
-      var on = el.dataset.view === name;
-      el.classList.toggle('is-current', on);
-      el.setAttribute('aria-current', on ? 'page' : 'false');
+    vt(function () {
+      $$('.view').forEach(function (el) {
+        el.classList.toggle('is-current', el.id === 'view-' + name);
+      });
+      $$('.rail-link').forEach(function (el) {
+        var on = el.dataset.view === name;
+        el.classList.toggle('is-current', on);
+        el.setAttribute('aria-current', on ? 'page' : 'false');
+      });
     });
     if (name === 'decide') renderIntro();
     if (name === 'profile') renderProfile();
@@ -584,10 +606,12 @@
 
   function setPanel(name) {
     panel = name;
-    $$('#view-decide .panel').forEach(function (el) {
-      el.classList.toggle('is-current', el.id === 'panel-' + name);
+    vt(function () {
+      $$('#view-decide .panel').forEach(function (el) {
+        el.classList.toggle('is-current', el.id === 'panel-' + name);
+      });
+      window.scrollTo(0, 0);
     });
-    window.scrollTo(0, 0);
   }
 
   $$('.rail-link').forEach(function (el) {
@@ -753,7 +777,10 @@
     var el = $('landing-hello');
     if (!el) return;
     el.hidden = !played;
+    var row = $('landing-hello-row');
+    if (row) row.hidden = !played;
     if (!played) return;
+    if (typeof Dot !== 'undefined' && Dot) Dot.mood($('mascot-l'), 'happy', 1800);
 
     var hour = new Date().getHours();
     var band = HELLOS.filter(function (h) { return hour < h.until; })[0] || HELLOS[HELLOS.length - 1];
@@ -795,7 +822,21 @@
     var back = returningDay();
     var last = (state.history || [])[0];
     if (back && last && last.name) {
-      el.textContent = 'Welcome back. Last time: ' + last.name + '.';
+      /*
+       * A friend, not a form. These are the things a person who had been paying
+       * attention would say: what you had, how long it has been, and the dish you
+       * keep coming back to. Each is counted from this device's own history and
+       * left out when the numbers do not carry it — it never pretends to know
+       * more than it does, and it never scolds anybody for staying away.
+       */
+      var gap = last.at ? Math.floor((Date.now() - last.at) / 86400000) : 0;
+      var times = (state.history || []).filter(function (e) { return e.name === last.name; }).length;
+      var pool;
+      if (times >= 3) pool = [last.name + ' again? No judgement. Okay, a little.'];
+      else if (gap >= 7) pool = ['Look who it is. ' + gap + ' days. You had ' + last.name + ', last time.'];
+      else if (gap >= 2) pool = [gap + ' days. I kept your seat warm. You had ' + last.name + ', last time.'];
+      else pool = ['Back already. Yesterday was ' + last.name + '. Any regrets?', 'Welcome back. Last time: ' + last.name + '.'];
+      el.textContent = pool[Math.floor(Math.random() * pool.length)];
       return;
     }
 
@@ -4031,10 +4072,13 @@
       dot.style.left = cx + 'px'; dot.style.top = cy + 'px';
       document.body.appendChild(dot);
       var ang = (Math.PI * 2 * i) / n + Math.random() * 0.5, dist = 34 + Math.random() * 26;
+      // An arc, not a line: out and up on the way, gravity on the way down.
+      var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
       var a = dot.animate([
-        { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
-        { transform: 'translate(calc(-50% + ' + Math.cos(ang) * dist + 'px), calc(-50% + ' + Math.sin(ang) * dist + 'px)) scale(.2)', opacity: 0 }
-      ], { duration: 460, easing: 'cubic-bezier(.2,0,0,1)' });
+        { transform: 'translate(-50%,-50%) scale(1)', opacity: 1, offset: 0 },
+        { transform: 'translate(calc(-50% + ' + dx * 0.7 + 'px), calc(-50% + ' + (dy * 0.7 - 12) + 'px)) scale(.8)', opacity: 1, offset: 0.55 },
+        { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + (dy + 16) + 'px)) scale(.15)', opacity: 0, offset: 1 }
+      ], { duration: 520, easing: 'cubic-bezier(.2,0,0,1)' });
       a.onfinish = (function (d) { return function () { if (d.parentNode) d.parentNode.removeChild(d); }; })(dot);
     }
   }
@@ -10484,6 +10528,15 @@
   })();
   Array.prototype.forEach.call(document.querySelectorAll('.mascot'), Dot.mount);
 
+  // A light tick under the thumb on the controls you press most. Phones only,
+  // and only where the browser offers it.
+  document.addEventListener('pointerdown', function (event) {
+    if (event.pointerType !== 'touch' || !navigator.vibrate) return;
+    if (event.target.closest && event.target.closest('.go, .pick, .mode-card, .choice, .dv-card, .arc-tile')) {
+      try { navigator.vibrate(6); } catch (err) { /* fine */ }
+    }
+  }, { passive: true });
+
   /* ------------------------------------------------------------- lifecycle */
   function resetGame() {
     /*
@@ -11777,7 +11830,7 @@
       blurb.textContent = dish.blurb;
 
       [face, name, blurb].forEach(function (el) { button.appendChild(el); });
-      button.addEventListener('click', function () { landSwipe(dish); });
+      button.addEventListener('click', function () { carry(face); landSwipe(dish); });
       li.appendChild(button);
       list.appendChild(li);
     });
@@ -13087,7 +13140,7 @@
       blurb.className = 'swipe-pick-blurb';
       blurb.textContent = dish.blurb;
       [face, name, blurb].forEach(function (e) { button.appendChild(e); });
-      button.addEventListener('click', function () { landArcade(dish, picks); });
+      button.addEventListener('click', function () { carry(face); landArcade(dish, picks); });
       li.appendChild(button);
       list.appendChild(li);
     });

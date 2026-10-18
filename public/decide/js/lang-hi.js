@@ -2451,5 +2451,21 @@ window.I18N_PATTERNS.hi = [
 [
 "{0} days in a row",
 "लगातार {0} दिन"
+],
+[
+"{0} again? No judgement. Okay, a little.",
+"फिर से {0}? कोई जजमेंट नहीं। ठीक है, थोड़ा सा।"
+],
+[
+"Look who it is. {0} days. You had {1}, last time.",
+"देखो कौन आया। {0} दिन हो गए। पिछली बार आपने {1} खाया था।"
+],
+[
+"{0} days. I kept your seat warm. You had {1}, last time.",
+"{0} दिन। मैंने आपकी सीट गरम रखी। पिछली बार आपने {1} खाया था।"
+],
+[
+"Back already. Yesterday was {0}. Any regrets?",
+"अभी वापस? कल {0} था। कोई पछतावा?"
 ]
 ];
