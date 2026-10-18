@@ -6579,7 +6579,7 @@ dialog::backdrop { animation: fade-in var(--t-std) var(--snap) both; }
 body { font-feature-settings: "kern", "liga", "calt"; }
 h1, h2, h3, .q-title, .verdict-name, .landing-ask, .head-title { text-wrap: balance; }
 p, li, .verdict-note, .landing-sub, .head-sub { text-wrap: pretty; }
-p, .pane-line, .head-sub, .verdict-note { max-width: 68ch; }
+.pane-line, .head-sub, .verdict-note { max-width: 68ch; }
 #xp-total, .q-step, #arc-score, #arc-time, #arc-combo, .daily-ring, .hub-week-title, .endless-score, [id$="-score"], .xp-line { font-variant-numeric: tabular-nums; }
 .verdict-name { font-size: clamp(2.25rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -.035em; }
 
@@ -6887,24 +6887,33 @@ html.vt-active .rail-link.is-current::before { view-transition-name: plate; }
 /* ==========================================================================
    Dot, the companion: a small face in the corner of every screen.
    ========================================================================== */
-.buddy { position: fixed; right: max(1rem, env(safe-area-inset-right)); bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 30; display: grid; justify-items: end; gap: .55rem; pointer-events: none; }
+.buddy {
+  position: fixed; left: 0; top: 0; z-index: 30; width: 50px; height: 50px; pointer-events: none;
+  transform: translate(var(--bx, 0px), var(--by, 0px));
+  transition: transform .8s var(--spring-soft);
+}
+.buddy.is-instant, .buddy.is-dragging { transition: none; }
 .buddy[hidden] { display: none; }
 .buddy-face {
-  pointer-events: auto; width: 3.1rem; height: 3.1rem; padding: 0; border: 0; border-radius: 50%; cursor: pointer;
+  pointer-events: auto; position: absolute; inset: 0; width: 50px; height: 50px; padding: 0; border: 0; border-radius: 50%; cursor: grab; touch-action: none;
   background: color-mix(in srgb, var(--void) 70%, transparent); -webkit-tap-highlight-color: transparent;
   filter: drop-shadow(0 8px 14px rgb(0 0 0 / .55));
   transition: transform .4s var(--spring-soft);
 }
 .buddy-face:hover { transform: translateY(-3px) scale(1.06); }
-.buddy-face:active { transform: scale(.92, .88); transition-duration: 90ms; }
+.buddy-face:active, .buddy.is-dragging .buddy-face { cursor: grabbing; transform: scale(1.12) rotate(-6deg); transition-duration: 90ms; }
 .buddy-bubble {
-  position: relative; margin: 0; max-width: min(17rem, 78vw); padding: .6rem .85rem; border-radius: 14px 14px 4px 14px;
+  position: absolute; bottom: calc(100% + .55rem); right: 0; margin: 0; width: max-content; max-width: min(17rem, 72vw);
+  padding: .6rem .85rem; border-radius: 14px 14px 4px 14px;
   background: var(--paper); color: var(--paper-ink); font-size: var(--t-sm); line-height: 1.4; pointer-events: none;
   box-shadow: 0 14px 28px -14px rgb(0 0 0 / .9);
 }
+.buddy:not(.to-left) .buddy-bubble { right: auto; left: 0; border-radius: 14px 14px 14px 4px; }
+.buddy.to-below .buddy-bubble { bottom: auto; top: calc(100% + .55rem); }
 .buddy-bubble[hidden] { display: none; }
-.buddy-bubble.is-in { animation: bubble-in .45s var(--spring-soft) both; transform-origin: 90% 100%; }
+.buddy-bubble.is-in { animation: bubble-in .45s var(--spring-soft) both; }
 @keyframes bubble-in { from { opacity: 0; transform: translateY(8px) scale(.8); } to { opacity: 1; transform: none; } }
+.buddy-controls { display: flex; flex-wrap: wrap; gap: var(--s2); margin: var(--s2) 0; }
 
 .dot-eyes { transform: translate(var(--ex, 0), var(--ey, 0)); transition: transform .12s ease-out; }
 .dot-sleep { display: none; }
@@ -6916,4 +6925,10 @@ html.vt-active .rail-link.is-current::before { view-transition-name: plate; }
 .mascot[data-mood="sleepy"] .dot-body { animation: dot-breathe 4s ease-in-out infinite; }
 @keyframes dot-breathe { 50% { transform: scale(1.03, .97); } }
 @media (prefers-reduced-motion: reduce) { .buddy-bubble.is-in, .mascot[data-mood="sleepy"] .dot-body { animation: none !important; } .buddy-face { transition: none; } }
-@media (max-width: 40rem) { .buddy-face { width: 2.6rem; height: 2.6rem; } .buddy { bottom: max(.75rem, env(safe-area-inset-bottom)); } }
+
+
+.mascot[data-mood="surprised"] .dot-eyes circle { r: 3; }
+.mascot[data-mood="surprised"] .dot-m-smile { display: none; }
+.mascot[data-mood="surprised"] .dot-m-open { display: block; }
+.mascot[data-mood="surprised"] .dot-body { animation: dot-hop .35s var(--spring); }
+#result-icon, #done-icon { cursor: pointer; }

@@ -5287,6 +5287,7 @@
   }
 
   function toast(icon, title, text) {
+    if (typeof Buddy !== 'undefined' && Buddy) Buddy.react('happy', 900);
     toastQueue.push({ icon: icon, title: title, text: text });
     if (!toasting) nextToast();
   }
@@ -10636,11 +10637,16 @@
    * dismissed is just an advert with eyes.
    */
   var Buddy = (function () {
-    var KEY = 'morsels-buddy';
-    var on = true;
-    try { on = localStorage.getItem(KEY) !== 'off'; } catch (err) { on = true; }
+    var KEY = 'morsels-buddy', POS = 'morsels-buddy-home', PLAY = 'morsels-buddy-play';
+    var on = true, playful = true, home = null;
+    try {
+      on = localStorage.getItem(KEY) !== 'off';
+      playful = localStorage.getItem(PLAY) !== 'off';
+      home = JSON.parse(localStorage.getItem(POS) || 'null');
+    } catch (err) { /* fine */ }
     var told = {};          // views already greeted this visit
-    var lastSpoke = 0, hideTimer = 0, boops = 0, idleTimer = 0, asked = 0;
+    var lastSpoke = 0, hideTimer = 0, boops = 0, idleTimer = 0, asked = 0, returnTimer = 0;
+    var SIZE = 50, at = { x: 0, y: 0 }, drag = null, nommed = {};
 
     var VIEW = {
       dishes:  ['450 dishes. I have opinions about all of them.', 'Every one of these is described with total confidence.'],
@@ -10663,17 +10669,49 @@
       soupy: 'Soup. Sensible.', cheesy: 'Cheese. No notes.'
     };
     var QUIP = ['Interesting.', 'Noted.', 'I see where this is going.', 'Mm. Okay.'];
+    var NOM = ['Quality control. Looks fine.', 'Nom. Seems legitimate.', 'I had a bite. For safety.', 'Mm. Approved. Mostly.'];
+    var DRAG = ['Wheee.', 'Put me down. Gently.', 'Where are we going?'];
 
     function el() { return $('mascot-b'); }
     function box() { return $('buddy'); }
+    function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+    function wide() { return window.innerWidth >= 1000; }
+    function playing() { return view === 'decide' && /^(arcade|swipe|endless|duel|knockout|blitz|spin|together)$/.test(panel); }
 
     function visible() {
       if (!on) return false;
       if (document.body.classList.contains('is-landing') || document.body.classList.contains('is-welcoming')) return false;
-      // Out of the way of anything that is being played.
-      if (view === 'decide' && /^(arcade|swipe|endless|duel|knockout|blitz|spin|together)$/.test(panel)) return false;
+      // Out of the way of anything that is being played, unless there is room
+      // to sit beside it and cheer.
+      if (playing() && !wide()) return false;
       return true;
     }
+
+    // Where Dot lives when it is not visiting something.
+    function homeSpot() {
+      var vw = window.innerWidth, vh = window.innerHeight, m = 16;
+      if (home && !playing()) return { x: Math.max(m, Math.min(vw - SIZE - m, home.x)), y: Math.max(70, Math.min(vh - SIZE - m, home.y)) };
+      if (playing()) return { x: vw - SIZE - m, y: 76 };
+      return { x: vw - SIZE - m, y: vh - SIZE - m };
+    }
+
+    // Glide to a spot (top-left of the face), on a spring, and say which side the
+    // bubble should open on so it never leaves the screen.
+    function go(x, y, instant) {
+      var vw = window.innerWidth, vh = window.innerHeight, m = 8;
+      x = Math.max(m, Math.min(vw - SIZE - m, x));
+      y = Math.max(64, Math.min(vh - SIZE - m, y));
+      at = { x: x, y: y };
+      var b = box();
+      if (!b) return;
+      b.classList.toggle('is-instant', !!instant);
+      b.style.setProperty('--bx', Math.round(x) + 'px');
+      b.style.setProperty('--by', Math.round(y) + 'px');
+      b.classList.toggle('to-left', x > vw / 2);
+      b.classList.toggle('to-below', y < 150);
+    }
+
+    function goHome(instant) { var h = homeSpot(); go(h.x, h.y, instant); }
 
     function sync() {
       var b = box();
@@ -10681,7 +10719,7 @@
       Dot.mount(el());
       b.hidden = !visible();
       if (b.hidden) bubbleOff();
-      // Late at night it is sleepy; otherwise it is just there.
+      else if (!drag) { clearTimeout(returnTimer); goHome(!b.dataset.placed); b.dataset.placed = '1'; }
       var h = new Date().getHours();
       if (!el()._busy) el().setAttribute('data-mood', h >= 23 || h < 5 ? 'sleepy' : 'idle');
     }
@@ -10711,21 +10749,98 @@
       if (!node || !visible()) return;
       node._busy = true;
       Dot.mood(node, mood, hold || 1400);
-      setTimeout(function () { node._busy = false; sync(); }, (hold || 1400) + 50);
+      setTimeout(function () { node._busy = false; sync2(); }, (hold || 1400) + 50);
+    }
+    function sync2() { var h = new Date().getHours(); if (el() && !el()._busy) el().setAttribute('data-mood', h >= 23 || h < 5 ? 'sleepy' : 'idle'); }
+
+    // Dot hops over to a spot, stays a while, and wanders home.
+    function visit(x, y, stay) {
+      if (!visible() || drag) return;
+      go(x, y);
+      clearTimeout(returnTimer);
+      returnTimer = setTimeout(function () { if (!drag) goHome(); }, stay || 6500);
     }
 
-    function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+    // Beside an element, on whichever side has room.
+    function beside(node, stay) {
+      if (!node || !node.getBoundingClientRect) return;
+      var r = node.getBoundingClientRect(), vw = window.innerWidth;
+      var x = r.right + 14 + SIZE < vw ? r.right + 14 : r.left - SIZE - 14;
+      visit(x, r.top + r.height / 2 - SIZE / 2, stay);
+    }
+
+    // Dot follows your taps around, a little behind and to the side. Not while a
+    // question is open (it would be in the way of the answers) and not on controls
+    // where you are typing.
+    document.addEventListener('pointerdown', function (event) {
+      if (!on || !playful || drag || !visible()) return;
+      if (event.target.closest && event.target.closest('#buddy, input, textarea, select, [contenteditable], dialog, .welcome')) return;
+      if (view === 'decide' && panel === 'question') return;
+      var vw = window.innerWidth;
+      var x = event.clientX + 44 + SIZE < vw ? event.clientX + 44 : event.clientX - 44 - SIZE;
+      visit(x, event.clientY - SIZE / 2 - 8, 5200);
+    }, { passive: true });
+
+    // Dot gets curious about the big buttons.
+    document.addEventListener('pointerover', function (event) {
+      if (!on || drag || !visible() || !event.target.closest) return;
+      if (event.target.closest('.go') && Date.now() - lastSpoke > 3500) react('surprised', 900);
+    }, { passive: true });
+
+    // Pick Dot up and put it somewhere: it stays there until you move it again.
+    (function dragging() {
+      var node = $('mascot-b'), start = null;
+      node.addEventListener('pointerdown', function (event) {
+        start = { x: event.clientX, y: event.clientY, ox: at.x, oy: at.y, moved: false };
+        try { node.setPointerCapture(event.pointerId); } catch (err) { /* fine */ }
+      });
+      node.addEventListener('pointermove', function (event) {
+        if (!start) return;
+        var dx = event.clientX - start.x, dy = event.clientY - start.y;
+        if (!start.moved && Math.sqrt(dx * dx + dy * dy) < 8) return;
+        if (!start.moved) { start.moved = true; drag = true; clearTimeout(returnTimer); box().classList.add('is-dragging'); Dot.mood(node, 'surprised', 0); say(pick(DRAG), null, 2200, true); }
+        go(start.ox + dx, start.oy + dy, true);
+      });
+      var drop = function (event) {
+        if (!start) return;
+        var moved = start.moved; start = null;
+        if (!moved) return;
+        drag = null;
+        box().classList.remove('is-dragging');
+        home = { x: at.x, y: at.y };
+        try { localStorage.setItem(POS, JSON.stringify(home)); } catch (err) { /* fine */ }
+        go(at.x, at.y);
+        Dot.mood(node, 'happy', 1200);
+        event.stopPropagation();
+        node._justDragged = true; setTimeout(function () { node._justDragged = false; }, 50);
+      };
+      node.addEventListener('pointerup', drop);
+      node.addEventListener('pointercancel', drop);
+    })();
+
+    window.addEventListener('resize', function () { if (!drag) goHome(true); });
 
     return {
-      sync: sync, say: say, react: react,
+      sync: sync, say: say, react: react, visit: visit, beside: beside,
       enabled: function () { return on; },
+      playful: function () { return playful; },
       set: function (v) {
         on = !!v;
         try { localStorage.setItem(KEY, on ? 'on' : 'off'); } catch (err) { /* fine */ }
         sync();
         if (on) say('Back again. Miss me?', 'happy', 3200, true);
       },
-      // The first time you walk into each part of the app, one dry line.
+      setPlayful: function (v) {
+        playful = !!v;
+        try { localStorage.setItem(PLAY, playful ? 'on' : 'off'); } catch (err) { /* fine */ }
+        if (!playful) goHome();
+      },
+      putBack: function () {
+        home = null;
+        try { localStorage.removeItem(POS); } catch (err) { /* fine */ }
+        goHome();
+        say('Home again.', 'happy', 2400, true);
+      },
       onView: function (name) {
         setTimeout(sync, 380);
         var lines = VIEW[name];
@@ -10743,12 +10858,32 @@
         if (tag) say(DISH[tag], 'happy', 3600);
       },
       onDone: function () { say('Sorted. Go and eat it.', 'celebrate', 3400, true); },
+      // Quality control: Dot hops over to the dish and takes a bite.
+      nom: function (art) {
+        if (!visible() || !art) return;
+        var key = art.id + ':' + art.textContent;
+        if (nommed[key]) { say('I already had mine.', 'shrug', 2400, true); return; }
+        nommed[key] = true;
+        var r = art.getBoundingClientRect();
+        // Beside the dish if there is room on its left, otherwise above it: never
+        // on top of the name.
+        if (r.left - SIZE - 8 > 230) visit(r.left - SIZE - 8, r.top + r.height / 2 - SIZE / 2, 5200);
+        else visit(r.left, r.top - SIZE - 4, 5200);
+        setTimeout(function () {
+          react('celebrate', 900);
+          if (art.animate && !reduceMotion) art.animate([{ transform: 'scale(1)' }, { transform: 'scale(.78) rotate(-8deg)' }, { transform: 'scale(1)' }], { duration: 520, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+          sparkle(art, 6);
+          say(pick(NOM), null, 3400, true);
+        }, 650);
+      },
+      // From inside a game: it cheers, winces, and says when something big happens.
+      cheer: function (text) { say(text, 'celebrate', 2200); },
+      wince: function () { react('sad', 900); },
       boop: function () {
         react('happy', 900);
         say(BOOP[Math.min(boops++, BOOP.length - 1)], null, 3200, true);
         if (boops > 7) boops = 0;
       },
-      // A gentle word when somebody has been staring at one screen for a minute.
       idle: function () {
         clearTimeout(idleTimer);
         idleTimer = setTimeout(function () {
@@ -10777,14 +10912,23 @@
     }, { passive: true });
   })();
 
-  $('mascot-b').addEventListener('click', function () { Buddy.boop(); });
+  ['result-icon', 'done-icon'].forEach(function (id) { var n = $(id); if (n) { n.style.cursor = 'pointer'; n.addEventListener('click', function () { Buddy.nom(n); }); } });
+  $('mascot-b').addEventListener('click', function () { if (!this._justDragged) Buddy.boop(); });
   function buddyEl() { return $('mascot-b'); }
-  var tog = $('buddy-toggle');
-  if (tog) {
-    var paintTog = function () { tog.textContent = Buddy.enabled() ? 'Dot is here' : 'Dot is off'; tog.setAttribute('aria-pressed', String(Buddy.enabled())); };
-    tog.addEventListener('click', function () { Buddy.set(!Buddy.enabled()); paintTog(); });
-    paintTog();
-  }
+  (function profileControls() {
+    var tog = $('buddy-toggle'), play = $('buddy-play'), back = $('buddy-home');
+    if (tog) {
+      var paintTog = function () { tog.textContent = Buddy.enabled() ? 'Dot is here' : 'Dot is off'; tog.setAttribute('aria-pressed', String(Buddy.enabled())); };
+      tog.addEventListener('click', function () { Buddy.set(!Buddy.enabled()); paintTog(); });
+      paintTog();
+    }
+    if (play) {
+      var paintPlay = function () { play.textContent = Buddy.playful() ? 'Follows your taps' : 'Stays put'; play.setAttribute('aria-pressed', String(Buddy.playful())); };
+      play.addEventListener('click', function () { Buddy.setPlayful(!Buddy.playful()); paintPlay(); });
+      paintPlay();
+    }
+    if (back) back.addEventListener('click', function () { Buddy.putBack(); });
+  })();
   Buddy.sync();
 
   // A light tick under the thumb on the controls you press most. Phones only,
@@ -12652,9 +12796,11 @@
     arcVote(dish, weight);
     Sound.climb(arcade.combo);
     arcPopup(x, y, '+' + gain, weight > 1 ? 'is-gold' : '');
+    if (arcade.combo > 0 && arcade.combo % 10 === 0) Buddy.cheer(arcade.combo + ' in a row!');
   }
 
   function arcadeHurt(x, y) {
+    if (typeof Buddy !== 'undefined' && Buddy) Buddy.wince();
     arcade.lives = Math.max(0, arcade.lives - 1);
     arcade.combo = 0;
     Sound.bust();
