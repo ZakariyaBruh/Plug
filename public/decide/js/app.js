@@ -3443,6 +3443,7 @@
     $('menu-now-step').textContent =
       'Course ' + (menuRun.step + 1) + ' of ' + menuRun.menu.length;
     $('menu-now-when').textContent = entry.course.label;
+    if (menuRun.step > 0 && typeof Buddy !== 'undefined' && Buddy) Buddy.say(menuRun.step + 1 === menuRun.menu.length ? 'Last one. Nearly civilised.' : 'Next course. Pace yourself.', 'happy', 3000);
     $('menu-now-art').textContent = entry.dish.icon;
     $('menu-now-why').textContent = entry.why || entry.dish.blurb;
     $('menu-take-label').textContent = 'That’s ' + entry.course.word;
@@ -6929,6 +6930,7 @@
     // thing this app asks anybody to do.
     chat.busy = true;
     $('chat-send').disabled = true;
+    Buddy.think(true);
 
     var log = $('chat-log');
     log.appendChild(chatRow('user', text, false));
@@ -6958,6 +6960,7 @@
     }).then(function (answer) {
       chat.busy = false;
       $('chat-send').disabled = false;
+      Buddy.think(false);
 
       if (answer.body && typeof answer.body.left === 'number') {
         chat.left = answer.body.left;
@@ -7806,6 +7809,8 @@
     // A theme is Premium, so a lapsed subscription goes back to the one the app
     // ships with rather than keeping a perk it is no longer paying for.
     var id = isPlus() ? (progress.state.theme || '') : '';
+    var before = document.documentElement.getAttribute('data-theme') || '';
+    if (id !== before && before !== undefined && typeof Buddy !== 'undefined' && Buddy && view === 'profile') setTimeout(function () { Buddy.say('Ooh. New look.', 'happy', 2800); }, 250);
     if (id) document.documentElement.setAttribute('data-theme', id);
     else document.documentElement.removeAttribute('data-theme');
     // The browser chrome follows the page, and so does the colour scheme —
@@ -10637,11 +10642,12 @@
    * dismissed is just an advert with eyes.
    */
   var Buddy = (function () {
-    var KEY = 'morsels-buddy', POS = 'morsels-buddy-home', PLAY = 'morsels-buddy-play';
-    var on = true, playful = true, home = null;
+    var KEY = 'morsels-buddy', POS = 'morsels-buddy-home', PLAY = 'morsels-buddy-play', QUIET = 'morsels-buddy-quiet';
+    var on = true, playful = true, home = null, quiet = false;
     try {
       on = localStorage.getItem(KEY) !== 'off';
       playful = localStorage.getItem(PLAY) !== 'off';
+      quiet = localStorage.getItem(QUIET) === 'on';
       home = JSON.parse(localStorage.getItem(POS) || 'null');
     } catch (err) { /* fine */ }
     var told = {};          // views already greeted this visit
@@ -10732,11 +10738,14 @@
 
     function say(text, mood, ms, force) {
       if (!visible() || !text) return;
+      // Quiet mode: nothing unprompted. Things you ask for (a tap on Dot) still answer.
+      if (quiet && force !== 'asked') return;
       var now = Date.now();
       if (!force && now - lastSpoke < 9000) return;
       lastSpoke = now;
       var bb = $('buddy-bubble');
       bb.textContent = text;
+      bb.classList.remove('has-action');
       bb.hidden = false;
       bb.classList.remove('is-in'); void bb.offsetWidth; bb.classList.add('is-in');
       if (mood) react(mood);
@@ -10820,6 +10829,45 @@
 
     window.addEventListener('resize', function () { if (!drag) goHome(true); });
 
+    // A line and one button, only ever in answer to a tap on Dot. It never
+    // pops up with a suggestion by itself.
+    var offered = {};
+    function offerAction(o) {
+      var bb = $('buddy-bubble');
+      bb.textContent = '';
+      bb.appendChild(document.createTextNode(o.text + ' '));
+      var go = document.createElement('button');
+      go.type = 'button';
+      go.textContent = o.label;
+      go.addEventListener('click', function (event) { event.stopPropagation(); bubbleOff(); o.run(); });
+      bb.appendChild(go);
+      bb.classList.add('has-action');
+      bb.hidden = false;
+      bb.classList.remove('is-in'); void bb.offsetWidth; bb.classList.add('is-in');
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(function () { bubbleOff(); bb.classList.remove('has-action'); }, 7000);
+    }
+    var OFFERS = {
+      dishes: { text: 'Want me to pick one?', label: 'Pick one', run: function () {
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#view-dishes .dish'));
+        if (!rows.length) return say('Nothing to pick from. Awkward.', 'shrug', 3000, 'asked');
+        var row = rows[Math.floor(Math.random() * rows.length)];
+        row.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+        if (row.animate && !reduceMotion) row.animate([{ background: 'color-mix(in srgb, var(--amber) 28%, transparent)' }, { background: 'transparent' }], { duration: 1800, easing: 'ease-out' });
+        setTimeout(function () { beside(row, 5200); say('That one. Look at it.', 'happy', 3200, 'asked'); }, 500);
+      } },
+      planner: { text: 'Fill the empty dinners?', label: 'Fill them', run: function () {
+        var b = Array.prototype.slice.call(document.querySelectorAll('#view-planner button')).filter(function (x) { return /Fill my empty meals/.test(x.textContent); })[0];
+        if (b) b.click(); else say('Nothing to fill. Show-off.', 'shrug', 3000, 'asked');
+      } },
+      daily: { text: 'Want to see what is next?', label: 'Show me', run: function () {
+        var q = document.querySelector('#daily-quests .daily-quest:not(.is-done):not(.is-locked) .daily-quest-btn');
+        if (q) { q.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' }); setTimeout(function () { q.click(); }, 400); }
+        else say('All done. I have nothing. Go outside.', 'celebrate', 3200, 'asked');
+      } },
+      chat: { text: 'Got a question?', label: 'Ask', run: function () { var f = $('chat-input'); if (f) f.focus(); } }
+    };
+
     return {
       sync: sync, say: say, react: react, visit: visit, beside: beside,
       enabled: function () { return on; },
@@ -10881,9 +10929,25 @@
       wince: function () { react('sad', 900); },
       boop: function () {
         react('happy', 900);
-        say(BOOP[Math.min(boops++, BOOP.length - 1)], null, 3200, true);
+        // On pages that have something worth offering, the first tap offers it.
+        var offer = OFFERS[view];
+        if (offer && (!offered[view] || Date.now() - offered[view] > 30000)) {
+          offered[view] = Date.now();
+          return offerAction(offer);
+        }
+        say(BOOP[Math.min(boops++, BOOP.length - 1)], null, 3200, 'asked');
         if (boops > 7) boops = 0;
       },
+      think: function (yes) {
+        var node = el();
+        if (!node || !visible()) return;
+        node._busy = !!yes;
+        if (yes) Dot.mood(node, 'thinking', 0);
+        else { Dot.mood(node, 'happy', 1000); }
+      },
+      dance: function (yes) { var node = el(); if (node) node.classList.toggle('is-dancing', !!yes); },
+      setQuiet: function (v) { quiet = !!v; try { localStorage.setItem(QUIET, quiet ? 'on' : 'off'); } catch (err) { /* fine */ } },
+      quiet: function () { return quiet; },
       idle: function () {
         clearTimeout(idleTimer);
         idleTimer = setTimeout(function () {
@@ -10927,7 +10991,31 @@
       play.addEventListener('click', function () { Buddy.setPlayful(!Buddy.playful()); paintPlay(); });
       paintPlay();
     }
+    var chat = $('buddy-quiet');
+    if (chat) {
+      var paintChat = function () { chat.textContent = Buddy.quiet() ? 'Quiet: speaks when tapped' : 'Chatty: the odd remark'; chat.setAttribute('aria-pressed', String(!Buddy.quiet())); };
+      chat.addEventListener('click', function () { Buddy.setQuiet(!Buddy.quiet()); paintChat(); });
+      paintChat();
+    }
     if (back) back.addEventListener('click', function () { Buddy.putBack(); });
+  })();
+
+  // Page-specific moments. Every one is short, once-in-a-while, and silent in
+  // quiet mode; none of them moves anything on the page.
+  window.M45Dot = Buddy;
+  // Music on: Dot sways, quietly, until it stops. Any audio or video counts.
+  ['play', 'playing'].forEach(function (ev) { document.addEventListener(ev, function (e) { if (e.target && /^(AUDIO|VIDEO)$/.test(e.target.tagName)) Buddy.dance(true); }, true); });
+  ['pause', 'ended'].forEach(function (ev) { document.addEventListener(ev, function (e) { if (e.target && /^(AUDIO|VIDEO)$/.test(e.target.tagName)) Buddy.dance(false); }, true); });
+  // Searching the dishes: a word when nothing matches.
+  (function () {
+    var f = $('dish-search'), t = 0;
+    if (!f) return;
+    f.addEventListener('input', function () {
+      clearTimeout(t);
+      t = setTimeout(function () {
+        if (f.value.trim().length > 2 && !document.querySelector('#view-dishes .dish')) Buddy.say('Nothing. Even I am disappointed.', 'sad', 3200);
+      }, 900);
+    });
   })();
   Buddy.sync();
 

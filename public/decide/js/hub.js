@@ -547,6 +547,7 @@
 
     function add(item) {
       addToSlot(picker.slot, item);
+      dot({ breakfast: 'Breakfast. Optimistic.', lunch: 'Lunch. Sensible.', dinner: 'Dinner, handled.', snack: 'A snack. Bold of you to plan it.' }[meal]);
       Sound.tick();
       dlg.close();
       renderPlanner();
@@ -668,6 +669,7 @@
       var done = copyDay(from, chosen(), m);
       dlg.close();
       planner.ai = { kind: 'copy', from: from, days: done.days, changed: done.changed, undo: done.before };
+      if (done.changed) dot('Efficient.');
       if (done.changed) Sound.win();
       renderPlanner();
     });
@@ -700,6 +702,9 @@
   }
 
   /* ---- the calendar's AI ----------------------------------------------- */
+
+  // Dot, if it is about: a word at the moments that deserve one, never more.
+  function dot(text, mood) { if (window.M45Dot) window.M45Dot.say(text, mood || 'happy', 3000); }
 
   function emptySlots(which) {
     var meals = which === 'dinner' ? ['dinner'] : which === 'main' ? ['lunch', 'dinner'] : MEALS;
@@ -738,6 +743,7 @@
         .then(function (res) {
           res.fills.forEach(function (f) { addToSlot(f.slot, { t: 'dish', name: f.name, ai: true }); });
           planner.ai = { kind: 'fill', count: res.fills.length, undo: before };
+          dot('Look at you, planning.', 'celebrate');
           Sound.win();
           renderPlanner();
         })

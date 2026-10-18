@@ -6932,3 +6932,20 @@ html.vt-active .rail-link.is-current::before { view-transition-name: plate; }
 .mascot[data-mood="surprised"] .dot-m-open { display: block; }
 .mascot[data-mood="surprised"] .dot-body { animation: dot-hop .35s var(--spring); }
 #result-icon, #done-icon { cursor: pointer; }
+
+/* thinking: eyes up and to the side while an answer is on its way */
+.mascot[data-mood="thinking"] .dot-eyes { transform: translate(1.6px, -1.6px); }
+.mascot[data-mood="thinking"] .dot-m-smile { display: none; }
+.mascot[data-mood="thinking"] .dot-m-flat { display: block; }
+.mascot[data-mood="thinking"] .dot-body { animation: dot-tilt 2.2s ease-in-out infinite; }
+/* swaying while something plays */
+.mascot.is-dancing .dot-body { animation: dot-sway .9s ease-in-out infinite alternate; }
+@keyframes dot-sway { from { transform: rotate(-7deg) translateY(0); } to { transform: rotate(7deg) translateY(-6%); } }
+.buddy-bubble.has-action { pointer-events: auto; }
+.buddy-bubble button {
+  margin-left: .35rem; padding: .15rem .65rem; border: 0; border-radius: 999px; background: var(--paper-ink); color: var(--paper);
+  font: inherit; font-weight: 600; cursor: pointer; transition: transform .2s var(--spring-soft);
+}
+.buddy-bubble button:hover { transform: scale(1.06); }
+.buddy-bubble button:active { transform: scale(.94); }
+@media (prefers-reduced-motion: reduce) { .mascot.is-dancing .dot-body, .mascot[data-mood="thinking"] .dot-body { animation: none !important; } }
