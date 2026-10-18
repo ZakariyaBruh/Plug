@@ -87,6 +87,7 @@ window.I18N_DICT.ar = {
 "All afternoon": "طوال فترة بعد الظهر",
 "All dishes": "كل الأطباق",
 "All empty meals": "كل الوجبات الفارغة",
+"All five": "الخمسة كلها",
 "All five done. See you tomorrow.": "اكتملت الخمسة. أراك غدًا.",
 "All mine": "كله لي",
 "All of it is free, all of it stacks, and you can change any of it later under": "كل شيء مجاني، وكله يعمل معًا، ويمكنك تغيير أي منه لاحقًا ضمن",
@@ -497,6 +498,7 @@ window.I18N_DICT.ar = {
 "Evening. The one everybody argues about.": "مساء. الوقت الذي يتجادل فيه الجميع.",
 "Evening. You have been putting this off since four.": "مساء. وأنت تؤجّل هذا منذ الرابعة.",
 "Every Premium feature is live": "كل ميزات Premium مفعّلة",
+"Every box ticked. Frankly, show-off behaviour.": "تم تعليم كل الخانات. بصراحة، هذا استعراض.",
 "Every course has a recipe behind it — tap one to read it.": "لكل طبق وصفة خلفه — اضغط على أحدها لتقرأها.",
 "Every day": "كل يوم",
 "Every dish has been on the table this go. Put them all back to start over.": "كل طبق ظهر على الطاولة هذه المرة. أعدها جميعًا لتبدأ من جديد.",
@@ -1206,6 +1208,7 @@ window.I18N_DICT.ar = {
 "One champion, endless challengers. Winner stays on — until something knocks it off.": "بطل واحد، ومتحدّون بلا نهاية. الفائز يبقى — إلى أن يسقطه شيء ما.",
 "One decision, any way you like.": "قرار واحد، بالطريقة التي تحب.",
 "One dish at a time. Right for yes, left for no. Like three, then pick between them.": "طبق واحد في كل مرة. يمينًا للموافقة ويسارًا للرفض. أعجب بثلاثة، ثم اختر بينها.",
+"One down": "واحدة انتهت",
 "One every couple of days": "واحدة كل بضعة أيام",
 "One free TV group and one free radio group a day": "مجموعة تلفاز مجانية واحدة ومجموعة راديو مجانية واحدة كل يوم",
 "One good thing that happened today…": "شيء جيد حدث اليوم…",
@@ -1741,6 +1744,8 @@ window.I18N_DICT.ar = {
 "That did not come back. It usually works second time.": "لم تصل النتيجة. عادةً تنجح في المرة الثانية.",
 "That did not work just now. Try again in a minute.": "لم ينجح ذلك قبل قليل. حاول مجددًا بعد دقيقة.",
 "That does not look like a web address.": "لا يبدو هذا عنوان ويب.",
+"That is a habit forming. Try not to look at it directly.": "هذه عادة تتشكل. حاول ألا تنظر إليها مباشرة.",
+"That is a habit. We are proud, quietly.": "هذه عادة. نحن فخورون، بهدوء.",
 "That is a lot of browsers at once. Even the cloud needs a minute. Try again shortly.": "عدد كبير من المتصفحات في وقت واحد. حاول مجددًا بعد قليل.",
 "That is a lot of browsers at once. Try again shortly.": "عدد كبير من المتصفحات في وقت واحد. حاول مجددًا بعد قليل.",
 "That is all three": "هذه الثلاثة كلها",
@@ -2439,5 +2444,13 @@ window.I18N_PATTERNS.ar = [
 [
 "Balls gone. Score {0}",
 "أُسقطت كل الكرات. النقاط {0}"
+],
+[
+"{0} to go. No rush. Mostly.",
+"تبقّى {0}. لا داعي للعجلة. في الغالب."
+],
+[
+"{0} days in a row",
+"{0} أيام متتالية"
 ]
 ];

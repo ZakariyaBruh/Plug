@@ -87,6 +87,7 @@ window.I18N_DICT.ms = {
 "All afternoon": "Sepanjang petang",
 "All dishes": "Semua hidangan",
 "All empty meals": "Semua hidangan kosong",
+"All five": "Kesemua lima",
 "All five done. See you tomorrow.": "Kelima-limanya selesai. Jumpa esok.",
 "All mine": "Semua untuk saya",
 "All of it is free, all of it stacks, and you can change any of it later under": "Semuanya percuma, semuanya boleh digabung, dan anda boleh mengubah mana-mana kemudian di bawah",
@@ -489,6 +490,7 @@ window.I18N_DICT.ms = {
 "Evening. The one everybody argues about.": "Petang. Yang semua orang bertengkar tentangnya.",
 "Evening. You have been putting this off since four.": "Petang. Anda telah menangguhkan ini sejak pukul empat.",
 "Every Premium feature is live": "Setiap ciri Premium aktif",
+"Every box ticked. Frankly, show-off behaviour.": "Semua kotak ditanda. Terus terang, perangai suka menunjuk.",
 "Every course has a recipe behind it — tap one to read it.": "Setiap hidangan ada resipi di belakangnya — ketik satu untuk membacanya.",
 "Every day": "Setiap hari",
 "Every dish has been on the table this go. Put them all back to start over.": "Setiap hidangan sudah berada di atas meja kali ini. Letakkan semuanya semula untuk bermula dari awal.",
@@ -1186,6 +1188,7 @@ window.I18N_DICT.ms = {
 "One champion, endless challengers. Winner stays on — until something knocks it off.": "Seorang juara, pencabar tanpa henti. Pemenang kekal — sehingga ada yang menjatuhkannya.",
 "One decision, any way you like.": "Satu keputusan, dengan cara apa pun.",
 "One dish at a time. Right for yes, left for no. Like three, then pick between them.": "Satu hidangan pada satu masa. Kanan untuk ya, kiri untuk tidak. Suka tiga, kemudian pilih antara mereka.",
+"One down": "Satu selesai",
 "One every couple of days": "Satu setiap beberapa hari",
 "One free TV group and one free radio group a day": "Satu kumpulan TV dan satu kumpulan radio percuma sehari",
 "One good thing that happened today…": "Satu perkara baik yang berlaku hari ini…",
@@ -1713,6 +1716,8 @@ window.I18N_DICT.ms = {
 "That did not come back. It usually works second time.": "Itu tidak kembali. Biasanya berjaya kali kedua.",
 "That did not work just now. Try again in a minute.": "Itu tidak berjaya sebentar tadi. Cuba lagi dalam seminit.",
 "That does not look like a web address.": "Itu tidak kelihatan seperti alamat web.",
+"That is a habit forming. Try not to look at it directly.": "Ini tabiat yang sedang terbentuk. Cuba jangan pandang terus kepadanya.",
+"That is a habit. We are proud, quietly.": "Ini sudah tabiat. Kami bangga, dalam diam.",
 "That is a lot of browsers at once. Even the cloud needs a minute. Try again shortly.": "Itu terlalu banyak pelayar serentak. Cuba lagi sebentar lagi.",
 "That is a lot of browsers at once. Try again shortly.": "Itu terlalu banyak pelayar serentak. Cuba lagi sebentar lagi.",
 "That is all three": "Itu kesemua tiga",
@@ -2404,5 +2409,13 @@ window.I18N_PATTERNS.ms = [
 [
 "Balls gone. Score {0}",
 "Bola habis dijatuhkan. Skor {0}"
+],
+[
+"{0} to go. No rush. Mostly.",
+"{0} lagi. Jangan tergesa-gesa. Kebanyakannya."
+],
+[
+"{0} days in a row",
+"{0} hari berturut-turut"
 ]
 ];

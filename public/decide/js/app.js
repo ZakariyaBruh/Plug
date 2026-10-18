@@ -4021,6 +4021,14 @@
     el.classList.add('is-new');
   }
 
+  // How far through: a bar that fills as you go, so the answers visibly add up.
+  function paintProgress() {
+    var fill = $('q-progress-fill');
+    if (!fill) return;
+    var total = parseInt(String($('q-total').textContent).replace(/\D/g, ''), 10) || 20;
+    fill.style.width = Math.min(100, Math.round(game.answers.length / total * 100)) + '%';
+  }
+
   function renderQuestion(q) {
     current = q;
     $('q-now').textContent = game.answers.length + 1;
@@ -4032,6 +4040,7 @@
     $('q-total').textContent = '/' + (together.live
       ? TOGETHER_ASKS
       : Math.min(Engine.MAX_QUESTIONS, Data.QUESTIONS.length));
+    paintProgress();
     $('q-text').textContent = q.text;
     $('yes-icon').textContent = q.yesIcon;
     $('yes-label').textContent = q.yes;
@@ -4130,6 +4139,8 @@
     // After step(), so the new question's render doesn't clear it.
     $('reaction').textContent = line;
     replay($('reaction'));
+    Morsel.mood($('mascot-q'), value === 'yes' || value === 'no' ? 'happy' : 'shrug', 1400);
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) { /* fine */ }
   }
 
   /* ---------------------------------------------------------- the funnel */
@@ -4320,6 +4331,7 @@
       });
     }
 
+    Morsel.mood($('mascot-r'), 'excited', 1800);
     fillAlternates(item);
     paintPair(item);
     // Which directions are worth offering depends on what is on screen, so
@@ -4596,6 +4608,7 @@
     paintWhy();
     paintPlan(item);
     setPanel('reward');
+    Morsel.mood($('mascot-d'), 'celebrate', 2600);
     paintStreak();
     Sound.win();
     Confetti.burst({ y: window.innerHeight * 0.3 });
@@ -8456,9 +8469,29 @@
     $('daily-ring-fill').style.strokeDasharray = (count / QUESTS.length * 100) + ' 100';
     $('daily-ring').classList.toggle('is-full', count === QUESTS.length);
     $('daily-ring').setAttribute('aria-label', count + ' of ' + QUESTS.length + ' done today');
+    // Small wins get noticed: the moment a task ticks over, and the days that
+    // make a streak worth mentioning. Once each, and never on first paint.
+    if (dayPage.seen !== undefined && count > dayPage.seen) {
+      Sound.win();
+      if (!reduceMotion) Confetti.burst({ y: window.innerHeight * 0.25 });
+      toast('\u2705', count === QUESTS.length ? 'All five' : 'One down', count === QUESTS.length
+        ? 'Every box ticked. Frankly, show-off behaviour.'
+        : (QUESTS.length - count) + ' to go. No rush. Mostly.');
+    }
+    dayPage.seen = count;
 
     var streak = signedIn && dayPage.summary ? dayPage.summary.streak : (progress.state.streak || 0);
     $('daily-streak').textContent = streak + ' day streak';
+    var MILESTONES = [3, 7, 14, 30, 100];
+    var told = 0;
+    try { told = Number(localStorage.getItem('morsels-streak-told') || 0); } catch (err) { told = 0; }
+    var hit = MILESTONES.filter(function (m) { return streak >= m && m > told; }).pop();
+    if (hit && dayPage.seen !== undefined) {
+      try { localStorage.setItem('morsels-streak-told', String(hit)); } catch (err) { /* fine */ }
+      Sound.win();
+      if (!reduceMotion) Confetti.burst({ y: window.innerHeight * 0.25 });
+      toast('\u{1F525}', hit + ' days in a row', hit < 7 ? 'That is a habit forming. Try not to look at it directly.' : 'That is a habit. We are proud, quietly.');
+    }
     var sub = $('daily-streak-sub');
     if (signedIn && dayPage.summary) {
       sub.textContent = dayPage.summary.best > streak
@@ -10372,6 +10405,58 @@
     return new Date(time).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   }
 
+  /* ----------------------------------------------------------------- Morsel */
+  /*
+   * A small character, and the reason it exists.
+   *
+   * What makes an app feel alive is not the features, it is that it answers you
+   * as if somebody were there. A tap that gets a flat state change is a form;
+   * a tap that gets a raised eyebrow is a conversation. Morsel is the raised
+   * eyebrow: it reacts to the thing you just did, instantly, with the same dry
+   * temperament as the copy. Happy when you pick, a shrug when you cannot, a
+   * wince when you turn a dish down, and a small jump when dinner is sorted.
+   *
+   * It only ever reacts. It never idles for attention, never pops up with
+   * advice, and never blocks anything: it is decorative, aria-hidden, and holds
+   * perfectly still under prefers-reduced-motion.
+   */
+  var Morsel = (function () {
+    var SVG =
+      '<svg viewBox="0 0 64 64" class="mo" focusable="false">' +
+      '<g class="mo-sparks"><path d="M10 12l2 4 4 2-4 2-2 4-2-4-4-2 4-2z"/><path d="M54 8l1.6 3.2L59 13l-3.4 1.8L54 18l-1.6-3.2L49 13l3.4-1.8z"/><path d="M58 30l1.2 2.4 2.4 1.2-2.4 1.2L58 37l-1.2-2.4-2.4-1.2 2.4-1.2z"/></g>' +
+      '<g class="mo-body">' +
+      '<path class="mo-arm mo-arm-l" d="M11 40Q3 38 3 30"/><path class="mo-arm mo-arm-r" d="M53 40Q61 38 61 30"/>' +
+      '<ellipse class="mo-skin" cx="32" cy="38" rx="22" ry="20"/>' +
+      '<circle class="mo-cheek" cx="17" cy="43" r="3.6"/><circle class="mo-cheek" cx="47" cy="43" r="3.6"/>' +
+      '<g class="mo-eyes"><ellipse cx="24" cy="35" rx="2.5" ry="3.3"/><ellipse cx="40" cy="35" rx="2.5" ry="3.3"/></g>' +
+      '<g class="mo-eyes-up"><path d="M21 36Q24 32 27 36"/><path d="M37 36Q40 32 43 36"/></g>' +
+      '<path class="mo-m mo-m-smile" d="M26 44Q32 50 38 44"/>' +
+      '<path class="mo-m mo-m-grin" d="M24.5 43Q32 55 39.5 43Z"/>' +
+      '<path class="mo-m mo-m-flat" d="M27 46.5H37"/>' +
+      '<path class="mo-m mo-m-sad" d="M26 48.5Q32 42.5 38 48.5"/>' +
+      '<ellipse class="mo-m mo-m-o" cx="32" cy="46.5" rx="3" ry="3.6"/>' +
+      '</g></svg>';
+
+    function mount(node) {
+      if (!node || node.firstChild) return;
+      node.innerHTML = SVG;
+      node.setAttribute('data-mood', 'idle');
+    }
+    // Plays `mood` and settles back to idle. Setting the attribute afresh (after a
+    // reflow) is what restarts the animation when the same mood fires twice.
+    function mood(node, name, hold) {
+      if (!node) return;
+      mount(node);
+      clearTimeout(node._moodTimer);
+      node.setAttribute('data-mood', 'idle');
+      void node.offsetWidth;
+      node.setAttribute('data-mood', name);
+      if (hold !== 0) node._moodTimer = setTimeout(function () { node.setAttribute('data-mood', 'idle'); }, hold || 1500);
+    }
+    return { mount: mount, mood: mood };
+  })();
+  Array.prototype.forEach.call(document.querySelectorAll('.mascot'), Morsel.mount);
+
   /* ------------------------------------------------------------- lifecycle */
   function resetGame() {
     /*
@@ -10508,7 +10593,7 @@
     Sound.tick();
     paintPlan();
   });
-  $('reject-btn').addEventListener('click', rejectCurrent);
+  $('reject-btn').addEventListener('click', function () { Morsel.mood($('mascot-r'), 'sad', 1400); rejectCurrent(); });
   $('again-btn').addEventListener('click', goHome);
   $('done-again-btn').addEventListener('click', restart);
   // Sharing the dish they just accepted, not the one they were offered.
@@ -14751,6 +14836,7 @@
     welcomeEl.hidden = false;
     document.body.classList.add('is-welcoming');
     paintWelcome();
+    Morsel.mood($('mascot-w'), 'celebrate', 2200);
   }
 
   /*

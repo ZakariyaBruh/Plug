@@ -87,6 +87,7 @@ window.I18N_DICT.th = {
 "All afternoon": "ตลอดบ่าย",
 "All dishes": "อาหารทั้งหมด",
 "All empty meals": "มื้อที่ว่างทั้งหมด",
+"All five": "ครบทั้งห้า",
 "All five done. See you tomorrow.": "ครบทั้งห้าแล้ว พบกันพรุ่งนี้",
 "All mine": "ของฉันทั้งหมด",
 "All of it is free, all of it stacks, and you can change any of it later under": "ทั้งหมดฟรี ใช้ร่วมกันได้ทุกอย่าง และคุณเปลี่ยนภายหลังได้ที่",
@@ -496,6 +497,7 @@ window.I18N_DICT.th = {
 "Evening. The one everybody argues about.": "ช่วงเย็น เรื่องที่ทุกคนเถียงกัน",
 "Evening. You have been putting this off since four.": "ช่วงเย็น คุณเลื่อนเรื่องนี้มาตั้งแต่สี่โมง",
 "Every Premium feature is live": "ทุกฟีเจอร์ Premium ใช้งานได้",
+"Every box ticked. Frankly, show-off behaviour.": "ติ๊กครบทุกช่อง พูดตรง ๆ คืออวดชัด ๆ",
 "Every course has a recipe behind it — tap one to read it.": "ทุกคอร์สมีสูตรรองรับ — แตะเพื่ออ่าน",
 "Every day": "ทุกวัน",
 "Every dish has been on the table this go. Put them all back to start over.": "ทุกเมนูขึ้นโต๊ะไปแล้วในรอบนี้ นำกลับทั้งหมดเพื่อเริ่มใหม่",
@@ -1206,6 +1208,7 @@ window.I18N_DICT.th = {
 "One champion, endless challengers. Winner stays on — until something knocks it off.": "แชมป์หนึ่งเดียว ผู้ท้าชิงไม่มีวันหมด ผู้ชนะอยู่ต่อ — จนกว่าจะมีใครล้มมันได้",
 "One decision, any way you like.": "หนึ่งการตัดสินใจ วิธีไหนก็ได้",
 "One dish at a time. Right for yes, left for no. Like three, then pick between them.": "ทีละเมนู ปัดขวาคือใช่ ปัดซ้ายคือไม่ ชอบสามจาน แล้วเลือกจากสามจานนั้น",
+"One down": "เสร็จไปหนึ่ง",
 "One every couple of days": "หนึ่งครั้งทุกสองสามวัน",
 "One free TV group and one free radio group a day": "กลุ่มทีวีฟรีหนึ่งกลุ่มและกลุ่มวิทยุฟรีหนึ่งกลุ่มต่อวัน",
 "One good thing that happened today…": "เรื่องดี ๆ หนึ่งเรื่องที่เกิดขึ้นวันนี้…",
@@ -1741,6 +1744,8 @@ window.I18N_DICT.th = {
 "That did not come back. It usually works second time.": "ไม่มีผลลัพธ์กลับมา มักจะได้ผลในครั้งที่สอง",
 "That did not work just now. Try again in a minute.": "เมื่อสักครู่ไม่สำเร็จ ลองใหม่ในอีกหนึ่งนาที",
 "That does not look like a web address.": "ดูไม่เหมือนที่อยู่เว็บ",
+"That is a habit forming. Try not to look at it directly.": "นี่คือนิสัยที่กำลังก่อตัว อย่าจ้องมันตรง ๆ ล่ะ",
+"That is a habit. We are proud, quietly.": "นี่คือนิสัยแล้ว เราภูมิใจ แบบเงียบ ๆ",
 "That is a lot of browsers at once. Even the cloud needs a minute. Try again shortly.": "มีเบราว์เซอร์พร้อมกันมากเกินไป ลองใหม่อีกครั้งในอีกสักครู่",
 "That is a lot of browsers at once. Try again shortly.": "มีเบราว์เซอร์พร้อมกันมากเกินไป ลองใหม่อีกครั้งในอีกสักครู่",
 "That is all three": "ครบทั้งสามแล้ว",
@@ -2438,5 +2443,13 @@ window.I18N_PATTERNS.th = [
 [
 "Balls gone. Score {0}",
 "ปล่อยลูกบอลหมดแล้ว คะแนน {0}"
+],
+[
+"{0} to go. No rush. Mostly.",
+"เหลืออีก {0} ไม่ต้องรีบ ส่วนใหญ่นะ"
+],
+[
+"{0} days in a row",
+"ติดต่อกัน {0} วัน"
 ]
 ];

@@ -87,6 +87,7 @@ window.I18N_DICT.hi = {
 "All afternoon": "पूरी दोपहर",
 "All dishes": "सभी व्यंजन",
 "All empty meals": "सभी खाली भोजन",
+"All five": "पाँचों हो गए",
 "All five done. See you tomorrow.": "पाँचों हो गए। कल मिलते हैं।",
 "All mine": "सब मेरा",
 "All of it is free, all of it stacks, and you can change any of it later under": "सब कुछ मुफ़्त है, सब कुछ साथ-साथ चलता है, और आप बाद में इसे कभी भी बदल सकते हैं,",
@@ -496,6 +497,7 @@ window.I18N_DICT.hi = {
 "Evening. The one everybody argues about.": "शाम है। वही जिस पर सब बहस करते हैं।",
 "Evening. You have been putting this off since four.": "शाम है। आप इसे चार बजे से टालते आ रहे हैं।",
 "Every Premium feature is live": "Premium की हर सुविधा चालू है",
+"Every box ticked. Frankly, show-off behaviour.": "सारे ख़ाने भर गए। सच कहूँ तो दिखावा है।",
 "Every course has a recipe behind it — tap one to read it.": "हर कोर्स के पीछे एक रेसिपी है — पढ़ने के लिए किसी पर टैप करें।",
 "Every day": "हर दिन",
 "Every dish has been on the table this go. Put them all back to start over.": "इस बार हर व्यंजन मेज़ पर आ चुका है। फिर से शुरू करने के लिए सबको वापस रखें।",
@@ -1206,6 +1208,7 @@ window.I18N_DICT.hi = {
 "One champion, endless challengers. Winner stays on — until something knocks it off.": "एक चैंपियन, अनगिनत चुनौती देने वाले। जीतने वाला टिका रहता है — जब तक कोई उसे हरा न दे।",
 "One decision, any way you like.": "एक फ़ैसला, जैसे भी चाहें।",
 "One dish at a time. Right for yes, left for no. Like three, then pick between them.": "एक बार में एक व्यंजन। दाएँ हाँ, बाएँ नहीं। तीन पसंद कीजिए, फिर उन्हीं में से चुनिए।",
+"One down": "एक हो गया",
 "One every couple of days": "हर कुछ दिन में एक",
 "One free TV group and one free radio group a day": "रोज़ एक मुफ़्त टीवी ग्रुप और एक मुफ़्त रेडियो ग्रुप",
 "One good thing that happened today…": "आज हुई एक अच्छी बात…",
@@ -1741,6 +1744,8 @@ window.I18N_DICT.hi = {
 "That did not come back. It usually works second time.": "वह नहीं आया। आम तौर पर दूसरी बार में हो जाता है।",
 "That did not work just now. Try again in a minute.": "अभी यह नहीं हो सका। एक मिनट में फिर कोशिश कीजिए।",
 "That does not look like a web address.": "यह वेब पता नहीं लगता।",
+"That is a habit forming. Try not to look at it directly.": "यह आदत बन रही है। उसे सीधे मत देखिए।",
+"That is a habit. We are proud, quietly.": "यह तो आदत है। हमें गर्व है, चुपचाप।",
 "That is a lot of browsers at once. Even the cloud needs a minute. Try again shortly.": "एक साथ बहुत सारे ब्राउज़र हो गए। थोड़ी देर में फिर कोशिश कीजिए।",
 "That is a lot of browsers at once. Try again shortly.": "एक साथ बहुत सारे ब्राउज़र हो गए। थोड़ी देर में फिर कोशिश कीजिए।",
 "That is all three": "तीनों हो गए",
@@ -2438,5 +2443,13 @@ window.I18N_PATTERNS.hi = [
 [
 "Balls gone. Score {0}",
 "सारी गेंदें गिर चुकीं। स्कोर {0}"
+],
+[
+"{0} to go. No rush. Mostly.",
+"{0} बाक़ी। जल्दी नहीं। ज़्यादातर।"
+],
+[
+"{0} days in a row",
+"लगातार {0} दिन"
 ]
 ];
