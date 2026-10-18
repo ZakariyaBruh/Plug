@@ -7120,3 +7120,155 @@ html.vt-active .buddy { view-transition-name: buddy; }
   .dg-panel { border-radius: 18px 18px 0 0; max-height: 88dvh; }
 }
 @media (prefers-reduced-motion: reduce) { .dg.is-in, .dg.is-in .dg-panel, .dg-side, .dg-reveal-icon, .dg-say.is-in { animation: none !important; } }
+
+/* ==========================================================================
+   Dot's menu: hold it to ask about morsels45, play, tour or pat.
+   ========================================================================== */
+.dot-menu {
+  position: fixed; z-index: 45; box-sizing: border-box; width: 288px; padding: var(--s3); display: grid; gap: var(--s2);
+  border: 1px solid var(--hair-lit); border-radius: 16px; background: var(--raise, #1b1b1d);
+  box-shadow: 0 24px 60px -18px rgb(0 0 0 / .85);
+}
+.dot-menu[hidden] { display: none; }
+.dot-menu.is-in { animation: dg-rise .38s var(--spring-soft) both; }
+.dot-menu.is-sheet { left: .75rem; right: .75rem; bottom: .75rem; top: auto; width: auto; }
+.dot-menu-title { margin: 0; font-family: var(--display); font-size: var(--t-sm); }
+.dot-menu-form { display: flex; gap: var(--s2); }
+.dot-menu-input {
+  flex: 1; min-width: 0; min-height: 2.3rem; padding: .3rem .7rem; border: 1px solid var(--hair); border-radius: 999px;
+  background: var(--void, #111); color: var(--ink); font: inherit; font-size: var(--t-sm);
+}
+.dot-menu-input:focus { outline: 2px solid var(--amber); outline-offset: 1px; border-color: transparent; }
+.dot-menu-go, .dot-menu-act, .dot-menu-chip {
+  min-height: 2.1rem; padding: .2rem .8rem; border: 1px solid var(--hair-lit); border-radius: 999px; background: none; color: var(--ink);
+  font: inherit; font-size: var(--t-xs); cursor: pointer; transition: border-color .2s, color .2s, transform .3s var(--spring-soft);
+}
+.dot-menu-go { background: var(--amber); border-color: var(--amber); color: var(--void, #111); font-weight: 600; }
+.dot-menu-act:hover, .dot-menu-chip:hover { border-color: var(--amber); color: var(--amber); transform: translateY(-1px); }
+.dot-menu-go:active, .dot-menu-act:active, .dot-menu-chip:active { transform: scale(.95); }
+.dot-menu-chips, .dot-menu-row { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.dot-menu-row { padding-top: var(--s2); border-top: 1px solid var(--hair); }
+.dot-menu-chip { text-align: left; }
+.dot-menu-out { margin: 0; padding: var(--s2) var(--s3); border-radius: 10px; background: color-mix(in srgb, var(--amber) 9%, transparent); font-size: var(--t-sm); line-height: 1.5; color: var(--ink); }
+.dot-menu-out[hidden] { display: none; }
+.dot-menu-out.is-in { animation: bubble-in .35s var(--spring-soft) both; }
+@media (prefers-reduced-motion: reduce) { .dot-menu.is-in, .dot-menu-out.is-in { animation: none; } }
+
+/* --- Dot, more alive: new faces, a breath, a lean --- */
+.dot-love, .dot-wink { display: none; }
+.dot-love path { fill: color-mix(in srgb, var(--amber) 35%, #ff5d82); }
+.dot-wink path { fill: none; stroke: var(--paper-ink); stroke-width: 2.2; stroke-linecap: round; }
+.mascot[data-mood="love"] .dot-eyes, .mascot[data-mood="love"] .dot-happy { display: none; }
+.mascot[data-mood="love"] .dot-love { display: block; }
+.mascot[data-mood="love"] .dot-m-smile { display: none; }
+.mascot[data-mood="love"] .dot-m-open { display: block; }
+.mascot[data-mood="love"] .dot-body { animation: dot-beat .7s ease-in-out 3; transform-box: fill-box; transform-origin: 50% 70%; }
+@keyframes dot-beat { 30% { transform: scale(1.08); } 55% { transform: scale(.98); } 75% { transform: scale(1.05); } }
+.mascot[data-mood="wink"] .dot-eyes circle:nth-child(2) { display: none; }
+.mascot[data-mood="wink"] .dot-wink { display: block; }
+.mascot[data-mood="wink"] .dot-body { animation: dot-tilt .5s var(--out); }
+.mascot[data-mood="bounce"] .dot-body { animation: dot-hop .5s cubic-bezier(.34, 1.56, .64, 1) 2; }
+.mascot[data-mood="wiggle"] .dot-body { animation: dot-wiggle .6s ease-in-out; transform-box: fill-box; transform-origin: 50% 90%; }
+@keyframes dot-wiggle { 20% { transform: rotate(-9deg); } 40% { transform: rotate(8deg); } 60% { transform: rotate(-5deg); } 80% { transform: rotate(3deg); } }
+.mascot[data-mood="yawn"] .dot-eyes { display: none; }
+.mascot[data-mood="yawn"] .dot-happy { display: block; }
+.mascot[data-mood="yawn"] .dot-m-smile { display: none; }
+.mascot[data-mood="yawn"] .dot-m-open { display: block; }
+.mascot[data-mood="yawn"] .dot-body { animation: dot-yawn 1.6s ease-in-out; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes dot-yawn { 40%, 60% { transform: scale(.96, 1.1); } }
+/* a quiet breath while nothing else is going on */
+.buddy .mascot[data-mood="idle"] .dot-body { animation: dot-breathe-idle 4.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes dot-breathe-idle { 50% { transform: scale(1.018, .985); } }
+/* leaning into a scroll, on its own property so it never fights a hover */
+.buddy-face { rotate: var(--lean, 0deg); transition: transform .4s var(--spring-soft), rotate .35s var(--spring-soft); }
+@media (prefers-reduced-motion: reduce) {
+  .buddy .mascot[data-mood="idle"] .dot-body, .mascot[data-mood="love"] .dot-body, .mascot[data-mood="bounce"] .dot-body,
+  .mascot[data-mood="wiggle"] .dot-body, .mascot[data-mood="yawn"] .dot-body, .mascot[data-mood="wink"] .dot-body { animation: none; }
+  .buddy-face { rotate: 0deg; }
+}
+
+/* Dot rides the question's progress bar */
+.q-track { position: relative; margin-top: 26px; }
+.q-track .q-progress { margin-top: 0; }
+.q-rider {
+  position: absolute; bottom: -2px; left: calc(var(--p, 0) * (100% - 30px)); width: 30px; height: 30px; pointer-events: none;
+  transition: left .6s var(--spring-soft); filter: drop-shadow(0 4px 6px rgb(0 0 0 / .45));
+}
+.q-rider .dot { width: 100%; height: 100%; display: block; }
+@media (prefers-reduced-motion: reduce) { .q-rider { transition: none; } }
+
+/* ==========================================================================
+   The tour: Dot, a bar that fills, and the real thing lit up.
+   ========================================================================== */
+.tour { position: fixed; inset: 0; z-index: 80; }
+.tour[hidden] { display: none; }
+.tour-top { position: absolute; z-index: 3; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); }
+.tour-bar { flex: 1; display: flex; gap: 3px; }
+.tour-bar i { flex: 1; height: 6px; border-radius: 3px; background: rgb(255 255 255 / .22); transition: background .4s ease; }
+.tour-bar i.is-done { background: var(--amber); }
+.tour-bar i.is-now { background: color-mix(in srgb, var(--amber) 60%, white); animation: tour-pulse 1.4s ease-in-out infinite; }
+@keyframes tour-pulse { 50% { opacity: .55; } }
+.tour-skip { flex: none; padding: .25rem .8rem; border: 1px solid rgb(255 255 255 / .35); border-radius: 999px; background: rgb(0 0 0 / .35); color: #fff; font: inherit; font-size: var(--t-xs); cursor: pointer; }
+.tour-skip:hover { border-color: var(--amber); color: var(--amber); }
+.tour-skip[hidden] { display: none; }
+/* The light: a hole in a very large shadow. */
+.tour-spot {
+  position: absolute; z-index: 1; border-radius: 14px; pointer-events: none;
+  box-shadow: 0 0 0 100vmax rgb(0 0 0 / .74), 0 0 0 2px color-mix(in srgb, var(--amber) 80%, transparent) inset, 0 0 0 3px var(--amber);
+  transform: translate(0, 0);
+  transition: left .5s var(--spring-soft), top .5s var(--spring-soft), width .5s var(--spring-soft), height .5s var(--spring-soft);
+}
+.tour-card {
+  position: absolute; z-index: 2; left: 50%; bottom: var(--s4); width: min(34rem, calc(100% - 2rem)); transform: translateX(-50%);
+  padding: var(--s4); border: 1px solid var(--hair-lit); border-radius: 20px; background: var(--raise, #1b1b1d);
+  box-shadow: 0 30px 80px -20px rgb(0 0 0 / .9); display: grid; gap: var(--s3);
+  transition: top .4s var(--spring-soft), bottom .4s var(--spring-soft);
+}
+.tour-card.is-top { bottom: auto; top: 4rem; }
+.tour.is-in .tour-card { animation: dg-rise .5s var(--spring-soft) both; }
+.tour-body { display: flex; align-items: center; gap: var(--s4); }
+.tour-dot { flex: none; width: 4.4rem; height: 4.4rem; cursor: pointer; }
+.tour-dot .dot { width: 100%; height: 100%; }
+.tour-say { margin: 0; font-size: var(--t-base); line-height: 1.5; color: var(--ink); min-height: 3em; }
+.tour-say.is-in { animation: bubble-in .4s var(--spring-soft) both; }
+.tour-row { display: flex; justify-content: flex-end; gap: var(--s3); }
+.tour-btn {
+  min-height: 2.8rem; padding: .4rem 1.2rem; border: 1px solid var(--hair-lit); border-radius: 14px; background: none; color: var(--ink);
+  font: inherit; font-weight: 600; letter-spacing: .02em; cursor: pointer; transition: transform .3s var(--spring-soft), border-color .2s, filter .2s;
+}
+.tour-btn[hidden] { display: none; }
+.tour-btn:hover { border-color: var(--amber); }
+.tour-btn:active { transform: translateY(2px) scale(.98); }
+.tour-btn.is-main { background: var(--amber); border-color: var(--amber); color: var(--void, #111); box-shadow: 0 4px 0 color-mix(in srgb, var(--amber) 55%, #000); }
+.tour-btn.is-main:active { box-shadow: 0 1px 0 color-mix(in srgb, var(--amber) 55%, #000); transform: translateY(3px); }
+@media (max-width: 36rem) { .tour-body { align-items: flex-start; } .tour-dot { width: 3.4rem; height: 3.4rem; } .tour-row .tour-btn { flex: 1; } .tour-card.is-top { top: 3.4rem; } }
+@media (prefers-reduced-motion: reduce) {
+  .tour-spot, .tour-card { transition: none; }
+  .tour.is-in .tour-card, .tour-say.is-in, .tour-bar i.is-now { animation: none; }
+}
+
+/* --- Play with Dot: the action games --- */
+.dg-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 26rem) { .dg-grid { grid-template-columns: 1fr; } }
+.dg-card-btn { position: relative; }
+.dg-tag { position: absolute; top: .55rem; right: .6rem; padding: .05rem .5rem; border-radius: 999px; background: var(--amber); color: var(--void, #111); font-size: .65rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.dg-canvas { width: min(100%, 340px); aspect-ratio: 340 / 400; border: 1px solid var(--hair-lit); border-radius: 14px; background: linear-gradient(180deg, rgb(255 255 255 / .03), rgb(255 255 255 / .07)); touch-action: none; cursor: ew-resize; }
+.dg-holes { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s3); width: min(100%, 300px); }
+.dg-hole {
+  position: relative; aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; overflow: hidden; cursor: pointer; touch-action: manipulation;
+  background: #050505; box-shadow: inset 0 -8px 0 rgb(255 255 255 / .07), 0 0 0 4px #1c1c1f;
+  -webkit-tap-highlight-color: transparent;
+}
+.dg-pop { position: absolute; left: 14%; right: 14%; bottom: -80%; aspect-ratio: 1; display: grid; place-items: center; font-size: 2.2rem; transition: bottom .16s var(--spring); pointer-events: none; }
+.dg-pop .dot { width: 100%; height: 100%; }
+.dg-hole.is-up .dg-pop { bottom: 6%; }
+.dg-hole.is-hit .dg-pop { bottom: -80%; }
+.dg-pads { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s3); width: min(100%, 280px); }
+.dg-pad {
+  aspect-ratio: 1; border: 2px solid color-mix(in srgb, var(--pad) 70%, transparent); border-radius: 22px; font-size: 2.6rem;
+  background: color-mix(in srgb, var(--pad) 18%, transparent); cursor: pointer; touch-action: manipulation; transition: transform .15s var(--spring), background .12s, box-shadow .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.dg-pad.is-lit { background: var(--pad); transform: scale(1.06); box-shadow: 0 0 30px var(--pad); }
+.dg-pad:active { transform: scale(.96); }
+@media (prefers-reduced-motion: reduce) { .dg-pop, .dg-pad { transition: none; } }

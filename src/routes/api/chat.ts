@@ -9,7 +9,7 @@ import { CHAT_PER_DAY, premiumFor, spendOnStanding, standing } from '#/lib/allow
 /*
  * /api/chat — the food assistant, in two tiers.
  *
- * STANDARD answers on text.pollinations.ai, a free model that needs no key (lib/free-ai.ts): three
+ * STANDARD answers on free models that need no key — Pollinations, with LLM7 behind it (lib/free-ai.ts): three
  * questions a day per free Whop account, counted in the database, and what a
  * Premium member can switch to for a quick answer. ADVANCED is Gemini, on this
  * app's own key, for Premium only: it knows your taste profile, can read a
@@ -344,7 +344,7 @@ export const Route = createFileRoute('/api/chat')({
         if (metered && mine.left === 0) return json({ error: 'limit', left: 0, limit: CHAT_PER_DAY }, 402)
 
         const system = instruction() + langLine(want)
-        // Pollinations only. If it does not answer, the question is not counted and
+        // Pollinations, then LLM7. If neither answers, the question is not counted and
         // is not handed to the paid key: Standard stays free, and the visitor asks again.
         // The free model is terse when left alone ("Pizza."); a pick with a reason is the answer.
         const free = await askFree(system + '\nAlways answer in at least two complete sentences, and give the reason for a pick.', turns)

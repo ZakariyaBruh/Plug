@@ -29,6 +29,7 @@ import { Route as ApiCookbookRouteImport } from './routes/api/cookbook'
 import { Route as ApiDailyRouteImport } from './routes/api/daily'
 import { Route as ApiDailySummaryRouteImport } from './routes/api/daily-summary'
 import { Route as ApiDbHealthRouteImport } from './routes/api/db-health'
+import { Route as ApiDotRouteImport } from './routes/api/dot'
 import { Route as ApiFridgeRouteImport } from './routes/api/fridge'
 import { Route as ApiHouseholdRouteImport } from './routes/api/household'
 import { Route as ApiJournalRouteImport } from './routes/api/journal'
@@ -158,6 +159,11 @@ const ApiDailySummaryRoute = ApiDailySummaryRouteImport.update({
 const ApiDbHealthRoute = ApiDbHealthRouteImport.update({
   id: '/api/db-health',
   path: '/api/db-health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDotRoute = ApiDotRouteImport.update({
+  id: '/api/dot',
+  path: '/api/dot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiFridgeRoute = ApiFridgeRouteImport.update({
@@ -332,6 +338,7 @@ export interface FileRoutesByFullPath {
   '/api/daily': typeof ApiDailyRoute
   '/api/daily-summary': typeof ApiDailySummaryRoute
   '/api/db-health': typeof ApiDbHealthRoute
+  '/api/dot': typeof ApiDotRoute
   '/api/fridge': typeof ApiFridgeRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/journal': typeof ApiJournalRoute
@@ -384,6 +391,7 @@ export interface FileRoutesByTo {
   '/api/daily': typeof ApiDailyRoute
   '/api/daily-summary': typeof ApiDailySummaryRoute
   '/api/db-health': typeof ApiDbHealthRoute
+  '/api/dot': typeof ApiDotRoute
   '/api/fridge': typeof ApiFridgeRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/journal': typeof ApiJournalRoute
@@ -437,6 +445,7 @@ export interface FileRoutesById {
   '/api/daily': typeof ApiDailyRoute
   '/api/daily-summary': typeof ApiDailySummaryRoute
   '/api/db-health': typeof ApiDbHealthRoute
+  '/api/dot': typeof ApiDotRoute
   '/api/fridge': typeof ApiFridgeRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/journal': typeof ApiJournalRoute
@@ -491,6 +500,7 @@ export interface FileRouteTypes {
     | '/api/daily'
     | '/api/daily-summary'
     | '/api/db-health'
+    | '/api/dot'
     | '/api/fridge'
     | '/api/household'
     | '/api/journal'
@@ -543,6 +553,7 @@ export interface FileRouteTypes {
     | '/api/daily'
     | '/api/daily-summary'
     | '/api/db-health'
+    | '/api/dot'
     | '/api/fridge'
     | '/api/household'
     | '/api/journal'
@@ -595,6 +606,7 @@ export interface FileRouteTypes {
     | '/api/daily'
     | '/api/daily-summary'
     | '/api/db-health'
+    | '/api/dot'
     | '/api/fridge'
     | '/api/household'
     | '/api/journal'
@@ -648,6 +660,7 @@ export interface RootRouteChildren {
   ApiDailyRoute: typeof ApiDailyRoute
   ApiDailySummaryRoute: typeof ApiDailySummaryRoute
   ApiDbHealthRoute: typeof ApiDbHealthRoute
+  ApiDotRoute: typeof ApiDotRoute
   ApiFridgeRoute: typeof ApiFridgeRoute
   ApiHouseholdRoute: typeof ApiHouseholdRoute
   ApiJournalRoute: typeof ApiJournalRoute
@@ -819,6 +832,13 @@ declare module '@tanstack/react-router' {
       path: '/api/db-health'
       fullPath: '/api/db-health'
       preLoaderRoute: typeof ApiDbHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/dot': {
+      id: '/api/dot'
+      path: '/api/dot'
+      fullPath: '/api/dot'
+      preLoaderRoute: typeof ApiDotRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/fridge': {
@@ -1066,6 +1086,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDailyRoute: ApiDailyRoute,
   ApiDailySummaryRoute: ApiDailySummaryRoute,
   ApiDbHealthRoute: ApiDbHealthRoute,
+  ApiDotRoute: ApiDotRoute,
   ApiFridgeRoute: ApiFridgeRoute,
   ApiHouseholdRoute: ApiHouseholdRoute,
   ApiJournalRoute: ApiJournalRoute,

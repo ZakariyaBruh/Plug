@@ -628,7 +628,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Something new', 'Two questions, then a few dishes you have not had — chosen from the ones you actually liked, each with a reason for why it follows. Only ever real dishes off this menu, so every suggestion has its recipe behind it.'],
       ['Save unlimited dishes', 'Standard saves none. Premium keeps everything you like.'],
       ['The advanced assistant', 'Ask anything on Gemini: it knows your taste and your food rules, reads a photo, can look things up on the web, suggests what to ask next, helps you plan, cook or choose, and remembers the conversation. Standard questions are free and three a day.'],
-      ['Play with Dot', 'Rock Paper Dish, Dot Reads You and Guess My Dish — three small games with the companion in the corner. Free for everyone.'],
+      ['Play with Dot', 'Seven small games with the companion in the corner — Rock Paper Dish, Dot Reads You, Guess My Dish, and the fast ones: Dish Catch, Lane Dash, Dot Pop and Dot Says. Hold Dot for a menu that answers questions about morsels45, and take its guided tour. Free for everyone.'],
       ['Five extra looks', 'Ember, matcha, ink, paper, neon.'],
     ],
   },

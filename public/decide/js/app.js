@@ -4159,8 +4159,43 @@
     var fill = $('q-progress-fill');
     if (!fill) return;
     var total = parseInt(String($('q-total').textContent).replace(/\D/g, ''), 10) || 20;
-    fill.style.width = Math.min(100, Math.round(game.answers.length / total * 100)) + '%';
+    var frac = Math.min(1, game.answers.length / total);
+    fill.style.width = Math.round(frac * 100) + '%';
+    // Dot rides the end of the bar, and hops along as it grows.
+    var track = $('q-track'), rider = $('q-rider');
+    if (track) {
+      var was = parseFloat(track.style.getPropertyValue('--p')) || 0;
+      track.style.setProperty('--p', frac.toFixed(3));
+      if (rider && frac > was) Dot.mood(rider, 'bounce', 700);
+    }
+    if (game.answers.length === 0) riderSaid = {};
+    else if (typeof Buddy !== 'undefined' && Buddy) {
+      if (frac >= 0.5 && !riderSaid.half) { riderSaid.half = 1; Buddy.remark('halfway', 'happy', 3200); }
+      else if (frac >= 0.8 && !riderSaid.near) { riderSaid.near = 1; Buddy.remark('nearly', 'celebrate', 3200); }
+    }
   }
+  var riderSaid = {};
+
+  // The rider watches the options as you move over them: it likes the left one,
+  // squints at the right one, and winks at "either".
+  (function riderWatches() {
+    var rider = $('q-rider');
+    if (!rider) return;
+    function feel(mood, x) {
+      Dot.mood(rider, mood, 900);
+      rider.style.setProperty('--ex', x + 'px');
+      setTimeout(function () { rider.style.setProperty('--ex', '0px'); }, 900);
+    }
+    function on(id, mood, x) {
+      var b = $(id);
+      if (!b) return;
+      ['pointerenter', 'focus'].forEach(function (ev) { b.addEventListener(ev, function () { if (!reduceMotion) feel(mood, x); }); });
+    }
+    on('choice-yes', 'happy', -1.6);
+    on('choice-no', 'shrug', 1.6);
+    on('choice-either', 'wink', 0);
+    on('choice-neither', 'wink', 0);
+  })();
 
   /*
    * The question changes like a card being dealt. The one you answered is lifted
@@ -4302,6 +4337,7 @@
     qDir = value === 'no' ? -1 : 1;
     qLeave(value === 'yes' ? -1 : value === 'no' ? 1 : 0);
 
+    var answeredTag = current.tag;
     game.answer(current.tag, value);
     step();
     saveResume();
@@ -4310,7 +4346,7 @@
     $('reaction').textContent = line;
     replay($('reaction'));
     Buddy.react(value === 'yes' || value === 'no' ? 'happy' : 'shrug', 1300);
-    Buddy.onAnswer(value);
+    Buddy.onAnswer(value, answeredTag);
     try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) { /* fine */ }
   }
 
@@ -10912,6 +10948,8 @@
       '<g class="dot-eyes-down"><path d="M15.5 23Q18 25.5 20.5 23"/><path d="M27.5 23Q30 25.5 32.5 23"/></g>' +
       '<g class="dot-sleep"><path d="M15.5 23.5H20.5"/><path d="M27.5 23.5H32.5"/></g>' +
       '<g class="dot-happy"><path d="M15.5 24Q18 20.5 20.5 24"/><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
+      '<g class="dot-love"><path d="M18 26.5C14.3 24 13.8 21.4 15.9 20.2C17 19.6 18 20.2 18 21.2C18 20.2 19 19.6 20.1 20.2C22.2 21.4 21.7 24 18 26.5Z"/><path d="M30 26.5C26.3 24 25.8 21.4 27.9 20.2C29 19.6 30 20.2 30 21.2C30 20.2 31 19.6 32.1 20.2C34.2 21.4 33.7 24 30 26.5Z"/></g>' +
+      '<g class="dot-wink"><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
       '<path class="dot-m dot-m-smile" d="M20 30Q24 34 28 30"/>' +
       '<path class="dot-m dot-m-open" d="M19.5 29.5Q24 37 28.5 29.5Z"/>' +
       '<path class="dot-m dot-m-flat" d="M20.5 31.5H27.5"/>' +
@@ -11141,8 +11179,28 @@
             "You must really like me.",
             "I am going to start charging. In compliments."
       ],
+      "offline": [
+        "Offline. I will keep you company.",
+        "No signal. I am still here."
+      ],
+      "online": [
+        "Back online. I did not go anywhere.",
+        "Signal is back. Told you."
+      ],
+      "halfway": [
+        "Halfway. I can see dinner from here.",
+        "Halfway there. Do not stop now."
+      ],
+      "nearly": [
+        "Nearly there. Do not lose your nerve.",
+        "Almost. I can smell it. Figuratively."
+      ],
+      "tourSkip": [
+        "No problem. Hold me any time and press Tour.",
+        "Skipped. The tour is in my menu if you change your mind."
+      ],
       "boopHint": [
-            "Tip: hold me instead of tapping. Just a thought."
+            "Tip: hold me and I have a menu. Just a thought."
       ],
       "sleepy": [
             "Zzz... huh? I was resting my eyes.",
@@ -11542,6 +11600,10 @@
         var cat = first ? 'first' : gap >= 7 ? 'back7' : gap >= 3 ? 'back3' : gap >= 1 ? 'back1' : Math.random() < 0.55 ? partOfDay() : null;
         if (cat) remark(cat, 'happy', 0, true);
         checkLevel();
+        // The first time ever, a few seconds after hello: an offer of the tour. Once.
+        if (first && !(typeof Tour !== 'undefined' && Tour.done()) && speakable('Want a quick tour?') && speakable('Show me')) {
+          setTimeout(function () { if (visible() && !drag) offerAction({ text: 'Want a quick tour?', label: 'Show me', run: function () { Tour.start(); } }); }, 6500);
+        }
       }, 1600);
     }
 
@@ -11625,7 +11687,7 @@
       var first = mem.patDay !== ymd();
       if (first) { mem.patDay = ymd(); mem.pats++; save(); }
       for (var i = 0; i < (reduceMotion ? 1 : 4); i++) spawnHeart(b, i);
-      react('happy', 2200);
+      react('love', 2200);
       say(line(first ? 'pet' : 'petAgain'), null, 3800, 'asked');
       try { if (navigator.vibrate) navigator.vibrate(first ? [10, 40, 10] : 8); } catch (err) { /* fine */ }
       if (first) { paintBond(); setTimeout(function () { checkLevel(); }, 2600); }
@@ -11639,7 +11701,7 @@
         start = { x: event.clientX, y: event.clientY, ox: at.x, oy: at.y, moved: false, patted: false };
         try { node.setPointerCapture(event.pointerId); } catch (err) { /* fine */ }
         clearTimeout(hold);
-        hold = setTimeout(function () { if (start && !start.moved) { start.patted = true; pat(); } }, 520);
+        hold = setTimeout(function () { if (start && !start.moved) { start.patted = true; openMenu(); } }, 520);
       });
       node.addEventListener('pointermove', function (event) {
         if (!start) return;
@@ -11671,6 +11733,101 @@
       node.addEventListener('pointerup', drop);
       node.addEventListener('pointercancel', drop);
     })();
+
+    /* ---- being alive ---- */
+    /*
+     * The small things that make it feel like somebody is there: it looks
+     * about, hops now and then, yawns before it falls asleep, leans into a
+     * scroll, watches the box you are typing in, and notices when you go
+     * offline or come back. Every one is a movement of Dot's own face or body.
+     * None speaks unprompted, none moves anything on the page, and none runs
+     * while it is busy, being dragged, asleep, hidden or in a menu or a game.
+     */
+    function calm() {
+      var node = el();
+      return node && visible() && !asleep && !node._busy && !drag && !menuOpen() && !document.hidden;
+    }
+    function look(x, y, ms) {
+      var node = el();
+      if (!node) return;
+      node.style.setProperty('--ex', x + 'px');
+      node.style.setProperty('--ey', y + 'px');
+      if (ms) setTimeout(function () { if (!watching) { node.style.setProperty('--ex', '0px'); node.style.setProperty('--ey', '0px'); } }, ms);
+    }
+    var watching = false, nextHop = Date.now() + 25000, nextLook = Date.now() + 6000, yawned = false;
+    setInterval(function () {
+      if (!calm() || reduceMotion) return;
+      var now = Date.now(), node = el();
+      if (now > nextLook) {
+        nextLook = now + 7000 + Math.random() * 9000;
+        look((Math.random() * 3.4 - 1.7).toFixed(1), (Math.random() * 2 - 1).toFixed(1), 1300);
+      }
+      if (now > nextHop) {
+        nextHop = now + 25000 + Math.random() * 25000;
+        var kinds = ['bounce', 'wiggle', 'wink'];
+        var kind = kinds[Math.floor(Math.random() * kinds.length)];
+        node._busy = true;
+        Dot.mood(node, kind, 1000);
+        setTimeout(function () { node._busy = false; node.setAttribute('data-mood', rest()); }, 1050);
+      }
+      // A yawn a little before it nods off.
+      var idle = now - lastInput;
+      if (idle > 110000 && idle < 150000 && !yawned) {
+        yawned = true;
+        node._busy = true;
+        Dot.mood(node, 'yawn', 1700);
+        setTimeout(function () { node._busy = false; node.setAttribute('data-mood', rest()); }, 1750);
+      }
+      if (idle < 5000) yawned = false;
+    }, 3000);
+
+    // Leans into the direction of a scroll, and settles.
+    (function leaning() {
+      if (reduceMotion) return;
+      var last = window.scrollY, timer = 0, ticking = false;
+      window.addEventListener('scroll', function () {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(function () {
+          ticking = false;
+          var node = box(), y = window.scrollY, d = y - last;
+          last = y;
+          if (!node || node.hidden) return;
+          node.style.setProperty('--lean', Math.max(-14, Math.min(14, d * 0.35)).toFixed(1) + 'deg');
+          clearTimeout(timer);
+          timer = setTimeout(function () { node.style.setProperty('--lean', '0deg'); }, 160);
+        });
+      }, { passive: true });
+    })();
+
+    // Watches the box you are typing in.
+    document.addEventListener('focusin', function (event) {
+      var t = event.target;
+      if (!t || !/^(INPUT|TEXTAREA)$/.test(t.tagName) || t.closest('.dot-menu') || !calm()) return;
+      var r = t.getBoundingClientRect(), b = el().getBoundingClientRect();
+      var dx = r.left + r.width / 2 - (b.left + b.width / 2), dy = r.top + r.height / 2 - (b.top + b.height / 2);
+      var d = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      watching = true;
+      el().dataset.watch = '1';
+      look((dx / d * 1.8).toFixed(1), (dy / d * 1.8).toFixed(1));
+    });
+    document.addEventListener('focusout', function () { if (watching) { watching = false; delete el().dataset.watch; look(0, 0); } });
+
+    window.addEventListener('offline', function () { remark('offline', 'sad', 3600); });
+    window.addEventListener('online', function () { remark('online', 'happy', 3200); });
+    // Back to the tab after a good while.
+    (function away() {
+      var left = 0;
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) { left = Date.now(); return; }
+        if (!left) return;
+        var gone = Date.now() - left; left = 0;
+        lastInput = Date.now();
+        if (gone > 1800000 && calm()) { react('surprised', 900); setTimeout(function () { remark('back', 'happy', 3000); }, 600); }
+        else if (gone > 120000 && calm()) react('wink', 900);
+      });
+    })();
+
 
     window.addEventListener('resize', function () { if (!drag) goHome(true); });
 
@@ -11713,6 +11870,127 @@
       chat: { text: 'Got a question?', label: 'Ask', run: function () { var f = $('chat-input'); if (f) f.focus(); } }
     };
 
+    /* ---- the menu: hold Dot ---- */
+    /*
+     * Press and hold Dot and it opens a small menu: ask it a question about
+     * morsels45, play something, take the tour, or pat it. The questions go to
+     * /api/dot, which answers from a fixed list of facts about this app and
+     * nothing else; asked about anything else, Dot says it only knows
+     * morsels45. It is a help menu with a face, not a chatbot.
+     */
+    var menu = null;
+    var ASKS = ['How do I start?', 'What is free?', 'What is Premium?', 'What can you do?', 'How do the games work?', 'How much does it cost?'];
+    function mk(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+    function menuOpen() { return !!(menu && !menu.root.hidden); }
+
+    function buildMenu() {
+      var root = mk('div', 'dot-menu');
+      root.hidden = true;
+      root.setAttribute('role', 'dialog');
+      root.setAttribute('aria-label', 'Dot');
+      root.appendChild(mk('p', 'dot-menu-title', 'Ask me about morsels45'));
+      var form = mk('form', 'dot-menu-form');
+      var input = mk('input', 'dot-menu-input');
+      input.type = 'text'; input.maxLength = 200; input.autocomplete = 'off';
+      input.placeholder = 'Ask about morsels45…';
+      input.setAttribute('aria-label', 'Ask about morsels45');
+      var go = mk('button', 'dot-menu-go', 'Ask');
+      go.type = 'submit';
+      form.appendChild(input); form.appendChild(go);
+      root.appendChild(form);
+      var chips = mk('div', 'dot-menu-chips');
+      root.appendChild(chips);
+      var out = mk('p', 'dot-menu-out');
+      out.hidden = true;
+      out.setAttribute('aria-live', 'polite');
+      root.appendChild(out);
+      var row = mk('div', 'dot-menu-row');
+      function action(label, fn) { var b = mk('button', 'dot-menu-act', label); b.type = 'button'; b.addEventListener('click', function () { Sound.tick(); fn(); }); row.appendChild(b); }
+      action('Play', function () { closeMenu(); Play.open(); });
+      action('Pat', function () { closeMenu(); pat(); });
+      action('Tour', function () { closeMenu(); if (typeof Tour !== 'undefined') Tour.start(); });
+      action('Close', closeMenu);
+      root.appendChild(row);
+      form.addEventListener('submit', function (event) { event.preventDefault(); askDot(input.value); input.value = ''; });
+      document.body.appendChild(root);
+      menu = { root: root, input: input, chips: chips, out: out, busy: false };
+      document.addEventListener('pointerdown', function (event) {
+        if (!menuOpen()) return;
+        if (event.target.closest && event.target.closest('.dot-menu, #buddy')) return;
+        closeMenu();
+      }, true);
+      document.addEventListener('keydown', function (event) { if (menuOpen() && event.key === 'Escape') closeMenu(); });
+    }
+
+    function placeMenu() {
+      var r = menu.root, vw = window.innerWidth, vh = window.innerHeight;
+      r.style.left = r.style.top = r.style.bottom = '';
+      r.classList.toggle('is-sheet', vw < 620);
+      if (vw < 620) return;
+      var w = 288;
+      r.style.left = Math.max(12, Math.min(vw - w - 12, at.x + SIZE / 2 - w / 2)) + 'px';
+      if (at.y > vh / 2) r.style.bottom = (vh - at.y + 10) + 'px';
+      else r.style.top = (at.y + SIZE + 10) + 'px';
+    }
+
+    function openMenu() {
+      if (!visible()) return;
+      if (!menu) buildMenu();
+      bubbleOff();
+      clearTimeout(returnTimer);
+      clear2(menu.chips);
+      shuffleList(ASKS.filter(speakable)).slice(0, 3).forEach(function (q) {
+        var b = mk('button', 'dot-menu-chip', q);
+        b.type = 'button';
+        b.addEventListener('click', function () { Sound.tick(); askDot(q); });
+        menu.chips.appendChild(b);
+      });
+      menu.out.hidden = true;
+      placeMenu();
+      menu.root.hidden = false;
+      menu.root.classList.remove('is-in'); void menu.root.offsetWidth; menu.root.classList.add('is-in');
+      react('happy', 900);
+      try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) { /* fine */ }
+      // The keyboard would cover the menu on a phone, so only a pointer gets the focus.
+      if (window.innerWidth >= 620) menu.input.focus();
+    }
+    function closeMenu() { if (menu) menu.root.hidden = true; }
+    function shuffleList(list) { var a = list.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+    function askDot(question) {
+      question = String(question || '').trim().slice(0, 200);
+      if (!question || menu.busy) return;
+      var out = menu.out;
+      menu.busy = true;
+      out.hidden = false;
+      out.textContent = 'Let me check…';
+      out.classList.remove('is-in'); void out.offsetWidth; out.classList.add('is-in');
+      var node = el();
+      if (node) { node._busy = true; Dot.mood(node, 'thinking', 0); }
+      fetch('/api/dot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ question: question, lang: I18n.get() })
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (b) { return { status: res.status, body: b }; });
+      }).catch(function () { return { status: 0, body: {} }; }).then(function (r) {
+        menu.busy = false;
+        var text = r.body && typeof r.body.answer === 'string' ? r.body.answer.trim() : '';
+        var mood = 'happy';
+        if (!text) {
+          mood = 'shrug';
+          text = r.status === 429 ? 'Slow down a little. Ask me again in a moment.'
+            : r.body && r.body.via === 'off_topic' ? 'I only know about morsels45. Try asking how to start, what is free, or what Premium is.'
+            : 'My brain is busy. Ask me again in a moment.';
+        }
+        out.textContent = text.slice(0, 700);
+        out.classList.remove('is-in'); void out.offsetWidth; out.classList.add('is-in');
+        if (node) { node._busy = false; Dot.mood(node, mood, 1400); setTimeout(function () { node.setAttribute('data-mood', rest()); }, 1450); }
+        if (menuOpen()) placeMenu();
+      });
+    }
+
+
     var TAGS = ['fried', 'sweet', 'veg', 'cheap', 'drink', 'spicy', 'soupy', 'cheesy'];
     function topPick() {
       var picks = (progress && progress.state && progress.state.picks) || {}, best = null, n = 0;
@@ -11748,6 +12026,10 @@
       },
       // A game with Dot finished: it counts towards the bond, quietly.
       played: function () { mem.games = (mem.games || 0) + 1; save(); paintBond(); },
+      remark: remark,
+      openMenu: openMenu,
+      closeMenu: closeMenu,
+      pat: pat,
       bond: function () { return { level: levelOf(score()), score: score(), days: mem.days.length, pats: mem.pats }; },
       paintBond: paintBond,
       // A page opens: a few words the first times you see it, rarely after.
@@ -11775,11 +12057,12 @@
         }, 1300);
       },
       onPanel: function () { sync(); },
-      onAnswer: function (value) {
+      onAnswer: function (value, tag) {
         asked++;
         if (value === 'yes') { run.yes++; run.no = 0; } else if (value === 'no') { run.no++; run.yes = 0; } else { run.yes = 0; run.no = 0; }
         if (!run.said && run.no >= 4) { run.said = true; return remark('manyNo', 'shrug', 3200); }
         if (!run.said && run.yes >= 4) { run.said = true; return remark('manyYes', 'happy', 3200); }
+        if (value === 'yes' && TAGS.indexOf(tag) >= 0 && Math.random() < 0.22) return remark(tag, 'happy', 3200);
         if (asked % 7 === 0 && Math.random() < 0.55) remark('quip', 'shrug', 2800);
       },
       onResult: function (dish) {
@@ -11890,7 +12173,7 @@
     var stats = { rps: 0, rpsWins: 0, wyr: 0, wyrRight: 0, wyrSeen: 0, guess: 0, guessWins: 0 };
     var taste = {};
     try {
-      var sv = JSON.parse(localStorage.getItem(STATS) || 'null'); if (sv) for (var k in stats) if (typeof sv[k] === 'number') stats[k] = sv[k];
+      var sv = JSON.parse(localStorage.getItem(STATS) || 'null'); if (sv) for (var k in sv) if (typeof sv[k] === 'number') stats[k] = sv[k];
       taste = JSON.parse(localStorage.getItem(TASTE) || '{}') || {};
     } catch (err) { /* fine */ }
     function save() { try { localStorage.setItem(STATS, JSON.stringify(stats)); localStorage.setItem(TASTE, JSON.stringify(taste)); } catch (err) { /* fine */ } }
@@ -11920,9 +12203,15 @@
     var GAMES = [
       { id: 'rps', icon: '\u{1F336}\u{FE0F}', name: 'Rock Paper Dish', blurb: 'First to three. Dot is not as random as it looks.' },
       { id: 'wyr', icon: '\u{1F914}', name: 'Dot Reads You', blurb: 'Pick one of two dishes. Dot tries to guess which.' },
-      { id: 'guess', icon: '\u{1F575}\u{FE0F}', name: 'Guess My Dish', blurb: 'Dot has a dish in mind. Ask, then name it.' }
+      { id: 'guess', icon: '\u{1F575}\u{FE0F}', name: 'Guess My Dish', blurb: 'Dot has a dish in mind. Ask, then name it.' },
+      { id: 'catch', icon: '\u{1F9FA}', name: 'Dish Catch', blurb: 'Slide under the falling dishes. Dodge the fire.', action: true },
+      { id: 'dash', icon: '\u{1F3C3}', name: 'Lane Dash', blurb: 'Three lanes, faster every second.', action: true },
+      { id: 'pop', icon: '\u{1F528}', name: 'Dot Pop', blurb: 'Dot pops up. Tap it. Thirty seconds.', action: true },
+      { id: 'says', icon: '\u{1F9E0}', name: 'Dot Says', blurb: 'Watch the pads. Copy the pattern.', action: true }
     ];
+    var RUN = function () { return { rps: rps, wyr: wyr, guess: guess, catch: catchGame, dash: dashGame, pop: popGame, says: simonGame }; };
     function menu() {
+      stopGame();
       var s = screen();
       words(pickOne(['Pick a game. I will lose gracefully. Probably.', 'Games. My favourite thing after dishes.', 'Go on. Choose. I have all day.']), 'happy');
       var grid = h('div', 'dg-grid');
@@ -11931,15 +12220,16 @@
         card.type = 'button';
         card.appendChild(h('span', 'dg-card-icon', g.icon));
         card.appendChild(h('strong', '', g.name));
+        if (g.action) card.appendChild(h('span', 'dg-tag', 'Action'));
         card.appendChild(h('span', 'fine', g.blurb));
-        card.addEventListener('click', function () { Sound.tick(); ({ rps: rps, wyr: wyr, guess: guess })[g.id](); });
+        card.addEventListener('click', function () { Sound.tick(); RUN()[g.id](); });
         grid.appendChild(card);
       });
       s.appendChild(grid);
     }
 
     function finish(game, won) {
-      stats[game]++;
+      stats[game] = (stats[game] || 0) + 1;
       save();
       if (typeof Buddy !== 'undefined') Buddy.played(game, won);
     }
@@ -12133,6 +12423,269 @@
       view();
     }
 
+    /* ---- the action games ---- */
+    var cleanup = null;
+    function stopGame() { if (cleanup) { var f = cleanup; cleanup = null; f(); } }
+    function bestOf(game, score) {
+      var all = {};
+      try { all = JSON.parse(localStorage.getItem('morsels-dot-best') || '{}') || {}; } catch (err) { all = {}; }
+      var beat = score > (all[game] || 0);
+      if (beat) { all[game] = score; try { localStorage.setItem('morsels-dot-best', JSON.stringify(all)); } catch (err) { /* fine */ } }
+      return { best: Math.max(all[game] || 0, score), beat: beat };
+    }
+    function results(game, score, again, notes) {
+      var b = bestOf(game, score);
+      var s = screen();
+      s.appendChild(h('p', 'dg-line is-big', 'Score ' + score));
+      s.appendChild(h('p', 'dg-score', b.beat ? 'New best' : 'Best ' + b.best));
+      words(b.beat ? pickOne(['A new best. I am not crying. You are.', 'Record. I will tell the dishes.']) : score >= b.best * 0.8 ? pickOne(['So close to your best.', 'Nearly. Again?']) : pickOne(notes), b.beat ? 'celebrate' : 'shrug');
+      finish(game, b.beat || score > 0);
+      endButtons(again);
+    }
+
+    // Dot, drawn on a canvas: a round face, two eyes, a blush and a mouth.
+    function drawDot(g, x, y, r, mouth) {
+      g.save();
+      g.fillStyle = '#f5eee1';
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#f5eee1';
+      g.beginPath(); g.moveTo(x, y - r + 1); g.quadraticCurveTo(x - r * .12, y - r * 1.28, x + r * .2, y - r * 1.34); g.quadraticCurveTo(x + r * .1, y - r * 1.1, x, y - r + 1); g.fill();
+      g.fillStyle = 'rgba(224,163,64,.55)';
+      g.beginPath(); g.arc(x - r * .58, y + r * .22, r * .17, 0, 6.3); g.arc(x + r * .58, y + r * .22, r * .17, 0, 6.3); g.fill();
+      g.fillStyle = '#2a2218';
+      g.beginPath(); g.arc(x - r * .3, y - r * .1, r * .1, 0, 6.3); g.arc(x + r * .3, y - r * .1, r * .1, 0, 6.3); g.fill();
+      g.strokeStyle = '#2a2218'; g.lineWidth = Math.max(1.5, r * .08); g.lineCap = 'round';
+      g.beginPath();
+      if (mouth === 'open') { g.fillStyle = '#2a2218'; g.ellipse(x, y + r * .34, r * .2, r * .27, 0, 0, 6.3); g.fill(); }
+      else if (mouth === 'sad') { g.arc(x, y + r * .6, r * .22, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); }
+      else { g.arc(x, y + r * .15, r * .26, Math.PI * .15, Math.PI * .85); g.stroke(); }
+      g.restore();
+    }
+
+    // The shared shell of the two canvas games: a canvas, a clock, a loop, and a teardown.
+    function canvasGame(opts) {
+      var s = screen();
+      words(opts.intro, 'happy');
+      var W = 340, H = 400, dpr = Math.min(2, window.devicePixelRatio || 1);
+      var cv = h('canvas', 'dg-canvas');
+      cv.width = W * dpr; cv.height = H * dpr;
+      cv.setAttribute('aria-label', opts.label);
+      var g = cv.getContext('2d');
+      g.scale(dpr, dpr);
+      var hud = h('p', 'dg-score', '');
+      s.appendChild(hud); s.appendChild(cv);
+      s.appendChild(h('p', 'fine', opts.how));
+      var st = { W: W, H: H, g: g, cv: cv, score: 0, lives: 3, t: 0, over: false, mouth: 'smile', mouthT: 0 };
+      var last = performance.now(), raf = 0;
+      function hearts() { return new Array(st.lives + 1).join('♥ ').trim() || '—'; }
+      st.hud = function () { hud.textContent = 'Score ' + st.score + ' · ' + hearts(); };
+      st.hurt = function () { st.lives--; st.mouth = 'sad'; st.mouthT = .5; Sound.bust(); Dot.mood(dotEl, 'sad', 700); if (st.lives <= 0) st.over = true; st.hud(); };
+      st.gain = function (n) { st.score += n; st.mouth = 'open'; st.mouthT = .25; Sound.climb(Math.min(14, st.score)); st.hud(); };
+      function frame(now) {
+        var dt = Math.min(0.05, (now - last) / 1000); last = now;
+        if (!st.over) { st.t += dt; st.mouthT -= dt; if (st.mouthT <= 0) st.mouth = 'smile'; opts.update(st, dt); }
+        g.clearRect(0, 0, W, H);
+        opts.draw(st);
+        if (st.over) { cancelAnimationFrame(raf); setTimeout(function () { if (open) results(opts.id, st.score, opts.again, opts.notes); }, 650); return; }
+        raf = requestAnimationFrame(frame);
+      }
+      opts.setup(st);
+      st.hud();
+      raf = requestAnimationFrame(frame);
+      var off = function () { cancelAnimationFrame(raf); st.over = true; if (opts.teardown) opts.teardown(st); };
+      cleanup = off;
+    }
+
+    /* Dish Catch: slide Dot under the falling dishes; the fire costs a heart. */
+    function catchGame() {
+      var keyHandler = null;
+      canvasGame({
+        id: 'catch', label: 'Dish Catch', again: catchGame,
+        intro: 'Catch the dishes. Dodge the fire. I will cheer from the corner.',
+        how: 'Slide your finger or mouse across the board, or use the arrow keys.',
+        notes: ['The fire got me. It always does.', 'Dishes fall. That is their whole thing.'],
+        setup: function (st) {
+          st.px = st.W / 2; st.items = []; st.spawn = 0;
+          function move(e) { var r = st.cv.getBoundingClientRect(); st.px = Math.max(26, Math.min(st.W - 26, (e.clientX - r.left) / r.width * st.W)); }
+          st.cv.addEventListener('pointermove', move); st.cv.addEventListener('pointerdown', move);
+          keyHandler = function (e) { if (e.key === 'ArrowLeft') st.px = Math.max(26, st.px - 26); if (e.key === 'ArrowRight') st.px = Math.min(st.W - 26, st.px + 26); };
+          document.addEventListener('keydown', keyHandler);
+        },
+        update: function (st, dt) {
+          st.spawn -= dt;
+          if (st.spawn <= 0) {
+            st.spawn = Math.max(0.3, 0.85 - st.t * 0.011);
+            var bad = Math.random() < Math.min(0.34, 0.14 + st.t * 0.004);
+            st.items.push({ x: 20 + Math.random() * (st.W - 40), y: -20, v: 95 + st.t * 3.2 + Math.random() * 55, bad: bad, gold: !bad && Math.random() < 0.08, icon: bad ? '\u{1F525}' : pickOne(Data.ITEMS).icon });
+          }
+          for (var i = st.items.length - 1; i >= 0; i--) {
+            var it = st.items[i];
+            it.y += it.v * dt;
+            if (it.y > st.H - 68 && it.y < st.H - 14 && Math.abs(it.x - st.px) < 34) {
+              st.items.splice(i, 1);
+              if (it.bad) st.hurt(); else st.gain(it.gold ? 3 : 1);
+            } else if (it.y > st.H + 20) st.items.splice(i, 1);
+          }
+        },
+        draw: function (st) {
+          var g = st.g;
+          g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
+          st.items.forEach(function (it) {
+            g.font = (it.gold ? 34 : 28) + 'px serif';
+            if (it.gold) { g.shadowColor = '#e0a340'; g.shadowBlur = 14; }
+            g.fillText(it.icon, it.x, it.y); g.shadowBlur = 0;
+          });
+          drawDot(st.g, st.px, st.H - 38, 26, st.mouth);
+        },
+        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
+      });
+    }
+
+    /* Lane Dash: three lanes towards you; hop between them to eat and dodge. */
+    function dashGame() {
+      var keyHandler = null;
+      canvasGame({
+        id: 'dash', label: 'Lane Dash', again: dashGame,
+        intro: 'Three lanes. Eat what comes. Dodge the fire. Do not look down.',
+        how: 'Tap the left or right of the board, or use the arrow keys, to change lane.',
+        notes: ['I blame the lanes.', 'That was a lot of fire.'],
+        setup: function (st) {
+          st.lane = 1; st.x = st.W / 2; st.items = []; st.spawn = 0; st.road = 0;
+          function go(d) { st.lane = Math.max(0, Math.min(2, st.lane + d)); }
+          st.cv.addEventListener('pointerdown', function (e) { var r = st.cv.getBoundingClientRect(); go((e.clientX - r.left) / r.width < 0.5 ? -1 : 1); });
+          keyHandler = function (e) { if (e.key === 'ArrowLeft') go(-1); if (e.key === 'ArrowRight') go(1); };
+          document.addEventListener('keydown', keyHandler);
+        },
+        update: function (st, dt) {
+          var speed = 0.42 + st.t * 0.011;               // fraction of the road per second
+          st.road = (st.road + dt * speed * 6) % 1;
+          st.x += ((st.W * (0.2 + st.lane * 0.3) + 0) - st.x) * Math.min(1, dt * 14);
+          st.spawn -= dt;
+          if (st.spawn <= 0) {
+            st.spawn = Math.max(0.34, 0.95 - st.t * 0.012);
+            var lane = Math.floor(Math.random() * 3), bad = Math.random() < Math.min(0.42, 0.2 + st.t * 0.005);
+            st.items.push({ lane: lane, z: 0, bad: bad, icon: bad ? '\u{1F525}' : pickOne(Data.ITEMS).icon });
+            if (Math.random() < 0.3 && st.t > 8) st.items.push({ lane: (lane + 1 + Math.floor(Math.random() * 2)) % 3, z: 0, bad: true, icon: '\u{1F525}' });
+          }
+          for (var i = st.items.length - 1; i >= 0; i--) {
+            var it = st.items[i];
+            it.z += dt * speed;
+            if (it.z > 0.86 && it.z < 0.98 && it.lane === st.lane) { st.items.splice(i, 1); if (it.bad) st.hurt(); else st.gain(1); }
+            else if (it.z > 1.05) st.items.splice(i, 1);
+          }
+        },
+        draw: function (st) {
+          var g = st.g, W = st.W, H = st.H, top = H * 0.16;
+          // the road, narrowing towards the horizon
+          g.fillStyle = 'rgba(255,255,255,.05)';
+          g.beginPath(); g.moveTo(W * 0.38, top); g.lineTo(W * 0.62, top); g.lineTo(W, H); g.lineTo(0, H); g.closePath(); g.fill();
+          g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 2;
+          [1 / 3, 2 / 3].forEach(function (f) { g.beginPath(); g.moveTo(W * (0.38 + 0.24 * f), top); g.lineTo(W * f, H); g.stroke(); });
+          for (var k = 0; k < 6; k++) { var z = (k + st.road) / 6, y = top + (H - top) * z * z; g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(0, y, W, 2); }
+          g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
+          st.items.slice().sort(function (a, b) { return a.z - b.z; }).forEach(function (it) {
+            var z = it.z * it.z, y = top + (H - top) * z, laneX = W * (0.2 + it.lane * 0.3), x = W * 0.5 + (laneX - W * 0.5) * (0.28 + 0.72 * z);
+            g.font = Math.round(12 + 30 * z) + 'px serif';
+            g.fillText(it.icon, x, y);
+          });
+          drawDot(g, st.x, H - 44, 26, st.mouth);
+        },
+        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
+      });
+    }
+
+    /* Dot Pop: Dot pops up out of nine holes; tap it. Do not tap the fire. */
+    function popGame() {
+      var s = screen();
+      words('I pop up. You tap me. It is very dignified.', 'happy');
+      var score = 0, left = 30, timers = [], over = false, rate = 900;
+      var hud = h('p', 'dg-score', 'Score 0 · 30s');
+      var grid = h('div', 'dg-holes');
+      var cells = [];
+      for (var i = 0; i < 9; i++) {
+        var c = h('button', 'dg-hole');
+        c.type = 'button';
+        c.setAttribute('aria-label', 'Hole');
+        var face = h('span', 'dg-pop');
+        c.appendChild(face);
+        (function (cell) {
+          cell.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            if (!cell._up || over) return;
+            cell._up = false; cell.classList.remove('is-up');
+            if (cell._bad) { score = Math.max(0, score - 2); Sound.bust(); Dot.mood(dotEl, 'sad', 600); }
+            else { score++; Sound.climb(Math.min(14, score)); cell.classList.add('is-hit'); setTimeout(function () { cell.classList.remove('is-hit'); }, 220); }
+            hud.textContent = 'Score ' + score + ' · ' + left + 's';
+          });
+        })(c);
+        cells.push(c); grid.appendChild(c);
+      }
+      s.appendChild(hud); s.appendChild(grid);
+      s.appendChild(h('p', 'fine', 'Tap Dot. Leave the fire alone.'));
+      function pop() {
+        if (over) return;
+        var cell = pickOne(cells.filter(function (x) { return !x._up; }));
+        if (!cell) return;
+        cell._bad = Math.random() < 0.2;
+        cell.firstChild.textContent = cell._bad ? '\u{1F525}' : '';
+        cell.firstChild.classList.toggle('is-dot', !cell._bad);
+        if (!cell._bad) Dot.mount(cell.firstChild);
+        cell._up = true; cell.classList.add('is-up');
+        var stay = Math.max(420, rate * 0.9);
+        timers.push(setTimeout(function () { cell._up = false; cell.classList.remove('is-up'); }, stay));
+        rate = Math.max(380, rate - 14);
+        timers.push(setTimeout(pop, rate));
+      }
+      timers.push(setTimeout(pop, 500));
+      var clock = setInterval(function () {
+        left--;
+        hud.textContent = 'Score ' + score + ' · ' + left + 's';
+        if (left <= 0) { over = true; stopGame(); results('pop', score, popGame, ['I popped up. You missed. We both tried.', 'Thirty seconds. Felt longer.']); }
+      }, 1000);
+      cleanup = function () { over = true; clearInterval(clock); timers.forEach(clearTimeout); };
+    }
+
+    /* Dot Says: watch the pads light up, then play them back. */
+    function simonGame() {
+      var s = screen();
+      words('Watch the pads. Then copy me. I will not make it easy.', 'happy');
+      var PADS = [{ icon: '\u{1F355}', c: '#d9534f' }, { icon: '\u{1F35C}', c: '#e0a340' }, { icon: '\u{1F336}\u{FE0F}', c: '#5cb85c' }, { icon: '\u{1F366}', c: '#5bc0de' }];
+      var seq = [], at = 0, accepting = false, over = false, timers = [];
+      var hud = h('p', 'dg-score', 'Round 0');
+      var grid = h('div', 'dg-pads');
+      var pads = PADS.map(function (p, i) {
+        var b = h('button', 'dg-pad', p.icon);
+        b.type = 'button';
+        b.style.setProperty('--pad', p.c);
+        b.addEventListener('pointerdown', function (e) { e.preventDefault(); press(i); });
+        grid.appendChild(b);
+        return b;
+      });
+      s.appendChild(hud); s.appendChild(grid);
+      function flash(i, ms) { pads[i].classList.add('is-lit'); Sound.climb(i * 3 + 2); timers.push(setTimeout(function () { pads[i].classList.remove('is-lit'); }, ms || 380)); }
+      function round() {
+        seq.push(Math.floor(Math.random() * 4)); at = 0; accepting = false;
+        hud.textContent = 'Round ' + seq.length;
+        Dot.mood(dotEl, 'thinking', 1200);
+        var gap = Math.max(260, 520 - seq.length * 14);
+        seq.forEach(function (p, k) { timers.push(setTimeout(function () { flash(p, gap * 0.7); }, 700 + k * gap)); });
+        timers.push(setTimeout(function () { accepting = true; words('Your turn.', 'wink'); }, 700 + seq.length * gap));
+      }
+      function press(i) {
+        if (!accepting || over) return;
+        flash(i, 200);
+        if (i !== seq[at]) {
+          over = true; accepting = false; Sound.bust();
+          timers.push(setTimeout(function () { stopGame(); results('says', seq.length - 1, simonGame, ['I made it too hard. Sorry. Not sorry.', 'Memory is overrated.']); }, 500));
+          return;
+        }
+        at++;
+        if (at === seq.length) { accepting = false; words(pickOne(['Good. Again, longer.', 'Yes. Keep up.', 'Correct. Smug about it.']), 'happy'); timers.push(setTimeout(round, 800)); }
+      }
+      timers.push(setTimeout(round, 600));
+      cleanup = function () { over = true; timers.forEach(clearTimeout); };
+    }
+
     function build() {
       root = h('div', 'dg');
       root.setAttribute('role', 'dialog');
@@ -12171,19 +12724,179 @@
       root.hidden = false;
       root.classList.remove('is-in'); void root.offsetWidth; root.classList.add('is-in');
       if ('inert' in shell) shell.inert = true;
-      ({ rps: rps, wyr: wyr, guess: guess })[which] ? ({ rps: rps, wyr: wyr, guess: guess })[which]() : menu();
+      RUN()[which] ? RUN()[which]() : menu();
       var first = body.querySelector('button');
       if (first) first.focus();
     }
     function close() {
       if (!open) return;
       open = false;
+      stopGame();
       root.hidden = true;
       if ('inert' in shell && !document.body.classList.contains('is-landing')) shell.inert = false;
       if (typeof Buddy !== 'undefined') Buddy.sync();
       if (back && back.focus) try { back.focus(); } catch (err) { /* fine */ }
     }
     return { open: openGames, close: close, isOpen: function () { return open; }, stats: function () { return stats; } };
+  })();
+
+  /* ------------------------------------------------------------------ Tour */
+  /*
+   * Dot shows you round, the way Duolingo shows you how to use Duolingo: one
+   * thing at a time, a character talking, a bar that fills, and the real piece
+   * of the app lit up while it is explained. It walks through the app for you,
+   * so there is nothing to find and nothing to get wrong; Continue, Back, or
+   * Skip at any point, and Escape skips.
+   *
+   * It is offered once, by Dot, a few seconds after the first hello, and never
+   * forced. It can be taken again from Dot's menu (hold Dot) or from the
+   * profile. Finishing it, or skipping it, is remembered so Dot does not offer
+   * it twice.
+   *
+   * The page behind is inert while it runs, the highlighted element is only
+   * lit, never moved or made clickable, and under reduced motion the light
+   * jumps instead of sliding.
+   */
+  var Tour = (function () {
+    var KEY = 'morsels-tour';
+    var STEPS = [
+      { text: 'Hi! I am Dot. I will show you round morsels45. It takes about a minute.', mood: 'happy' },
+      { sel: ['.rail'], text: 'This is the menu. Everything in the app lives here.', mood: 'happy' },
+      { sel: ['.rail-link[data-view="decide"]'], text: 'Decide is home. Answer a few yes or no questions and I will land on dinner. There are other ways to decide too: swiping, duels, Endless and action games.', mood: 'celebrate' },
+      { view: 'dishes', sel: ['#view-dishes .head'], text: 'Every dish in one place. Search, filter, and tap one for its recipe.', mood: 'happy' },
+      { view: 'planner', sel: ['#view-planner .head', '#view-planner'], text: 'Plan your week. You can copy one day across the whole week with a single tap.', mood: 'wink' },
+      { view: 'kitchen', sel: ['#view-kitchen .head', '#view-kitchen'], text: 'Recipes, timers and a converter, for when you are actually cooking.', mood: 'happy' },
+      { view: 'scan', sel: ['#view-scan .head', '#view-scan'], text: 'Scan a barcode to see how healthy something is. Premium can even turn a photo of your fridge into dinner.', mood: 'surprised' },
+      { view: 'menu', sel: ['#view-menu .head'], text: 'A special evening? Tell me the occasion and I will write you five courses that belong together.', mood: 'happy' },
+      { view: 'nearby', sel: ['#view-nearby .head'], text: 'Find places near you that serve the dish you landed on.', mood: 'happy' },
+      { view: 'chat', sel: ['#chat-mode', '#view-chat .head'], text: 'Ask a question. Standard is free, three a day. Advanced is Premium, and it knows your taste.', mood: 'thinking' },
+      { sel: ['.rail-link[data-view="radio"]'], text: 'Free TV and radio to cook and eat to.', mood: 'happy' },
+      { view: 'daily', sel: ['#view-daily .head'], text: 'Five little things a day, and a streak that grows when you show up.', mood: 'celebrate' },
+      { view: 'profile', sel: ['#view-profile .head'], text: 'Your taste, your level, your language, and how much I talk. It is all here.', mood: 'happy' },
+      { sel: ['#buddy'], text: 'That is me in the corner. Tap me to chat. Hold me for a menu: ask me about morsels45, play a game, or take this tour again.', mood: 'love', wait: 'dot' },
+      { text: 'That is everything. Go on, decide something. I will be right here.', mood: 'celebrate', last: true }
+    ];
+    var open = false, n = 0, root = null, ui = {}, back = null, timer = 0;
+
+    function done() { try { return localStorage.getItem(KEY) === 'done'; } catch (err) { return false; } }
+    function mark() { try { localStorage.setItem(KEY, 'done'); } catch (err) { /* fine */ } }
+    function mk(tag, cls, text) { var x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; return x; }
+
+    function build() {
+      root = mk('div', 'tour');
+      root.hidden = true;
+      root.setAttribute('role', 'dialog');
+      root.setAttribute('aria-modal', 'true');
+      root.setAttribute('aria-label', 'Tour');
+      var top = mk('div', 'tour-top');
+      ui.bar = mk('div', 'tour-bar');
+      STEPS.forEach(function () { ui.bar.appendChild(document.createElement('i')); });
+      ui.skip = mk('button', 'tour-skip', 'Skip tour');
+      ui.skip.type = 'button';
+      ui.skip.addEventListener('click', function () { finish(false); });
+      top.appendChild(ui.bar); top.appendChild(ui.skip);
+      ui.spot = mk('div', 'tour-spot');
+      ui.card = mk('div', 'tour-card');
+      ui.dot = mk('span', 'mascot tour-dot');
+      Dot.mount(ui.dot);
+      ui.dot.addEventListener('click', function () { Dot.mood(ui.dot, 'wiggle', 800); Sound.tick(); });
+      ui.say = mk('p', 'tour-say');
+      ui.say.setAttribute('aria-live', 'polite');
+      var row = mk('div', 'tour-row');
+      ui.back = mk('button', 'tour-btn', 'Back');
+      ui.back.type = 'button';
+      ui.back.addEventListener('click', function () { Sound.tick(); show(n - 1); });
+      ui.next = mk('button', 'tour-btn is-main', 'Continue');
+      ui.next.type = 'button';
+      ui.next.addEventListener('click', function () { Sound.tick(); if (STEPS[n].last) finish(true); else show(n + 1); });
+      row.appendChild(ui.back); row.appendChild(ui.next);
+      var body = mk('div', 'tour-body');
+      body.appendChild(ui.dot); body.appendChild(ui.say);
+      ui.card.appendChild(body); ui.card.appendChild(row);
+      root.appendChild(top); root.appendChild(ui.spot); root.appendChild(ui.card);
+      document.body.appendChild(root);
+      document.addEventListener('keydown', function (e) {
+        if (!open) return;
+        if (e.key === 'Escape') finish(false);
+        else if (e.key === 'ArrowRight' || e.key === 'Enter') { if (document.activeElement !== ui.skip && document.activeElement !== ui.back) { e.preventDefault(); ui.next.click(); } }
+        else if (e.key === 'ArrowLeft' && n > 0) show(n - 1);
+      });
+      window.addEventListener('resize', function () { if (open) place(); });
+    }
+
+    function target() {
+      var st = STEPS[n];
+      for (var k = 0; st.sel && k < st.sel.length; k++) {
+        var node = document.querySelector(st.sel[k]);
+        if (node) { var r = node.getBoundingClientRect(); if (r.width > 4 && r.height > 4) return r; }
+      }
+      return null;
+    }
+
+    // Light the target, and put the card on whichever half of the screen it is not.
+    function place() {
+      var r = target(), vw = window.innerWidth, vh = window.innerHeight;
+      var spot = ui.spot;
+      if (r) {
+        var pad = 8, top = Math.max(4, r.top - pad), left = Math.max(4, r.left - pad);
+        var w = Math.min(vw - left - 4, r.width + pad * 2), h = Math.min(vh - top - 4, r.height + pad * 2);
+        spot.style.cssText = 'left:' + left + 'px;top:' + top + 'px;width:' + w + 'px;height:' + h + 'px;opacity:1';
+        ui.card.classList.toggle('is-top', top + h / 2 > vh * 0.5);
+      } else {
+        spot.style.cssText = 'left:' + vw / 2 + 'px;top:' + vh / 2 + 'px;width:0;height:0;opacity:1';
+        ui.card.classList.remove('is-top');
+      }
+    }
+
+    function show(i) {
+      n = Math.max(0, Math.min(STEPS.length - 1, i));
+      var st = STEPS[n];
+      Array.prototype.forEach.call(ui.bar.children, function (b, k) { b.className = k < n ? 'is-done' : k === n ? 'is-now' : ''; });
+      ui.back.hidden = n === 0;
+      ui.next.textContent = st.last ? 'Let’s go' : n === 0 ? 'Show me' : 'Continue';
+      ui.skip.hidden = !!st.last;
+      if (st.view && view !== st.view) setView(st.view);
+      ui.say.textContent = st.text;
+      ui.say.classList.remove('is-in'); void ui.say.offsetWidth; ui.say.classList.add('is-in');
+      ui.card.setAttribute('aria-label', 'Step ' + (n + 1) + ' of ' + STEPS.length);
+      Dot.mood(ui.dot, st.mood || 'happy', 1500);
+      if (st.last && !reduceMotion) { setTimeout(function () { Confetti.burst({ y: window.innerHeight * 0.4 }); }, 250); }
+      clearTimeout(timer);
+      // A page that has just changed needs a moment before its header has a place.
+      place();
+      timer = setTimeout(place, st.view ? 520 : 60);
+      if (st.view) setTimeout(place, 900);
+      ui.next.focus({ preventScroll: true });
+    }
+
+    function start() {
+      if (open) return;
+      if (!root) build();
+      open = true;
+      back = document.activeElement;
+      if (typeof Buddy !== 'undefined' && Buddy) Buddy.closeMenu();
+      if (document.body.classList.contains('is-landing')) { try { hideLanding(); } catch (err) { /* fine */ } }
+      root.hidden = false;
+      root.classList.remove('is-in'); void root.offsetWidth; root.classList.add('is-in');
+      if ('inert' in shell) shell.inert = true;
+      show(0);
+    }
+
+    function finish(completed) {
+      if (!open) return;
+      open = false;
+      clearTimeout(timer);
+      root.hidden = true;
+      mark();
+      if ('inert' in shell && !document.body.classList.contains('is-landing')) shell.inert = false;
+      if (completed) {
+        if (typeof showLanding === 'function') try { showLanding(); } catch (err) { /* fine */ }
+        if (typeof Buddy !== 'undefined' && Buddy) { Buddy.react('celebrate', 1600); }
+      } else if (typeof Buddy !== 'undefined' && Buddy) Buddy.remark('tourSkip', 'happy', 3200, true);
+      if (back && back.focus) try { back.focus({ preventScroll: true }); } catch (err) { /* fine */ }
+    }
+
+    return { start: start, finish: finish, isOpen: function () { return open; }, done: done, mark: mark };
   })();
 
   // Eyes that follow the pointer, a pixel or two.
@@ -12195,7 +12908,7 @@
       frame = requestAnimationFrame(function () {
         frame = 0;
         var node = $('mascot-b');
-        if (!node || $('buddy').hidden) return;
+        if (!node || $('buddy').hidden || node.dataset.watch) return;
         var r = node.getBoundingClientRect();
         var dx = event.clientX - (r.left + r.width / 2), dy = event.clientY - (r.top + r.height / 2);
         var d = Math.max(1, Math.sqrt(dx * dx + dy * dy)), k = Math.min(1.8, d / 90);
@@ -12211,6 +12924,7 @@
   (function profileControls() {
     var tog = $('buddy-toggle'), play = $('buddy-play'), back = $('buddy-home');
     if ($('buddy-games')) $('buddy-games').addEventListener('click', function () { Play.open(); });
+    if ($('buddy-tour')) $('buddy-tour').addEventListener('click', function () { Tour.start(); });
     if (tog) {
       var paintTog = function () { tog.textContent = Buddy.enabled() ? 'Dot is here' : 'Dot is off'; tog.setAttribute('aria-pressed', String(Buddy.enabled())); };
       tog.addEventListener('click', function () { Buddy.set(!Buddy.enabled()); paintTog(); });

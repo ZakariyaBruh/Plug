@@ -1,32 +1,37 @@
 /*
- * THE STANDARD ASSISTANT: POLLINATIONS, WHICH NEEDS NO KEY.
+ * THE FREE MODELS: POLLINATIONS, WITH LLM7 BEHIND IT. NEITHER NEEDS A KEY.
  *
- * The chat has two tiers. Advanced is Gemini, paid for out of this app's own
- * key and kept for Premium. Standard — what the three free questions a day
- * get, and what a Premium member can switch to for a quick answer — runs on
- * text.pollinations.ai, a free public OpenAI-shaped endpoint that serves
- * GPT-OSS to anonymous callers with no account and no API key, so a free
- * question costs this app nothing.
+ * Advanced is Gemini, paid for out of this app's own key and kept for Premium.
+ * Standard — the three free questions a day, and what a Premium member can
+ * switch to for a quick answer — and Dot's answers about the app run here
+ * instead, so they cost this app nothing.
  *
- * It is the only model Standard uses. A free question that Pollinations does
- * not answer is not counted and is not quietly handed to the paid key: the
- * visitor is told it is busy and asks again. To keep that rare, a second
- * attempt starts if the first fails or is still silent after STAGGER_MS, and the
- * first answer wins. It takes about six seconds a question, because the model
- * reasons before it speaks.
+ *   1. Pollinations (text.pollinations.ai/openai): GPT-OSS to anonymous callers.
+ *      The better answer, about six seconds, because the model reasons first.
+ *   2. LLM7 (api.llm7.io): the same shape with a free "unused" bearer. Quicker
+ *      and plainer, so it is the backup and not the race: it starts only when
+ *      Pollinations has failed, or has been silent for STAGGER_MS.
  *
- * WHAT THIS IS AND IS NOT: a free public service with no promise attached. It
- * can be slow, rate-limited, or gone. What is sent to it is the conversation
- * and the app's own instruction — never a name, an address, or the taste
- * profile the advanced assistant is given; the privacy page says so.
+ * Nothing here ever falls through to the paid key. A question neither answers
+ * is not counted and is not handed to Gemini: the visitor is told it is busy
+ * and asks again.
  *
- * Nothing the model says is trusted here: the answer is cleaned of the
- * trailing advert the endpoint sometimes appends and of markdown, and capped.
+ * WHAT THIS IS AND IS NOT: free public services with no promise attached; they
+ * can be slow, rate-limited, or gone. What is sent is the conversation and the
+ * app's own instruction — never a name, an address, or the taste profile the
+ * advanced assistant is given; the privacy page says so.
+ *
+ * Nothing a model says is trusted here: the answer is cleaned of the trailing
+ * advert some free endpoints append, and of markdown, and capped.
  */
 export type FreeTurn = { role: 'user' | 'model'; text: string }
 
-const ENDPOINT = 'https://text.pollinations.ai/openai'
-const MODEL = 'openai-fast'
+type Endpoint = { name: string; url: string; model: string; headers: Record<string, string>; extra?: Record<string, unknown> }
+
+const ENDPOINTS: Endpoint[] = [
+  { name: 'pollinations', url: 'https://text.pollinations.ai/openai', model: 'openai-fast', headers: {}, extra: { reasoning_effort: 'low' } },
+  { name: 'llm7', url: 'https://api.llm7.io/v1/chat/completions', model: 'codestral-latest', headers: { Authorization: 'Bearer unused' } },
+]
 
 const ATTEMPT_MS = 14000
 const STAGGER_MS = 8000
@@ -42,54 +47,60 @@ export function cleanFreeAnswer(text: string): string {
     .trim()
 }
 
-async function attempt(system: string, turns: FreeTurn[], maxTokens: number, signal: AbortSignal): Promise<string> {
+async function attempt(ep: Endpoint, system: string, turns: FreeTurn[], maxTokens: number, signal: AbortSignal): Promise<string> {
   const timer = new AbortController()
   const stop = setTimeout(() => timer.abort(), ATTEMPT_MS)
   signal.addEventListener('abort', () => timer.abort(), { once: true })
   try {
-    const res = await fetch(ENDPOINT, {
+    const res = await fetch(ep.url, {
       method: 'POST',
       signal: timer.signal,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...ep.headers },
       body: JSON.stringify({
-        model: MODEL,
-        reasoning_effort: 'low',
+        model: ep.model,
         messages: [
           { role: 'system', content: system },
           ...turns.map((t) => ({ role: t.role === 'model' ? 'assistant' : 'user', content: t.text })),
         ],
         max_tokens: maxTokens,
         temperature: 0.8,
+        ...ep.extra,
       }),
     })
-    if (!res.ok) throw new Error(`pollinations ${res.status}`)
+    if (!res.ok) throw new Error(`${ep.name} ${res.status}`)
     const data = (await res.json()) as { choices?: { message?: { content?: unknown } }[] }
     const raw = data?.choices?.[0]?.message?.content
     const text = typeof raw === 'string' ? cleanFreeAnswer(raw) : ''
-    if (!text) throw new Error('pollinations empty')
+    if (!text) throw new Error(`${ep.name} empty`)
     return text
   } finally {
     clearTimeout(stop)
   }
 }
 
-/** The answer, or null if Pollinations gave none in time. */
-export async function askFree(system: string, turns: FreeTurn[], maxTokens = 600): Promise<{ text: string; via: string } | null> {
+/** The answer, or null if neither free service gave one in time. */
+export async function askFree(
+  system: string,
+  turns: FreeTurn[],
+  maxTokens = 600,
+  temperature?: number,
+): Promise<{ text: string; via: string } | null> {
   const all = new AbortController()
-  const run = () => attempt(system, turns, maxTokens, all.signal).then((text) => ({ text, via: 'pollinations' }))
+  const eps = temperature === undefined ? ENDPOINTS : ENDPOINTS.map((e) => ({ ...e, extra: { ...e.extra, temperature } }))
+  const run = (ep: Endpoint) => attempt(ep, system, turns, maxTokens, all.signal).then((text) => ({ text, via: ep.name }))
 
-  const first = run()
-  const second = new Promise<void>((resolve) => {
+  const first = run(eps[0])
+  const backup = new Promise<void>((resolve) => {
     const t = setTimeout(resolve, STAGGER_MS)
     first.catch(() => {
       clearTimeout(t)
       resolve()
     })
-  }).then(run)
+  }).then(() => run(eps[1]))
 
   const capped = new Promise<null>((r) => setTimeout(() => r(null), TIMEOUT_MS))
   try {
-    return await Promise.race([Promise.any([first, second]).catch(() => null), capped])
+    return await Promise.race([Promise.any([first, backup]).catch(() => null), capped])
   } finally {
     all.abort()
   }
