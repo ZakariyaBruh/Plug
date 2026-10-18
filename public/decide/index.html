@@ -163,6 +163,7 @@
      =========================================================================== -->
 <div class="welcome" id="welcome" hidden>
   <div class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcome-heading">
+    <span class="mascot mascot-lg" id="mascot-w" aria-hidden="true"></span>
     <p class="mechanic" id="welcome-step">Step 1 of 4</p>
     <h2 class="welcome-heading" id="welcome-heading" tabindex="-1"></h2>
     <p class="welcome-sub" id="welcome-sub"></p>
@@ -772,7 +773,10 @@
         </div>
 
         <div class="q-progress" aria-hidden="true"><i id="q-progress-fill"></i></div>
-        <p class="reaction" id="reaction" aria-live="polite">&nbsp;</p>
+        <div class="reaction-row">
+          <span class="mascot" id="mascot-q" aria-hidden="true"></span>
+          <p class="reaction" id="reaction" aria-live="polite">&nbsp;</p>
+        </div>
         <h2 class="q-title" id="q-text">What sounds better?</h2>
 
         <div class="picks">
@@ -816,7 +820,7 @@
       <!-- result -->
       <div class="panel" id="panel-result">
         <div class="verdict" id="result-focus" aria-live="polite">
-          <p class="mechanic" id="result-eyebrow">You should eat</p>
+          <div class="mascot-row"><span class="mascot" id="mascot-r" aria-hidden="true"></span><p class="mechanic" id="result-eyebrow">You should eat</p></div>
           <div class="verdict-head">
             <span class="verdict-art" id="result-icon" aria-hidden="true">🍕</span>
             <h2 class="verdict-name" id="result-name">&hellip;</h2>
@@ -891,7 +895,7 @@
       <!-- reward -->
       <div class="panel" id="panel-reward">
         <div class="verdict">
-          <p class="mechanic">Sorted</p>
+          <div class="mascot-row"><span class="mascot" id="mascot-d" aria-hidden="true"></span><p class="mechanic">Sorted</p></div>
           <div class="verdict-head">
             <span class="verdict-art" id="done-icon" aria-hidden="true">🎉</span>
             <h2 class="verdict-name" id="done-name">Sorted.</h2>

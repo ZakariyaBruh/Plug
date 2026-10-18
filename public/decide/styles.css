@@ -6506,3 +6506,43 @@ dialog::backdrop { animation: fade-in var(--t-std) var(--snap) both; }
   dialog[open], .welcome-card, dialog::backdrop, .welcome, .accept-row, #accept-btn, .is-error, .hub-note, [role="tab"]::after, .hub-tab::after,
   .pick.is-chosen .pick-label { animation: none !important; transition: none !important; }
 }
+
+/* ==========================================================================
+   Dot, and the rail's current-item marker on narrow layouts.
+   ========================================================================== */
+.mascot { display: inline-block; width: 2.5rem; height: 2.5rem; flex: none; }
+.mascot-lg { width: 3.75rem; height: 3.75rem; margin-bottom: var(--s2); }
+.mascot-row, .reaction-row { display: flex; align-items: center; gap: var(--s3); }
+.reaction-row .reaction { margin: 0; min-height: 0; }
+.dot { width: 100%; height: 100%; display: block; overflow: visible; }
+.dot-face { fill: var(--paper); }
+.dot-blush { fill: var(--amber); opacity: .45; }
+.dot-eyes circle { fill: var(--paper-ink); transform-box: fill-box; transform-origin: center; animation: dot-blink 6s infinite; }
+.dot-happy path, .dot-m-smile, .dot-m-flat, .dot-m-sad { fill: none; stroke: var(--paper-ink); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.dot-m-open { fill: var(--paper-ink); }
+.dot-happy, .dot-m-open, .dot-m-flat, .dot-m-sad { display: none; }
+.dot-body { transform-box: fill-box; transform-origin: 50% 100%; }
+
+.mascot[data-mood="happy"] .dot-eyes, .mascot[data-mood="celebrate"] .dot-eyes { display: none; }
+.mascot[data-mood="happy"] .dot-happy, .mascot[data-mood="celebrate"] .dot-happy { display: block; }
+.mascot[data-mood="celebrate"] .dot-m-smile, .mascot[data-mood="shrug"] .dot-m-smile, .mascot[data-mood="sad"] .dot-m-smile { display: none; }
+.mascot[data-mood="celebrate"] .dot-m-open { display: block; }
+.mascot[data-mood="shrug"] .dot-m-flat { display: block; }
+.mascot[data-mood="sad"] .dot-m-sad { display: block; }
+
+.mascot[data-mood="happy"] .dot-body { animation: dot-hop .45s cubic-bezier(.34, 1.56, .64, 1); }
+.mascot[data-mood="celebrate"] .dot-body { animation: dot-hop .55s cubic-bezier(.34, 1.56, .64, 1) 3; }
+.mascot[data-mood="shrug"] .dot-body { animation: dot-tilt .55s var(--out); }
+.mascot[data-mood="sad"] .dot-body { animation: dot-sag .6s var(--out) both; }
+@keyframes dot-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+@keyframes dot-hop { 40% { transform: translateY(-16%) scale(.94, 1.08); } 70% { transform: translateY(0) scale(1.06, .94); } }
+@keyframes dot-tilt { 35% { transform: rotate(-8deg); } 70% { transform: rotate(6deg); } }
+@keyframes dot-sag { 40% { transform: scale(1.04, .92); } 100% { transform: scale(1, .96); } }
+@media (prefers-reduced-motion: reduce) { .mascot *, .mascot { animation: none !important; } }
+
+/* Where the rail runs along the top, the current item's marker is a short bar
+   under the label, centred, instead of the vertical bar down the left edge. */
+@media (max-width: 60rem) {
+  .rail-link { padding: var(--s2) .85rem; }
+  .rail-link.is-current::before { left: 50%; top: auto; bottom: .2rem; width: 1rem; height: 2px; margin: 0 0 0 -.5rem; animation: none; }
+}

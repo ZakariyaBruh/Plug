@@ -4176,6 +4176,7 @@
     // After step(), so the new question's render doesn't clear it.
     $('reaction').textContent = line;
     replay($('reaction'));
+    Dot.mood($('mascot-q'), value === 'yes' || value === 'no' ? 'happy' : 'shrug', 1300);
     try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) { /* fine */ }
   }
 
@@ -4367,6 +4368,7 @@
       });
     }
 
+    Dot.mood($('mascot-r'), 'happy', 1600);
     fillAlternates(item);
     paintPair(item);
     // Which directions are worth offering depends on what is on screen, so
@@ -4643,6 +4645,7 @@
     paintWhy();
     paintPlan(item);
     setPanel('reward');
+    Dot.mood($('mascot-d'), 'celebrate', 2200);
     paintStreak();
     Sound.win();
     Confetti.burst({ y: window.innerHeight * 0.3 });
@@ -10439,6 +10442,47 @@
     return new Date(time).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   }
 
+  /* ------------------------------------------------------------------ Dot */
+  /*
+   * A small round face that reacts, and nothing else. No limbs, no accessories,
+   * no idling for attention: two eyes, a mouth and a blush on a plain circle, so
+   * the whole personality is a few degrees of squash and a different smile. It
+   * answers what you just did (a pick, a shrug, a "not quite", dinner sorted),
+   * it is decorative, and it holds perfectly still under reduced motion.
+   */
+  var Dot = (function () {
+    var SVG =
+      '<svg viewBox="0 0 48 48" class="dot" focusable="false">' +
+      '<g class="dot-body">' +
+      '<circle class="dot-face" cx="24" cy="25" r="19"/>' +
+      '<circle class="dot-blush" cx="13.5" cy="29" r="3"/><circle class="dot-blush" cx="34.5" cy="29" r="3"/>' +
+      '<g class="dot-eyes"><circle cx="18" cy="23" r="2.2"/><circle cx="30" cy="23" r="2.2"/></g>' +
+      '<g class="dot-happy"><path d="M15.5 24Q18 20.5 20.5 24"/><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
+      '<path class="dot-m dot-m-smile" d="M20 30Q24 34 28 30"/>' +
+      '<path class="dot-m dot-m-open" d="M19.5 29.5Q24 37 28.5 29.5Z"/>' +
+      '<path class="dot-m dot-m-flat" d="M20.5 31.5H27.5"/>' +
+      '<path class="dot-m dot-m-sad" d="M20 33Q24 29 28 33"/>' +
+      '</g></svg>';
+    function mount(node) {
+      if (!node || node.firstChild) return;
+      node.innerHTML = SVG;
+      node.setAttribute('data-mood', 'idle');
+    }
+    // Plays a mood and settles back. Re-setting the attribute after a reflow is
+    // what restarts the animation when the same mood fires twice in a row.
+    function mood(node, name, hold) {
+      if (!node) return;
+      mount(node);
+      clearTimeout(node._t);
+      node.setAttribute('data-mood', 'idle');
+      void node.offsetWidth;
+      node.setAttribute('data-mood', name);
+      node._t = setTimeout(function () { node.setAttribute('data-mood', 'idle'); }, hold || 1400);
+    }
+    return { mount: mount, mood: mood };
+  })();
+  Array.prototype.forEach.call(document.querySelectorAll('.mascot'), Dot.mount);
+
   /* ------------------------------------------------------------- lifecycle */
   function resetGame() {
     /*
@@ -10575,7 +10619,7 @@
     Sound.tick();
     paintPlan();
   });
-  $('reject-btn').addEventListener('click', rejectCurrent);
+  $('reject-btn').addEventListener('click', function () { Dot.mood($('mascot-r'), 'sad', 1300); rejectCurrent(); });
   $('again-btn').addEventListener('click', goHome);
   $('done-again-btn').addEventListener('click', restart);
   // Sharing the dish they just accepted, not the one they were offered.
@@ -14818,6 +14862,7 @@
     welcomeEl.hidden = false;
     document.body.classList.add('is-welcoming');
     paintWelcome();
+    Dot.mood($('mascot-w'), 'happy', 1800);
   }
 
   /*
