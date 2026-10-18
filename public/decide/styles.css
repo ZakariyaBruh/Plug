@@ -6251,3 +6251,198 @@ body.is-lang-gate { overflow: hidden; }
 .dv-tool.is-on { border-color: var(--amber); background: var(--paper); color: var(--paper-ink); }
 .arc-derby .arc-banner { position: static; transform: none; margin: 0 auto; }
 .arc-lockbar .quiet b { color: var(--amber); }
+
+/* ==========================================================================
+   The Linear pass.
+
+   What changed, and why it is all in one place: the structure of the app was
+   already right, the finish was not. This block is the finish — tighter type,
+   quieter surfaces held together by hairlines rather than fills, one accent
+   used for one thing, ghost buttons, a left rail with a soft current-item
+   plate, and motion that always answers something the person just did.
+
+   Everything is written in the existing tokens, so every palette still works,
+   and nothing here lowers a contrast pair, a type size or a tap target. All of
+   the motion switches off under prefers-reduced-motion at the bottom.
+   ========================================================================== */
+:root {
+  --line:   color-mix(in srgb, var(--ink) 9%, transparent);
+  --line-2: color-mix(in srgb, var(--ink) 16%, transparent);
+  --wash:   color-mix(in srgb, var(--ink) 5%, transparent);
+  --wash-2: color-mix(in srgb, var(--ink) 9%, transparent);
+  --r: 9px;
+  --out: cubic-bezier(.16, 1, .3, 1);
+  --spring: cubic-bezier(.34, 1.56, .64, 1);
+}
+
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
+::selection { background: color-mix(in srgb, var(--amber) 40%, transparent); color: var(--ink); }
+h1, h2, h3, .q-title, .verdict-name, .landing-ask { letter-spacing: -.028em; }
+:where(button, a, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--amber); outline-offset: 2px; border-radius: var(--r);
+}
+
+/* labels: sentence case, quiet, not a tracked-out ALL-CAPS eyebrow on everything */
+.mechanic, .mode-grid-label, .ladder-col-label, .recipe-sub, .gave-mark, .tuned-mark, .pair-mark,
+.week-day, .rule-state, .toast strong, .landing-stats span, .chat-who, .menu-when, .course-now-when,
+.hub-menu-course, .arc-k, .arc-hint {
+  text-transform: none; letter-spacing: 0; font-weight: 500;
+}
+.mechanic, .mode-grid-label { font-size: var(--t-sm); color: var(--ink-3); }
+
+/* top bar: a frosted strip with one hairline */
+.topbar {
+  background: color-mix(in srgb, var(--void) 82%, transparent);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px); backdrop-filter: saturate(1.4) blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.topbar-link, .topbar-account { border-radius: var(--r); }
+.topbar-account { border-color: var(--line-2); }
+
+/* the rail: a plate behind the current item, not a square in the margin */
+.rail { border-right: 1px solid var(--line); }
+.rail-link {
+  border-radius: var(--r);
+  padding-left: .85rem;
+  transition: color var(--fast) var(--out), background var(--fast) var(--out), transform var(--fast) var(--out);
+}
+.rail-link:hover { background: var(--wash); }
+.rail-link:active { transform: scale(.985); }
+.rail-link.is-current { background: var(--wash-2); font-weight: 500; }
+.rail-link.is-current::before {
+  left: .3rem; width: .1875rem; height: 1.1rem; margin-top: -.55rem; border-radius: 2px;
+  animation: rail-in .35s var(--spring) both;
+}
+@keyframes rail-in { from { transform: scaleY(.2); opacity: 0; } }
+
+/* primary button: pressed-paper with a soft lit edge and a spring */
+.go {
+  border-radius: var(--r);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .55), 0 1px 2px rgb(0 0 0 / .4),
+              0 10px 28px -12px color-mix(in srgb, var(--amber) 60%, transparent);
+  transition: background var(--fast) var(--out), transform .18s var(--spring), box-shadow var(--mid) var(--out);
+  position: relative; overflow: hidden;
+}
+.go::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / .55) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+.go:hover:not(:disabled) { transform: translateY(-1px); box-shadow: inset 0 1px 0 rgb(255 255 255 / .7), 0 2px 4px rgb(0 0 0 / .4), 0 16px 36px -12px color-mix(in srgb, var(--amber) 75%, transparent); }
+.go:hover:not(:disabled)::after { transform: translateX(120%); transition: transform .7s var(--out); }
+.go:active:not(:disabled) { transform: translateY(0) scale(.97); }
+
+/* the quiet ones become proper ghost buttons */
+.plain, .quiet {
+  padding: 0 .8rem; border-radius: var(--r); border: 1px solid transparent; text-decoration: none;
+  transition: color var(--fast) var(--out), background var(--fast) var(--out), border-color var(--fast) var(--out), transform .18s var(--spring);
+}
+.plain:hover, .quiet:hover { background: var(--wash); border-color: var(--line-2); text-decoration: none; }
+.plain:active, .quiet:active { transform: scale(.97); }
+.quiet.danger:hover { border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
+
+/* surfaces: one radius, one hairline, a lift on hover */
+.mode-card, .endless-card, .swipe-pick, .dv-card, .arc-stage, .strip.card, .hub-card {
+  border-radius: calc(var(--r) + 2px);
+}
+.mode-card {
+  border-color: var(--line);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 4%, transparent), transparent 70%);
+  transition: border-color var(--fast) var(--out), transform .28s var(--spring), box-shadow var(--mid) var(--out), background var(--mid) var(--out);
+}
+.mode-card:hover {
+  border-color: color-mix(in srgb, var(--amber) 55%, var(--line-2));
+  transform: translateY(-3px);
+  box-shadow: 0 18px 40px -22px rgb(0 0 0 / .9), 0 0 0 1px color-mix(in srgb, var(--amber) 14%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--amber) 7%, transparent), transparent 75%);
+}
+.mode-card:active { transform: translateY(-1px) scale(.985); }
+.mode-card .mode-icon { display: inline-block; transition: transform .35s var(--spring); }
+.mode-card:hover .mode-icon { transform: scale(1.22) rotate(-7deg); }
+.mode-card-wide { border-color: var(--line-2); }
+.endless-card { border-color: var(--line-2); transition: border-color var(--fast) var(--out), transform .28s var(--spring), box-shadow var(--mid) var(--out); }
+.endless-card:hover { transform: translateY(-2px); box-shadow: 0 20px 44px -24px color-mix(in srgb, var(--amber) 55%, black); }
+.hub-slot, .hub-chip, .arc-tile, .dv-card, .swipe-pick { border-color: var(--line); }
+.hub-slot { transition: border-color var(--fast) var(--out), background var(--fast) var(--out); }
+.hub-slot:hover { border-color: var(--line-2); }
+.hub-chip { transition: transform .22s var(--spring), background var(--fast) var(--out); }
+.hub-chip:hover { transform: translateY(-1px); }
+.swipe-pick, .dv-card { transition: border-color var(--fast) var(--out), transform .28s var(--spring), box-shadow var(--mid) var(--out); }
+.swipe-pick:hover { box-shadow: 0 16px 36px -22px rgb(0 0 0 / .9); }
+
+/* fields */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea {
+  border-radius: var(--r);
+  border: 1px solid var(--line-2);
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  transition: border-color var(--fast) var(--out), box-shadow var(--fast) var(--out), background var(--fast) var(--out);
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus, select:focus, textarea:focus {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 22%, transparent);
+  outline: none;
+}
+
+/* the answers: you tapped, so it answers back */
+.choice { border-radius: calc(var(--r) + 2px); transition: transform .2s var(--spring), border-color var(--fast) var(--out), background var(--fast) var(--out); }
+.choice:hover { transform: translateY(-2px); }
+.choice:active { transform: scale(.97); }
+
+/* ---- motion ---------------------------------------------------------------
+   Rule: it answers a tap, or it is the single orchestrated moment on the front
+   door. Nothing here loops except the one glow that was already there. */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pop  { 0% { opacity: 0; transform: scale(.4) rotate(-14deg); } 60% { opacity: 1; transform: scale(1.14) rotate(4deg); } 100% { transform: none; } }
+@keyframes ring { from { opacity: .7; transform: scale(.6); } to { opacity: 0; transform: scale(1.9); } }
+
+.view.is-current, .panel.is-current { animation: rise .32s var(--out) both; }
+
+/* the front door: one sequence, top to bottom, once */
+.landing-inner { animation: none; }
+.landing-inner > * { animation: rise .6s var(--out) both; }
+.landing-inner > :nth-child(1) { animation-delay: 0ms; }
+.landing-inner > :nth-child(2) { animation-delay: 60ms; }
+.landing-inner > :nth-child(3) { animation-delay: 120ms; }
+.landing-inner > :nth-child(4) { animation-delay: 190ms; }
+.landing-inner > :nth-child(5) { animation-delay: 260ms; }
+.landing-inner > :nth-child(6) { animation-delay: 330ms; }
+.landing-inner > :nth-child(n+7) { animation-delay: 400ms; }
+.mode-grid .mode-card { animation: rise .5s var(--out) both; }
+.mode-grid .mode-card:nth-child(1) { animation-delay: .05s; } .mode-grid .mode-card:nth-child(2) { animation-delay: .09s; }
+.mode-grid .mode-card:nth-child(3) { animation-delay: .13s; } .mode-grid .mode-card:nth-child(4) { animation-delay: .17s; }
+.mode-grid .mode-card:nth-child(5) { animation-delay: .21s; } .mode-grid .mode-card:nth-child(6) { animation-delay: .25s; }
+.mode-grid .mode-card:nth-child(7) { animation-delay: .29s; } .mode-grid .mode-card:nth-child(8) { animation-delay: .33s; }
+.mode-grid .mode-card:nth-child(n+9) { animation-delay: .37s; }
+
+/* the answer lands: the dish pops in with a little overshoot and a ring */
+.verdict-art { display: inline-block; position: relative; }
+.verdict-art.is-swapped, .verdict-art.is-landed { animation: pop .62s var(--spring) both; }
+.verdict-art.is-swapped::after, .verdict-art.is-landed::after {
+  content: ""; position: absolute; inset: -.35rem; border-radius: 50%;
+  border: 2px solid var(--amber); pointer-events: none; animation: ring .8s var(--out) both;
+}
+.verdict-name.is-swapped { animation: rise .5s var(--out) .12s both; }
+.verdict-note { animation: rise .5s var(--out) .22s both; }
+#reasons li { animation: rise .45s var(--out) both; }
+
+/* toasts arrive with a spring */
+.toast { animation: toast-in .42s var(--spring) both; border-radius: var(--r); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(14px) scale(.96); } to { opacity: 1; transform: none; } }
+
+/* checkboxes, switches and tabs that confirm a change */
+.hub-tab, .tab, [role="tab"] { transition: color var(--fast) var(--out), background var(--fast) var(--out); }
+[role="tab"][aria-selected="true"] { animation: rise .25s var(--out) both; }
+
+/* thin, quiet scrollbars */
+* { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  .view.is-current, .panel.is-current, .landing-inner > *, .mode-grid .mode-card, .verdict-art, .verdict-art::after,
+  .verdict-name, .verdict-note, #reasons li, .toast, [role="tab"], .rail-link.is-current::before { animation: none !important; }
+  .go, .go::after, .mode-card, .mode-card .mode-icon, .choice, .plain, .quiet, .hub-chip, .rail-link { transition: none !important; transform: none !important; }
+}
+
+/* Ghost buttons sit on the text edge: the plate is padding, so pull it back out. */
+.plain { margin-left: -.8rem; }
+.plain.go-sm, .opening-actions .plain { margin-left: 0; }
+#panel-result .quiet, #panel-result .link-btn { margin-left: -.8rem; justify-content: flex-start; }

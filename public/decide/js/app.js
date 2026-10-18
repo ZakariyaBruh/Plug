@@ -722,10 +722,12 @@
   var HELLOS = [
     { until: 11, lines: ['Morning. Breakfast counts as a decision too.',
                          'Morning. Let us get the first one out of the way.',
-                         'Morning. Nothing has gone wrong yet.'] },
+                         'Morning. Nothing has gone wrong yet.',
+                         'Morning. The fridge has not improved overnight.'] },
     { until: 15, lines: ['Afternoon. Lunch, then.',
                          'Afternoon. Something to eat, is it?',
-                         'Afternoon. Whatever is left in the fridge, probably.'] },
+                         'Afternoon. Whatever is left in the fridge, probably.',
+                         'Afternoon. The meeting could have been an email. Lunch could not.'] },
     /*
      * "Evening. This is the big one." was doing nothing. It announced that
      * something important was about to happen and then the same screen
@@ -739,10 +741,12 @@
     { until: 21, lines: ['Evening. The one everybody argues about.',
                          'Evening. Nobody minds, apparently.',
                          'Evening. You have been putting this off since four.',
-                         'Evening. Right then.'] },
+                         'Evening. Right then.',
+                         'Evening. Cereal is not a plan. Probably.'] },
     { until: 24, lines: ['Late one. Let us be quick about it.',
                          'Late. No judgement here.',
-                         'Late. Toast is a valid answer, for the record.'] }
+                         'Late. Toast is a valid answer, for the record.',
+                         'Late. The kitchen is technically still open.'] }
   ];
 
   function paintHello(state, played) {
@@ -1363,7 +1367,7 @@
       return;
     }
     if (beam.busy) {
-      return toast('\u{23F3}', 'Still opening', 'The browser is starting up.');
+      return toast('\u{23F3}', 'Still opening', 'The browser is starting up. Nobody is hurrying it.');
     }
 
     var gen = beam.gen;
@@ -1423,11 +1427,11 @@
         var why = answer.body && answer.body.error;
         if (why === 'too_fast') {
           return toast('\u{23F1}\u{FE0F}', 'Slow down a moment',
-            'That is a lot of browsers at once. Try again shortly.');
+            'That is a lot of browsers at once. Even the cloud needs a minute. Try again shortly.');
         }
         if (why === 'premium_required' || why === 'sign_in_required') return goPremium(spec.title);
         return toast('\u{1F6AB}', 'Could not open it',
-          'The shared browser did not start. Try again in a moment.');
+          'The shared browser did not start. It has been spoken to. Try again in a moment.');
       }
       beam.session = answer.body.sessionId || null;
       beam.url = answer.body.embedUrl;
@@ -4375,7 +4379,7 @@
 
     if (result === 'full') {
       Sound.reject();
-      return toast('\u{2728}', 'Saved list is full', 'That is as many as this profile holds.');
+      return toast('\u{2728}', 'Saved list is full', 'That is as many as this profile holds. Impressive, honestly.');
     }
 
     if (result === 'banned') {
@@ -4457,7 +4461,7 @@
     if (!favourites.length) {
       Sound.reject();
       return toast('\u{1F914}', 'Nothing to pick from',
-        'Everything you have saved is ruled out by what you do not eat.');
+        'Everything you have saved is ruled out by what you do not eat. Principles are expensive.');
     }
 
     // With a profile, even this short a list gets ordered rather than shuffled.
@@ -5022,7 +5026,7 @@
        */
       Sound.reject();
       toast('\u{1F937}', 'Your browser said no',
-        'It would not let me hand over a file. The plan is still saved here.');
+        'It would not let me hand over a file. The plan is still saved here, unbothered.');
     }
   }
 
@@ -5727,7 +5731,7 @@
       // Nothing left that fits. Say so rather than silently doing nothing.
       Sound.reject();
       return toast('\u{1F937}', 'Nothing left that way',
-        'That is everything I have in that direction. Try another.');
+        'That is everything I have in that direction. I checked twice. Try another.');
     }
 
     rankedItems = ranked.slice(0, 8).map(function (r) { return r.item; });
@@ -5776,7 +5780,7 @@
       var left = rankedItems.filter(function (d) { return d !== dropped; });
       if (!left.length) {
         toast('\u{1F937}', 'That is the lot',
-          'You have turned down everything that round came up with. Pick a way to play again.');
+          'You have turned down everything that round came up with. Bold. Pick a way to play again.');
         return goHome();
       }
       rankedItems = left;
@@ -7357,7 +7361,7 @@
       if (oneBatch && !result.fresh) {
         toast('\u{1F4F0}', 'Nothing new yet',
           'You have read everything the publishers have filed. There will be more ' +
-          'by this evening.');
+          'by this evening. Go and eat something.');
       } else {
         toast('\u{1F4F0}', 'Back to the top', 'Newest first again.');
       }
@@ -7889,7 +7893,7 @@
     var result = progress.toggleFavourite(sheetDish);
     if (result === 'full') {
       Sound.reject();
-      return toast('\u{2728}', 'Saved list is full', 'That is as many as this profile holds.');
+      return toast('\u{2728}', 'Saved list is full', 'That is as many as this profile holds. Impressive, honestly.');
     }
     Sound.tick();
     paintSheetActions();
@@ -10132,7 +10136,7 @@
     renderProfile();
     renderDishes();
     renderIntro();
-    toast('\u{2764}', 'Noted', 'Your picks will follow that from now on.');
+    toast('\u{2764}', 'Noted', 'Your picks will follow that from now on. Noted, as promised.');
   });
 
   function paintTuneSummary() {
@@ -11219,7 +11223,7 @@
     if (!swapped) {
       Sound.reject();
       return toast('\u{1F37D}\u{FE0F}', 'That is the whole catalogue',
-        'Every dish has been on the table this go. Put them all back to start over.');
+        'Every dish has been on the table this go. You have seen all of it. Put them all back to start over.');
     }
 
     spin.out = [];
@@ -12944,7 +12948,7 @@
     $('arc-cancel').hidden = false;
 
     $('arc-end-title').textContent = !picks.length
-      ? 'Nothing caught.'
+      ? 'Nothing caught. Bold strategy.'
       : picks.length === 1 ? 'You went for this one.' : title;
     $('arc-end-line').textContent = picks.length
       ? 'Whichever you pick is the answer. Not feeling any of them? Go again and the game deals away from these.'

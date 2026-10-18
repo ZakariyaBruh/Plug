@@ -746,7 +746,7 @@
 
     prepBtn.addEventListener('click', function () {
       busyButton(prepBtn, true);
-      clear(out).appendChild(note('Planning your prep…'));
+      clear(out).appendChild(note('Planning your prep. Pans are being counted…'));
       api('/api/planner-ai', { method: 'POST', body: { action: 'prep', slots: slotsForAi(), rules: M.effectiveRules() } })
         .then(function (res) {
           plan.data.prep = { sessions: res.sessions, keeps: res.keeps };
@@ -760,7 +760,7 @@
 
     balanceBtn.addEventListener('click', function () {
       busyButton(balanceBtn, true);
-      clear(out).appendChild(note('Reading your week…'));
+      clear(out).appendChild(note('Reading your week. No judgement…'));
       api('/api/planner-ai', { method: 'POST', body: { action: 'balance', slots: slotsForAi(), rules: M.effectiveRules() } })
         .then(function (res) {
           planner.ai = { kind: 'balance', notes: res.notes, swaps: res.swaps };
