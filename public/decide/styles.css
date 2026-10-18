@@ -6777,3 +6777,109 @@ a:hover, .link-btn:hover { text-decoration-thickness: 2px; }
 .hook { box-shadow: 0 24px 40px -30px rgb(0 0 0 / .9); }
 .hook-face-wrap { width: 5.5rem; height: 5.5rem; }
 .hook-face { font-size: 4rem; }
+
+/* ==========================================================================
+   The front door, rebuilt to make somebody say "wait, what".
+   ========================================================================== */
+.landing-drift { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.landing-drift span { position: absolute; bottom: -3rem; opacity: 0; filter: saturate(.8); animation: drift linear infinite; }
+@keyframes drift { 0% { transform: translateY(0) rotate(-6deg); opacity: 0; } 12% { opacity: .22; } 88% { opacity: .22; } 100% { transform: translateY(-110vh) rotate(8deg); opacity: 0; } }
+
+/* the headline, a word at a time */
+.landing-ask .w { display: inline-block; animation: word-in .7s var(--snap) both; }
+@keyframes word-in { from { opacity: 0; transform: translateY(.45em); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+
+/* the machine */
+.hook {
+  position: relative; overflow: hidden; isolation: isolate;
+  grid-template-columns: auto 1fr; padding: var(--s5) var(--s5) var(--s4);
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--line-2)); border-radius: 20px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--amber) 13%, var(--void)), var(--void) 70%);
+  box-shadow: 0 30px 60px -34px rgb(0 0 0 / .95), 0 0 0 1px color-mix(in srgb, var(--amber) 10%, transparent);
+}
+.hook-glow {
+  position: absolute; z-index: -1; left: -10%; top: -40%; width: 60%; aspect-ratio: 1; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--amber) 38%, transparent), transparent 65%);
+  opacity: .5; animation: hook-breathe 5s ease-in-out infinite alternate;
+}
+@keyframes hook-breathe { to { opacity: .85; transform: scale(1.15); } }
+.hook.is-hit .hook-glow { animation: hook-flash .9s var(--snap) both, hook-breathe 5s ease-in-out .9s infinite alternate; }
+@keyframes hook-flash { 0% { opacity: 1; transform: scale(.7); } 100% { opacity: .5; transform: scale(1.3); } }
+
+.hook-window {
+  position: relative; width: 6rem; height: 96px; overflow: hidden; border-radius: 16px;
+  background: color-mix(in srgb, var(--ink) 7%, var(--void));
+  border: 1px solid var(--line-2);
+  box-shadow: inset 0 14px 18px -12px rgb(0 0 0 / .8), inset 0 -14px 18px -12px rgb(0 0 0 / .8);
+}
+.hook-strip { display: block; will-change: transform; }
+.hook-strip span { display: grid; place-items: center; height: 96px; font-size: 3.7rem; line-height: 1; }
+.hook-strip.is-blur { filter: blur(2.2px); }
+.hook.is-hit .hook-window { animation: window-hit .7s var(--spring-soft) both; border-color: var(--amber); }
+@keyframes window-hit { 0% { transform: scale(.94); } 55% { transform: scale(1.06); } 100% { transform: none; } }
+
+.hook-body { min-width: 0; }
+.hook-tags { display: flex; flex-wrap: wrap; gap: .4rem; margin: .7rem 0 0; min-height: 1.6rem; }
+.hook-tag {
+  padding: .1rem .6rem; border-radius: 999px; font-size: var(--t-xs);
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent); color: var(--amber);
+  animation: tag-pop .5s var(--spring-soft) both;
+}
+@keyframes tag-pop { from { opacity: 0; transform: scale(.5) translateY(6px); } to { opacity: 1; transform: none; } }
+.hook-actions .go { padding: .8rem 1.6rem; font-size: var(--t-md); }
+@media (max-width: 30rem) { .hook { grid-template-columns: auto 1fr; } .hook-window { width: 5rem; } }
+
+/* ==========================================================================
+   Page transitions. The page moves the way you moved through the menu; the
+   rail and top bar stay put; the current-item bar slides between items.
+   ========================================================================== */
+html.vt-active .content { view-transition-name: page; }
+html.vt-active .landing { view-transition-name: landing; }
+html.vt-active .rail { view-transition-name: rail; }
+html.vt-active .topbar { view-transition-name: topbar; }
+html.vt-active .rail-link.is-current::before { view-transition-name: plate; }
+@supports (view-transition-name: none) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+  ::view-transition-group(rail), ::view-transition-group(topbar) { animation: none; }
+  ::view-transition-old(rail), ::view-transition-new(rail), ::view-transition-old(topbar), ::view-transition-new(topbar) { animation: none; mix-blend-mode: normal; }
+  ::view-transition-old(page) { animation: page-out var(--t-quick) var(--snap) both; }
+  ::view-transition-new(page) { animation: page-in var(--t-slow) var(--snap) both; }
+  ::view-transition-old(landing) { animation: landing-out .42s var(--snap) both; }
+  ::view-transition-group(plate) { animation-duration: var(--t-slow); animation-timing-function: var(--spring-soft); }
+}
+@keyframes page-out { to { opacity: 0; transform: translateX(calc(var(--vt-dir, 1) * -34px)) scale(.985); } }
+@keyframes page-in { from { opacity: 0; transform: translateX(calc(var(--vt-dir, 1) * 44px)) scale(.985); } }
+@keyframes landing-out { to { opacity: 0; transform: scale(1.04) translateY(-14px); filter: blur(6px); } }
+
+/* ==========================================================================
+   What is behind the door: seven real features in a strip, shown right after
+   the free part has worked.
+   ========================================================================== */
+.pp { margin-top: var(--s6); }
+.peek-sub { margin: 0 0 var(--s3); color: var(--ink-2); }
+.peek-rail {
+  display: flex; gap: var(--s3); overflow-x: auto; padding: .25rem .25rem var(--s3); margin: 0 -.25rem;
+  scroll-snap-type: x proximity; scrollbar-width: none;
+}
+.peek-rail::-webkit-scrollbar { display: none; }
+.peek-card {
+  flex: none; width: 11.5rem; scroll-snap-align: start; display: grid; gap: .25rem; align-content: start; text-align: left;
+  padding: var(--s4); min-height: 9.5rem; border: 1px solid color-mix(in srgb, var(--amber) 28%, var(--line)); border-radius: 14px;
+  background: linear-gradient(170deg, color-mix(in srgb, var(--amber) 8%, transparent), transparent 70%); color: var(--ink); font: inherit; cursor: pointer;
+  animation: rise var(--t-slow) var(--snap) both;
+  transition: transform .4s var(--spring-soft), border-color var(--t-quick) var(--snap);
+}
+.peek-card:hover { transform: translateY(-4px); border-color: var(--amber); }
+.peek-card:active { transform: scale(.97); transition-duration: 90ms; }
+.peek-card b { font-size: 1.9rem; line-height: 1; font-weight: 400; margin-bottom: .3rem; }
+.peek-name { font-family: var(--display); font-weight: 600; font-size: var(--t-md); letter-spacing: -.02em; }
+.peek-line { font-size: var(--t-sm); color: var(--ink-2); line-height: 1.4; }
+.peek-cta { display: grid; gap: var(--s2); justify-items: start; margin-top: var(--s3); }
+.peek-cta .go { animation: cta-glow 2.8s ease-in-out infinite; }
+@keyframes cta-glow { 50% { box-shadow: inset 0 1px 0 rgb(255 255 255 / .6), 0 1px 2px rgb(0 0 0 / .4), 0 14px 38px -8px color-mix(in srgb, var(--amber) 85%, transparent); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-drift span, .landing-ask .w, .hook-glow, .hook-tag, .hook.is-hit .hook-window, .peek-card, .peek-cta .go { animation: none !important; }
+  .landing-drift { display: none; }
+  .hook-strip.is-blur { filter: none; }
+}

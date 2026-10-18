@@ -302,6 +302,7 @@
 
 <div class="landing" id="landing" hidden>
   <div class="landing-glow" aria-hidden="true"></div>
+  <div class="landing-drift" id="landing-drift" aria-hidden="true"></div>
 
   <div class="landing-inner">
     <!-- The name and its squiggle used to be here. The top bar now keeps its
@@ -328,14 +329,16 @@
     I answer again that way.</p>
 
         <section class="hook" id="hook" aria-label="A quick pick">
-      <div class="hook-face-wrap" aria-hidden="true"><span class="hook-face" id="hook-face">🍜</span></div>
+      <div class="hook-glow" aria-hidden="true"></div>
+      <div class="hook-window" id="hook-window" aria-hidden="true"><div class="hook-strip" id="hook-strip"><span>🍜</span></div></div>
       <div class="hook-body" aria-live="polite">
         <p class="hook-lead" id="hook-lead">Spinning for you&hellip;</p>
         <p class="hook-name" id="hook-name">&nbsp;</p>
         <p class="hook-blurb" id="hook-blurb"></p>
+        <p class="hook-tags" id="hook-tags"></p>
       </div>
       <div class="hook-actions">
-        <button class="go go-sm" id="hook-go" type="button" disabled><span class="go-label">Go with it</span></button>
+        <button class="go" id="hook-go" type="button" disabled><span class="go-label">Go with it</span></button>
         <button class="plain" id="hook-spin" type="button" disabled>Not that &mdash; spin again</button>
       </div>
     </section>
@@ -930,6 +933,21 @@
              this profile has not done yet, and one line saying what is new
              tomorrow - only things that really do refill each day. Painted
              by app.js (paintNext). No counter, no guilt, nothing locked. -->
+        <!-- WHAT PREMIUM IS, SHOWN AT THE MOMENT THE FREE PART HAS JUST WORKED.
+             Not before: nobody wants a pitch for something they have not used.
+             Right after a real answer, the seven things behind the door, each
+             one a real feature, and the trial said plainly. Painted by app.js
+             (paintPeek) and absent entirely for anybody who already has it. -->
+        <section class="strip pp" id="peek" hidden aria-labelledby="peek-title">
+          <h2 class="strip-title" id="peek-title">That was the free half</h2>
+          <p class="peek-sub">There are seven more things in here. Have a look.</p>
+          <div class="peek-rail" id="peek-rail" role="list"></div>
+          <div class="peek-cta">
+            <button class="go" id="peek-go" type="button"><span class="go-label">Try Premium free for seven days</span></button>
+            <p class="fine">Nothing is charged until day eight. Cancel from your account page, one link.</p>
+          </div>
+        </section>
+
         <section class="strip" id="next-strip" hidden>
           <h2 class="strip-title">Free, while you&rsquo;re here</h2>
           <div class="plan-cues" id="next-row"></div>

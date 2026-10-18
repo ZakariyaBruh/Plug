@@ -566,9 +566,26 @@
     setTimeout(function () { el.style.viewTransitionName = ''; }, 900);
   }
 
-  function vt(change) {
+  function vt(change, dir) {
     if (reduceMotion || !document.startViewTransition || document.visibilityState !== 'visible') return change();
-    try { document.startViewTransition(change); } catch (err) { change(); }
+    var root = document.documentElement;
+    try {
+      root.style.setProperty('--vt-dir', String(dir || 1));
+      // The names are only on while a transition runs: a view-transition-name
+      // makes an element a stacking context for good, and the page does not need
+      // that the rest of the time.
+      root.classList.add('vt-active');
+      var run = document.startViewTransition(change);
+      var done = function () { root.classList.remove('vt-active'); };
+      run.finished.then(done, done);
+    } catch (err) { root.classList.remove('vt-active'); change(); }
+  }
+
+  // Which way the page is travelling, from where the two sit in the rail.
+  function railIndex(name) {
+    var links = $$('.rail-link'), at = -1;
+    links.forEach(function (el, i) { if (el.dataset.view === name) at = i; });
+    return at;
   }
 
   function setView(name) {
@@ -577,6 +594,7 @@
     if (view === 'menu' && name !== 'menu') leaveMenu();
     // Same for the TV: leaving it pauses it, unless it is in picture-in-picture.
     if (view === 'radio' && name !== 'radio') leaveTv();
+    var travel = railIndex(name) >= railIndex(view) ? 1 : -1;
     view = name;
     vt(function () {
       $$('.view').forEach(function (el) {
@@ -587,7 +605,7 @@
         el.classList.toggle('is-current', on);
         el.setAttribute('aria-current', on ? 'page' : 'false');
       });
-    });
+    }, travel);
     if (name === 'decide') renderIntro();
     if (name === 'profile') renderProfile();
     if (name === 'dishes') renderDishes();
@@ -4754,6 +4772,7 @@
     renderRating(item);
     paintKeep();
     paintNext();
+    paintPeek();
     paintWhy();
     paintPlan(item);
     setPanel('reward');
@@ -15157,22 +15176,34 @@
     return pickFavoured(scored, 10);
   }
 
+  var REEL_H = 96;   // px, one window; matches .hook-window in the stylesheet
+
   function hookLand(dish) {
-    var face = $('hook-face');
-    face.classList.remove('is-spinning', 'is-landed');
-    face.textContent = dish.icon;
-    void face.offsetWidth;
-    face.classList.add('is-landed');
     $('hook-lead').textContent = HOOK_LEADS[Math.floor(Math.random() * HOOK_LEADS.length)];
     $('hook-name').textContent = dish.name;
     $('hook-blurb').textContent = dish.blurb;
     ['hook-lead', 'hook-name', 'hook-blurb'].forEach(function (id, i) {
-      var el = $(id);
-      el.classList.remove('is-in');
-      void el.offsetWidth;
-      el.style.animationDelay = (i * 60) + 'ms';
-      el.classList.add('is-in');
+      var node = $(id);
+      node.classList.remove('is-in');
+      void node.offsetWidth;
+      node.style.animationDelay = (i * 70) + 'ms';
+      node.classList.add('is-in');
     });
+    // Why it landed there: the dish's own strong tags, popping in one by one.
+    var tags = Object.keys(dish.tags).filter(function (t) { return dish.tags[t] === 1; }).slice(0, 3);
+    var row = clear2($('hook-tags'));
+    tags.forEach(function (t, i) {
+      var chip = document.createElement('span');
+      chip.className = 'hook-tag';
+      chip.textContent = t;
+      chip.style.animationDelay = (240 + i * 90) + 'ms';
+      row.appendChild(chip);
+    });
+    var stage = $('hook');
+    stage.classList.remove('is-hit');
+    void stage.offsetWidth;
+    stage.classList.add('is-hit');
+    sparkle($('hook-window'), 10);
     $('hook-go').disabled = false;
     $('hook-spin').disabled = false;
   }
@@ -15184,21 +15215,44 @@
     hook.dish = dish;
     $('hook-go').disabled = true;
     $('hook-spin').disabled = true;
-    if (reduceMotion) return hookLand(dish);
-    var face = $('hook-face');
+    var strip = $('hook-strip');
+    clear2($('hook-tags'));
+    $('hook').classList.remove('is-hit');
+    var count = 14;
+    strip.innerHTML = '';
+    // The strip: a column of dishes, the answer last. The first one is whatever
+    // the reel last showed, so a respin starts from where it stopped.
+    var faces = [hook.shown || Data.ITEMS[Math.floor(Math.random() * Data.ITEMS.length)].icon];
+    for (var i = 1; i < count; i++) faces.push(Data.ITEMS[Math.floor(Math.random() * Data.ITEMS.length)].icon);
+    faces.push(dish.icon);
+    faces.forEach(function (icon) {
+      var cell = document.createElement('span');
+      cell.textContent = icon;
+      strip.appendChild(cell);
+    });
+    hook.shown = dish.icon;
     $('hook-lead').textContent = first ? 'Spinning for you\u2026' : 'Fine. Again\u2026';
     $('hook-name').textContent = '\u00a0';
     $('hook-blurb').textContent = '';
-    face.classList.remove('is-landed');
-    var step = 0, steps = 11, wait = 50;
+    ['hook-lead', 'hook-name', 'hook-blurb'].forEach(function (id) { $(id).classList.remove('is-in'); });
+    var end = -(faces.length - 1) * REEL_H;
+    if (reduceMotion || !strip.animate) {
+      strip.style.transform = 'translateY(' + end + 'px)';
+      return hookLand(dish);
+    }
+    strip.classList.add('is-blur');
+    var run = strip.animate([
+      { transform: 'translateY(0)' },
+      { transform: 'translateY(' + (end - 14) + 'px)', offset: 0.88 },
+      { transform: 'translateY(' + end + 'px)' }
+    ], { duration: 1700, easing: 'cubic-bezier(.22,.75,.25,1)', fill: 'forwards' });
+    // Motion blur only while it is fast.
+    setTimeout(function () { strip.classList.remove('is-blur'); }, 1100);
+    var ticks = 0;
     (function tick() {
-      if (step++ >= steps) return hookLand(dish);
-      face.classList.add('is-spinning');
-      face.textContent = Data.ITEMS[Math.floor(Math.random() * Data.ITEMS.length)].icon;
-      if (!first && step % 3 === 0) Sound.roll();
-      wait *= 1.15;
-      hook.timer = setTimeout(tick, wait);
+      if (!first && ticks++ < 8) { Sound.roll(); hook.timer = setTimeout(tick, 70 + ticks * 24); }
     })();
+    run.onfinish = function () { strip.style.transform = 'translateY(' + end + 'px)'; hookLand(dish); };
   }
 
   $('hook-go').addEventListener('click', function () { if (hook.dish) showTonight(hook.dish); });
@@ -15219,12 +15273,98 @@
     clearTimeout(hook.timer);
   }
 
+  /*
+   * The front door's ambient layer: a handful of dishes drifting up the page,
+   * slowly, behind everything. Pure atmosphere (aria-hidden, no pointer events,
+   * paused under reduced motion) so the page is never still while you decide.
+   */
+  function fillDrift() {
+    var box = $('landing-drift');
+    if (!box || box.firstChild) return;
+    for (var i = 0; i < 10; i++) {
+      var item = document.createElement('span');
+      item.textContent = Data.ITEMS[Math.floor(Math.random() * Data.ITEMS.length)].icon;
+      item.style.left = (4 + i * 9.5 + Math.random() * 4) + '%';
+      item.style.animationDelay = (-Math.random() * 26) + 's';
+      item.style.animationDuration = (22 + Math.random() * 16) + 's';
+      item.style.fontSize = (1.2 + Math.random() * 1.6) + 'rem';
+      box.appendChild(item);
+    }
+  }
+
+  // The headline arrives a word at a time.
+  function wordsIn(node) {
+    var n = 0;
+    (function walk(parent) {
+      Array.prototype.slice.call(parent.childNodes).forEach(function (child) {
+        if (child.nodeType === 3) {
+          var frag = document.createDocumentFragment();
+          child.textContent.split(/(\s+)/).forEach(function (part) {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+            var w = document.createElement('span');
+            w.className = 'w';
+            w.style.animationDelay = (n++ * 55) + 'ms';
+            w.textContent = part;
+            frag.appendChild(w);
+          });
+          parent.replaceChild(frag, child);
+        } else if (child.nodeType === 1 && child.tagName !== 'BR') walk(child);
+      });
+    })(node);
+  }
+  if (!reduceMotion) wordsIn(document.querySelector('.landing-ask'));
+
+  /*
+   * WHAT PREMIUM IS, SHOWN RIGHT AFTER THE FREE PART WORKED.
+   *
+   * Seven real features, each with the line that sells it, in a strip you can
+   * drag. Tapping one explains it and offers the trial; the button under the
+   * strip does the same for the lot. Said once, at the moment of an answer, and
+   * never to somebody who already has it.
+   */
+  var PEEK = [
+    ['\u{1F3C7}', 'Dish Derby', 'Eight dishes race. Cheer your favourite.'],
+    ['\u{1F9F1}', 'Smash', 'Smash what you do not want. What is left is dinner.'],
+    ['\u{1F498}', 'Swipe', 'Swipe a deck of dishes until three say yes.'],
+    ['\u{1F4C5}', 'Meal planner', 'A week of dinners, planned in one tap.'],
+    ['\u{1F6D2}', 'Shopping list', 'The week\u2019s recipes, merged, by aisle.'],
+    ['\u{1F9E0}', 'A profile that learns', 'Picks that follow what you actually liked.'],
+    ['\u{1F373}', 'Recipes from anywhere', 'Paste a link or a photo. Cook it step by step.']
+  ];
+
+  function paintPeek() {
+    var box = $('peek');
+    if (!box) return;
+    box.hidden = isPlus();
+    if (isPlus()) return;
+    var rail = clear2($('peek-rail'));
+    PEEK.forEach(function (p, i) {
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'peek-card';
+      card.setAttribute('role', 'listitem');
+      card.style.animationDelay = (i * 60) + 'ms';
+      var face = document.createElement('b'); face.textContent = p[0]; face.setAttribute('aria-hidden', 'true');
+      var name = document.createElement('span'); name.className = 'peek-name'; name.textContent = p[1];
+      var line = document.createElement('span'); line.className = 'peek-line'; line.textContent = p[2];
+      [face, name, line].forEach(function (n) { card.appendChild(n); });
+      card.addEventListener('click', function () { sparkle(card, 6); goPremium(p[1]); });
+      rail.appendChild(card);
+    });
+  }
+  function clear2(node) { while (node.firstChild) node.removeChild(node.firstChild); return node; }
+  if ($('peek-go')) $('peek-go').addEventListener('click', function () { sparkle($('peek-go'), 9); goPremium('All of this'); });
+
   function showLanding() {
+    fillDrift();
     landed = false;
-    $('landing').hidden = false;
-    document.body.classList.add('is-landing');
-    if ('inert' in shell) shell.inert = true;
-    shell.setAttribute('aria-hidden', 'true');
+    vt(function () {
+      $('landing').hidden = false;
+      document.body.classList.add('is-landing');
+      if ('inert' in shell) shell.inert = true;
+      shell.setAttribute('aria-hidden', 'true');
+    }, -1);
 
     var state = progress.state;
     var played = state.decisions > 0;
@@ -15249,10 +15389,12 @@
   function hideLanding() {
     landed = true;
     stopReel();
-    $('landing').hidden = true;
-    document.body.classList.remove('is-landing');
-    if ('inert' in shell) shell.inert = false;
-    shell.removeAttribute('aria-hidden');
+    vt(function () {
+      $('landing').hidden = true;
+      document.body.classList.remove('is-landing');
+      if ('inert' in shell) shell.inert = false;
+      shell.removeAttribute('aria-hidden');
+    }, 1);
   }
 
   /*
