@@ -1,5 +1,4 @@
-import { db } from '#/lib/db'
-import { today } from '#/lib/allowance'
+import { db, today } from '#/lib/db'
 
 /*
  * WHAT THE HUB KEEPS, AND AGAINST WHOM.
@@ -172,6 +171,51 @@ export async function takeAllowance(userId: string, feature: string, perDay: num
   } catch (err) {
     console.error('hub: usage ledger failed', err)
     return true
+  }
+}
+
+/*
+ * The same ledger read and written without a limit attached, for a feature
+ * that shows the count (the assistant's three free questions) rather than
+ * only refusing past it. Both answer null when the ledger cannot be reached,
+ * which callers treat as "not counting" and never as "none left".
+ */
+export async function usageToday(userId: string, feature: string): Promise<number | null> {
+  const c = await client().catch(() => null)
+  if (!c) return null
+  try {
+    const rs = await c.execute({
+      sql: 'select used from hub_usage where user_id = ? and feature = ? and day = ?',
+      args: [userId, feature, today()],
+    })
+    return rs.rows.length ? Number(rs.rows[0].used) || 0 : 0
+  } catch (err) {
+    console.error('hub: usage read failed', err)
+    return null
+  }
+}
+
+export async function spendOne(userId: string, feature: string): Promise<number | null> {
+  const c = await client().catch(() => null)
+  if (!c) return null
+  const day = today()
+  try {
+    const [rs] = await c.batch(
+      [
+        {
+          sql: `insert into hub_usage (user_id, feature, day, used) values (?, ?, ?, 1)
+                on conflict (user_id, feature, day) do update set used = used + 1
+                returning used`,
+          args: [userId, feature, day],
+        },
+        { sql: 'delete from hub_usage where day < ?', args: [day] },
+      ],
+      'write',
+    )
+    return rs.rows.length ? Number(rs.rows[0].used) || 0 : null
+  } catch (err) {
+    console.error('hub: usage write failed', err)
+    return null
   }
 }
 

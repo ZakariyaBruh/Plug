@@ -6823,8 +6823,8 @@
   }
 
   function renderChat() {
-    paintChatSeeds();
-    paintChatLeft();
+    paintChatMode();
+    restoreChat();
     fetchChatLeft();
     // Deliberately not focused: on a phone, focus throws the keyboard up over
     // half the screen, including the chips that mean you need not type at all.
@@ -6832,35 +6832,24 @@
 
   function paintChatSeeds() {
     var wrap = $('chat-seeds');
-    if (wrap.childNodes.length) return;   // built once
-    CHAT_SEEDS.forEach(function (seed) {
+    var adv = chatMode() === 'advanced';
+    if (wrap.childNodes.length && wrap.dataset.mode === (adv ? 'a' : 's')) return;
+    clear2(wrap);
+    wrap.dataset.mode = adv ? 'a' : 's';
+    (adv ? CHAT_SEEDS_ADV : CHAT_SEEDS).forEach(function (seed) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'filter';
       btn.textContent = seed;
       btn.addEventListener('click', function () {
+        // The photo question needs a photo first.
+        if (adv && seed === CHAT_SEEDS_ADV[1] && !chat.image) { $('chat-file').click(); return; }
+        if (adv && /nearby/.test(seed)) { chat.search = true; paintChatMode(); }
         $('chat-input').value = seed;
         askChat();
       });
       wrap.appendChild(btn);
     });
-  }
-
-  // One row, whoever said it. `pending` is the row that stands in for an answer
-  // that has not arrived, so it can be replaced in place rather than removed
-  // and re-added, which would jump the scroll.
-  function chatRow(role, text, pending) {
-    var li = document.createElement('li');
-    li.className = 'chat-row is-' + role + (pending ? ' is-pending' : '');
-    var who = document.createElement('span');
-    who.className = 'chat-who';
-    who.textContent = role === 'user' ? 'You' : 'morsels45';
-    var body = document.createElement('p');
-    body.className = 'chat-text';
-    body.textContent = text;
-    li.appendChild(who);
-    li.appendChild(body);
-    return li;
   }
 
   /*
@@ -6888,6 +6877,7 @@
       .then(function (body) {
         if (body && typeof body.left === 'number') {
           chat.left = body.left;
+          chat.account = body.account === true;
           paintChatLeft();
         }
       })
@@ -6898,18 +6888,296 @@
   function paintChatLeft() {
     var el = $('chat-left');
     var left = chatLeft();
-    if (isPlus() || left === null) { el.hidden = true; return; }
+    if (isPlus() || left === null) { el.hidden = true; $('chat-account').hidden = true; return; }
     el.hidden = false;
+    $('chat-account').hidden = !(chat.account === false && left > 0);
     el.textContent = left > 0
       ? left + (left === 1 ? ' free question left today' : ' of ' + CHAT_FREE + ' free questions left today') +
         '. Premium asks as many as you like.'
       : 'That is today\u2019s three free questions used \u2014 three more tomorrow. Premium asks as many as you like.';
   }
 
+  /*
+   * TWO ASSISTANTS, ONE BOX.
+   *
+   * Standard is free: three questions a day on a free account, answered by a
+   * quick public model. Advanced is Premium: Gemini, with what you have told
+   * the app about your taste, a photo if you attach one, the web if you ask
+   * it to look something up, follow-ups to tap, and a conversation that is
+   * still here tomorrow. Which one answers is decided by the server from who
+   * you are, not from this switch; the switch only says which you are asking
+   * for.
+   */
+  var CHAT_SAVE = 'morsels-chat-saved', CHAT_MODE = 'morsels-chat-mode';
+  var CHAT_SKILLS = [
+    { id: 'chat', label: 'Anything' },
+    { id: 'plan', label: 'Plan it' },
+    { id: 'cook', label: 'Cook with me' },
+    { id: 'compare', label: 'Help me choose' }
+  ];
+  var CHAT_SEEDS_ADV = [
+    'Plan my dinners for the week',
+    'What can I make with what is in this photo?',
+    'Cook me something I will love, step by step',
+    'Which of my favourites should I have tonight?',
+    'Is there a good place for a late breakfast nearby?',
+    'Compare a stir-fry and a curry for tonight'
+  ];
+  chat.mode = 'standard';
+  chat.skill = 'chat';
+  chat.search = false;
+  chat.image = null;
+  chat.account = null;
+  chat.listening = null;
+  try { chat.mode = localStorage.getItem(CHAT_MODE) === 'standard' ? 'standard' : (localStorage.getItem(CHAT_MODE) === 'advanced' ? 'advanced' : null); } catch (err) { /* fine */ }
+
+  function chatMode() {
+    if (!isPlus()) return 'standard';
+    return chat.mode === 'standard' ? 'standard' : 'advanced';
+  }
+
+  function paintChatMode() {
+    var adv = chatMode() === 'advanced';
+    $$('#chat-mode .chat-mode-btn').forEach(function (btn) {
+      var on = btn.dataset.mode === (adv ? 'advanced' : 'standard');
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+    var note = $('chat-mode-note');
+    note.textContent = adv
+      ? 'Advanced knows your taste, reads a photo, can look things up and keeps this conversation.'
+      : isPlus()
+        ? 'Standard is the quick one. Switch to Advanced for the full answer.'
+        : 'Standard is free: three questions a day on your account. Premium unlocks Advanced.';
+    $('chat-tools').hidden = !adv;
+    $('chat-photo').hidden = !adv;
+    $('chat-input').placeholder = adv ? 'Ask anything, or attach a photo…' : 'Ask me anything about food…';
+    $$('#chat-skills .filter').forEach(function (btn) {
+      var on = btn.dataset.skill === chat.skill;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+    $('chat-search').setAttribute('aria-pressed', String(chat.search));
+    $('chat-search').classList.toggle('is-on', chat.search);
+    var wrap = $('chat-seeds');
+    if (wrap.dataset.mode !== (adv ? 'a' : 's')) { clear2(wrap); paintChatSeeds(); }
+    paintChatLeft();
+  }
+
+  function setChatMode(mode) {
+    if (mode === 'advanced' && !isPlus()) return goPremium('The advanced assistant');
+    chat.mode = mode;
+    try { localStorage.setItem(CHAT_MODE, mode); } catch (err) { /* fine */ }
+    paintChatMode();
+  }
+
+  // **bold**, "- " lists and "1. " steps, built as elements with text nodes
+  // only. A model's words never reach innerHTML.
+  function inlineInto(node, text) {
+    var parts = String(text).split(/(\*\*[^*]+\*\*)/);
+    parts.forEach(function (part) {
+      if (!part) return;
+      if (/^\*\*[^*]+\*\*$/.test(part)) {
+        var b = document.createElement('strong');
+        b.textContent = part.slice(2, -2);
+        node.appendChild(b);
+      } else node.appendChild(document.createTextNode(part));
+    });
+  }
+  function richInto(box, text) {
+    clear2(box);
+    var list = null, kind = '';
+    String(text).split(/\r?\n/).forEach(function (raw) {
+      var line = raw.replace(/\s+$/, '');
+      var bullet = /^\s*[-*•]\s+(.*)$/.exec(line);
+      var step = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+      if (bullet || step) {
+        var want = bullet ? 'ul' : 'ol';
+        if (!list || kind !== want) { list = document.createElement(want); kind = want; box.appendChild(list); }
+        var li = document.createElement('li');
+        inlineInto(li, (bullet || step)[1]);
+        list.appendChild(li);
+        return;
+      }
+      list = null;
+      if (!line.trim()) return;
+      var p = document.createElement('p');
+      inlineInto(p, line.replace(/^#{1,6}\s+/, ''));
+      box.appendChild(p);
+    });
+  }
+
+  // One row, whoever said it. `pending` is the row that stands in for an answer
+  // that has not arrived, so it can be replaced in place rather than removed
+  // and re-added, which would jump the scroll. `rich` rows hold formatted text.
+  function chatRow(role, text, pending, rich) {
+    var li = document.createElement('li');
+    li.className = 'chat-row is-' + role + (pending ? ' is-pending' : '');
+    var who = document.createElement('span');
+    who.className = 'chat-who';
+    who.textContent = role === 'user' ? 'You' : 'morsels45';
+    var body = document.createElement(rich ? 'div' : 'p');
+    body.className = 'chat-text' + (rich ? ' is-rich' : '');
+    if (rich) richInto(body, text); else body.textContent = text;
+    li.appendChild(who);
+    li.appendChild(body);
+    return li;
+  }
+
+  function saveChat() {
+    if (!isPlus()) return;
+    try { localStorage.setItem(CHAT_SAVE, JSON.stringify(chat.turns.slice(-20))); } catch (err) { /* fine */ }
+  }
+
+  function restoreChat() {
+    if (!isPlus() || chat.turns.length) return;
+    var saved = [];
+    try { saved = JSON.parse(localStorage.getItem(CHAT_SAVE) || '[]') || []; } catch (err) { saved = []; }
+    if (!saved.length) return;
+    var log = $('chat-log');
+    saved.forEach(function (t) {
+      if (!t || typeof t.text !== 'string') return;
+      var model = t.role === 'model';
+      chat.turns.push({ role: model ? 'model' : 'user', text: t.text.slice(0, 2400) });
+      log.appendChild(chatRow(model ? 'bot' : 'user', t.text.slice(0, 2400), false, model));
+    });
+    $('chat-empty').hidden = true;
+  }
+
+  function newChat() {
+    stopTyping();
+    chat.turns = [];
+    chat.image = null;
+    paintChatAttach();
+    clear2($('chat-log'));
+    $('chat-empty').hidden = false;
+    try { localStorage.removeItem(CHAT_SAVE); } catch (err) { /* fine */ }
+    Buddy.say('Fresh page. Ask away.', 'happy', 2400, 'asked');
+  }
+
+  // A picture, shrunk on this device before it is sent anywhere.
+  function chatPhoto(file) {
+    if (!file || !/^image\//.test(file.type)) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var max = 1024, scale = Math.min(1, max / Math.max(img.width, img.height));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        var url = canvas.toDataURL('image/jpeg', 0.8);
+        chat.image = { mime: 'image/jpeg', data: url.slice(url.indexOf(',') + 1), preview: url };
+        paintChatAttach();
+        $('chat-input').focus();
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
+  function paintChatAttach() {
+    var box = $('chat-attach');
+    clear2(box);
+    box.hidden = !chat.image;
+    if (!chat.image) return;
+    var img = document.createElement('img');
+    img.src = chat.image.preview;
+    img.alt = 'The photo you attached';
+    var x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'chat-attach-x';
+    x.setAttribute('aria-label', 'Remove the photo');
+    x.textContent = '×';
+    x.addEventListener('click', function () { chat.image = null; paintChatAttach(); });
+    box.appendChild(img);
+    box.appendChild(x);
+  }
+
+  // Dictation, where the browser offers it. The audio goes to the browser's own
+  // speech service, not to us; what comes back is only text in the box.
+  function chatMic() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var btn = $('chat-mic');
+    if (!SR) { btn.hidden = true; return; }
+    var LOCALES = { en: 'en-GB', ms: 'ms-MY', th: 'th-TH', hi: 'hi-IN', ar: 'ar-SA' };
+    btn.addEventListener('click', function () {
+      if (chat.listening) { try { chat.listening.stop(); } catch (err) { /* fine */ } return; }
+      var rec = new SR();
+      rec.lang = LOCALES[I18n.get()] || 'en-GB';
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.onresult = function (event) {
+        var said = '';
+        for (var i = 0; i < event.results.length; i++) said += event.results[i][0].transcript;
+        $('chat-input').value = said.slice(0, 500);
+      };
+      rec.onend = function () { chat.listening = null; btn.classList.remove('is-on'); btn.setAttribute('aria-pressed', 'false'); $('chat-input').focus(); };
+      rec.onerror = function () { chat.listening = null; btn.classList.remove('is-on'); };
+      try { rec.start(); chat.listening = rec; btn.classList.add('is-on'); btn.setAttribute('aria-pressed', 'true'); Buddy.react('surprised', 900); } catch (err) { chat.listening = null; }
+    });
+  }
+
+  function chatProfile() {
+    var h = pickedHistory(), st = progress.state;
+    var diets = (st.diets || []).map(function (id) {
+      for (var i = 0; i < ProgressLib.DIETS.length; i++) if (ProgressLib.DIETS[i].id === id) return ProgressLib.DIETS[i].label;
+      return null;
+    }).filter(Boolean);
+    return { liked: h.liked.slice(0, 25), avoid: h.avoid.slice(0, 25), rules: diets.concat((st.rules || []).map(String)).slice(0, 25) };
+  }
+
+  function addCopy(row, reply) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chat-mini';
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', function () {
+      var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1600); };
+      try { navigator.clipboard.writeText(reply).then(done, function () {}); } catch (err) { /* fine */ }
+    });
+    var bar = row.querySelector('.chat-bar');
+    if (!bar) { bar = document.createElement('div'); bar.className = 'chat-bar'; row.appendChild(bar); }
+    bar.appendChild(btn);
+  }
+
+  function addSources(row, sources) {
+    if (!sources || !sources.length) return;
+    var wrap = document.createElement('p');
+    wrap.className = 'fine chat-sources';
+    wrap.appendChild(document.createTextNode('Looked up: '));
+    sources.forEach(function (s, i) {
+      if (!/^https:\/\//.test(s.url)) return;
+      var a = document.createElement('a');
+      a.href = s.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.textContent = s.title || s.url.replace(/^https:\/\//, '').split('/')[0];
+      wrap.appendChild(a);
+      if (i < sources.length - 1) wrap.appendChild(document.createTextNode(' · '));
+    });
+    row.appendChild(wrap);
+  }
+
+  function addFollowups(row, list) {
+    if (!list || !list.length) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'chat-follow';
+    list.slice(0, 3).forEach(function (q) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter';
+      btn.textContent = q;
+      btn.addEventListener('click', function () { wrap.remove(); $('chat-input').value = q; askChat(); });
+      wrap.appendChild(btn);
+    });
+    row.appendChild(wrap);
+  }
+
   function askChat() {
     if (chat.busy) return;
     var field = $('chat-input');
+    var mode = chatMode();
     var text = field.value.trim().slice(0, 500);
+    if (!text && mode === 'advanced' && chat.image) text = 'What can I make with this?';
     if (!text) return;
 
     // Checked before the question is sent, so nothing is spent on a request
@@ -6932,24 +7200,33 @@
     Buddy.think(true);
 
     var log = $('chat-log');
-    log.appendChild(chatRow('user', text, false));
+    var sentImage = mode === 'advanced' ? chat.image : null;
+    log.appendChild(chatRow('user', (sentImage ? '\u{1F4F7} ' : '') + text, false));
 
     // The assistant is what was asked for, so it is what answers — nothing
     // stands in for it while it works and nothing is substituted if it fails.
-    var waiting = chatRow('bot', 'Thinking\u2026', true);
+    var waiting = chatRow('bot', mode === 'advanced' && chat.search ? 'Looking it up…' : 'Thinking…', true);
     log.appendChild(waiting);
     waiting.scrollIntoView({ block: 'nearest' });
     Sound.tick();
 
     chat.turns.push({ role: 'user', text: text });
+    if (sentImage) { chat.image = null; paintChatAttach(); }
 
+    var payload = { messages: chat.turns.slice(-12), lang: I18n.get(), mode: mode };
+    if (mode === 'advanced') {
+      payload.profile = chatProfile();
+      payload.skill = chat.skill;
+      payload.search = chat.search;
+      if (sentImage) payload.image = { mime: sentImage.mime, data: sentImage.data };
+    }
 
     fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       // A relative path, so this is whatever host the app is actually being
       // served from — the phone's, not a machine it was written on.
-      body: JSON.stringify({ messages: chat.turns.slice(-12), lang: I18n.get() })
+      body: JSON.stringify(payload)
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
         return { ok: res.ok, status: res.status, body: body };
@@ -6970,26 +7247,39 @@
         progress.state.chatAsks = (progress.state.chatAsks || 0) + 1;
         progress.save();
         var reply = String(answer.body.reply);
+        var adv = answer.body.mode === 'advanced';
         chat.turns.push({ role: 'model', text: reply });
+        saveChat();
         // Built empty, then written into. The dish buttons wait for the last
         // character so they do not appear under half a sentence.
-        var row = chatRow('bot', '', false);
+        var row = chatRow('bot', '', false, adv);
         waiting.replaceWith(row);
         row.scrollIntoView({ block: 'nearest' });
-        typeInto(row.querySelector('.chat-text'), reply, function () {
+        var finish = function () {
           addDishTaps(row, reply);
+          if (adv) { addSources(row, answer.body.sources); addFollowups(row, answer.body.followups); }
+          addCopy(row, reply);
           row.scrollIntoView({ block: 'nearest' });
-        });
+        };
+        if (adv) { richInto(row.querySelector('.chat-text'), reply); row.classList.add('is-in'); finish(); }
+        else typeInto(row.querySelector('.chat-text'), reply, finish);
         return;
       }
 
       // The last question did not get an answer, so it does not belong in the
       // history either — leaving it there would send it again with the next one.
       chat.turns.pop();
+      if (sentImage) { chat.image = sentImage; paintChatAttach(); }
       var why = (answer.body && answer.body.error) || '';
+      if (why === 'premium_required') {
+        waiting.replaceWith(chatRow('bot', 'The advanced assistant is part of Premium. Standard is still here, and free.', false));
+        chat.mode = 'standard';
+        paintChatMode();
+        return goPremium('The advanced assistant');
+      }
       if (why === 'limit') {
         waiting.replaceWith(chatRow('bot',
-          'That is today\u2019s three free questions. Three more tomorrow \u2014 or Premium asks as many as you like.', false));
+          'That is today’s three free questions. Three more tomorrow — or Premium asks as many as you like.', false));
         return goPremium('Asking anything');
       }
       var said = why === 'too_fast'
@@ -7000,11 +7290,30 @@
             ? 'The assistant had nothing to say to that'
             : 'The assistant did not answer in time';
 
-      var row = chatRow('bot', said + '. Ask again \u2014 it usually works second time.', false);
+      var row = chatRow('bot', said + '. Ask again — it usually works second time.', false);
       waiting.replaceWith(row);
       row.scrollIntoView({ block: 'nearest' });
     });
   }
+
+  $$('#chat-mode .chat-mode-btn').forEach(function (btn) { btn.addEventListener('click', function () { setChatMode(btn.dataset.mode); }); });
+  (function wireChatTools() {
+    var wrap = $('chat-skills');
+    CHAT_SKILLS.forEach(function (sk) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter';
+      btn.dataset.skill = sk.id;
+      btn.textContent = sk.label;
+      btn.addEventListener('click', function () { chat.skill = sk.id; paintChatMode(); $('chat-input').focus(); });
+      wrap.appendChild(btn);
+    });
+    $('chat-search').addEventListener('click', function () { chat.search = !chat.search; paintChatMode(); });
+    $('chat-new').addEventListener('click', newChat);
+    $('chat-photo').addEventListener('click', function () { $('chat-file').click(); });
+    $('chat-file').addEventListener('change', function () { chatPhoto(this.files && this.files[0]); this.value = ''; });
+    chatMic();
+  })();
 
   /*
    * A named dish, made tappable.
@@ -10661,7 +10970,7 @@
   var Buddy = (function () {
     var KEY = 'morsels-buddy', POS = 'morsels-buddy-home', PLAY = 'morsels-buddy-play', TALK = 'morsels-buddy-talk', OLDQUIET = 'morsels-buddy-quiet', MEM = 'morsels-buddy-memory';
     var on = true, playful = false, home = null, talk = 'normal';
-    var mem = { first: 0, days: [], pats: 0, patDay: '', seen: {}, said: [], lvl: 0, hint: 0, ms: {} };
+    var mem = { first: 0, days: [], pats: 0, games: 0, patDay: '', seen: {}, said: [], lvl: 0, hint: 0, ms: {} };
     try {
       on = localStorage.getItem(KEY) !== 'off';
       playful = localStorage.getItem(PLAY) === 'on';
@@ -11059,7 +11368,7 @@
     })();
 
     var LEVELS = [{ name: 'Just met', at: 0 }, { name: 'Pals', at: 12 }, { name: 'Friends', at: 50 }, { name: 'Best friends', at: 150 }];
-    function score() { return ((progress && progress.state && progress.state.decisions) || 0) + mem.days.length * 4 + mem.pats * 2; }
+    function score() { return ((progress && progress.state && progress.state.decisions) || 0) + mem.days.length * 4 + mem.pats * 2 + (mem.games || 0) * 2; }
     function levelOf(s) { var at = 0; for (var i = 0; i < LEVELS.length; i++) if (s >= LEVELS[i].at) at = i; return at; }
 
     var lastSpoke = 0, spoke = 0, hideTimer = 0, returnTimer = 0, greetTimer = 0, helloStarted = false, helloDone = false;
@@ -11097,6 +11406,7 @@
 
     function visible() {
       if (!on) return false;
+      if (typeof Play !== 'undefined' && Play.isOpen()) return false;
       if (document.body.classList.contains('is-landing') || document.body.classList.contains('is-welcoming')) return false;
       // Out of the way of anything that is being played, unless there is room
       // to sit beside it and cheer.
@@ -11255,6 +11565,7 @@
       $('bond-days').textContent = String(mem.days.length);
       $('bond-decisions').textContent = String((progress && progress.state && progress.state.decisions) || 0);
       $('bond-pats').textContent = String(mem.pats);
+      if ($('bond-games')) $('bond-games').textContent = String(mem.games || 0);
     }
 
     /* ---- playing about ---- */
@@ -11435,6 +11746,8 @@
         goHome();
         remark('home', 'happy', 2400, 'asked');
       },
+      // A game with Dot finished: it counts towards the bond, quietly.
+      played: function () { mem.games = (mem.games || 0) + 1; save(); paintBond(); },
       bond: function () { return { level: levelOf(score()), score: score(), days: mem.days.length, pats: mem.pats }; },
       paintBond: paintBond,
       // A page opens: a few words the first times you see it, rarely after.
@@ -11526,6 +11839,10 @@
           offered[view] = now;
           return offerAction(offer);
         }
+        // A second tap in a row: Dot suggests playing something.
+        if (boops === 2 && speakable('Fancy a game?') && speakable('Play')) {
+          return offerAction({ text: 'Fancy a game?', label: 'Play', run: function () { Play.open(); } });
+        }
         if (boops === 4 && !mem.hint) { mem.hint = 1; save(); if (speakable(LINES.boopHint[0])) return say(LINES.boopHint[0], null, 3800, 'asked'); }
         remark(boops <= 3 ? 'boop1' : boops <= 7 ? 'boop2' : 'boop3', null, 3200, 'asked');
       },
@@ -11547,6 +11864,326 @@
       idle: function () { /* Dot does not nag when you are slow. */ },
       line: line
     };
+  })();
+
+  /* ------------------------------------------------------- Play with Dot */
+  /*
+   * Three small games with Dot as the other player, for when the questions are
+   * the monotonous part: Rock Paper Dish, Dot Reads You (pick one of two
+   * dishes while Dot tries to guess which) and Guess My Dish (Dot has one in
+   * mind; ask about it, then name it). None of them decides anything and none
+   * is a sales pitch: they are there to be a break, with a companion that
+   * remembers you played.
+   *
+   * Dot is not cheating at any of them. Rock Paper Dish leans on what you
+   * played last, which is exactly what a person would try; Dot Reads You
+   * guesses from the tastes of the dishes you picked before, which is exactly
+   * what the app does to find your dinner. It says so while it does it.
+   *
+   * It is its own screen over the app, not a page: Escape or the cross closes
+   * it, the page behind is inert while it is open, and Dot in the corner goes
+   * away because Dot is in here.
+   */
+  var Play = (function () {
+    var open = false, root = null, say = null, body = null, dotEl = null, back = null;
+    var TASTE = 'morsels-dot-taste', STATS = 'morsels-dot-games';
+    var stats = { rps: 0, rpsWins: 0, wyr: 0, wyrRight: 0, wyrSeen: 0, guess: 0, guessWins: 0 };
+    var taste = {};
+    try {
+      var sv = JSON.parse(localStorage.getItem(STATS) || 'null'); if (sv) for (var k in stats) if (typeof sv[k] === 'number') stats[k] = sv[k];
+      taste = JSON.parse(localStorage.getItem(TASTE) || '{}') || {};
+    } catch (err) { /* fine */ }
+    function save() { try { localStorage.setItem(STATS, JSON.stringify(stats)); localStorage.setItem(TASTE, JSON.stringify(taste)); } catch (err) { /* fine */ } }
+
+    function h(tag, cls, text) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text !== undefined) n.textContent = text;
+      return n;
+    }
+    function pickOne(list) { return list[Math.floor(Math.random() * list.length)]; }
+    function shuffle(list) { var a = list.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+    function words(text, mood, hold) {
+      say.textContent = text;
+      say.classList.remove('is-in'); void say.offsetWidth; say.classList.add('is-in');
+      if (mood) Dot.mood(dotEl, mood, hold || 1500);
+    }
+    function btn(label, cls, fn) {
+      var b = h('button', cls || 'dg-btn', label);
+      b.type = 'button';
+      b.addEventListener('click', function () { Sound.tick(); fn(b); });
+      return b;
+    }
+    function screen() { clear2(body); return body; }
+
+    /* ---- the picker ---- */
+    var GAMES = [
+      { id: 'rps', icon: '\u{1F336}\u{FE0F}', name: 'Rock Paper Dish', blurb: 'First to three. Dot is not as random as it looks.' },
+      { id: 'wyr', icon: '\u{1F914}', name: 'Dot Reads You', blurb: 'Pick one of two dishes. Dot tries to guess which.' },
+      { id: 'guess', icon: '\u{1F575}\u{FE0F}', name: 'Guess My Dish', blurb: 'Dot has a dish in mind. Ask, then name it.' }
+    ];
+    function menu() {
+      var s = screen();
+      words(pickOne(['Pick a game. I will lose gracefully. Probably.', 'Games. My favourite thing after dishes.', 'Go on. Choose. I have all day.']), 'happy');
+      var grid = h('div', 'dg-grid');
+      GAMES.forEach(function (g) {
+        var card = h('button', 'dg-card-btn');
+        card.type = 'button';
+        card.appendChild(h('span', 'dg-card-icon', g.icon));
+        card.appendChild(h('strong', '', g.name));
+        card.appendChild(h('span', 'fine', g.blurb));
+        card.addEventListener('click', function () { Sound.tick(); ({ rps: rps, wyr: wyr, guess: guess })[g.id](); });
+        grid.appendChild(card);
+      });
+      s.appendChild(grid);
+    }
+
+    function finish(game, won) {
+      stats[game]++;
+      save();
+      if (typeof Buddy !== 'undefined') Buddy.played(game, won);
+    }
+    function endButtons(again) {
+      var row = h('div', 'dg-row');
+      row.appendChild(btn('Play again', 'dg-btn is-main', again));
+      row.appendChild(btn('Another game', 'dg-btn', menu));
+      body.appendChild(row);
+    }
+
+    /* ---- Rock Paper Dish ---- */
+    var MOVES = [
+      { id: 'spice', icon: '\u{1F336}\u{FE0F}', name: 'Spice' },
+      { id: 'ice', icon: '\u{1F366}', name: 'Ice cream' },
+      { id: 'soup', icon: '\u{1F372}', name: 'Soup' }
+    ];
+    var BEATS = { spice: 'ice', ice: 'soup', soup: 'spice' };
+    var WHY = { spice: 'Spice wins. The ice cream melts.', ice: 'Ice cream wins. The soup goes lukewarm.', soup: 'Soup wins. The spice gets watered down.' };
+
+    function rps() {
+      var me = 0, dot = 0, last = null, counts = { spice: 0, ice: 0, soup: 0 };
+      function round() {
+        var s = screen();
+        words(me + dot === 0 ? 'First to three. Choose carefully. Or do not.' : 'Next round.', null);
+        s.appendChild(h('p', 'dg-score', 'You ' + me + ' · Dot ' + dot));
+        var row = h('div', 'dg-moves');
+        MOVES.forEach(function (m) {
+          var b = h('button', 'dg-move');
+          b.type = 'button';
+          b.appendChild(h('span', 'dg-move-icon', m.icon));
+          b.appendChild(h('span', '', m.name));
+          b.addEventListener('click', function () { Sound.tick(); play(m.id); });
+          row.appendChild(b);
+        });
+        s.appendChild(row);
+      }
+      function dotMove() {
+        // Dot leans on what you play most: it beats your favourite, a third of the time.
+        var fav = MOVES.slice().sort(function (a, b) { return counts[b.id] - counts[a.id]; })[0].id;
+        if (counts[fav] > 1 && Math.random() < 0.4) { var beat = Object.keys(BEATS).filter(function (k) { return BEATS[k] === fav; })[0]; return beat; }
+        return pickOne(MOVES).id;
+      }
+      function play(mine) {
+        var theirs = dotMove();
+        counts[mine]++; last = mine;
+        var s = screen();
+        var reveal = h('div', 'dg-reveal');
+        function side(who, id) { var m = MOVES.filter(function (x) { return x.id === id; })[0]; var d = h('div', 'dg-side'); d.appendChild(h('span', 'dg-move-icon', m.icon)); d.appendChild(h('span', 'fine', who)); return d; }
+        reveal.appendChild(side('You', mine));
+        reveal.appendChild(h('span', 'dg-vs', 'vs'));
+        reveal.appendChild(side('Dot', theirs));
+        s.appendChild(reveal);
+        var result;
+        if (mine === theirs) result = 'draw';
+        else if (BEATS[mine] === theirs) { result = 'win'; me++; } else { result = 'lose'; dot++; }
+        s.appendChild(h('p', 'dg-line', result === 'draw' ? 'Same again. A draw.' : WHY[result === 'win' ? mine : theirs]));
+        words(result === 'win' ? pickOne(['You win this round.', 'Fine. That one is yours.']) : result === 'lose' ? pickOne(['Dot wins this round.', 'Mine. I will try to be humble.']) : 'Draw. Nobody eats.', result === 'win' ? 'sad' : result === 'lose' ? 'celebrate' : 'shrug');
+        s.appendChild(h('p', 'dg-score', 'You ' + me + ' · Dot ' + dot));
+        if (me === 3 || dot === 3) {
+          s.appendChild(h('p', 'dg-line is-big', me === 3 ? 'You won the match. Dot is fine with it.' : 'Dot won the match. It will say nothing. Loudly.'));
+          stats.rpsWins += me === 3 ? 1 : 0;
+          finish('rps', me === 3);
+          endButtons(rps);
+        } else s.appendChild(btn('Next round', 'dg-btn is-main', round));
+      }
+      round();
+    }
+
+    /* ---- Dot Reads You ---- */
+    var TASTE_TAGS = ['sweet', 'spicy', 'fried', 'hot', 'meat', 'seafood', 'handheld', 'breakfast', 'soupy', 'crunchy', 'cheesy', 'healthy', 'fresh', 'comfort', 'indulgent', 'cheap', 'chicken', 'drink', 'light', 'filling'];
+    function leaning(dish) {
+      var n = 0;
+      TASTE_TAGS.forEach(function (t) { if (dish.tags[t] === 1) n += taste[t] || 0; });
+      return n;
+    }
+    function pair() {
+      var items = Data.ITEMS;
+      for (var tries = 0; tries < 40; tries++) {
+        var a = pickOne(items), b = pickOne(items);
+        if (a === b || a.tags.drink !== b.tags.drink) continue;
+        var diff = TASTE_TAGS.filter(function (t) { return (a.tags[t] === 1) !== (b.tags[t] === 1); }).length;
+        if (diff >= 3) return [a, b];
+      }
+      return [items[0], items[1]];
+    }
+    function wyr() {
+      var rounds = 0, right = 0;
+      function round() {
+        var p = pair();
+        var guessIdx = leaning(p[0]) === leaning(p[1]) ? Math.floor(Math.random() * 2) : (leaning(p[0]) > leaning(p[1]) ? 0 : 1);
+        var s = screen();
+        words(rounds === 0 ? 'Which would you rather eat? I have already decided what you will say.' : pickOne(['Next pair. I am getting good at this.', 'Another one. Do not overthink it.']), 'thinking');
+        s.appendChild(h('p', 'dg-score', rounds + ' / 5'));
+        var row = h('div', 'dg-pair');
+        p.forEach(function (dish, i) {
+          var b = h('button', 'dg-dish');
+          b.type = 'button';
+          b.appendChild(h('span', 'dg-move-icon', dish.icon));
+          b.appendChild(h('strong', '', dish.name));
+          b.addEventListener('click', function () { Sound.tick(); choose(p, i, guessIdx); });
+          row.appendChild(b);
+        });
+        s.appendChild(row);
+      }
+      function choose(p, i, guessIdx) {
+        rounds++; stats.wyrSeen++;
+        var hit = i === guessIdx;
+        if (hit) { right++; stats.wyrRight++; }
+        TASTE_TAGS.forEach(function (t) {
+          if (p[i].tags[t] === 1) taste[t] = Math.min(6, (taste[t] || 0) + 1);
+          if (p[1 - i].tags[t] === 1) taste[t] = Math.max(-6, (taste[t] || 0) - 0.5);
+        });
+        save();
+        var s = screen();
+        s.appendChild(h('p', 'dg-line', 'Dot guessed ' + p[guessIdx].name + '.'));
+        s.appendChild(h('p', 'dg-line is-big', hit ? 'Dot guessed right.' : 'Dot guessed wrong. It is taking notes.'));
+        words(hit ? pickOne(['Called it.', 'I know you. A bit.', 'Predictable. Affectionately.']) : pickOne(['Hm. I did not see that coming.', 'Noted. I will do better.', 'You are full of surprises. Mostly small ones.']), hit ? 'celebrate' : 'shrug');
+        s.appendChild(h('p', 'dg-score', rounds + ' / 5'));
+        if (rounds >= 5) {
+          s.appendChild(h('p', 'dg-line', 'Dot read you right ' + right + ' of 5 times.'));
+          finish('wyr', right >= 3);
+          endButtons(wyr);
+        } else s.appendChild(btn('Next pair', 'dg-btn is-main', round));
+      }
+      round();
+    }
+
+    /* ---- Guess My Dish ---- */
+    var QS = [
+      { tag: 'sweet', q: 'Is it sweet?' }, { tag: 'spicy', q: 'Is it spicy?' }, { tag: 'fried', q: 'Is it fried?' },
+      { tag: 'hot', q: 'Is it served hot?' }, { tag: 'meat', q: 'Does it have meat?' }, { tag: 'seafood', q: 'Is it seafood?' },
+      { tag: 'handheld', q: 'Can you eat it with your hands?' }, { tag: 'breakfast', q: 'Is it a breakfast thing?' },
+      { tag: 'soupy', q: 'Is it a soup or a stew?' }, { tag: 'crunchy', q: 'Is it crunchy?' }
+    ];
+    function guess() {
+      var secret = pickOne(Data.ITEMS), known = [], tries = 5, asked = {};
+      function pool() { return Data.ITEMS.filter(function (d) { return known.every(function (k) { return (d.tags[k.tag] === 1) === k.yes; }); }); }
+      function view(note) {
+        var s = screen();
+        words(note || (known.length ? pickOne(['Keep going.', 'Interesting. Keep going.']) : 'I have a dish in mind. Ask about it.'), null);
+        s.appendChild(h('p', 'dg-score', tries + (tries === 1 ? ' try left' : ' tries left')));
+        if (known.length) {
+          var said = h('ul', 'dg-known');
+          known.forEach(function (k) { said.appendChild(h('li', '', (k.yes ? '✓ ' : '✗ ') + k.label)); });
+          s.appendChild(said);
+        }
+        s.appendChild(h('p', 'fine', 'Ask about it:'));
+        var qs = h('div', 'dg-chips');
+        QS.forEach(function (q) {
+          if (asked[q.tag]) return;
+          qs.appendChild(btn(q.q, 'dg-chip', function () {
+            var yes = secret.tags[q.tag] === 1;
+            asked[q.tag] = 1; tries--; known.push({ tag: q.tag, yes: yes, label: q.q.replace(/\?$/, '') });
+            if (tries <= 0) return lose();
+            view(yes ? pickOne(['Yes.', 'Yes. Unfortunately for me.', 'Yes. Keep going.']) : pickOne(['No.', 'No. Next.', 'Absolutely not.']));
+            Dot.mood(dotEl, yes ? 'happy' : 'shrug', 900);
+          }));
+        });
+        s.appendChild(qs);
+        s.appendChild(h('p', 'fine', 'Or name it:'));
+        var options = shuffle(pool().filter(function (d) { return d !== secret; })).slice(0, 5).concat([secret]);
+        var names = h('div', 'dg-chips');
+        shuffle(options).forEach(function (d) {
+          names.appendChild(btn(d.icon + ' ' + d.name, 'dg-chip is-dish', function () {
+            if (d === secret) return win();
+            tries--;
+            if (tries <= 0) return lose();
+            view('Not that one. Try another.');
+            Dot.mood(dotEl, 'happy', 900);
+          }));
+        });
+        s.appendChild(names);
+      }
+      function win() {
+        var s = screen();
+        words(pickOne(['You got me. I am not even sulking.', 'Well played. I will remember this.']), 'sad');
+        s.appendChild(h('p', 'dg-line is-big', 'Right! It was ' + secret.name + '.'));
+        s.appendChild(h('p', 'dg-reveal-icon', secret.icon));
+        stats.guessWins++;
+        finish('guess', true);
+        endButtons(guess);
+      }
+      function lose() {
+        var s = screen();
+        words(pickOne(['I win. Quietly.', 'Better luck next time. I mean that. Mostly.']), 'celebrate');
+        s.appendChild(h('p', 'dg-line is-big', 'Out of tries. It was ' + secret.name + '.'));
+        s.appendChild(h('p', 'dg-reveal-icon', secret.icon));
+        finish('guess', false);
+        endButtons(guess);
+      }
+      view();
+    }
+
+    function build() {
+      root = h('div', 'dg');
+      root.setAttribute('role', 'dialog');
+      root.setAttribute('aria-modal', 'true');
+      root.setAttribute('aria-labelledby', 'dg-title');
+      root.hidden = true;
+      var card = h('div', 'dg-panel');
+      var head = h('header', 'dg-head');
+      dotEl = h('span', 'mascot dg-dot');
+      Dot.mount(dotEl);
+      var txt = h('div', 'dg-headtext');
+      var title = h('h2', '', 'Play with Dot');
+      title.id = 'dg-title';
+      say = h('p', 'dg-say');
+      say.setAttribute('aria-live', 'polite');
+      txt.appendChild(title); txt.appendChild(say);
+      var x = h('button', 'dg-x', '×');
+      x.type = 'button';
+      x.setAttribute('aria-label', 'Close');
+      x.addEventListener('click', close);
+      head.appendChild(dotEl); head.appendChild(txt); head.appendChild(x);
+      body = h('div', 'dg-body');
+      card.appendChild(head); card.appendChild(body);
+      root.appendChild(card);
+      root.addEventListener('click', function (e) { if (e.target === root) close(); });
+      document.addEventListener('keydown', function (e) { if (open && e.key === 'Escape') close(); });
+      document.body.appendChild(root);
+    }
+
+    function openGames(which) {
+      if (open) return;
+      if (!root) build();
+      open = true;
+      back = document.activeElement;
+      if (typeof Buddy !== 'undefined') Buddy.sync();
+      root.hidden = false;
+      root.classList.remove('is-in'); void root.offsetWidth; root.classList.add('is-in');
+      if ('inert' in shell) shell.inert = true;
+      ({ rps: rps, wyr: wyr, guess: guess })[which] ? ({ rps: rps, wyr: wyr, guess: guess })[which]() : menu();
+      var first = body.querySelector('button');
+      if (first) first.focus();
+    }
+    function close() {
+      if (!open) return;
+      open = false;
+      root.hidden = true;
+      if ('inert' in shell && !document.body.classList.contains('is-landing')) shell.inert = false;
+      if (typeof Buddy !== 'undefined') Buddy.sync();
+      if (back && back.focus) try { back.focus(); } catch (err) { /* fine */ }
+    }
+    return { open: openGames, close: close, isOpen: function () { return open; }, stats: function () { return stats; } };
   })();
 
   // Eyes that follow the pointer, a pixel or two.
@@ -11573,6 +12210,7 @@
   function buddyEl() { return $('mascot-b'); }
   (function profileControls() {
     var tog = $('buddy-toggle'), play = $('buddy-play'), back = $('buddy-home');
+    if ($('buddy-games')) $('buddy-games').addEventListener('click', function () { Play.open(); });
     if (tog) {
       var paintTog = function () { tog.textContent = Buddy.enabled() ? 'Dot is here' : 'Dot is off'; tog.setAttribute('aria-pressed', String(Buddy.enabled())); };
       tog.addEventListener('click', function () { Buddy.set(!Buddy.enabled()); paintTog(); });

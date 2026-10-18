@@ -1857,19 +1857,40 @@
         <h1 class="head-title">Ask anything</h1>
         <p class="head-sub">Food is what it knows best &mdash; what to eat, what goes with what,
         what to do with half a cabbage &mdash; but it will have a go at whatever you ask.</p>
-        <p class="fine chat-beta">Beta &mdash; it runs on a service that is busy a lot of the
+        <p class="fine chat-beta">Beta &mdash; it runs on services that are busy a lot of the
         time, so it will occasionally not answer. Ask again and it usually does.</p>
+        <div class="chat-mode" id="chat-mode" role="group" aria-label="Which assistant">
+          <button type="button" class="chat-mode-btn is-on" data-mode="standard" aria-pressed="true">Standard <span class="chat-mode-tag">Free</span></button>
+          <button type="button" class="chat-mode-btn" data-mode="advanced" aria-pressed="false">Advanced <span class="chat-mode-tag is-plus">Premium</span></button>
+        </div>
+        <p class="fine chat-mode-note" id="chat-mode-note"></p>
       </header>
+
+      <div class="chat-tools" id="chat-tools" hidden>
+        <div class="filters" id="chat-skills" role="group" aria-label="What kind of help"></div>
+        <div class="chat-tools-row">
+          <button type="button" class="chat-mini" id="chat-search" aria-pressed="false">Look it up on the web</button>
+          <button type="button" class="chat-mini" id="chat-new">New chat</button>
+        </div>
+      </div>
 
       <ul class="chat" id="chat-log" aria-live="polite"></ul>
 
       <p class="chat-empty" id="chat-empty">Tap one, or say it your way:</p>
       <div class="filters" id="chat-seeds" role="group" aria-label="Suggestions"></div>
 
+      <div class="chat-attach" id="chat-attach" hidden></div>
       <form class="chat-form" id="chat-form">
         <label class="sr-only" for="chat-input">Ask about food</label>
+        <button class="chat-tool" id="chat-photo" type="button" aria-label="Attach a photo" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>
+        </button>
+        <input type="file" id="chat-file" accept="image/*" hidden>
         <input class="chat-input" id="chat-input" autocomplete="off"
                maxlength="500" placeholder="Ask me anything about food&hellip;">
+        <button class="chat-tool" id="chat-mic" type="button" aria-label="Speak your question" aria-pressed="false">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
         <button class="go go-sm" id="chat-send" type="submit">
           <span class="go-label">Ask</span>
           <span class="go-arrow" aria-hidden="true">
@@ -1883,10 +1904,12 @@
            arrives without warning is a trick. Hidden entirely on Premium,
            where there is no number to report. -->
       <p class="fine chat-left" id="chat-left" hidden></p>
+      <p class="fine" id="chat-account" hidden>Sign in with a free account and your free questions follow you to every device.</p>
 
       <p class="fine chat-foot">Answers come from a model and can be wrong &mdash; worth checking
-      anything that matters. It cannot see your kitchen, your location, or what you have eaten
-      before, and it is not a doctor, a lawyer or an accountant.</p>
+      anything that matters. It cannot see your kitchen or your location, and it is not a doctor,
+      a lawyer or an accountant. Standard questions are answered by a free public model and
+      never include your taste profile; Advanced questions go to Google&rsquo;s Gemini with it.</p>
     </section>
 
     <section class="view" id="view-news" aria-label="Food news">
@@ -2530,9 +2553,11 @@
             <div><dt>Days together</dt><dd id="bond-days">0</dd></div>
             <div><dt>Decisions together</dt><dd id="bond-decisions">0</dd></div>
             <div><dt>Pats</dt><dd id="bond-pats">0</dd></div>
+            <div><dt>Games</dt><dd id="bond-games">0</dd></div>
           </dl>
         </div>
         <div class="buddy-controls">
+          <button class="quiet" id="buddy-games" type="button">Play with Dot</button>
           <button class="quiet" id="buddy-toggle" type="button" aria-pressed="true">Dot is here</button>
           <button class="quiet" id="buddy-quiet" type="button" aria-pressed="true">Balanced: now and then</button>
           <button class="quiet" id="buddy-play" type="button" aria-pressed="false">Stays put</button>
