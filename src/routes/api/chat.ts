@@ -9,7 +9,7 @@ import { CHAT_PER_DAY, premiumFor, spendOnStanding, standing } from '#/lib/allow
 /*
  * /api/chat — the food assistant, in two tiers.
  *
- * STANDARD answers on a free, keyless public model (lib/free-ai.ts): three
+ * STANDARD answers on text.pollinations.ai, a free model that needs no key (lib/free-ai.ts): three
  * questions a day per free Whop account, counted in the database, and what a
  * Premium member can switch to for a quick answer. ADVANCED is Gemini, on this
  * app's own key, for Premium only: it knows your taste profile, can read a
@@ -42,15 +42,6 @@ import { CHAT_PER_DAY, premiumFor, spendOnStanding, standing } from '#/lib/allow
 
 const MAX_MESSAGE = 500 // characters in one question
 const MAX_TURNS = 12 // how far back the conversation is carried
-/*
- * Headroom, not answer length. On Gemini 3 this budget covers the thinking as
- * well as the words, and thinking goes first: at 220 the model spent 207
- * tokens deciding and had nine left to speak with, so answers arrived cut off
- * mid-sentence — "A cheese quesadilla comes". What keeps the reply to one
- * sentence is the instruction, not this number, so this only has to be
- * comfortably clear of what low-effort thinking costs.
- */
-const MAX_OUTPUT_TOKENS = 900
 // How it is asked — two overlapping attempts on two models — is lib/gemini.ts.
 
 /*
@@ -353,28 +344,12 @@ export const Route = createFileRoute('/api/chat')({
         if (metered && mine.left === 0) return json({ error: 'limit', left: 0, limit: CHAT_PER_DAY }, 402)
 
         const system = instruction() + langLine(want)
-        let reply = ''
+        // Pollinations only. If it does not answer, the question is not counted and
+        // is not handed to the paid key: Standard stays free, and the visitor asks again.
         // The free model is terse when left alone ("Pizza."); a pick with a reason is the answer.
         const free = await askFree(system + '\nAlways answer in at least two complete sentences, and give the reason for a pick.', turns)
-        if (free) reply = free.text
-        else {
-          // Both free services failed. A free question is still owed an answer,
-          // so this one goes to the paid key, small and quick, rather than failing.
-          const key = process.env.GEMINI_API_KEY
-          if (key) {
-            const { res } = await askGemini(
-              key,
-              JSON.stringify({
-                systemInstruction: { parts: [{ text: system }] },
-                contents: turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
-                generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS, temperature: 0.85, thinkingConfig: { thinkingLevel: 'low' } },
-              }),
-              'chat',
-            )
-            reply = res ? (readGemini(await res.json().catch(() => null), false)?.reply ?? '') : ''
-          }
-        }
-        if (!reply) return json({ error: 'unavailable' }, 502)
+        const reply = free?.text ?? ''
+        if (!reply) return json({ error: 'busy' }, 502)
 
         // Counted only now that there is an answer to give: a question the
         // model never answered is not one the visitor got.
