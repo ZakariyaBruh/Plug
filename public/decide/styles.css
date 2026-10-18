@@ -1263,7 +1263,7 @@ kbd {
   gap: var(--s3);
   margin-top: var(--s5);
   padding: var(--s3) var(--s4);
-  border-left: 2px solid var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 38%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--amber) 5%, transparent);
   background: var(--raise);
   font-size: var(--t-sm);
   color: var(--ink-2);
@@ -1704,7 +1704,7 @@ kbd {
 .tuned {
   margin-top: var(--s4);
   padding-left: var(--s3);
-  border-left: 2px solid var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 38%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--amber) 5%, transparent);
   font-size: var(--t-sm);
   color: var(--ink-2);
   line-height: 1.5;
@@ -2824,7 +2824,7 @@ body.is-premium .tag-premium { display: none; }
   align-items: center;
   gap: var(--s3);
   padding: var(--s3) var(--s4);
-  border-left: 2px solid var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 38%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--amber) 5%, transparent);
   background: var(--raise);
   animation: toast-in .3s var(--ease) both;
 }
@@ -3203,7 +3203,7 @@ body.is-beaming { overflow: hidden; }
 .landing-back {
   padding: var(--s4) var(--s5);
   background: var(--char);
-  border-left: 2px solid var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 38%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--amber) 5%, transparent);
   display: grid;
   gap: var(--s2);
 }
@@ -4136,7 +4136,7 @@ body.is-beaming { overflow: hidden; }
 .endless-read {
   margin-top: var(--s4);
   padding: var(--s4) var(--s5);
-  border-left: 2px solid var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 38%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--amber) 5%, transparent);
   background: var(--raise);
 }
 
@@ -4161,7 +4161,7 @@ body.is-beaming { overflow: hidden; }
   list-style: none;
   margin: var(--s5) 0 0;
   padding: 0 0 0 var(--s4);
-  border-left: 2px solid var(--amber-dim);
+  border: 1px solid var(--line-2); border-radius: 12px; background: color-mix(in srgb, var(--ink) 5%, transparent);
   display: grid;
   gap: var(--s3);
 }
@@ -4700,7 +4700,7 @@ body.is-welcoming { overflow: hidden; }
 .diet-caveats {
   margin-top: var(--s4);
   padding-left: var(--s3);
-  border-left: 2px solid var(--hair-lit);
+  border: 1px solid var(--line-2); border-radius: 12px; background: color-mix(in srgb, var(--ink) 5%, transparent);
   line-height: 1.55;
 }
 
@@ -4896,7 +4896,7 @@ body.is-welcoming { overflow: hidden; }
   gap: .2rem;
   margin: 0 0 var(--s4);
   padding-left: .9rem;
-  border-left: 2px solid var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 38%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--amber) 5%, transparent);
 }
 
 .landing-resume .link-btn { font-size: var(--t-md); font-weight: 600; text-align: left; }
@@ -5258,7 +5258,7 @@ body.has-radio .toasts { bottom: calc(var(--s5) + 4.75rem); }
 .hub-from { font-size: var(--t-xs); color: var(--ink-3); }
 .hub-big { margin: 0; font-family: var(--display); font-size: var(--t-xl); font-weight: 600; }
 
-.hub-note { margin: 0; padding: var(--s3) var(--s4); border-left: 2px solid var(--hair-lit); color: var(--ink-2); font-size: var(--t-sm); }
+.hub-note { margin: 0; padding: var(--s3) var(--s4); border: 1px solid var(--line-2); border-radius: 12px; background: color-mix(in srgb, var(--ink) 5%, transparent); color: var(--ink-2); font-size: var(--t-sm); }
 .hub-note.is-error { border-color: var(--danger); color: var(--danger); }
 .hub-note.is-good { border-color: var(--amber); }
 .link-btn { padding: 0; border: 0; background: none; color: var(--amber); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
@@ -5537,7 +5537,7 @@ details.hub-prep:not([open]) > summary::after { content: ' \25B8'; }
 
 .hub-how {
   padding: var(--s3) var(--s4);
-  border-left: 3px solid var(--amber);
+  border: 1px solid color-mix(in srgb, var(--amber) 38%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--amber) 5%, transparent);
   border-radius: 0 .5rem .5rem 0;
   background: var(--raise);
 }
@@ -6445,7 +6445,7 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus, sele
 /* Ghost buttons sit on the text edge: the plate is padding, so pull it back out. */
 .plain { margin-left: -.8rem; }
 .plain.go-sm, .opening-actions .plain { margin-left: 0; }
-#panel-result .quiet, #panel-result .link-btn { margin-left: -.8rem; justify-content: flex-start; }
+#panel-result .quiet { margin-left: -.8rem; justify-content: flex-start; }
 
 /* progress that visibly grows */
 .q-progress { height: 3px; border-radius: 3px; background: var(--wash-2); overflow: hidden; margin: var(--s2) 0 var(--s3); }
@@ -6546,3 +6546,90 @@ dialog::backdrop { animation: fade-in var(--t-std) var(--snap) both; }
   .rail-link { padding: var(--s2) .85rem; }
   .rail-link.is-current::before { left: 50%; top: auto; bottom: .2rem; width: 1rem; height: 2px; margin: 0 0 0 -.5rem; animation: none; }
 }
+
+/* ==========================================================================
+   The overhaul.
+
+   Thesis: a dry little tool for a hungry person. Quiet, hairline surfaces; one
+   hot amber moment per screen; food as the only imagery, each dish served on a
+   plate of its own. Decisions that came out of auditing against the impeccable,
+   taste and motion skills:
+
+     - no kicker above a page heading (the heading carries itself)
+     - no coloured stripe down the side of a callout: a full hairline box instead
+     - elevation declared once: a border at rest, a brighter border on hover,
+       and shadow only where a thing genuinely floats (toasts, dialogs, buttons)
+     - Premium is a small chip, not a bullet and capitals
+     - text is balanced and measured, numbers line up, and the parts the browser
+       draws (caret, checkboxes, placeholders, scrollbars, selection) are ours
+   ========================================================================== */
+.head > .kicker { display: none; }
+
+/* Premium: a chip that keeps its distance */
+.tag-premium {
+  display: inline-flex; align-items: center; margin-left: .45rem; padding: .05rem .5rem; vertical-align: 1px;
+  border: 1px solid color-mix(in srgb, var(--amber) 42%, transparent); border-radius: 6px;
+  background: color-mix(in srgb, var(--amber) 10%, transparent);
+  font-family: var(--text); font-size: var(--t-xs); font-weight: 600; letter-spacing: 0; text-transform: none; line-height: 1.5;
+}
+.tag-premium::before { display: none; }
+.mode-lock { border-radius: 6px; }
+
+/* type */
+body { font-feature-settings: "kern", "liga", "calt"; }
+h1, h2, h3, .q-title, .verdict-name, .landing-ask, .head-title { text-wrap: balance; }
+p, li, .verdict-note, .landing-sub, .head-sub { text-wrap: pretty; }
+p, .pane-line, .head-sub, .verdict-note { max-width: 68ch; }
+#xp-total, .q-step, #arc-score, #arc-time, #arc-combo, .daily-ring, .hub-week-title, .endless-score, [id$="-score"], .xp-line { font-variant-numeric: tabular-nums; }
+.verdict-name { font-size: clamp(2.25rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -.035em; }
+
+/* browser surfaces, drawn from the palette */
+input, textarea, [contenteditable] { caret-color: var(--amber); }
+input[type="checkbox"], input[type="radio"], input[type="range"], progress { accent-color: var(--amber); }
+::placeholder { color: var(--ink-3); opacity: 1; }
+a, .link-btn { text-underline-offset: .22em; text-decoration-thickness: 1px; }
+a:hover, .link-btn:hover { text-decoration-thickness: 2px; }
+
+/* each dish is served on a plate */
+.verdict-art, .reel-item.is-on, .done-art {
+  --plate: 5.25rem;
+}
+.verdict-art {
+  display: inline-grid; place-items: center; width: var(--plate); height: var(--plate); flex: none;
+  font-size: 3.1rem; line-height: 1; border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--ink) 13%, transparent), color-mix(in srgb, var(--ink) 3%, transparent) 70%);
+  border: 1px solid var(--line-2);
+  box-shadow: 0 14px 26px -16px rgb(0 0 0 / .8);
+}
+.verdict-head { display: flex; align-items: center; gap: var(--s4); }
+.verdict-art.is-swapped::after, .verdict-art.is-landed::after { inset: -.3rem; }
+.reel { height: 5.75rem; }
+.reel-item { display: grid; place-items: center; width: 5.25rem; height: 5.25rem; font-size: 3.1rem; border-radius: 50%;
+  background: radial-gradient(circle at 34% 28%, color-mix(in srgb, var(--ink) 13%, transparent), color-mix(in srgb, var(--ink) 3%, transparent) 70%);
+  border: 1px solid var(--line-2); box-shadow: 0 14px 26px -16px rgb(0 0 0 / .8); }
+
+/* cards: a border at rest, a brighter border on hover, no halo */
+.mode-card { border-radius: 14px; background: color-mix(in srgb, var(--ink) 3%, transparent); box-shadow: none; padding: var(--s5); }
+.mode-card:hover { border-color: color-mix(in srgb, var(--amber) 60%, transparent); box-shadow: none; background: color-mix(in srgb, var(--amber) 6%, transparent); transform: translateY(-2px); }
+.mode-card .mode-icon {
+  display: inline-grid; place-items: center; width: 2.75rem; height: 2.75rem; font-size: 1.45rem; border-radius: 10px;
+  border: 1px solid var(--line); background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.mode-card:hover .mode-icon { transform: scale(1.08) rotate(-4deg); border-color: color-mix(in srgb, var(--amber) 50%, transparent); }
+.mode-card-wide { background: linear-gradient(120deg, color-mix(in srgb, var(--amber) 8%, transparent), transparent 55%); border-color: color-mix(in srgb, var(--amber) 28%, transparent); }
+.endless-card { border-radius: 14px; }
+.endless-card:hover { box-shadow: none; border-color: var(--amber); }
+.swipe-pick, .dv-card, .hub-slot { border-radius: 12px; }
+.strip-title { letter-spacing: -.02em; }
+
+/* the tabs and filters get one shape */
+.filter, .knob { border-radius: 8px; }
+
+/* the rail: quieter, so the work is the loudest thing on the screen */
+.rail-foot { border-top: 1px solid var(--line); padding-top: var(--s3); }
+
+/* Dot: a plain round face with a tuft, like a dumpling */
+.dot-tuft { fill: none; stroke: var(--paper); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.mascot[data-mood="celebrate"] .dot-tuft { animation: dot-tuft .5s var(--spring) 3; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes dot-tuft { 50% { transform: rotate(14deg); } }
+@media (prefers-reduced-motion: reduce) { .dot-tuft { animation: none !important; } }

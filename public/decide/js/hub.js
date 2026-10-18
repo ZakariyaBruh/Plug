@@ -162,7 +162,7 @@
 
   function head(mechanic, title, sub) {
     return el('header', { class: 'head' }, [
-      el('p', { class: 'mechanic', text: mechanic }),
+      el('p', { class: 'mechanic kicker', text: mechanic, 'aria-hidden': 'true' }),
       el('h1', { class: 'head-title', text: title }),
       sub ? el('p', { class: 'head-sub', text: sub }) : null
     ]);

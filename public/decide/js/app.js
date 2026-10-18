@@ -10454,8 +10454,9 @@
     var SVG =
       '<svg viewBox="0 0 48 48" class="dot" focusable="false">' +
       '<g class="dot-body">' +
-      '<circle class="dot-face" cx="24" cy="25" r="19"/>' +
-      '<circle class="dot-blush" cx="13.5" cy="29" r="3"/><circle class="dot-blush" cx="34.5" cy="29" r="3"/>' +
+      '<path class="dot-tuft" d="M24 7Q22 2.5 26.5 1.5Q26 5 24 7Z"/>' +
+      '<circle class="dot-face" cx="24" cy="26" r="18"/>' +
+      '<circle class="dot-blush" cx="13.5" cy="30" r="3"/><circle class="dot-blush" cx="34.5" cy="30" r="3"/>' +
       '<g class="dot-eyes"><circle cx="18" cy="23" r="2.2"/><circle cx="30" cy="23" r="2.2"/></g>' +
       '<g class="dot-happy"><path d="M15.5 24Q18 20.5 20.5 24"/><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
       '<path class="dot-m dot-m-smile" d="M20 30Q24 34 28 30"/>' +
