@@ -606,6 +606,7 @@
         el.setAttribute('aria-current', on ? 'page' : 'false');
       });
     }, travel);
+    if (typeof Buddy !== 'undefined' && Buddy) Buddy.onView(name);
     if (name === 'decide') renderIntro();
     if (name === 'profile') renderProfile();
     if (name === 'dishes') renderDishes();
@@ -627,6 +628,7 @@
     // so it gets no screen transition: its own cards move instead.
     var same = panel === name;
     panel = name;
+    if (typeof Buddy !== 'undefined' && Buddy) Buddy.onPanel();
     (same ? function (f) { f(); } : vt)(function () {
       $$('#view-decide .panel').forEach(function (el) {
         el.classList.toggle('is-current', el.id === 'panel-' + name);
@@ -4306,7 +4308,9 @@
     // After step(), so the new question's render doesn't clear it.
     $('reaction').textContent = line;
     replay($('reaction'));
-    Dot.mood($('mascot-q'), value === 'yes' || value === 'no' ? 'happy' : 'shrug', 1300);
+    Buddy.react(value === 'yes' || value === 'no' ? 'happy' : 'shrug', 1300);
+    Buddy.onAnswer();
+    Buddy.idle();
     try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) { /* fine */ }
   }
 
@@ -4498,7 +4502,8 @@
       });
     }
 
-    Dot.mood($('mascot-r'), 'happy', 1600);
+    Buddy.react('happy', 1600);
+    Buddy.onResult(item);
     fillAlternates(item);
     paintPair(item);
     // Which directions are worth offering depends on what is on screen, so
@@ -4776,7 +4781,8 @@
     paintWhy();
     paintPlan(item);
     setPanel('reward');
-    Dot.mood($('mascot-d'), 'celebrate', 2200);
+    Buddy.react('celebrate', 2200);
+    Buddy.onDone();
     paintStreak();
     Sound.win();
     Confetti.burst({ y: window.innerHeight * 0.3 });
@@ -10590,6 +10596,7 @@
       '<circle class="dot-blush" cx="13.5" cy="30" r="3"/><circle class="dot-blush" cx="34.5" cy="30" r="3"/>' +
       '<g class="dot-eyes"><circle cx="18" cy="23" r="2.2"/><circle cx="30" cy="23" r="2.2"/></g>' +
       '<g class="dot-eyes-down"><path d="M15.5 23Q18 25.5 20.5 23"/><path d="M27.5 23Q30 25.5 32.5 23"/></g>' +
+      '<g class="dot-sleep"><path d="M15.5 23.5H20.5"/><path d="M27.5 23.5H32.5"/></g>' +
       '<g class="dot-happy"><path d="M15.5 24Q18 20.5 20.5 24"/><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
       '<path class="dot-m dot-m-smile" d="M20 30Q24 34 28 30"/>' +
       '<path class="dot-m dot-m-open" d="M19.5 29.5Q24 37 28.5 29.5Z"/>' +
@@ -10615,6 +10622,170 @@
     return { mount: mount, mood: mood };
   })();
   Array.prototype.forEach.call(document.querySelectorAll('.mascot'), Dot.mount);
+
+
+  /* ---------------------------------------------------------------- Buddy */
+  /*
+   * Dot, as a companion rather than a decoration: one small face that lives in
+   * the corner of every screen, glances at your pointer, goes sleepy when it is
+   * late, says one dry thing the first time you walk into each part of the app,
+   * and reacts to what you do. It stays out of the way: hidden on the front door
+   * (which has its own Dot), during the welcome, and while a game is being
+   * played; it never speaks twice in a few seconds; it never asks for anything;
+   * and it can be switched off from the profile. A companion that cannot be
+   * dismissed is just an advert with eyes.
+   */
+  var Buddy = (function () {
+    var KEY = 'morsels-buddy';
+    var on = true;
+    try { on = localStorage.getItem(KEY) !== 'off'; } catch (err) { on = true; }
+    var told = {};          // views already greeted this visit
+    var lastSpoke = 0, hideTimer = 0, boops = 0, idleTimer = 0, asked = 0;
+
+    var VIEW = {
+      dishes:  ['450 dishes. I have opinions about all of them.', 'Every one of these is described with total confidence.'],
+      planner: ['A plan for the week. Brave.', 'Nobody has ever planned past Wednesday. Prove me wrong.'],
+      kitchen: ['Recipes. I cannot smell anything, but I support this.'],
+      scan:    ['Point it at some food. I will pretend to be impressed.'],
+      menu:    ['A whole menu. Starter, main, dessert. Very civilised.'],
+      nearby:  ['Somewhere near you is a plate with your name on it.'],
+      chat:    ['Ask me anything. I will pass it on to someone cleverer.'],
+      news:    ['News about food. The only kind I can handle.'],
+      radio:   ['Dinner and a show. Excellent.'],
+      daily:   ['Five little things a day. Nobody is counting. (We are counting.)'],
+      profile: ['This is you, according to your dinners.'],
+      help:    ['Lost? Same, most days.']
+    };
+    var BOOP = ['Hello.', 'That tickles. Slightly.', 'Please continue. Actually, stop. No, continue.', 'I have a job, you know.', 'Okay. That is enough. (It is not.)'];
+    var DISH = {
+      fried: 'Crispy. Respect.', sweet: 'Dessert-adjacent. Bold.', veg: 'Vegetables. Look at you.',
+      cheap: 'Easy on the wallet.', drink: 'A drink. Hydration counts.', spicy: 'Spicy. I admire your confidence.',
+      soupy: 'Soup. Sensible.', cheesy: 'Cheese. No notes.'
+    };
+    var QUIP = ['Interesting.', 'Noted.', 'I see where this is going.', 'Mm. Okay.'];
+
+    function el() { return $('mascot-b'); }
+    function box() { return $('buddy'); }
+
+    function visible() {
+      if (!on) return false;
+      if (document.body.classList.contains('is-landing') || document.body.classList.contains('is-welcoming')) return false;
+      // Out of the way of anything that is being played.
+      if (view === 'decide' && /^(arcade|swipe|endless|duel|knockout|blitz|spin|together)$/.test(panel)) return false;
+      return true;
+    }
+
+    function sync() {
+      var b = box();
+      if (!b) return;
+      Dot.mount(el());
+      b.hidden = !visible();
+      if (b.hidden) bubbleOff();
+      // Late at night it is sleepy; otherwise it is just there.
+      var h = new Date().getHours();
+      if (!el()._busy) el().setAttribute('data-mood', h >= 23 || h < 5 ? 'sleepy' : 'idle');
+    }
+
+    function bubbleOff() {
+      clearTimeout(hideTimer);
+      var bb = $('buddy-bubble');
+      if (bb) bb.hidden = true;
+    }
+
+    function say(text, mood, ms, force) {
+      if (!visible() || !text) return;
+      var now = Date.now();
+      if (!force && now - lastSpoke < 9000) return;
+      lastSpoke = now;
+      var bb = $('buddy-bubble');
+      bb.textContent = text;
+      bb.hidden = false;
+      bb.classList.remove('is-in'); void bb.offsetWidth; bb.classList.add('is-in');
+      if (mood) react(mood);
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(bubbleOff, ms || 4600);
+    }
+
+    function react(mood, hold) {
+      var node = el();
+      if (!node || !visible()) return;
+      node._busy = true;
+      Dot.mood(node, mood, hold || 1400);
+      setTimeout(function () { node._busy = false; sync(); }, (hold || 1400) + 50);
+    }
+
+    function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+
+    return {
+      sync: sync, say: say, react: react,
+      enabled: function () { return on; },
+      set: function (v) {
+        on = !!v;
+        try { localStorage.setItem(KEY, on ? 'on' : 'off'); } catch (err) { /* fine */ }
+        sync();
+        if (on) say('Back again. Miss me?', 'happy', 3200, true);
+      },
+      // The first time you walk into each part of the app, one dry line.
+      onView: function (name) {
+        setTimeout(sync, 380);
+        var lines = VIEW[name];
+        if (!lines || told[name]) return;
+        told[name] = true;
+        setTimeout(function () { say(pick(lines), 'happy'); }, 1100);
+      },
+      onPanel: function () { setTimeout(sync, 380); },
+      onAnswer: function () {
+        asked++;
+        if (asked % 5 === 0 && Math.random() < 0.8) say(pick(QUIP), 'shrug', 2800);
+      },
+      onResult: function (dish) {
+        var tag = Object.keys(DISH).filter(function (t) { return dish.tags[t] === 1; })[0];
+        if (tag) say(DISH[tag], 'happy', 3600);
+      },
+      onDone: function () { say('Sorted. Go and eat it.', 'celebrate', 3400, true); },
+      boop: function () {
+        react('happy', 900);
+        say(BOOP[Math.min(boops++, BOOP.length - 1)], null, 3200, true);
+        if (boops > 7) boops = 0;
+      },
+      // A gentle word when somebody has been staring at one screen for a minute.
+      idle: function () {
+        clearTimeout(idleTimer);
+        idleTimer = setTimeout(function () {
+          if (view === 'decide' && panel === 'question') say('Still here. No rush.', 'shrug', 3200);
+        }, 60000);
+      }
+    };
+  })();
+
+  // Eyes that follow the pointer, a pixel or two.
+  (function glance() {
+    if (reduceMotion) return;
+    var frame = 0;
+    document.addEventListener('pointermove', function (event) {
+      if (frame) return;
+      frame = requestAnimationFrame(function () {
+        frame = 0;
+        var node = $('mascot-b');
+        if (!node || $('buddy').hidden) return;
+        var r = node.getBoundingClientRect();
+        var dx = event.clientX - (r.left + r.width / 2), dy = event.clientY - (r.top + r.height / 2);
+        var d = Math.max(1, Math.sqrt(dx * dx + dy * dy)), k = Math.min(1.8, d / 90);
+        node.style.setProperty('--ex', (dx / d * k).toFixed(2) + 'px');
+        node.style.setProperty('--ey', (dy / d * k).toFixed(2) + 'px');
+      });
+    }, { passive: true });
+  })();
+
+  $('mascot-b').addEventListener('click', function () { Buddy.boop(); });
+  function buddyEl() { return $('mascot-b'); }
+  var tog = $('buddy-toggle');
+  if (tog) {
+    var paintTog = function () { tog.textContent = Buddy.enabled() ? 'Dot is here' : 'Dot is off'; tog.setAttribute('aria-pressed', String(Buddy.enabled())); };
+    tog.addEventListener('click', function () { Buddy.set(!Buddy.enabled()); paintTog(); });
+    paintTog();
+  }
+  Buddy.sync();
 
   // A light tick under the thumb on the controls you press most. Phones only,
   // and only where the browser offers it.
@@ -10771,7 +10942,7 @@
     Sound.tick();
     paintPlan();
   });
-  $('reject-btn').addEventListener('click', function () { Dot.mood($('mascot-r'), 'sad', 1300); rejectCurrent(); });
+  $('reject-btn').addEventListener('click', function () { Buddy.react('sad', 1300); rejectCurrent(); });
   $('again-btn').addEventListener('click', goHome);
   $('done-again-btn').addEventListener('click', restart);
   // Sharing the dish they just accepted, not the one they were offered.
@@ -15364,6 +15535,7 @@
       document.body.classList.add('is-landing');
       if ('inert' in shell) shell.inert = true;
       shell.setAttribute('aria-hidden', 'true');
+      if (typeof Buddy !== 'undefined' && Buddy) Buddy.sync();
     }, -1);
 
     var state = progress.state;
@@ -15394,6 +15566,7 @@
       document.body.classList.remove('is-landing');
       if ('inert' in shell) shell.inert = false;
       shell.removeAttribute('aria-hidden');
+      if (typeof Buddy !== 'undefined' && Buddy) Buddy.sync();
     }, 1);
   }
 

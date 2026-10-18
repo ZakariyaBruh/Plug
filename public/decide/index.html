@@ -787,10 +787,7 @@
         </div>
 
         <div class="q-progress" aria-hidden="true"><i id="q-progress-fill"></i></div>
-        <div class="reaction-row">
-          <span class="mascot" id="mascot-q" aria-hidden="true"></span>
-          <p class="reaction" id="reaction" aria-live="polite">&nbsp;</p>
-        </div>
+        <p class="reaction" id="reaction" aria-live="polite">&nbsp;</p>
         <h2 class="q-title" id="q-text">What sounds better?</h2>
 
         <div class="picks">
@@ -834,7 +831,7 @@
       <!-- result -->
       <div class="panel" id="panel-result">
         <div class="verdict" id="result-focus" aria-live="polite">
-          <div class="mascot-row"><span class="mascot" id="mascot-r" aria-hidden="true"></span><p class="mechanic" id="result-eyebrow">You should eat</p></div>
+          <p class="mechanic" id="result-eyebrow">You should eat</p>
           <div class="verdict-head">
             <span class="verdict-art" id="result-icon" aria-hidden="true">🍕</span>
             <h2 class="verdict-name" id="result-name">&hellip;</h2>
@@ -909,7 +906,7 @@
       <!-- reward -->
       <div class="panel" id="panel-reward">
         <div class="verdict">
-          <div class="mascot-row"><span class="mascot" id="mascot-d" aria-hidden="true"></span><p class="mechanic">Sorted</p></div>
+          <p class="mechanic">Sorted</p>
           <div class="verdict-head">
             <span class="verdict-art" id="done-icon" aria-hidden="true">🎉</span>
             <h2 class="verdict-name" id="done-name">Sorted.</h2>
@@ -2523,6 +2520,13 @@
            rules under it were made free and the badge was left behind, which
            is a worse lie than the badge ever was a sale. One strip now, the
            same three groups the welcome uses, and no badge on any of it. -->
+      <section class="strip" id="strip-buddy">
+        <h2 class="strip-title">Dot</h2>
+        <p class="fine">A small round companion who comments on what you are doing. It only reacts,
+        it never nags, and it keeps out of the way while you play.</p>
+        <button class="quiet" id="buddy-toggle" type="button" aria-pressed="true">Dot is here</button>
+      </section>
+
       <section class="strip" id="strip-language">
         <h2 class="strip-title" data-i18n="lang.eyebrow">Language</h2>
         <p class="fine" data-i18n="lang.sub">The app changes straight away. You can
@@ -2980,6 +2984,10 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
+<div class="buddy" id="buddy" aria-hidden="true" hidden>
+  <p class="buddy-bubble" id="buddy-bubble" hidden></p>
+  <button class="buddy-face mascot" id="mascot-b" type="button" tabindex="-1"></button>
+</div>
 <script src="js/data.js"></script>
 <script src="js/recipes.js"></script>
 <script src="js/flavor.js"></script>
