@@ -12185,7 +12185,7 @@
   var Play = (function () {
     var open = false, root = null, say = null, body = null, dotEl = null, back = null;
     var TASTE = 'morsels-dot-taste', STATS = 'morsels-dot-games';
-    var stats = { rps: 0, rpsWins: 0, wyr: 0, wyrRight: 0, wyrSeen: 0, guess: 0, guessWins: 0 };
+    var stats = {};
     var taste = {};
     try {
       var sv = JSON.parse(localStorage.getItem(STATS) || 'null'); if (sv) for (var k in sv) if (typeof sv[k] === 'number') stats[k] = sv[k];
@@ -12216,15 +12216,15 @@
 
     /* ---- the picker ---- */
     var GAMES = [
-      { id: 'rps', icon: '\u{1F336}\u{FE0F}', name: 'Rock Paper Dish', blurb: 'First to three. Dot is not as random as it looks.' },
-      { id: 'wyr', icon: '\u{1F914}', name: 'Dot Reads You', blurb: 'Pick one of two dishes. Dot tries to guess which.' },
-      { id: 'guess', icon: '\u{1F575}\u{FE0F}', name: 'Guess My Dish', blurb: 'Dot has a dish in mind. Ask, then name it.' },
-      { id: 'catch', icon: '\u{1F9FA}', name: 'Dish Catch', blurb: 'Slide under the falling dishes. Dodge the fire.', action: true },
-      { id: 'dash', icon: '\u{1F3C3}', name: 'Lane Dash', blurb: 'Three lanes, faster every second.', action: true },
-      { id: 'pop', icon: '\u{1F528}', name: 'Dot Pop', blurb: 'Dot pops up. Tap it. Thirty seconds.', action: true },
-      { id: 'says', icon: '\u{1F9E0}', name: 'Dot Says', blurb: 'Watch the pads. Copy the pattern.', action: true }
+      { id: 'flap', icon: '\u{1F426}', name: 'Dot Flap', blurb: 'Tap to flap through the forks.' },
+      { id: 'stack', icon: '\u{1F35E}', name: 'Dish Stack', blurb: 'Stack the dishes. Time it right.' },
+      { id: 'snake', icon: '\u{1F40D}', name: 'Nom Snake', blurb: 'Eat dishes. Grow. Do not bite yourself.' },
+      { id: 'pair', icon: '\u{1F0CF}', name: 'Pair Up', blurb: 'Flip cards and find the matching dishes.' },
+      { id: 'odd', icon: '\u{1F50D}', name: 'Odd Dish', blurb: 'Spot the one that is different. Fast.' },
+      { id: 'sear', icon: '\u{1F525}', name: 'Perfect Sear', blurb: 'Stop the marker in the green.' },
+      { id: 'says', icon: '\u{1F9E0}', name: 'Dot Says', blurb: 'Watch the pads. Copy the pattern.' }
     ];
-    var RUN = function () { return { rps: rps, wyr: wyr, guess: guess, catch: catchGame, dash: dashGame, pop: popGame, says: simonGame }; };
+    var RUN = function () { return { flap: flapGame, stack: stackGame, snake: snakeGame, pair: pairGame, odd: oddGame, sear: searGame, says: simonGame }; };
     function menu() {
       stopGame();
       var s = screen();
@@ -12253,189 +12253,6 @@
       row.appendChild(btn('Play again', 'dg-btn is-main', again));
       row.appendChild(btn('Another game', 'dg-btn', menu));
       body.appendChild(row);
-    }
-
-    /* ---- Rock Paper Dish ---- */
-    var MOVES = [
-      { id: 'spice', icon: '\u{1F336}\u{FE0F}', name: 'Spice' },
-      { id: 'ice', icon: '\u{1F366}', name: 'Ice cream' },
-      { id: 'soup', icon: '\u{1F372}', name: 'Soup' }
-    ];
-    var BEATS = { spice: 'ice', ice: 'soup', soup: 'spice' };
-    var WHY = { spice: 'Spice wins. The ice cream melts.', ice: 'Ice cream wins. The soup goes lukewarm.', soup: 'Soup wins. The spice gets watered down.' };
-
-    function rps() {
-      var me = 0, dot = 0, last = null, counts = { spice: 0, ice: 0, soup: 0 };
-      function round() {
-        var s = screen();
-        words(me + dot === 0 ? 'First to three. Choose carefully. Or do not.' : 'Next round.', null);
-        s.appendChild(h('p', 'dg-score', 'You ' + me + ' · Dot ' + dot));
-        var row = h('div', 'dg-moves');
-        MOVES.forEach(function (m) {
-          var b = h('button', 'dg-move');
-          b.type = 'button';
-          b.appendChild(h('span', 'dg-move-icon', m.icon));
-          b.appendChild(h('span', '', m.name));
-          b.addEventListener('click', function () { Sound.tick(); play(m.id); });
-          row.appendChild(b);
-        });
-        s.appendChild(row);
-      }
-      function dotMove() {
-        // Dot leans on what you play most: it beats your favourite, a third of the time.
-        var fav = MOVES.slice().sort(function (a, b) { return counts[b.id] - counts[a.id]; })[0].id;
-        if (counts[fav] > 1 && Math.random() < 0.4) { var beat = Object.keys(BEATS).filter(function (k) { return BEATS[k] === fav; })[0]; return beat; }
-        return pickOne(MOVES).id;
-      }
-      function play(mine) {
-        var theirs = dotMove();
-        counts[mine]++; last = mine;
-        var s = screen();
-        var reveal = h('div', 'dg-reveal');
-        function side(who, id) { var m = MOVES.filter(function (x) { return x.id === id; })[0]; var d = h('div', 'dg-side'); d.appendChild(h('span', 'dg-move-icon', m.icon)); d.appendChild(h('span', 'fine', who)); return d; }
-        reveal.appendChild(side('You', mine));
-        reveal.appendChild(h('span', 'dg-vs', 'vs'));
-        reveal.appendChild(side('Dot', theirs));
-        s.appendChild(reveal);
-        var result;
-        if (mine === theirs) result = 'draw';
-        else if (BEATS[mine] === theirs) { result = 'win'; me++; } else { result = 'lose'; dot++; }
-        s.appendChild(h('p', 'dg-line', result === 'draw' ? 'Same again. A draw.' : WHY[result === 'win' ? mine : theirs]));
-        words(result === 'win' ? pickOne(['You win this round.', 'Fine. That one is yours.']) : result === 'lose' ? pickOne(['Dot wins this round.', 'Mine. I will try to be humble.']) : 'Draw. Nobody eats.', result === 'win' ? 'sad' : result === 'lose' ? 'celebrate' : 'shrug');
-        s.appendChild(h('p', 'dg-score', 'You ' + me + ' · Dot ' + dot));
-        if (me === 3 || dot === 3) {
-          s.appendChild(h('p', 'dg-line is-big', me === 3 ? 'You won the match. Dot is fine with it.' : 'Dot won the match. It will say nothing. Loudly.'));
-          stats.rpsWins += me === 3 ? 1 : 0;
-          finish('rps', me === 3);
-          endButtons(rps);
-        } else s.appendChild(btn('Next round', 'dg-btn is-main', round));
-      }
-      round();
-    }
-
-    /* ---- Dot Reads You ---- */
-    var TASTE_TAGS = ['sweet', 'spicy', 'fried', 'hot', 'meat', 'seafood', 'handheld', 'breakfast', 'soupy', 'crunchy', 'cheesy', 'healthy', 'fresh', 'comfort', 'indulgent', 'cheap', 'chicken', 'drink', 'light', 'filling'];
-    function leaning(dish) {
-      var n = 0;
-      TASTE_TAGS.forEach(function (t) { if (dish.tags[t] === 1) n += taste[t] || 0; });
-      return n;
-    }
-    function pair() {
-      var items = Data.ITEMS;
-      for (var tries = 0; tries < 40; tries++) {
-        var a = pickOne(items), b = pickOne(items);
-        if (a === b || a.tags.drink !== b.tags.drink) continue;
-        var diff = TASTE_TAGS.filter(function (t) { return (a.tags[t] === 1) !== (b.tags[t] === 1); }).length;
-        if (diff >= 3) return [a, b];
-      }
-      return [items[0], items[1]];
-    }
-    function wyr() {
-      var rounds = 0, right = 0;
-      function round() {
-        var p = pair();
-        var guessIdx = leaning(p[0]) === leaning(p[1]) ? Math.floor(Math.random() * 2) : (leaning(p[0]) > leaning(p[1]) ? 0 : 1);
-        var s = screen();
-        words(rounds === 0 ? 'Which would you rather eat? I have already decided what you will say.' : pickOne(['Next pair. I am getting good at this.', 'Another one. Do not overthink it.']), 'thinking');
-        s.appendChild(h('p', 'dg-score', rounds + ' / 5'));
-        var row = h('div', 'dg-pair');
-        p.forEach(function (dish, i) {
-          var b = h('button', 'dg-dish');
-          b.type = 'button';
-          b.appendChild(h('span', 'dg-move-icon', dish.icon));
-          b.appendChild(h('strong', '', dish.name));
-          b.addEventListener('click', function () { Sound.tick(); choose(p, i, guessIdx); });
-          row.appendChild(b);
-        });
-        s.appendChild(row);
-      }
-      function choose(p, i, guessIdx) {
-        rounds++; stats.wyrSeen++;
-        var hit = i === guessIdx;
-        if (hit) { right++; stats.wyrRight++; }
-        TASTE_TAGS.forEach(function (t) {
-          if (p[i].tags[t] === 1) taste[t] = Math.min(6, (taste[t] || 0) + 1);
-          if (p[1 - i].tags[t] === 1) taste[t] = Math.max(-6, (taste[t] || 0) - 0.5);
-        });
-        save();
-        var s = screen();
-        s.appendChild(h('p', 'dg-line', 'Dot guessed ' + p[guessIdx].name + '.'));
-        s.appendChild(h('p', 'dg-line is-big', hit ? 'Dot guessed right.' : 'Dot guessed wrong. It is taking notes.'));
-        words(hit ? pickOne(['Called it.', 'I know you. A bit.', 'Predictable. Affectionately.']) : pickOne(['Hm. I did not see that coming.', 'Noted. I will do better.', 'You are full of surprises. Mostly small ones.']), hit ? 'celebrate' : 'shrug');
-        s.appendChild(h('p', 'dg-score', rounds + ' / 5'));
-        if (rounds >= 5) {
-          s.appendChild(h('p', 'dg-line', 'Dot read you right ' + right + ' of 5 times.'));
-          finish('wyr', right >= 3);
-          endButtons(wyr);
-        } else s.appendChild(btn('Next pair', 'dg-btn is-main', round));
-      }
-      round();
-    }
-
-    /* ---- Guess My Dish ---- */
-    var QS = [
-      { tag: 'sweet', q: 'Is it sweet?' }, { tag: 'spicy', q: 'Is it spicy?' }, { tag: 'fried', q: 'Is it fried?' },
-      { tag: 'hot', q: 'Is it served hot?' }, { tag: 'meat', q: 'Does it have meat?' }, { tag: 'seafood', q: 'Is it seafood?' },
-      { tag: 'handheld', q: 'Can you eat it with your hands?' }, { tag: 'breakfast', q: 'Is it a breakfast thing?' },
-      { tag: 'soupy', q: 'Is it a soup or a stew?' }, { tag: 'crunchy', q: 'Is it crunchy?' }
-    ];
-    function guess() {
-      var secret = pickOne(Data.ITEMS), known = [], tries = 5, asked = {};
-      function pool() { return Data.ITEMS.filter(function (d) { return known.every(function (k) { return (d.tags[k.tag] === 1) === k.yes; }); }); }
-      function view(note) {
-        var s = screen();
-        words(note || (known.length ? pickOne(['Keep going.', 'Interesting. Keep going.']) : 'I have a dish in mind. Ask about it.'), null);
-        s.appendChild(h('p', 'dg-score', tries + (tries === 1 ? ' try left' : ' tries left')));
-        if (known.length) {
-          var said = h('ul', 'dg-known');
-          known.forEach(function (k) { said.appendChild(h('li', '', (k.yes ? '✓ ' : '✗ ') + k.label)); });
-          s.appendChild(said);
-        }
-        s.appendChild(h('p', 'fine', 'Ask about it:'));
-        var qs = h('div', 'dg-chips');
-        QS.forEach(function (q) {
-          if (asked[q.tag]) return;
-          qs.appendChild(btn(q.q, 'dg-chip', function () {
-            var yes = secret.tags[q.tag] === 1;
-            asked[q.tag] = 1; tries--; known.push({ tag: q.tag, yes: yes, label: q.q.replace(/\?$/, '') });
-            if (tries <= 0) return lose();
-            view(yes ? pickOne(['Yes.', 'Yes. Unfortunately for me.', 'Yes. Keep going.']) : pickOne(['No.', 'No. Next.', 'Absolutely not.']));
-            Dot.mood(dotEl, yes ? 'happy' : 'shrug', 900);
-          }));
-        });
-        s.appendChild(qs);
-        s.appendChild(h('p', 'fine', 'Or name it:'));
-        var options = shuffle(pool().filter(function (d) { return d !== secret; })).slice(0, 5).concat([secret]);
-        var names = h('div', 'dg-chips');
-        shuffle(options).forEach(function (d) {
-          names.appendChild(btn(d.icon + ' ' + d.name, 'dg-chip is-dish', function () {
-            if (d === secret) return win();
-            tries--;
-            if (tries <= 0) return lose();
-            view('Not that one. Try another.');
-            Dot.mood(dotEl, 'happy', 900);
-          }));
-        });
-        s.appendChild(names);
-      }
-      function win() {
-        var s = screen();
-        words(pickOne(['You got me. I am not even sulking.', 'Well played. I will remember this.']), 'sad');
-        s.appendChild(h('p', 'dg-line is-big', 'Right! It was ' + secret.name + '.'));
-        s.appendChild(h('p', 'dg-reveal-icon', secret.icon));
-        stats.guessWins++;
-        finish('guess', true);
-        endButtons(guess);
-      }
-      function lose() {
-        var s = screen();
-        words(pickOne(['I win. Quietly.', 'Better luck next time. I mean that. Mostly.']), 'celebrate');
-        s.appendChild(h('p', 'dg-line is-big', 'Out of tries. It was ' + secret.name + '.'));
-        s.appendChild(h('p', 'dg-reveal-icon', secret.icon));
-        finish('guess', false);
-        endButtons(guess);
-      }
-      view();
     }
 
     /* ---- the action games ---- */
@@ -12492,9 +12309,9 @@
       s.appendChild(h('p', 'fine', opts.how));
       var st = { W: W, H: H, g: g, cv: cv, score: 0, lives: 3, t: 0, over: false, mouth: 'smile', mouthT: 0 };
       var last = performance.now(), raf = 0;
-      function hearts() { return new Array(st.lives + 1).join('♥ ').trim() || '—'; }
+      function hearts() { return new Array(Math.max(0, st.lives) + 1).join('♥ ').trim() || '—'; }
       st.hud = function () { hud.textContent = 'Score ' + st.score + ' · ' + hearts(); };
-      st.hurt = function () { st.lives--; st.mouth = 'sad'; st.mouthT = .5; Sound.bust(); Dot.mood(dotEl, 'sad', 700); if (st.lives <= 0) st.over = true; st.hud(); };
+      st.hurt = function () { if (st.over) return; st.lives--; st.mouth = 'sad'; st.mouthT = .5; Sound.bust(); Dot.mood(dotEl, 'sad', 700); if (st.lives <= 0) st.over = true; st.hud(); };
       st.gain = function (n) { st.score += n; st.mouth = 'open'; st.mouthT = .25; Sound.climb(Math.min(14, st.score)); st.hud(); };
       function frame(now) {
         var dt = Math.min(0.05, (now - last) / 1000); last = now;
@@ -12511,153 +12328,249 @@
       cleanup = off;
     }
 
-    /* Dish Catch: slide Dot under the falling dishes; the fire costs a heart. */
-    function catchGame() {
+    /* Dot Flap: tap to flap, squeeze through the gaps between the forks. */
+    function flapGame() {
       var keyHandler = null;
       canvasGame({
-        id: 'catch', label: 'Dish Catch', again: catchGame,
-        intro: 'Catch the dishes. Dodge the fire. I will cheer from the corner.',
-        how: 'Slide your finger or mouse across the board, or use the arrow keys.',
-        notes: ['The fire got me. It always does.', 'Dishes fall. That is their whole thing.'],
+        id: 'flap', label: 'Dot Flap', again: flapGame,
+        intro: 'Tap to flap. Squeeze through the forks. Gravity is not my friend.',
+        how: 'Tap the board, or press space.',
+        notes: ['Everyone drops one. Or six.', 'It was the fork’s fault.'],
         setup: function (st) {
-          st.px = st.W / 2; st.items = []; st.spawn = 0;
-          function move(e) { var r = st.cv.getBoundingClientRect(); st.px = Math.max(26, Math.min(st.W - 26, (e.clientX - r.left) / r.width * st.W)); }
-          st.cv.addEventListener('pointermove', move); st.cv.addEventListener('pointerdown', move);
-          keyHandler = function (e) { if (e.key === 'ArrowLeft') st.px = Math.max(26, st.px - 26); if (e.key === 'ArrowRight') st.px = Math.min(st.W - 26, st.px + 26); };
+          st.lives = 1; st.y = st.H / 2; st.vy = 0; st.pipes = []; st.spawn = 0.4; st.started = false;
+          function flap() { st.started = true; st.vy = -300; st.mouth = 'open'; st.mouthT = 0.15; }
+          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); flap(); });
+          keyHandler = function (e) { if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); flap(); } };
           document.addEventListener('keydown', keyHandler);
         },
         update: function (st, dt) {
+          if (!st.started) { st.y = st.H / 2 + Math.sin(st.t * 4) * 6; return; }
+          st.vy += 900 * dt; st.y += st.vy * dt;
           st.spawn -= dt;
-          if (st.spawn <= 0) {
-            st.spawn = Math.max(0.3, 0.85 - st.t * 0.011);
-            var bad = Math.random() < Math.min(0.34, 0.14 + st.t * 0.004);
-            st.items.push({ x: 20 + Math.random() * (st.W - 40), y: -20, v: 95 + st.t * 3.2 + Math.random() * 55, bad: bad, gold: !bad && Math.random() < 0.08, icon: bad ? '\u{1F525}' : pickOne(Data.ITEMS).icon });
+          if (st.spawn <= 0) { st.spawn = 1.55; st.pipes.push({ x: st.W + 30, gap: 70 + Math.random() * (st.H - 200), passed: false }); }
+          var speed = 120 + Math.min(80, st.score * 4);
+          for (var i = st.pipes.length - 1; i >= 0; i--) {
+            var p = st.pipes[i];
+            p.x -= speed * dt;
+            if (!p.passed && p.x < 70) { p.passed = true; st.gain(1); }
+            if (Math.abs(p.x - 90) < 23 + 18 && (st.y - 18 < p.gap - 62 || st.y + 18 > p.gap + 62)) { st.hurt(); }
+            if (p.x < -40) st.pipes.splice(i, 1);
           }
-          for (var i = st.items.length - 1; i >= 0; i--) {
-            var it = st.items[i];
-            it.y += it.v * dt;
-            if (it.y > st.H - 68 && it.y < st.H - 14 && Math.abs(it.x - st.px) < 34) {
-              st.items.splice(i, 1);
-              if (it.bad) st.hurt(); else st.gain(it.gold ? 3 : 1);
-            } else if (it.y > st.H + 20) st.items.splice(i, 1);
-          }
+          if (st.y > st.H - 18 || st.y < 18) st.hurt();
         },
         draw: function (st) {
           var g = st.g;
-          g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
-          st.items.forEach(function (it) {
-            g.font = (it.gold ? 34 : 28) + 'px serif';
-            if (it.gold) { g.shadowColor = '#e0a340'; g.shadowBlur = 14; }
-            g.fillText(it.icon, it.x, it.y); g.shadowBlur = 0;
+          g.fillStyle = '#e0a340';
+          st.pipes.forEach(function (p) {
+            g.fillRect(p.x - 22, 0, 44, p.gap - 62); g.fillRect(p.x - 22, p.gap + 62, 44, st.H);
+            g.fillStyle = '#f0c070'; g.fillRect(p.x - 26, p.gap - 76, 52, 14); g.fillRect(p.x - 26, p.gap + 62, 52, 14); g.fillStyle = '#e0a340';
           });
-          drawDot(st.g, st.px, st.H - 38, 26, st.mouth);
+          drawDot(g, 90, st.y, 18, st.mouth);
+          if (!st.started) { g.fillStyle = '#fff'; g.font = '14px sans-serif'; g.textAlign = 'center'; g.fillText('Tap to start', st.W / 2, st.H * 0.7); }
         },
         teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
       });
     }
 
-    /* Lane Dash: three lanes towards you; hop between them to eat and dodge. */
-    function dashGame() {
+    /* Dish Stack: drop each dish exactly on the last one. What overhangs is cut off. */
+    function stackGame() {
       var keyHandler = null;
       canvasGame({
-        id: 'dash', label: 'Lane Dash', again: dashGame,
-        intro: 'Three lanes. Eat what comes. Dodge the fire. Do not look down.',
-        how: 'Tap the left or right of the board, or use the arrow keys, to change lane.',
-        notes: ['I blame the lanes.', 'That was a lot of fire.'],
+        id: 'stack', label: 'Dish Stack', again: stackGame,
+        intro: 'Stack the dishes. Time it right. Do not think about the wobble.',
+        how: 'Tap the board, or press space, to drop the dish.',
+        notes: ['Memory is overrated.', 'It was the dish’s fault.'],
         setup: function (st) {
-          st.lane = 1; st.x = st.W / 2; st.items = []; st.spawn = 0; st.road = 0;
-          function go(d) { st.lane = Math.max(0, Math.min(2, st.lane + d)); }
-          st.cv.addEventListener('pointerdown', function (e) { var r = st.cv.getBoundingClientRect(); go((e.clientX - r.left) / r.width < 0.5 ? -1 : 1); });
-          keyHandler = function (e) { if (e.key === 'ArrowLeft') go(-1); if (e.key === 'ArrowRight') go(1); };
+          st.lives = 1; st.h = 22; st.blocks = [{ x: st.W / 2 - 80, w: 160, icon: '\u{1F35E}' }]; st.cx = 0; st.dir = 1; st.w = 160; st.shift = 0;
+          st.cx = 0;
+          function drop() {
+            var top = st.blocks[st.blocks.length - 1], left = Math.max(top.x, st.cx), right = Math.min(top.x + top.w, st.cx + st.w);
+            if (right - left < 4) { st.hurt(); return; }
+            var perfect = Math.abs(st.cx - top.x) < 5;
+            var nx = perfect ? top.x : left, nw = perfect ? top.w : right - left;
+            st.blocks.push({ x: nx, w: nw, icon: pickOne(Data.ITEMS).icon });
+            st.w = nw; st.score++; st.mouth = 'open'; st.mouthT = 0.3; Sound.climb(Math.min(14, st.score)); st.hud();
+          }
+          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); drop(); });
+          keyHandler = function (e) { if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); drop(); } };
           document.addEventListener('keydown', keyHandler);
         },
         update: function (st, dt) {
-          var speed = 0.42 + st.t * 0.011;               // fraction of the road per second
-          st.road = (st.road + dt * speed * 6) % 1;
-          st.x += ((st.W * (0.2 + st.lane * 0.3) + 0) - st.x) * Math.min(1, dt * 14);
-          st.spawn -= dt;
-          if (st.spawn <= 0) {
-            st.spawn = Math.max(0.34, 0.95 - st.t * 0.012);
-            var lane = Math.floor(Math.random() * 3), bad = Math.random() < Math.min(0.42, 0.2 + st.t * 0.005);
-            st.items.push({ lane: lane, z: 0, bad: bad, icon: bad ? '\u{1F525}' : pickOne(Data.ITEMS).icon });
-            if (Math.random() < 0.3 && st.t > 8) st.items.push({ lane: (lane + 1 + Math.floor(Math.random() * 2)) % 3, z: 0, bad: true, icon: '\u{1F525}' });
-          }
-          for (var i = st.items.length - 1; i >= 0; i--) {
-            var it = st.items[i];
-            it.z += dt * speed;
-            if (it.z > 0.86 && it.z < 0.98 && it.lane === st.lane) { st.items.splice(i, 1); if (it.bad) st.hurt(); else st.gain(1); }
-            else if (it.z > 1.05) st.items.splice(i, 1);
-          }
+          var speed = 130 + st.score * 9;
+          st.cx += st.dir * speed * dt;
+          if (st.cx < 0) { st.cx = 0; st.dir = 1; }
+          if (st.cx + st.w > st.W) { st.cx = st.W - st.w; st.dir = -1; }
+          var want = Math.max(0, st.blocks.length - 11) * st.h;
+          st.shift += (want - st.shift) * Math.min(1, dt * 6);
         },
         draw: function (st) {
-          var g = st.g, W = st.W, H = st.H, top = H * 0.16;
-          // the road, narrowing towards the horizon
-          g.fillStyle = 'rgba(255,255,255,.05)';
-          g.beginPath(); g.moveTo(W * 0.38, top); g.lineTo(W * 0.62, top); g.lineTo(W, H); g.lineTo(0, H); g.closePath(); g.fill();
-          g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 2;
-          [1 / 3, 2 / 3].forEach(function (f) { g.beginPath(); g.moveTo(W * (0.38 + 0.24 * f), top); g.lineTo(W * f, H); g.stroke(); });
-          for (var k = 0; k < 6; k++) { var z = (k + st.road) / 6, y = top + (H - top) * z * z; g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(0, y, W, 2); }
-          g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff';
-          st.items.slice().sort(function (a, b) { return a.z - b.z; }).forEach(function (it) {
-            var z = it.z * it.z, y = top + (H - top) * z, laneX = W * (0.2 + it.lane * 0.3), x = W * 0.5 + (laneX - W * 0.5) * (0.28 + 0.72 * z);
-            g.font = Math.round(12 + 30 * z) + 'px serif';
-            g.fillText(it.icon, x, y);
+          var g = st.g, base = st.H - 30 + st.shift;
+          st.blocks.forEach(function (b, i) {
+            var y = base - i * st.h;
+            g.fillStyle = 'hsl(' + ((i * 23 + 30) % 360) + ',60%,58%)';
+            g.fillRect(b.x, y, b.w, st.h - 2);
           });
-          drawDot(g, st.x, H - 44, 26, st.mouth);
+          var y = base - st.blocks.length * st.h;
+          g.fillStyle = '#f5eee1'; g.fillRect(st.cx, y, st.w, st.h - 2);
+          drawDot(g, st.cx + st.w / 2, y - 16, 14, st.mouth);
         },
         teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
       });
     }
 
-    /* Dot Pop: Dot pops up out of nine holes; tap it. Do not tap the fire. */
-    function popGame() {
-      var s = screen();
-      words('I pop up. You tap me. It is very dignified.', 'happy');
-      var score = 0, left = 30, timers = [], over = false, rate = 900;
-      var hud = h('p', 'dg-score', 'Score 0 · 30s');
-      var grid = h('div', 'dg-holes');
-      var cells = [];
-      for (var i = 0; i < 9; i++) {
-        var c = h('button', 'dg-hole');
-        c.type = 'button';
-        c.setAttribute('aria-label', 'Hole');
-        var face = h('span', 'dg-pop');
-        c.appendChild(face);
-        (function (cell) {
-          cell.addEventListener('pointerdown', function (e) {
-            e.preventDefault();
-            if (!cell._up || over) return;
-            cell._up = false; cell.classList.remove('is-up');
-            if (cell._bad) { score = Math.max(0, score - 2); Sound.bust(); Dot.mood(dotEl, 'sad', 600); }
-            else { score++; Sound.climb(Math.min(14, score)); cell.classList.add('is-hit'); setTimeout(function () { cell.classList.remove('is-hit'); }, 220); }
-            hud.textContent = 'Score ' + score + ' · ' + left + 's';
+    /* Nom Snake: Dot grows with every dish it eats. Walls and tails are bad. */
+    function snakeGame() {
+      var keyHandler = null;
+      canvasGame({
+        id: 'snake', label: 'Nom Snake', again: snakeGame,
+        intro: 'Eat the dishes. Grow. Try not to eat yourself.',
+        how: 'Swipe on the board, or use the arrow keys.',
+        notes: ['I ate my own tail. It happens.', 'Memory is overrated.'],
+        setup: function (st) {
+          st.lives = 1; st.C = 17; st.R = 20; st.cell = 20;
+          st.body = [{ x: 8, y: 10 }, { x: 7, y: 10 }, { x: 6, y: 10 }]; st.dir = { x: 1, y: 0 }; st.next = { x: 1, y: 0 }; st.acc = 0;
+          function food() { var f; do { f = { x: Math.floor(Math.random() * st.C), y: Math.floor(Math.random() * st.R), icon: pickOne(Data.ITEMS).icon }; } while (st.body.some(function (b) { return b.x === f.x && b.y === f.y; })); st.food = f; }
+          st.placeFood = food; food();
+          function turn(x, y) { if (x === -st.dir.x && y === -st.dir.y) return; st.next = { x: x, y: y }; }
+          var sx = 0, sy = 0;
+          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); sx = e.clientX; sy = e.clientY; });
+          st.cv.addEventListener('pointerup', function (e) {
+            var dx = e.clientX - sx, dy = e.clientY - sy;
+            if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+            if (Math.abs(dx) > Math.abs(dy)) turn(dx > 0 ? 1 : -1, 0); else turn(0, dy > 0 ? 1 : -1);
           });
-        })(c);
-        cells.push(c); grid.appendChild(c);
-      }
+          keyHandler = function (e) {
+            var m = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+            if (m) { e.preventDefault(); turn(m[0], m[1]); }
+          };
+          document.addEventListener('keydown', keyHandler);
+        },
+        update: function (st, dt) {
+          st.acc += dt;
+          var tick = Math.max(0.07, 0.15 - st.score * 0.003);
+          while (st.acc >= tick && !st.over) {
+            st.acc -= tick; st.dir = st.next;
+            var h = { x: st.body[0].x + st.dir.x, y: st.body[0].y + st.dir.y };
+            if (h.x < 0 || h.y < 0 || h.x >= st.C || h.y >= st.R || st.body.some(function (b) { return b.x === h.x && b.y === h.y; })) { st.hurt(); return; }
+            st.body.unshift(h);
+            if (h.x === st.food.x && h.y === st.food.y) { st.gain(1); st.placeFood(); } else st.body.pop();
+          }
+        },
+        draw: function (st) {
+          var g = st.g, c = st.cell;
+          g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.font = '16px serif';
+          g.fillText(st.food.icon, st.food.x * c + c / 2, st.food.y * c + c / 2 + 1);
+          for (var i = st.body.length - 1; i > 0; i--) { g.fillStyle = i % 2 ? '#f5eee1' : '#e8dcc4'; g.beginPath(); g.arc(st.body[i].x * c + c / 2, st.body[i].y * c + c / 2, c * 0.42, 0, 6.3); g.fill(); }
+          drawDot(g, st.body[0].x * c + c / 2, st.body[0].y * c + c / 2, c * 0.62, st.mouth);
+        },
+        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
+      });
+    }
+
+    /* Pair Up: flip two cards at a time and find the matching dishes. */
+    function pairGame() {
+      var s = screen();
+      words('Find the pairs. I will pretend I am not watching.', 'happy');
+      var icons = shuffle(Data.ITEMS.map(function (d) { return d.icon; }).filter(function (v, i, a) { return a.indexOf(v) === i; })).slice(0, 8);
+      var deck = shuffle(icons.concat(icons)), first = null, lock = false, found = 0, moves = 0, t0 = Date.now();
+      var hud = h('p', 'dg-score', 'Score 0'), grid = h('div', 'dg-cards');
       s.appendChild(hud); s.appendChild(grid);
-      s.appendChild(h('p', 'fine', 'Tap Dot. Leave the fire alone.'));
-      function pop() {
-        if (over) return;
-        var cell = pickOne(cells.filter(function (x) { return !x._up; }));
-        if (!cell) return;
-        cell._bad = Math.random() < 0.2;
-        cell.firstChild.textContent = cell._bad ? '\u{1F525}' : '';
-        cell.firstChild.classList.toggle('is-dot', !cell._bad);
-        if (!cell._bad) Dot.mount(cell.firstChild);
-        cell._up = true; cell.classList.add('is-up');
-        var stay = Math.max(420, rate * 0.9);
-        timers.push(setTimeout(function () { cell._up = false; cell.classList.remove('is-up'); }, stay));
-        rate = Math.max(380, rate - 14);
-        timers.push(setTimeout(pop, rate));
+      s.appendChild(h('p', 'fine', 'Tap two cards. Match them all, in as few tries as you can.'));
+      var timers = [];
+      deck.forEach(function (icon) {
+        var c = h('button', 'dg-flip');
+        c.type = 'button'; c.setAttribute('aria-label', 'Card');
+        c.appendChild(h('span', 'dg-face', icon));
+        c.addEventListener('click', function () {
+          if (lock || c.classList.contains('is-up') || c.classList.contains('is-done')) return;
+          Sound.tick(); c.classList.add('is-up');
+          if (!first) { first = c; return; }
+          moves++; lock = true;
+          if (first.textContent === c.textContent) {
+            first.classList.add('is-done'); c.classList.add('is-done'); first = null; lock = false; found++;
+            Sound.climb(found * 2); Dot.mood(dotEl, 'happy', 700);
+            if (found === 8) {
+              var secs = Math.round((Date.now() - t0) / 1000);
+              timers.push(setTimeout(function () { results('pair', Math.max(5, 60 - moves * 2 + Math.max(0, 40 - secs)), pairGame, ['Memory is overrated.', 'Everyone drops one. Or six.']); }, 500));
+            }
+          } else {
+            var a = first; first = null;
+            timers.push(setTimeout(function () { a.classList.remove('is-up'); c.classList.remove('is-up'); lock = false; }, 650));
+          }
+        });
+        grid.appendChild(c);
+      });
+      cleanup = function () { timers.forEach(clearTimeout); };
+    }
+
+    /* Odd Dish: one of them is not like the others. Be quick. */
+    function oddGame() {
+      var s = screen();
+      words('One of these is different. You have twenty-five seconds.', 'thinking');
+      var SETS = [['\u{1F345}', '\u{1F34E}'], ['\u{1F34B}', '\u{1F9C0}'], ['\u{1F9C5}', '\u{1F9C4}'], ['\u{1F35E}', '\u{1F950}'], ['\u{1F355}', '\u{1F9C0}'], ['\u{1F35C}', '\u{1F35D}'], ['\u{1F353}', '\u{1F352}'], ['\u{1F954}', '\u{1F360}']];
+      var score = 0, left = 25, over = false, n = 3;
+      var hud = h('p', 'dg-score', 'Score 0 · 25s'), grid = h('div', 'dg-odd');
+      s.appendChild(hud); s.appendChild(grid);
+      s.appendChild(h('p', 'fine', 'Tap the odd one out. A wrong tap costs two seconds.'));
+      function paint() { hud.textContent = 'Score ' + score + ' · ' + left + 's'; }
+      function board() {
+        clear2(grid);
+        var size = Math.min(6, n + Math.floor(score / 4)), pair = shuffle(pickOne(SETS)), odd = Math.floor(Math.random() * size * size);
+        grid.style.setProperty('--n', size);
+        for (var i = 0; i < size * size; i++) {
+          var b = h('button', 'dg-odd-cell', i === odd ? pair[1] : pair[0]);
+          b.type = 'button'; b.setAttribute('aria-label', 'Dish');
+          b.addEventListener('pointerdown', function (e) {
+            e.preventDefault();
+            if (over) return;
+            if (this === grid.children[odd]) { score++; Sound.climb(Math.min(14, score)); board(); }
+            else { left = Math.max(0, left - 2); Sound.bust(); Dot.mood(dotEl, 'sad', 500); }
+            paint();
+          });
+          grid.appendChild(b);
+        }
       }
-      timers.push(setTimeout(pop, 500));
+      board();
       var clock = setInterval(function () {
-        left--;
-        hud.textContent = 'Score ' + score + ' · ' + left + 's';
-        if (left <= 0) { over = true; stopGame(); results('pop', score, popGame, ['I popped up. You missed. We both tried.', 'Thirty seconds. Felt longer.']); }
+        left--; paint();
+        if (left <= 0) { over = true; stopGame(); results('odd', score, oddGame, ['Thirty seconds. Felt longer.', 'Memory is overrated.']); }
       }, 1000);
-      cleanup = function () { over = true; clearInterval(clock); timers.forEach(clearTimeout); };
+      cleanup = function () { over = true; clearInterval(clock); };
+    }
+
+    /* Perfect Sear: stop the marker inside the green. It gets smaller and faster. */
+    function searGame() {
+      var keyHandler = null;
+      canvasGame({
+        id: 'sear', label: 'Perfect Sear', again: searGame,
+        intro: 'Stop the marker in the green. A perfect sear. Do not rush. Rush a bit.',
+        how: 'Tap the board, or press space, to stop the marker.',
+        notes: ['It was a bit burnt. Fine.', 'Everyone drops one. Or six.'],
+        setup: function (st) {
+          st.m = 0; st.dir = 1; st.zone = { c: 0.5, w: 0.3 }; st.flash = 0;
+          function stop() {
+            var hit = Math.abs(st.m - st.zone.c) <= st.zone.w / 2;
+            if (hit) { st.gain(1); st.flash = 1; st.zone = { c: 0.15 + Math.random() * 0.7, w: Math.max(0.07, 0.3 - st.score * 0.018) }; } else { st.hurt(); st.flash = -1; }
+          }
+          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); stop(); });
+          keyHandler = function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); stop(); } };
+          document.addEventListener('keydown', keyHandler);
+        },
+        update: function (st, dt) {
+          st.m += st.dir * (0.7 + st.score * 0.06) * dt;
+          if (st.m > 1) { st.m = 1; st.dir = -1; } if (st.m < 0) { st.m = 0; st.dir = 1; }
+          st.flash *= 0.9;
+        },
+        draw: function (st) {
+          var g = st.g, x0 = 24, w = st.W - 48, y = st.H / 2;
+          g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(x0, y - 14, w, 28);
+          g.fillStyle = st.flash > 0.1 ? '#8ee08e' : '#4caf50'; g.fillRect(x0 + (st.zone.c - st.zone.w / 2) * w, y - 14, st.zone.w * w, 28);
+          g.fillStyle = '#fff'; g.fillRect(x0 + st.m * w - 3, y - 26, 6, 52);
+          if (st.flash < -0.1) { g.fillStyle = 'rgba(255,80,60,' + (-st.flash * 0.35) + ')'; g.fillRect(0, 0, st.W, st.H); }
+          drawDot(g, st.W / 2, y - 90, 30, st.mouth);
+        },
+        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
+      });
     }
 
     /* Dot Says: watch the pads light up, then play them back. */

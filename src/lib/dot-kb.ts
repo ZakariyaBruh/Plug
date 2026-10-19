@@ -167,8 +167,8 @@ export const FACTS: Fact[] = [
   },
   {
     topic: 'dot games',
-    keys: ['dot games', 'play with dot', 'rock paper dish', 'catch', 'dash', 'pop', 'dot says', 'guess my dish', 'dot reads you', 'mini game'],
-    text: 'I play Rock Paper Dish, Dot Reads You, Guess My Dish, Dish Catch, Lane Dash, Dot Pop and Dot Says. Open the menu and press Play. They are free, and they count towards our bond.',
+    keys: ['dot games', 'play with dot', 'flap', 'stack', 'snake', 'pair up', 'odd dish', 'sear', 'dot says', 'mini game'],
+    text: 'I play Dot Flap, Dish Stack, Nom Snake, Pair Up, Odd Dish, Perfect Sear and Dot Says. Open the menu and press Play. They are free, and they count towards our bond.',
   },
   {
     topic: 'tour',

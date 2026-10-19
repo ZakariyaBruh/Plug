@@ -7285,3 +7285,18 @@ html.vt-active .buddy { view-transition-name: buddy; }
 .q-say[hidden] { display: none; }
 .q-say.is-in { animation: bubble-in .45s var(--spring-soft) both; }
 @media (prefers-reduced-motion: reduce) { .q-say { transition: none; } .q-say.is-in { animation: none; } }
+
+/* --- Play with Dot: pair up, odd dish --- */
+.dg-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s2); width: min(100%, 320px); }
+.dg-flip {
+  position: relative; aspect-ratio: 1; padding: 0; border: 1px solid var(--hair-lit); border-radius: 12px; cursor: pointer; background: color-mix(in srgb, var(--amber) 16%, var(--raise, #1b1b1d));
+  transition: transform .35s var(--spring), background .2s; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+}
+.dg-flip .dg-face { font-size: 1.9rem; opacity: 0; transform: scale(.4); transition: opacity .2s, transform .35s var(--spring); display: block; }
+.dg-flip.is-up, .dg-flip.is-done { background: var(--raise, #1b1b1d); transform: rotateY(0) scale(1.03); }
+.dg-flip.is-up .dg-face, .dg-flip.is-done .dg-face { opacity: 1; transform: none; }
+.dg-flip.is-done { border-color: var(--amber); }
+.dg-odd { --n: 3; display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: var(--s2); width: min(100%, 320px); }
+.dg-odd-cell { aspect-ratio: 1; padding: 0; border: 1px solid var(--hair); border-radius: 12px; background: var(--raise, #1b1b1d); font-size: clamp(1.3rem, 7vw, 2rem); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: transform .2s var(--spring); }
+.dg-odd-cell:active { transform: scale(.9); }
+@media (prefers-reduced-motion: reduce) { .dg-flip, .dg-flip .dg-face, .dg-odd-cell { transition: none; } }
