@@ -7327,3 +7327,48 @@ html.vt-active .buddy { view-transition-name: buddy; }
 @keyframes dg-merge { 40% { transform: scale(1.22); } }
 @media (prefers-reduced-motion: reduce) { .dg-tile, .dg-tile.is-new, .dg-tile.is-pop, .dg-cust { transition: none; animation: none; } }
 .dg-card-btn { min-width: 0; }
+
+/* ==========================================================================
+   Dot takes the shape of what it is looking at: hot goes red, cold goes blue,
+   a drink melts, spice flares, soup steams.
+   ========================================================================== */
+.dot-fx { pointer-events: none; }
+.dot-fx > * { display: none; }
+.dot-fx .fx-steam path, .dot-fx .fx-frost path { fill: none; stroke: rgb(255 255 255 / .75); stroke-width: 1.8; stroke-linecap: round; }
+.dot-fx .fx-frost circle { fill: rgb(255 255 255 / .85); }
+.dot-fx .fx-bubble circle { fill: rgb(255 255 255 / .5); }
+.dot-fx .fx-flame path { fill: #ffb347; }
+.dot-fx .fx-puddle { fill: currentColor; opacity: .35; }
+.dot-face { transition: fill .5s var(--snap); }
+.mascot[data-form="hot"] .dot-face { fill: #e8573b; }
+.mascot[data-form="hot"] .fx-steam, .mascot[data-form="soupy"] .fx-steam { display: block; animation: fx-rise 1.6s ease-out infinite; }
+.mascot[data-form="hot"] .dot-body { animation: dot-simmer .35s ease-in-out infinite alternate; }
+.mascot[data-form="cold"] .dot-face { fill: #8ccbf4; }
+.mascot[data-form="cold"] .fx-frost { display: block; animation: fx-twinkle 1.8s ease-in-out infinite; }
+.mascot[data-form="cold"] .dot-body { animation: dot-shiver .18s linear infinite; }
+.mascot[data-form="drink"] .dot-face { fill: #62b6ea; opacity: .88; }
+.mascot[data-form="drink"] .fx-bubble { display: block; animation: fx-rise 2s ease-in infinite; }
+.mascot[data-form="drink"] .fx-puddle { display: block; color: #62b6ea; animation: fx-puddle 2.6s ease-in-out infinite; }
+.mascot[data-form="drink"] .dot-body { animation: dot-liquid 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+.mascot[data-form="spicy"] .dot-face { fill: #d92d2d; }
+.mascot[data-form="spicy"] .fx-flame { display: block; animation: fx-flicker .5s ease-in-out infinite alternate; }
+.mascot[data-form="spicy"] .dot-body { animation: dot-simmer .2s ease-in-out infinite alternate; }
+.mascot[data-form="soupy"] .dot-face { fill: #e9b678; }
+.mascot[data-form="fried"] .dot-face { fill: #e2a63a; }
+.mascot[data-form="fried"] .dot-body { animation: dot-simmer .12s ease-in-out infinite alternate; }
+.mascot[data-form="cheesy"] .dot-face { fill: #f6d453; }
+.mascot[data-form="seafood"] .dot-face { fill: #6fd0c8; }
+.mascot[data-form="seafood"] .fx-bubble { display: block; animation: fx-rise 2.4s ease-in infinite; }
+.mascot[data-form="sweet"] .dot-face { fill: #f7a8c9; }
+.mascot[data-form="sweet"] .fx-bubble { display: block; animation: fx-twinkle 1.4s ease-in-out infinite; }
+.mascot[data-form="sweet"] .fx-bubble circle { fill: #fff; }
+.mascot[data-form="veg"] .dot-face { fill: #92d78d; }
+.mascot[data-form] .dot-blush { opacity: .25; }
+@keyframes fx-rise { 0% { transform: translateY(5px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(-7px); opacity: 0; } }
+@keyframes fx-twinkle { 50% { opacity: .35; } }
+@keyframes fx-flicker { from { transform: scaleY(.85); } to { transform: scaleY(1.15); } }
+@keyframes dot-simmer { from { transform: translateX(-.4px) scale(1); } to { transform: translateX(.4px) scale(1.025); } }
+@keyframes dot-shiver { 0% { transform: translateX(-.7px); } 50% { transform: translateX(.7px); } }
+@keyframes dot-liquid { 0%, 100% { transform: scale(1.08, .86) skewX(0deg); } 33% { transform: scale(.94, 1.04) skewX(3deg); } 66% { transform: scale(1.04, .92) skewX(-3deg); } }
+@keyframes fx-puddle { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(1.12); } }
+@media (prefers-reduced-motion: reduce) { .mascot[data-form] .dot-body, .dot-fx > * { animation: none !important; } }

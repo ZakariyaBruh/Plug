@@ -8332,6 +8332,7 @@
 
   function openSheet(dish) {
     sheetOpener = document.activeElement;
+    if (typeof Buddy !== 'undefined' && Buddy) Buddy.form(dish, 6000);
     sheetDish = dish;
     $('sheet-icon').textContent = dish.icon;
     $('sheet-name').textContent = dish.name;
@@ -10971,6 +10972,13 @@
       '<g class="dot-eyes-down"><path d="M15.5 23Q18 25.5 20.5 23"/><path d="M27.5 23Q30 25.5 32.5 23"/></g>' +
       '<g class="dot-sleep"><path d="M15.5 23.5H20.5"/><path d="M27.5 23.5H32.5"/></g>' +
       '<g class="dot-happy"><path d="M15.5 24Q18 20.5 20.5 24"/><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
+      '<g class="dot-fx" aria-hidden="true">' +
+      '<ellipse class="fx-puddle" cx="24" cy="45" rx="14" ry="2.6"/>' +
+      '<g class="fx-steam"><path d="M16 9Q13 6 16 3"/><path d="M24 7Q21 4 24 1"/><path d="M32 9Q29 6 32 3"/></g>' +
+      '<g class="fx-frost"><path d="M9 13l4 4m0-4l-4 4M35 11l4 4m0-4l-4 4M21 43v0"/><circle cx="37" cy="31" r="1.3"/><circle cx="11" cy="34" r="1.3"/></g>' +
+      '<g class="fx-bubble"><circle cx="15" cy="34" r="2"/><circle cx="31" cy="30" r="1.6"/><circle cx="24" cy="38" r="2.2"/><circle cx="35" cy="37" r="1.3"/></g>' +
+      '<g class="fx-flame"><path d="M17 8Q13 3 18 0Q17 4 21 6Q20 8 17 8Z"/><path d="M29 8Q26 4 30 1Q30 4 33 6Q32 8 29 8Z"/></g>' +
+      '</g>' +
       '<g class="dot-love"><path d="M18 26.5C14.3 24 13.8 21.4 15.9 20.2C17 19.6 18 20.2 18 21.2C18 20.2 19 19.6 20.1 20.2C22.2 21.4 21.7 24 18 26.5Z"/><path d="M30 26.5C26.3 24 25.8 21.4 27.9 20.2C29 19.6 30 20.2 30 21.2C30 20.2 31 19.6 32.1 20.2C34.2 21.4 33.7 24 30 26.5Z"/></g>' +
       '<g class="dot-wink"><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
       '<path class="dot-m dot-m-smile" d="M20 30Q24 34 28 30"/>' +
@@ -10994,7 +11002,32 @@
       node.setAttribute('data-mood', name);
       if (hold !== 0) node._t = setTimeout(function () { node.setAttribute('data-mood', 'idle'); }, hold || 1400);
     }
-    return { mount: mount, mood: mood };
+    // A shape-shift: the face takes on what it is looking at (hot, cold, a drink...). ms 0 keeps it until told otherwise.
+    function form(node, name, ms) {
+      if (!node) return;
+      mount(node);
+      clearTimeout(node._f);
+      if (name) node.setAttribute('data-form', name); else node.removeAttribute('data-form');
+      if (name && ms) node._f = setTimeout(function () { node.removeAttribute('data-form'); }, ms);
+    }
+    // Which form a dish asks for, from what it is.
+    function formOf(dish) {
+      if (!dish || !dish.tags) return null;
+      var t = dish.tags, n = dish.name || '';
+      if (/ice cream|gelato|sorbet|frozen|slush|iced|granita|kulfi|popsicle/i.test(n)) return 'cold';
+      if (t.drink === 1) return 'drink';
+      if (t.spicy === 1) return 'spicy';
+      if (t.soupy === 1) return 'soupy';
+      if (t.fried === 1) return 'fried';
+      if (t.cheesy === 1) return 'cheesy';
+      if (t.seafood === 1) return 'seafood';
+      if (t.sweet === 1) return 'sweet';
+      if (t.veg === 1 && t.hot !== 1) return 'veg';
+      if (t.hot === 1) return 'hot';
+      if (t.fresh === 1 || t.hot === 0) return 'cold';
+      return null;
+    }
+    return { mount: mount, mood: mood, form: form, formOf: formOf };
   })();
   Array.prototype.forEach.call(document.querySelectorAll('.mascot'), Dot.mount);
 
@@ -12093,17 +12126,23 @@
           else remark(name, 'happy');
         }, 1300);
       },
-      onPanel: function () { sync(); },
+      onPanel: function () { sync(); if (panel !== 'result' && el()) Dot.form(el(), null); },
+      // Take the shape of a dish: hot goes red, cold blue, a drink melts. ms 0 = until the panel changes.
+      form: function (dish, ms) { if (el() && visible()) Dot.form(el(), Dot.formOf(dish), ms || 0); },
       onAnswer: function (value, tag) {
         asked++;
         if (value === 'yes') { run.yes++; run.no = 0; } else if (value === 'no') { run.no++; run.yes = 0; } else { run.yes = 0; run.no = 0; }
         if (!run.said && run.no >= 4) { run.said = true; return remark('manyNo', 'shrug', 3200); }
         if (!run.said && run.yes >= 4) { run.said = true; return remark('manyYes', 'happy', 3200); }
+        // The small Dot on the question bar reacts to what you just said yes to.
+        var rider = $('q-rider'), FORMS = { hot: 'hot', drink: 'drink', spicy: 'spicy', soupy: 'soupy', fried: 'fried', cheesy: 'cheesy', seafood: 'seafood', sweet: 'sweet', veg: 'veg' };
+        if (rider && !reduceMotion) { var f = value === 'yes' ? FORMS[tag] : (value === 'no' && tag === 'hot' ? 'cold' : null); if (f) Dot.form(rider, f, 2400); }
         if (value === 'yes' && TAGS.indexOf(tag) >= 0 && Math.random() < 0.22) return remark(tag, 'happy', 3200);
         if (asked % 7 === 0 && Math.random() < 0.55) remark('quip', 'shrug', 2800);
       },
       onResult: function (dish) {
         run = { yes: 0, no: 0, said: false };
+        if (el() && visible()) Dot.form(el(), Dot.formOf(dish), 0);
         var tag = TAGS.filter(function (t) { return dish.tags && dish.tags[t] === 1; })[0];
         if (tag && Math.random() < 0.7) remark(tag, 'happy', 3600);
         else if (!tag && Math.random() < 0.15) remark('plain', 'happy', 3200);
