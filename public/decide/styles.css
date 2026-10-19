@@ -7404,3 +7404,14 @@ html.vt-active .buddy { view-transition-name: buddy; }
 .dg-pause { margin-top: var(--s2); }
 .dg-canvas { box-shadow: 0 18px 40px -20px rgb(0 0 0 / .8); }
 @media (prefers-reduced-motion: reduce) { .dg-stars span { animation: none; opacity: 1; transform: none; } }
+
+/* --- Match Meal --- */
+.dg-match { position: relative; width: min(100%, 322px); aspect-ratio: 1; border-radius: 14px; background: #121214; border: 1px solid var(--hair-lit); overflow: hidden; touch-action: none; }
+.dg-mt {
+  --r: 0; --c: 0; position: absolute; width: calc(100% / 7); height: calc(100% / 7); left: calc(var(--c) * 100% / 7); top: calc(var(--r) * 100% / 7);
+  display: grid; place-items: center; font-size: clamp(1.4rem, 8vw, 2rem); cursor: pointer; border-radius: 10px;
+  transition: top .28s var(--spring-soft), left .2s ease-out, transform .2s, opacity .2s; -webkit-tap-highlight-color: transparent;
+}
+.dg-mt.is-sel { transform: scale(1.18); background: rgb(224 163 64 / .25); }
+.dg-mt.is-gone { transform: scale(.2) rotate(40deg); opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .dg-mt { transition: none; } }

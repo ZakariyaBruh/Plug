@@ -628,7 +628,7 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Something new', 'Two questions, then a few dishes you have not had — chosen from the ones you actually liked, each with a reason for why it follows. Only ever real dishes off this menu, so every suggestion has its recipe behind it.'],
       ['Save unlimited dishes', 'Standard saves none. Premium keeps everything you like.'],
       ['The advanced assistant', 'Ask anything on Gemini: it knows your taste and your food rules, reads a photo, can look things up on the web, suggests what to ask next, helps you plan, cook or choose, and remembers the conversation. Standard questions are free and three a day.'],
-      ['Play with Dot', 'Fourteen games with the companion in the corner — an arena, a climber, a kitchen queue, a rhythm game, a merge puzzle, sorting, pan-flipping, word scrambles, aiming and more. Dot also changes shape with what it is looking at: hot goes red, cold goes blue, a drink melts. Hold Dot for a menu that answers questions about morsels45, and take its guided tour. Free for everyone.'],
+      ['Play with Dot', 'Ten games with the companion in the corner — an arena survival, a climber, a merging pot, a bubble shooter, match-three, an invaders shooter, a lane crosser, a stacker, an aiming game and a memory pattern. Dot also changes shape with what it is looking at: hot goes red, cold goes blue, a drink melts. Hold Dot for a menu that answers questions about morsels45, and take its guided tour. Free for everyone.'],
       ['Five extra looks', 'Ember, matcha, ink, paper, neon.'],
     ],
   },
