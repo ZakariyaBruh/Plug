@@ -4191,6 +4191,7 @@
       if (!b) return;
       ['pointerenter', 'focus'].forEach(function (ev) { b.addEventListener(ev, function () { if (!reduceMotion) feel(mood, x); }); });
     }
+    rider.addEventListener('click', function () { if (typeof Buddy !== 'undefined' && Buddy) Buddy.stageTap(); });
     on('choice-yes', 'happy', -1.6);
     on('choice-no', 'shrug', 1.6);
     on('choice-either', 'wink', 0);
@@ -11435,6 +11436,9 @@
 
     function el() { return $('mascot-b'); }
     function box() { return $('buddy'); }
+    // On the question screen the small Dot on the progress bar is Dot: it speaks and reacts instead of the corner one.
+    function onStage() { return view === 'decide' && panel === 'question' && !!$('q-rider') && on; }
+    function canShow() { return visible() || onStage(); }
     function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
     function wide() { return window.innerWidth >= 1000; }
     function playing() { return view === 'decide' && /^(arcade|swipe|endless|duel|knockout|blitz|spin|together)$/.test(panel); }
@@ -11526,6 +11530,7 @@
       clearTimeout(hideTimer);
       var bb = $('buddy-bubble');
       if (bb) { bb.hidden = true; bb.classList.remove('has-action'); }
+      if ($('q-say')) $('q-say').hidden = true;
     }
 
     // May Dot say something nobody asked it to? Not in Quiet mode; not twice
@@ -11540,12 +11545,12 @@
     // deserves a word (a dish accepted), ignores the cooldown but not Quiet;
     // otherwise it is a remark and is held to the cooldown.
     function say(text, mood, ms, force) {
-      if (!visible() || !text) return;
+      if (!canShow() || !text) return;
       if (talk === 'quiet' && force !== 'asked') return;
       if (!force && !mayVolunteer()) return;
       lastSpoke = Date.now();
       if (!force) spoke++;
-      var bb = $('buddy-bubble');
+      var bb = onStage() ? $('q-say') : $('buddy-bubble');
       bb.textContent = text;
       bb.classList.remove('has-action');
       bb.hidden = false;
@@ -11555,14 +11560,14 @@
       hideTimer = setTimeout(bubbleOff, Math.max(ms || 0, 2600 + text.length * 55));
     }
     function remark(cat, mood, ms, force) {
-      if (!force && (!visible() || !mayVolunteer())) return;
+      if (!force && (!canShow() || !mayVolunteer())) return;
       var l = line(cat);
       if (l) say(l, mood, ms, force);
     }
 
     function react(mood, hold) {
-      var node = el();
-      if (!node || !visible()) return;
+      var node = onStage() ? $('q-rider') : el();
+      if (!node || !canShow()) return;
       asleep = false;
       node._busy = true;
       Dot.mood(node, mood, hold || 1400);
@@ -12029,6 +12034,14 @@
       // A game with Dot finished: it counts towards the bond, quietly.
       played: function () { mem.games = (mem.games || 0) + 1; save(); paintBond(); },
       remark: remark,
+      // A tap on the small Dot riding the question bar.
+      stageTap: function () {
+        var now = Date.now();
+        if (now - lastBoop > 25000) boops = 0;
+        lastBoop = now; boops++;
+        react('happy', 900);
+        remark(boops <= 3 ? 'boop1' : boops <= 7 ? 'boop2' : 'boop3', null, 3200, 'asked');
+      },
       openMenu: openMenu,
       closeMenu: closeMenu,
       pat: pat,

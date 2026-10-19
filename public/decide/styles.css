@@ -7272,3 +7272,16 @@ html.vt-active .buddy { view-transition-name: buddy; }
 .dg-pad.is-lit { background: var(--pad); transform: scale(1.06); box-shadow: 0 0 30px var(--pad); }
 .dg-pad:active { transform: scale(.96); }
 @media (prefers-reduced-motion: reduce) { .dg-pop, .dg-pad { transition: none; } }
+
+/* The small Dot on the question bar is the Dot there: tappable, and it speaks. */
+.q-rider { pointer-events: auto; cursor: pointer; }
+.q-rider::before { content: ""; position: absolute; inset: -8px; } /* a bigger thumb target than the face */
+.q-say {
+  position: absolute; bottom: 38px; left: calc(var(--p, 0) * (100% - 30px)); transform: translateX(calc(var(--p, 0) * -88%));
+  width: max-content; max-width: min(17rem, 80vw); padding: .5rem .8rem; border-radius: 12px; background: var(--paper); color: var(--paper-ink);
+  font-size: var(--t-sm); line-height: 1.4; box-shadow: 0 12px 24px -12px rgb(0 0 0 / .9); z-index: 3; pointer-events: none;
+  transition: left .6s var(--spring-soft), transform .6s var(--spring-soft);
+}
+.q-say[hidden] { display: none; }
+.q-say.is-in { animation: bubble-in .45s var(--spring-soft) both; }
+@media (prefers-reduced-motion: reduce) { .q-say { transition: none; } .q-say.is-in { animation: none; } }
