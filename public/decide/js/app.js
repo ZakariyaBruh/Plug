@@ -11465,6 +11465,8 @@
     function visible() {
       if (!on) return false;
       if (typeof Play !== 'undefined' && Play.isOpen()) return false;
+      // The question screen has its own small Dot riding the progress bar; two Dots is one too many.
+      if (view === 'decide' && panel === 'question') return false;
       if (document.body.classList.contains('is-landing') || document.body.classList.contains('is-welcoming')) return false;
       // Out of the way of anything that is being played, unless there is room
       // to sit beside it and cheer.
