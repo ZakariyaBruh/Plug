@@ -11940,7 +11940,7 @@
      * nothing else; asked about anything else, Dot says it only knows
      * morsels45. It is a help menu with a face, not a chatbot.
      */
-    var menu = null;
+    var menu = null, dotTurns = [];
     var ASKS = ['How do I start?', 'What is free?', 'What is Premium?', 'What can you do?', 'How do the games work?', 'How much does it cost?'];
     function mk(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
     function menuOpen() { return !!(menu && !menu.root.hidden); }
@@ -11950,12 +11950,12 @@
       root.hidden = true;
       root.setAttribute('role', 'dialog');
       root.setAttribute('aria-label', 'Dot');
-      root.appendChild(mk('p', 'dot-menu-title', 'Ask me about morsels45'));
+      root.appendChild(mk('p', 'dot-menu-title', 'Talk to Dot'));
       var form = mk('form', 'dot-menu-form');
       var input = mk('input', 'dot-menu-input');
       input.type = 'text'; input.maxLength = 200; input.autocomplete = 'off';
-      input.placeholder = 'Ask about morsels45…';
-      input.setAttribute('aria-label', 'Ask about morsels45');
+      input.placeholder = 'Say something…';
+      input.setAttribute('aria-label', 'Say something to Dot');
       var go = mk('button', 'dot-menu-go', 'Ask');
       go.type = 'submit';
       form.appendChild(input); form.appendChild(go);
@@ -12032,7 +12032,7 @@
       fetch('/api/dot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ question: question, lang: I18n.get() })
+        body: JSON.stringify({ question: question, lang: I18n.get(), history: dotTurns.slice(-6) })
       }).then(function (res) {
         return res.json().catch(function () { return {}; }).then(function (b) { return { status: res.status, body: b }; });
       }).catch(function () { return { status: 0, body: {} }; }).then(function (r) {
@@ -12045,6 +12045,7 @@
             : r.body && r.body.via === 'off_topic' ? 'I only know about morsels45. Try asking how to start, what is free, or what Premium is.'
             : 'My brain is busy. Ask me again in a moment.';
         }
+        if (r.body && r.body.answer) { dotTurns.push({ role: 'user', text: question }); dotTurns.push({ role: 'model', text: text.slice(0, 300) }); dotTurns = dotTurns.slice(-8); }
         out.textContent = text.slice(0, 700);
         out.classList.remove('is-in'); void out.offsetWidth; out.classList.add('is-in');
         if (node) { node._busy = false; Dot.mood(node, mood, 1400); setTimeout(function () { node.setAttribute('data-mood', rest()); }, 1450); }

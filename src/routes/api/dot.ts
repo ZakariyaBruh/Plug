@@ -92,7 +92,7 @@ export const Route = createFileRoute('/api/dot')({
         const english = lang === 'en' || lang === undefined || lang === null
 
         // 1. A clear match, in English: straight from the fact.
-        if (match && english && !history.length && (match.score >= 5 || (match.score >= 3 && meaningfulWords(question) <= 4))) return json({ answer: match.fact.text, via: 'facts', topic: match.fact.topic })
+        if (match && english && !history.length && match.score >= 5) return json({ answer: match.fact.text, via: 'facts', topic: match.fact.topic })
 
         // 2. A free model, as a companion, with the facts as its only source about the app.
         const out = await askFree(system(lang), [...history, { role: 'user', text: question }], 160, 0.8)
