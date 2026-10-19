@@ -863,6 +863,7 @@ window.I18N_DICT.ms = {
 "History": "Sejarah",
 "Hm. I did not see that coming.": "Hm. Saya tak sangka itu.",
 "Hmm. That narrows it down.": "Hmm. Itu mengecilkan pilihan.",
+"Hold me for a menu: ask me about morsels45, play a game, take this tour again, or give me a pat.": "Tekan dan tahan saya untuk menu: tanya tentang morsels45, main permainan, ikuti lawatan ini semula, atau usap saya.",
 "Hold still. The dish, not you.": "Diam sekejap. Hidangan itu, bukan awak.",
 "Hold the barcode (the black stripes) inside the white box on the screen, with the phone about 15 cm (6 inches) away — roughly the length of your hand. Hold it still for a moment.": "Pegang kod bar (jalur hitam) di dalam kotak putih pada skrin, dengan telefon kira-kira 15 cm (6 inci) jauhnya — lebih kurang panjang tapak tangan. Pegang diam sebentar.",
 "Hold the barcode inside the white box…": "Pegang kod bar di dalam kotak putih…",
@@ -2155,6 +2156,7 @@ window.I18N_DICT.ms = {
 "That is everything. Go on, decide something. I will be right here.": "Itu sahaja. Teruskan, putuskan sesuatu. Saya akan ada di sini.",
 "That is genuinely useful, and it is the whole of what was recorded. You will not be asked again.": "Itu benar-benar berguna, dan itulah keseluruhan yang direkodkan. Anda tidak akan ditanya lagi.",
 "That is it. Go and eat it.": "Itu sahaja. Pergi dan makanlah.",
+"That is me in the corner. Tap me and I say something. Pick me up and drop me anywhere, and I stay put until you move me again.": "Itu saya di sudut. Ketuk saya dan saya akan berkata sesuatu. Angkat dan letakkan saya di mana-mana, dan saya kekal di situ sehingga awak alihkan lagi.",
 "That is me in the corner. Tap me to chat. Hold me for a menu: ask me about morsels45, play a game, or take this tour again.": "Itu saya di sudut. Ketuk saya untuk berbual. Tekan dan tahan saya untuk menu: tanya saya tentang morsels45, main permainan, atau ikuti lawatan ini semula.",
 "That is one fewer argument about dinner.": "Itu satu pertengkaran kurang tentang makan malam.",
 "That is the idea": "Itulah idea",
@@ -2478,6 +2480,7 @@ window.I18N_DICT.ms = {
 "Which would you rather eat? I have already decided what you will say.": "Mana yang awak lebih suka makan? Saya sudah tahu apa awak akan jawab.",
 "Whichever you pick is the answer.": "Mana-mana yang anda pilih ialah jawapannya.",
 "Whichever you pick is the answer. Not feeling any of them? Go again and the game deals away from these.": "Mana-mana yang anda pilih ialah jawapannya. Tiada yang berkenan? Main lagi dan permainan akan menjauhi ini.",
+"While you decide I ride the progress bar and react to your answers. Tap me there for a hint: how many dishes each answer would leave.": "Semasa awak memutuskan, saya menunggang bar kemajuan dan bertindak balas kepada jawapan awak. Ketuk saya di situ untuk petunjuk: berapa banyak hidangan yang tinggal bagi setiap jawapan.",
 "Who is coming": "Siapa yang akan datang",
 "Who is eating?": "Siapa yang makan?",
 "Who is making this?": "Siapa yang membuatnya?",
@@ -3033,5 +3036,9 @@ window.I18N_PATTERNS.ms = [
 [
 "Round {0}",
 "Pusingan {0}"
+],
+[
+"Yes keeps about {0} dishes. No keeps about {1}.",
+"Ya kekalkan kira-kira {0} hidangan. Tidak kekalkan kira-kira {1}."
 ]
 ];

@@ -874,6 +874,7 @@ window.I18N_DICT.ar = {
 "History": "السجلّ",
 "Hm. I did not see that coming.": "همم. لم أتوقع ذلك.",
 "Hmm. That narrows it down.": "همم. هذا يضيّق الخيارات.",
+"Hold me for a menu: ask me about morsels45, play a game, take this tour again, or give me a pat.": "اضغط عليّ مطولًا لقائمة: اسألني عن morsels45 أو العب لعبة أو خذ هذه الجولة مجددًا أو داعبني.",
 "Hold still. The dish, not you.": "اثبت. أقصد الطبق، لا أنت.",
 "Hold the barcode (the black stripes) inside the white box on the screen, with the phone about 15 cm (6 inches) away — roughly the length of your hand. Hold it still for a moment.": "ضع الباركود (الخطوط السوداء) داخل المربع الأبيض على الشاشة، والهاتف على بعد نحو 15 سم (6 بوصات) — تقريبًا طول كفّ يدك. ثبّته لحظة.",
 "Hold the barcode inside the white box…": "ضع الباركود داخل المربع الأبيض…",
@@ -2183,6 +2184,7 @@ window.I18N_DICT.ar = {
 "That is everything. Go on, decide something. I will be right here.": "هذا كل شيء. هيا قرّر شيئًا. سأكون هنا.",
 "That is genuinely useful, and it is the whole of what was recorded. You will not be asked again.": "هذا مفيد حقًا، وهذا كل ما سُجِّل. لن نسألك مجددًا.",
 "That is it. Go and eat it.": "هذا كل شيء. اذهب وتناوله.",
+"That is me in the corner. Tap me and I say something. Pick me up and drop me anywhere, and I stay put until you move me again.": "هذا أنا في الزاوية. المسني وسأقول شيئًا. التقطني وضعني في أي مكان وسأبقى هناك حتى تحركني مجددًا.",
 "That is me in the corner. Tap me to chat. Hold me for a menu: ask me about morsels45, play a game, or take this tour again.": "هذا أنا في الزاوية. المسني لنتحدث. اضغط عليّ مطولًا لقائمة: اسألني عن morsels45 أو العب لعبة أو خذ هذه الجولة مجددًا.",
 "That is one fewer argument about dinner.": "جدال أقل بشأن العشاء.",
 "That is the idea": "هذه هي الفكرة",
@@ -2510,6 +2512,7 @@ window.I18N_DICT.ar = {
 "Which would you rather eat? I have already decided what you will say.": "أيهما تفضل أن تأكل؟ لقد قررت بالفعل ما ستقوله.",
 "Whichever you pick is the answer.": "أيّها اخترت فهو الجواب.",
 "Whichever you pick is the answer. Not feeling any of them? Go again and the game deals away from these.": "أيّها اخترت فهو الجواب. لا يعجبك أي منها؟ العب مرة أخرى وستبتعد اللعبة عنها.",
+"While you decide I ride the progress bar and react to your answers. Tap me there for a hint: how many dishes each answer would leave.": "أثناء قرارك أركب شريط التقدم وأتفاعل مع إجاباتك. المسني هناك لتحصل على تلميح: كم طبقًا سيبقى مع كل إجابة.",
 "Who is coming": "من سيأتي",
 "Who is eating?": "من سيأكل؟",
 "Who is making this?": "من يصنعه؟",
@@ -3068,5 +3071,9 @@ window.I18N_PATTERNS.ar = [
 [
 "Round {0}",
 "الجولة {0}"
+],
+[
+"Yes keeps about {0} dishes. No keeps about {1}.",
+"نعم تُبقي نحو {0} طبقًا. لا تُبقي نحو {1}."
 ]
 ];

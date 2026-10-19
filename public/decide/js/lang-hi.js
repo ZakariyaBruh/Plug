@@ -873,6 +873,7 @@ window.I18N_DICT.hi = {
 "History": "इतिहास",
 "Hm. I did not see that coming.": "हम्म। मुझे यह उम्मीद नहीं थी।",
 "Hmm. That narrows it down.": "हम्म। इससे विकल्प कम हुए।",
+"Hold me for a menu: ask me about morsels45, play a game, take this tour again, or give me a pat.": "मुझे दबाकर रखें और मेन्यू खुलेगा: morsels45 के बारे में पूछें, खेल खेलें, यह टूर फिर से लें, या मुझे थपथपाएँ।",
 "Hold still. The dish, not you.": "स्थिर रखें। व्यंजन को, आपको नहीं।",
 "Hold the barcode (the black stripes) inside the white box on the screen, with the phone about 15 cm (6 inches) away — roughly the length of your hand. Hold it still for a moment.": "बारकोड (काली धारियाँ) को स्क्रीन के सफ़ेद बॉक्स के अंदर रखें, फ़ोन को लगभग 15 सेमी (6 इंच) दूर रखकर — करीब आपकी हथेली की लंबाई। कुछ पल स्थिर रखें।",
 "Hold the barcode inside the white box…": "बारकोड को सफ़ेद बॉक्स के अंदर रखें…",
@@ -2183,6 +2184,7 @@ window.I18N_DICT.hi = {
 "That is everything. Go on, decide something. I will be right here.": "बस इतना ही। जाइए, कुछ तय कीजिए। मैं यहीं हूँ।",
 "That is genuinely useful, and it is the whole of what was recorded. You will not be asked again.": "यह सचमुच काम का है, और बस इतना ही दर्ज हुआ। आपसे दोबारा नहीं पूछा जाएगा।",
 "That is it. Go and eat it.": "बस। जाइए और खाइए।",
+"That is me in the corner. Tap me and I say something. Pick me up and drop me anywhere, and I stay put until you move me again.": "वह मैं हूँ, कोने में। मुझे छुएँ तो मैं कुछ कहूँगा। मुझे उठाकर कहीं भी रख दें, मैं तब तक वहीं रहूँगा जब तक आप फिर न हटाएँ।",
 "That is me in the corner. Tap me to chat. Hold me for a menu: ask me about morsels45, play a game, or take this tour again.": "वह मैं हूँ, कोने में। बात करने के लिए मुझे छुएँ। मेन्यू के लिए मुझे दबाकर रखें: morsels45 के बारे में पूछें, खेल खेलें, या यह टूर फिर से लें।",
 "That is one fewer argument about dinner.": "डिनर को लेकर एक बहस कम।",
 "That is the idea": "यही तो विचार है",
@@ -2510,6 +2512,7 @@ window.I18N_DICT.hi = {
 "Which would you rather eat? I have already decided what you will say.": "आप क्या खाना पसंद करेंगे? मैं पहले ही तय कर चुका हूँ कि आप क्या कहेंगे।",
 "Whichever you pick is the answer.": "आप जो भी चुनें, वही जवाब है।",
 "Whichever you pick is the answer. Not feeling any of them? Go again and the game deals away from these.": "आप जो भी चुनें वही जवाब है। कोई पसंद नहीं आया? फिर खेलिए, खेल इनसे दूर रहेगा।",
+"While you decide I ride the progress bar and react to your answers. Tap me there for a hint: how many dishes each answer would leave.": "जब आप फ़ैसला करते हैं तो मैं प्रगति पट्टी पर सवार रहता हूँ और आपके जवाबों पर प्रतिक्रिया देता हूँ। वहाँ मुझे छुएँ तो संकेत मिलेगा: हर जवाब के बाद कितने व्यंजन बचेंगे।",
 "Who is coming": "कौन आ रहा है",
 "Who is eating?": "कौन खा रहा है?",
 "Who is making this?": "इसे कौन बना रहा है?",
@@ -3067,5 +3070,9 @@ window.I18N_PATTERNS.hi = [
 [
 "Round {0}",
 "दौर {0}"
+],
+[
+"Yes keeps about {0} dishes. No keeps about {1}.",
+"हाँ से लगभग {0} व्यंजन बचेंगे। ना से लगभग {1}।"
 ]
 ];

@@ -873,6 +873,7 @@ window.I18N_DICT.th = {
 "History": "ประวัติ",
 "Hm. I did not see that coming.": "อืม ไม่คาดคิดเลย",
 "Hmm. That narrows it down.": "อืม แบบนี้ก็แคบลงแล้ว",
+"Hold me for a menu: ask me about morsels45, play a game, take this tour again, or give me a pat.": "กดค้างที่ฉันเพื่อเปิดเมนู: ถามเรื่อง morsels45 เล่นเกม ดูทัวร์นี้อีกครั้ง หรือลูบหัวฉัน",
 "Hold still. The dish, not you.": "อยู่นิ่ง ๆ นะ หมายถึงอาหาร ไม่ใช่คุณ",
 "Hold the barcode (the black stripes) inside the white box on the screen, with the phone about 15 cm (6 inches) away — roughly the length of your hand. Hold it still for a moment.": "ถือบาร์โค้ด (แถบสีดำ) ให้อยู่ในกรอบสีขาวบนหน้าจอ โดยให้โทรศัพท์ห่างประมาณ 15 ซม. (6 นิ้ว) — ราวความยาวฝ่ามือ ถือนิ่ง ๆ สักครู่",
 "Hold the barcode inside the white box…": "ถือบาร์โค้ดให้อยู่ในกรอบสีขาว…",
@@ -2183,6 +2184,7 @@ window.I18N_DICT.th = {
 "That is everything. Go on, decide something. I will be right here.": "ครบแล้ว ไปตัดสินใจอะไรสักอย่างเลย ฉันจะอยู่ตรงนี้",
 "That is genuinely useful, and it is the whole of what was recorded. You will not be asked again.": "มีประโยชน์จริง ๆ และนั่นคือทั้งหมดที่บันทึกไว้ จะไม่ถามคุณอีก",
 "That is it. Go and eat it.": "แค่นั้นแหละ ไปกินได้เลย",
+"That is me in the corner. Tap me and I say something. Pick me up and drop me anywhere, and I stay put until you move me again.": "นั่นคือฉันที่มุมจอ แตะฉันแล้วฉันจะพูดอะไรสักอย่าง ยกฉันไปวางตรงไหนก็ได้ ฉันจะอยู่ตรงนั้นจนกว่าคุณจะย้ายอีก",
 "That is me in the corner. Tap me to chat. Hold me for a menu: ask me about morsels45, play a game, or take this tour again.": "นั่นคือฉันที่มุมจอ แตะฉันเพื่อคุยกัน กดค้างที่ฉันเพื่อเปิดเมนู: ถามเรื่อง morsels45 เล่นเกม หรือดูทัวร์นี้อีกครั้ง",
 "That is one fewer argument about dinner.": "ถกเถียงเรื่องมื้อเย็นน้อยลงไปหนึ่งครั้ง",
 "That is the idea": "นั่นแหละความคิด",
@@ -2510,6 +2512,7 @@ window.I18N_DICT.th = {
 "Which would you rather eat? I have already decided what you will say.": "คุณอยากกินจานไหนมากกว่า? ฉันรู้แล้วว่าคุณจะตอบอะไร",
 "Whichever you pick is the answer.": "จานไหนที่คุณเลือกคือคำตอบ",
 "Whichever you pick is the answer. Not feeling any of them? Go again and the game deals away from these.": "จานไหนที่คุณเลือกคือคำตอบ ไม่ถูกใจสักจาน? เล่นอีกครั้งแล้วเกมจะเลี่ยงจานพวกนี้",
+"While you decide I ride the progress bar and react to your answers. Tap me there for a hint: how many dishes each answer would leave.": "ตอนที่คุณตัดสินใจ ฉันจะขี่อยู่บนแถบความคืบหน้าและตอบสนองต่อคำตอบของคุณ แตะฉันตรงนั้นเพื่อดูคำใบ้: แต่ละคำตอบจะเหลืออาหารกี่จาน",
 "Who is coming": "ใครจะมา",
 "Who is eating?": "ใครกิน?",
 "Who is making this?": "ใครเป็นคนทำ?",
@@ -3067,5 +3070,9 @@ window.I18N_PATTERNS.th = [
 [
 "Round {0}",
 "รอบที่ {0}"
+],
+[
+"Yes keeps about {0} dishes. No keeps about {1}.",
+"ตอบใช่จะเหลืออาหารประมาณ {0} จาน ตอบไม่จะเหลือประมาณ {1}"
 ]
 ];

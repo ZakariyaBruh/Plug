@@ -4191,7 +4191,29 @@
       if (!b) return;
       ['pointerenter', 'focus'].forEach(function (ev) { b.addEventListener(ev, function () { if (!reduceMotion) feel(mood, x); }); });
     }
-    rider.addEventListener('click', function () { if (typeof Buddy !== 'undefined' && Buddy) Buddy.stageTap(); });
+    // Dot's eyes follow the pointer; a tap gives a real hint (what each answer would leave), the next tap a word.
+    document.addEventListener('pointermove', function (e) {
+      if (reduceMotion || view !== 'decide' || panel !== 'question') return;
+      var r = rider.getBoundingClientRect(), dx = e.clientX - (r.left + 15), dy = e.clientY - (r.top + 15), d = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      rider.style.setProperty('--ex', (dx / d * 1.7).toFixed(1) + 'px'); rider.style.setProperty('--ey', (dy / d * 1.7).toFixed(1) + 'px');
+    }, { passive: true });
+    var hinted = false;
+    function liveAfter(value) {
+      var w = game.branch(current.tag, value), mx = Math.max.apply(null, w);
+      return w.filter(function (x) { return x > mx * 0.05; }).length;
+    }
+    rider.addEventListener('click', function () {
+      if (typeof Buddy === 'undefined' || !Buddy) return;
+      hinted = !hinted;
+      if (hinted && current && current.tag) {
+        try {
+          Buddy.say('Yes keeps about ' + liveAfter('yes') + ' dishes. No keeps about ' + liveAfter('no') + '.', 'thinking', 4600, 'asked');
+          Dot.mood(rider, 'bounce', 700);
+          return;
+        } catch (err) { /* fall through to a word */ }
+      }
+      Buddy.stageTap();
+    });
     on('choice-yes', 'happy', -1.6);
     on('choice-no', 'shrug', 1.6);
     on('choice-either', 'wink', 0);
@@ -11007,7 +11029,7 @@
    * to English halfway through a sentence.
    */
   var Buddy = (function () {
-    var KEY = 'morsels-buddy', POS = 'morsels-buddy-home', PLAY = 'morsels-buddy-play', TALK = 'morsels-buddy-talk', OLDQUIET = 'morsels-buddy-quiet', MEM = 'morsels-buddy-memory';
+    var KEY = 'morsels-buddy', POS = 'morsels-buddy-home', PLAY = 'morsels-buddy-move', TALK = 'morsels-buddy-talk', OLDQUIET = 'morsels-buddy-quiet', MEM = 'morsels-buddy-memory';
     var on = true, playful = false, home = null, talk = 'normal';
     var mem = { first: 0, days: [], pats: 0, games: 0, patDay: '', seen: {}, said: [], lvl: 0, hint: 0, ms: {} };
     try {
@@ -12701,7 +12723,9 @@
       { sel: ['.rail-link[data-view="radio"]'], text: 'Free TV and radio to cook and eat to.', mood: 'happy' },
       { view: 'daily', sel: ['#view-daily .head'], text: 'Five little things a day, and a streak that grows when you show up.', mood: 'celebrate' },
       { view: 'profile', sel: ['#view-profile .head'], text: 'Your taste, your level, your language, and how much I talk. It is all here.', mood: 'happy' },
-      { sel: ['#buddy'], text: 'That is me in the corner. Tap me to chat. Hold me for a menu: ask me about morsels45, play a game, or take this tour again.', mood: 'love', wait: 'dot' },
+      { sel: ['#buddy'], text: 'That is me in the corner. Tap me and I say something. Pick me up and drop me anywhere, and I stay put until you move me again.', mood: 'love' },
+      { sel: ['#buddy'], text: 'Hold me for a menu: ask me about morsels45, play a game, take this tour again, or give me a pat.', mood: 'happy' },
+      { sel: ['.rail-link[data-view="decide"]'], text: 'While you decide I ride the progress bar and react to your answers. Tap me there for a hint: how many dishes each answer would leave.', mood: 'thinking' },
       { text: 'That is everything. Go on, decide something. I will be right here.', mood: 'celebrate', last: true }
     ];
     var open = false, n = 0, root = null, ui = {}, back = null, timer = 0;
