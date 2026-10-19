@@ -7300,3 +7300,29 @@ html.vt-active .buddy { view-transition-name: buddy; }
 .dg-odd-cell { aspect-ratio: 1; padding: 0; border: 1px solid var(--hair); border-radius: 12px; background: var(--raise, #1b1b1d); font-size: clamp(1.3rem, 7vw, 2rem); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: transform .2s var(--spring); }
 .dg-odd-cell:active { transform: scale(.9); }
 @media (prefers-reduced-motion: reduce) { .dg-flip, .dg-flip .dg-face, .dg-odd-cell { transition: none; } }
+
+/* --- Play with Dot: the second set of games --- */
+.dg-canvas { cursor: crosshair; }
+.dg-queue { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); width: min(100%, 330px); }
+.dg-cust { display: grid; gap: .2rem; justify-items: center; padding: .6rem .3rem; border: 1px solid var(--hair-lit); border-radius: 14px; background: var(--raise, #1b1b1d); transition: opacity .2s, transform .3s var(--spring); }
+.dg-cust.is-empty { opacity: .25; }
+.dg-cust.is-happy { transform: scale(1.08); border-color: #7bd17b; }
+.dg-face-c { font-size: 1.6rem; line-height: 1; min-height: 1.6rem; }
+.dg-order { font-size: 2rem; line-height: 1.2; min-height: 2.4rem; }
+.dg-pat { display: block; height: 5px; width: 100%; border-radius: 3px; background: #e0a340; transition: width .1s linear; }
+.dg-menu { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); width: min(100%, 330px); }
+.dg-dish-btn { padding: .5rem; font-size: 2rem; border: 1px solid var(--hair-lit); border-radius: 14px; background: none; cursor: pointer; touch-action: manipulation; transition: transform .15s var(--spring), border-color .2s; -webkit-tap-highlight-color: transparent; }
+.dg-dish-btn:active { transform: scale(.88); border-color: var(--amber); }
+.dg-board { position: relative; width: min(100%, 320px); aspect-ratio: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 8px; border-radius: 14px; background: #121214; border: 1px solid var(--hair-lit); touch-action: none; }
+.dg-bg { border-radius: 10px; background: rgb(255 255 255 / .05); }
+.dg-tiles { position: absolute; inset: 8px; pointer-events: none; }
+.dg-tile {
+  --r: 0; --c: 0; position: absolute; width: calc((100% - 24px) / 4); height: calc((100% - 24px) / 4); display: grid; place-items: center; font-size: clamp(1.6rem, 9vw, 2.4rem);
+  left: calc(var(--c) * ((100% - 24px) / 4 + 8px)); top: calc(var(--r) * ((100% - 24px) / 4 + 8px)); border-radius: 10px;
+  background: color-mix(in srgb, var(--amber) 18%, #1d1d20); transition: left .12s ease-out, top .12s ease-out;
+}
+.dg-tile[data-v="9"] { box-shadow: 0 0 18px var(--amber); }
+.dg-tile.is-new { animation: dg-pop .25s var(--spring) both; }
+.dg-tile.is-pop { animation: dg-merge .25s var(--spring); }
+@keyframes dg-merge { 40% { transform: scale(1.22); } }
+@media (prefers-reduced-motion: reduce) { .dg-tile, .dg-tile.is-new, .dg-tile.is-pop, .dg-cust { transition: none; animation: none; } }

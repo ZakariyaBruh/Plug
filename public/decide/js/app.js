@@ -12238,15 +12238,14 @@
 
     /* ---- the picker ---- */
     var GAMES = [
-      { id: 'flap', icon: '\u{1F426}', name: 'Dot Flap', blurb: 'Tap to flap through the forks.' },
-      { id: 'stack', icon: '\u{1F35E}', name: 'Dish Stack', blurb: 'Stack the dishes. Time it right.' },
-      { id: 'snake', icon: '\u{1F40D}', name: 'Nom Snake', blurb: 'Eat dishes. Grow. Do not bite yourself.' },
-      { id: 'pair', icon: '\u{1F0CF}', name: 'Pair Up', blurb: 'Flip cards and find the matching dishes.' },
-      { id: 'odd', icon: '\u{1F50D}', name: 'Odd Dish', blurb: 'Spot the one that is different. Fast.' },
-      { id: 'sear', icon: '\u{1F525}', name: 'Perfect Sear', blurb: 'Stop the marker in the green.' },
+      { id: 'arena', icon: '\u{1F336}\u{FE0F}', name: 'Food Fight', blurb: 'Survive the chillies. Level up, pick upgrades.' },
+      { id: 'jump', icon: '\u{1F680}', name: 'Dot Jump', blurb: 'Bounce up the kitchen. Springs, crumbling shelves.' },
+      { id: 'rush', icon: '\u{1F9D1}\u{200D}\u{1F373}', name: 'Kitchen Rush', blurb: 'Serve the queue before they lose patience.' },
+      { id: 'chop', icon: '\u{1F941}', name: 'Chop Beat', blurb: 'Chop ingredients in time to the beat.' },
+      { id: 'evolve', icon: '\u{1F451}', name: 'Evolve', blurb: 'Merge dishes up from an egg to a crown.' },
       { id: 'says', icon: '\u{1F9E0}', name: 'Dot Says', blurb: 'Watch the pads. Copy the pattern.' }
     ];
-    var RUN = function () { return { flap: flapGame, stack: stackGame, snake: snakeGame, pair: pairGame, odd: oddGame, sear: searGame, says: simonGame }; };
+    var RUN = function () { return { arena: arenaGame, jump: jumpGame, rush: rushGame, chop: chopGame, evolve: evolveGame, says: simonGame }; };
     function menu() {
       stopGame();
       var s = screen();
@@ -12316,283 +12315,332 @@
       g.restore();
     }
 
-    // The shared shell of the two canvas games: a canvas, a clock, a loop, and a teardown.
+    // The shared shell of the canvas games: a canvas, a clock, a loop, particles,
+    // floating numbers, screen shake, the pointer, and a teardown.
     function canvasGame(opts) {
       var s = screen();
       words(opts.intro, 'happy');
-      var W = 340, H = 400, dpr = Math.min(2, window.devicePixelRatio || 1);
+      var W = opts.W || 340, H = opts.H || 400, dpr = Math.min(2, window.devicePixelRatio || 1);
       var cv = h('canvas', 'dg-canvas');
       cv.width = W * dpr; cv.height = H * dpr;
+      cv.style.aspectRatio = W + ' / ' + H;
       cv.setAttribute('aria-label', opts.label);
       var g = cv.getContext('2d');
       g.scale(dpr, dpr);
       var hud = h('p', 'dg-score', '');
       s.appendChild(hud); s.appendChild(cv);
       s.appendChild(h('p', 'fine', opts.how));
-      var st = { W: W, H: H, g: g, cv: cv, score: 0, lives: 3, t: 0, over: false, mouth: 'smile', mouthT: 0 };
-      var last = performance.now(), raf = 0;
-      function hearts() { return new Array(Math.max(0, st.lives) + 1).join('♥ ').trim() || '—'; }
-      st.hud = function () { hud.textContent = 'Score ' + st.score + ' · ' + hearts(); };
-      st.hurt = function () { if (st.over) return; st.lives--; st.mouth = 'sad'; st.mouthT = .5; Sound.bust(); Dot.mood(dotEl, 'sad', 700); if (st.lives <= 0) st.over = true; st.hud(); };
+      var st = { W: W, H: H, g: g, cv: cv, score: 0, lives: opts.lives === undefined ? 3 : opts.lives, t: 0, over: false, paused: false, mouth: 'smile', mouthT: 0, fx: [], pops: [], shake: 0, ptr: { x: W / 2, y: H / 2, down: false } };
+      var last = performance.now(), raf = 0, hooks = [];
+      function hearts() { return st.lives > 0 ? new Array(st.lives + 1).join('♥ ').trim() : '—'; }
+      st.hud = function () { hud.textContent = (opts.hudText ? opts.hudText(st) : 'Score ' + st.score) + (opts.lives === 0 ? '' : ' · ' + hearts()); };
+      st.hurt = function () { if (st.over) return; st.lives--; st.mouth = 'sad'; st.mouthT = .5; st.shake = 9; Sound.bust(); Dot.mood(dotEl, 'sad', 700); if (st.lives <= 0) st.over = true; st.hud(); };
       st.gain = function (n) { st.score += n; st.mouth = 'open'; st.mouthT = .25; Sound.climb(Math.min(14, st.score)); st.hud(); };
+      st.burst = function (x, y, color, n) { for (var i = 0; i < (n || 10); i++) { var a = Math.random() * 6.3, v = 40 + Math.random() * 160; st.fx.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: 0.5 + Math.random() * 0.4, c: color || '#e0a340' }); } };
+      st.pop = function (x, y, text, color) { st.pops.push({ x: x, y: y, text: text, life: 0.9, c: color || '#fff' }); };
+      st.on = function (target, ev, fn, o) { target.addEventListener(ev, fn, o); hooks.push([target, ev, fn, o]); };
+      function point(e) { var r = cv.getBoundingClientRect(); st.ptr.x = (e.clientX - r.left) / r.width * W; st.ptr.y = (e.clientY - r.top) / r.height * H; }
+      cv.addEventListener('pointermove', point);
+      cv.addEventListener('pointerdown', function (e) { point(e); st.ptr.down = true; try { cv.setPointerCapture(e.pointerId); } catch (err) { /* fine */ } });
+      cv.addEventListener('pointerup', function () { st.ptr.down = false; });
       function frame(now) {
         var dt = Math.min(0.05, (now - last) / 1000); last = now;
-        if (!st.over) { st.t += dt; st.mouthT -= dt; if (st.mouthT <= 0) st.mouth = 'smile'; opts.update(st, dt); }
+        if (!st.over) { st.t += dt; st.mouthT -= dt; if (st.mouthT <= 0) st.mouth = 'smile'; if (!st.paused) opts.update(st, dt); }
+        st.fx.forEach(function (p) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; p.life -= dt; });
+        st.fx = st.fx.filter(function (p) { return p.life > 0; });
+        st.pops.forEach(function (p) { p.y -= 34 * dt; p.life -= dt; });
+        st.pops = st.pops.filter(function (p) { return p.life > 0; });
+        st.shake = Math.max(0, st.shake - dt * 30);
         g.clearRect(0, 0, W, H);
+        g.save();
+        if (st.shake > 0.3 && !reduceMotion) g.translate((Math.random() - 0.5) * st.shake, (Math.random() - 0.5) * st.shake);
         opts.draw(st);
-        if (st.over) { cancelAnimationFrame(raf); setTimeout(function () { if (open) results(opts.id, st.score, opts.again, opts.notes); }, 650); return; }
+        st.fx.forEach(function (p) { g.globalAlpha = Math.max(0, p.life * 1.6); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, 2.6, 0, 6.3); g.fill(); });
+        g.globalAlpha = 1;
+        g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 15px sans-serif';
+        st.pops.forEach(function (p) { g.globalAlpha = Math.min(1, p.life * 2); g.fillStyle = p.c; g.fillText(p.text, p.x, p.y); });
+        g.globalAlpha = 1;
+        g.restore();
+        if (st.over) { cancelAnimationFrame(raf); setTimeout(function () { if (open) results(opts.id, st.score, opts.again, opts.notes); }, 700); return; }
         raf = requestAnimationFrame(frame);
       }
       opts.setup(st);
       st.hud();
       raf = requestAnimationFrame(frame);
-      var off = function () { cancelAnimationFrame(raf); st.over = true; if (opts.teardown) opts.teardown(st); };
-      cleanup = off;
+      cleanup = function () { cancelAnimationFrame(raf); st.over = true; hooks.forEach(function (k) { k[0].removeEventListener(k[1], k[2], k[3]); }); if (opts.teardown) opts.teardown(st); };
     }
+    function dirKeys(st, map) { st.on(document, 'keydown', function (e) { var f = map[e.key]; if (f) { e.preventDefault(); f(); } }); }
+    var DISH = function () { return pickOne(Data.ITEMS).icon; };
 
-    /* Dot Flap: tap to flap, squeeze through the gaps between the forks. */
-    function flapGame() {
-      var keyHandler = null;
+    /* Food Fight: an arena. Dot throws seeds at the angry chillies on its own; you steer, collect the sparks, and pick an upgrade each level. */
+    function arenaGame() {
       canvasGame({
-        id: 'flap', label: 'Dot Flap', again: flapGame,
-        intro: 'Tap to flap. Squeeze through the forks. Gravity is not my friend.',
-        how: 'Tap the board, or press space.',
-        notes: ['Everyone drops one. Or six.', 'It was the fork’s fault.'],
+        id: 'arena', label: 'Food Fight', again: arenaGame, W: 360, H: 440, lives: 3,
+        intro: 'They are coming. I throw seeds. You do the moving.',
+        how: 'Drag to steer Dot (or use the arrow keys). It fires by itself. Pick an upgrade when you level up.',
+        notes: ['Chillies everywhere. I did warn you.', 'It was the onions. It is always the onions.'],
+        hudText: function (st) { return 'Level ' + st.lvl + ' · ' + st.score + ' down'; },
         setup: function (st) {
-          st.lives = 1; st.y = st.H / 2; st.vy = 0; st.pipes = []; st.spawn = 0.4; st.started = false;
-          function flap() { st.started = true; st.vy = -300; st.mouth = 'open'; st.mouthT = 0.15; }
-          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); flap(); });
-          keyHandler = function (e) { if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); flap(); } };
-          document.addEventListener('keydown', keyHandler);
+          st.x = st.W / 2; st.y = st.H / 2; st.en = []; st.sh = []; st.gems = []; st.fire = 0; st.spawn = 0; st.inv = 0; st.xp = 0; st.need = 6; st.lvl = 1;
+          st.rate = 0.55; st.multi = 1; st.magnet = 46; st.speed = 150; st.keys = {}; st.choice = null;
+          st.on(document, 'keydown', function (e) { st.keys[e.key] = true; if (st.choice && (e.key === '1' || e.key === '2')) pick(+e.key - 1); });
+          st.on(document, 'keyup', function (e) { st.keys[e.key] = false; });
+          st.cv.addEventListener('pointerdown', function () { if (st.choice) pick(st.ptr.x < st.W / 2 ? 0 : 1); });
+          var UPS = [
+            { n: 'Faster seeds', d: 'Fire 30% faster', f: function () { st.rate *= 0.7; } },
+            { n: 'Twin seeds', d: 'One more seed per shot', f: function () { st.multi++; } },
+            { n: 'Magnet', d: 'Sparks fly to you', f: function () { st.magnet += 50; } },
+            { n: 'Quick feet', d: 'Move faster', f: function () { st.speed += 40; } },
+            { n: 'Second helping', d: 'Restore a heart', f: function () { st.lives = Math.min(5, st.lives + 1); st.hud(); } }
+          ];
+          function pick(i) { st.choice[i].f(); st.choice = null; st.paused = false; st.burst(st.x, st.y, '#fff', 14); }
+          st.levelUp = function () { st.lvl++; st.xp = 0; st.need = Math.round(st.need * 1.35) + 2; st.paused = true; st.choice = shuffle(UPS).slice(0, 2); Sound.reveal && Sound.reveal(); st.hud(); };
         },
         update: function (st, dt) {
-          if (!st.started) { st.y = st.H / 2 + Math.sin(st.t * 4) * 6; return; }
-          st.vy += 900 * dt; st.y += st.vy * dt;
+          var tx = st.ptr.down ? st.ptr.x : st.x, ty = st.ptr.down ? st.ptr.y : st.y;
+          if (st.keys.ArrowLeft) tx = st.x - 50; if (st.keys.ArrowRight) tx = st.x + 50; if (st.keys.ArrowUp) ty = st.y - 50; if (st.keys.ArrowDown) ty = st.y + 50;
+          var dx = tx - st.x, dy = ty - st.y, d = Math.hypot(dx, dy);
+          if (d > 3) { var m = Math.min(d, st.speed * dt); st.x += dx / d * m; st.y += dy / d * m; }
+          st.x = Math.max(14, Math.min(st.W - 14, st.x)); st.y = Math.max(14, Math.min(st.H - 14, st.y));
+          st.inv -= dt;
           st.spawn -= dt;
-          if (st.spawn <= 0) { st.spawn = 1.55; st.pipes.push({ x: st.W + 30, gap: 70 + Math.random() * (st.H - 200), passed: false }); }
-          var speed = 120 + Math.min(80, st.score * 4);
-          for (var i = st.pipes.length - 1; i >= 0; i--) {
-            var p = st.pipes[i];
-            p.x -= speed * dt;
-            if (!p.passed && p.x < 70) { p.passed = true; st.gain(1); }
-            if (Math.abs(p.x - 90) < 23 + 18 && (st.y - 18 < p.gap - 62 || st.y + 18 > p.gap + 62)) { st.hurt(); }
-            if (p.x < -40) st.pipes.splice(i, 1);
+          if (st.spawn <= 0) {
+            st.spawn = Math.max(0.28, 0.95 - st.t * 0.011);
+            var side = Math.floor(Math.random() * 4), ex = side % 2 ? (side === 1 ? st.W + 14 : -14) : Math.random() * st.W, ey = side % 2 ? Math.random() * st.H : (side === 0 ? -14 : st.H + 14);
+            var tough = st.t > 25 && Math.random() < Math.min(0.4, (st.t - 25) * 0.01);
+            st.en.push({ x: ex, y: ey, hp: tough ? 3 : 1, icon: tough ? '\u{1F9C5}' : '\u{1F336}\u{FE0F}', v: (tough ? 38 : 52) + st.t * 0.6 + Math.random() * 18 });
           }
-          if (st.y > st.H - 18 || st.y < 18) st.hurt();
+          st.fire -= dt;
+          if (st.fire <= 0 && st.en.length) {
+            st.fire = st.rate;
+            var near = st.en.slice().sort(function (a, b) { return Math.hypot(a.x - st.x, a.y - st.y) - Math.hypot(b.x - st.x, b.y - st.y); })[0], ang = Math.atan2(near.y - st.y, near.x - st.x);
+            for (var k = 0; k < st.multi; k++) { var a2 = ang + (k - (st.multi - 1) / 2) * 0.22; st.sh.push({ x: st.x, y: st.y, vx: Math.cos(a2) * 320, vy: Math.sin(a2) * 320, life: 1.2 }); }
+            st.mouth = 'open'; st.mouthT = 0.1;
+          }
+          st.sh.forEach(function (b) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; });
+          st.en.forEach(function (e) {
+            var a = Math.atan2(st.y - e.y, st.x - e.x); e.x += Math.cos(a) * e.v * dt; e.y += Math.sin(a) * e.v * dt;
+            st.sh.forEach(function (b) { if (b.life > 0 && Math.hypot(b.x - e.x, b.y - e.y) < 15) { b.life = 0; e.hp--; st.burst(e.x, e.y, '#ff7043', 5); } });
+            if (e.hp <= 0 && !e.dead) { e.dead = true; st.score++; st.gems.push({ x: e.x, y: e.y }); st.pop(e.x, e.y - 10, '+1'); st.burst(e.x, e.y, '#ffb74d', 9); Sound.climb(Math.min(14, st.score)); st.hud(); }
+            if (!e.dead && st.inv <= 0 && Math.hypot(st.x - e.x, st.y - e.y) < 19) { e.dead = true; st.inv = 1.1; st.hurt(); st.burst(st.x, st.y, '#ff5252', 12); }
+          });
+          st.en = st.en.filter(function (e) { return !e.dead; }); st.sh = st.sh.filter(function (b) { return b.life > 0; });
+          st.gems = st.gems.filter(function (gm) {
+            var d2 = Math.hypot(st.x - gm.x, st.y - gm.y);
+            if (d2 < st.magnet) { gm.x += (st.x - gm.x) * Math.min(1, dt * 9); gm.y += (st.y - gm.y) * Math.min(1, dt * 9); }
+            if (d2 < 14) { st.xp++; Sound.tick(); if (st.xp >= st.need) st.levelUp(); return false; }
+            return true;
+          });
         },
         draw: function (st) {
           var g = st.g;
-          g.fillStyle = '#e0a340';
-          st.pipes.forEach(function (p) {
-            g.fillRect(p.x - 22, 0, 44, p.gap - 62); g.fillRect(p.x - 22, p.gap + 62, 44, st.H);
-            g.fillStyle = '#f0c070'; g.fillRect(p.x - 26, p.gap - 76, 52, 14); g.fillRect(p.x - 26, p.gap + 62, 52, 14); g.fillStyle = '#e0a340';
-          });
-          drawDot(g, 90, st.y, 18, st.mouth);
-          if (!st.started) { g.fillStyle = '#fff'; g.font = '14px sans-serif'; g.textAlign = 'center'; g.fillText('Tap to start', st.W / 2, st.H * 0.7); }
-        },
-        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
-      });
-    }
-
-    /* Dish Stack: drop each dish exactly on the last one. What overhangs is cut off. */
-    function stackGame() {
-      var keyHandler = null;
-      canvasGame({
-        id: 'stack', label: 'Dish Stack', again: stackGame,
-        intro: 'Stack the dishes. Time it right. Do not think about the wobble.',
-        how: 'Tap the board, or press space, to drop the dish.',
-        notes: ['Memory is overrated.', 'It was the dish’s fault.'],
-        setup: function (st) {
-          st.lives = 1; st.h = 22; st.blocks = [{ x: st.W / 2 - 80, w: 160, icon: '\u{1F35E}' }]; st.cx = 0; st.dir = 1; st.w = 160; st.shift = 0;
-          st.cx = 0;
-          function drop() {
-            var top = st.blocks[st.blocks.length - 1], left = Math.max(top.x, st.cx), right = Math.min(top.x + top.w, st.cx + st.w);
-            if (right - left < 4) { st.hurt(); return; }
-            var perfect = Math.abs(st.cx - top.x) < 5;
-            var nx = perfect ? top.x : left, nw = perfect ? top.w : right - left;
-            st.blocks.push({ x: nx, w: nw, icon: pickOne(Data.ITEMS).icon });
-            st.w = nw; st.score++; st.mouth = 'open'; st.mouthT = 0.3; Sound.climb(Math.min(14, st.score)); st.hud();
+          g.fillStyle = 'rgba(255,255,255,.04)'; for (var i = 0; i < st.W; i += 40) { g.fillRect(i, 0, 1, st.H); } for (var j = 0; j < st.H; j += 40) { g.fillRect(0, j, st.W, 1); }
+          g.fillStyle = '#8be9fd'; st.gems.forEach(function (gm) { g.beginPath(); g.arc(gm.x, gm.y, 4, 0, 6.3); g.fill(); });
+          g.fillStyle = '#fff'; st.sh.forEach(function (b) { g.beginPath(); g.arc(b.x, b.y, 3.5, 0, 6.3); g.fill(); });
+          g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '24px serif'; g.fillStyle = '#fff';
+          st.en.forEach(function (e) { g.fillText(e.icon, e.x, e.y + 1); });
+          if (st.inv > 0 && Math.floor(st.inv * 12) % 2) g.globalAlpha = 0.4;
+          drawDot(g, st.x, st.y, 15, st.mouth); g.globalAlpha = 1;
+          g.fillStyle = 'rgba(255,255,255,.15)'; g.fillRect(0, st.H - 6, st.W, 6); g.fillStyle = '#8be9fd'; g.fillRect(0, st.H - 6, st.W * st.xp / st.need, 6);
+          if (st.choice) {
+            g.fillStyle = 'rgba(0,0,0,.72)'; g.fillRect(0, 0, st.W, st.H);
+            g.fillStyle = '#fff'; g.font = 'bold 16px sans-serif'; g.fillText('Level ' + st.lvl + '! Pick one', st.W / 2, 60);
+            st.choice.forEach(function (c, k) {
+              var x = 20 + k * (st.W / 2 - 10), w = st.W / 2 - 30;
+              g.fillStyle = '#26262a'; g.strokeStyle = '#e0a340'; g.lineWidth = 2; g.beginPath(); g.roundRect ? g.roundRect(x, 120, w, 170, 14) : g.rect(x, 120, w, 170); g.fill(); g.stroke();
+              g.fillStyle = '#e0a340'; g.font = 'bold 16px sans-serif'; g.fillText(c.n, x + w / 2, 175); g.fillStyle = '#ddd'; g.font = '13px sans-serif'; g.fillText(c.d, x + w / 2, 215);
+              g.fillStyle = '#888'; g.fillText(String(k + 1), x + w / 2, 265);
+            });
           }
-          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); drop(); });
-          keyHandler = function (e) { if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); drop(); } };
-          document.addEventListener('keydown', keyHandler);
-        },
-        update: function (st, dt) {
-          var speed = 130 + st.score * 9;
-          st.cx += st.dir * speed * dt;
-          if (st.cx < 0) { st.cx = 0; st.dir = 1; }
-          if (st.cx + st.w > st.W) { st.cx = st.W - st.w; st.dir = -1; }
-          var want = Math.max(0, st.blocks.length - 11) * st.h;
-          st.shift += (want - st.shift) * Math.min(1, dt * 6);
-        },
-        draw: function (st) {
-          var g = st.g, base = st.H - 30 + st.shift;
-          st.blocks.forEach(function (b, i) {
-            var y = base - i * st.h;
-            g.fillStyle = 'hsl(' + ((i * 23 + 30) % 360) + ',60%,58%)';
-            g.fillRect(b.x, y, b.w, st.h - 2);
-          });
-          var y = base - st.blocks.length * st.h;
-          g.fillStyle = '#f5eee1'; g.fillRect(st.cx, y, st.w, st.h - 2);
-          drawDot(g, st.cx + st.w / 2, y - 16, 14, st.mouth);
-        },
-        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
-      });
-    }
-
-    /* Nom Snake: Dot grows with every dish it eats. Walls and tails are bad. */
-    function snakeGame() {
-      var keyHandler = null;
-      canvasGame({
-        id: 'snake', label: 'Nom Snake', again: snakeGame,
-        intro: 'Eat the dishes. Grow. Try not to eat yourself.',
-        how: 'Swipe on the board, or use the arrow keys.',
-        notes: ['I ate my own tail. It happens.', 'Memory is overrated.'],
-        setup: function (st) {
-          st.lives = 1; st.C = 17; st.R = 20; st.cell = 20;
-          st.body = [{ x: 8, y: 10 }, { x: 7, y: 10 }, { x: 6, y: 10 }]; st.dir = { x: 1, y: 0 }; st.next = { x: 1, y: 0 }; st.acc = 0;
-          function food() { var f; do { f = { x: Math.floor(Math.random() * st.C), y: Math.floor(Math.random() * st.R), icon: pickOne(Data.ITEMS).icon }; } while (st.body.some(function (b) { return b.x === f.x && b.y === f.y; })); st.food = f; }
-          st.placeFood = food; food();
-          function turn(x, y) { if (x === -st.dir.x && y === -st.dir.y) return; st.next = { x: x, y: y }; }
-          var sx = 0, sy = 0;
-          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); sx = e.clientX; sy = e.clientY; });
-          st.cv.addEventListener('pointerup', function (e) {
-            var dx = e.clientX - sx, dy = e.clientY - sy;
-            if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
-            if (Math.abs(dx) > Math.abs(dy)) turn(dx > 0 ? 1 : -1, 0); else turn(0, dy > 0 ? 1 : -1);
-          });
-          keyHandler = function (e) {
-            var m = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
-            if (m) { e.preventDefault(); turn(m[0], m[1]); }
-          };
-          document.addEventListener('keydown', keyHandler);
-        },
-        update: function (st, dt) {
-          st.acc += dt;
-          var tick = Math.max(0.07, 0.15 - st.score * 0.003);
-          while (st.acc >= tick && !st.over) {
-            st.acc -= tick; st.dir = st.next;
-            var h = { x: st.body[0].x + st.dir.x, y: st.body[0].y + st.dir.y };
-            if (h.x < 0 || h.y < 0 || h.x >= st.C || h.y >= st.R || st.body.some(function (b) { return b.x === h.x && b.y === h.y; })) { st.hurt(); return; }
-            st.body.unshift(h);
-            if (h.x === st.food.x && h.y === st.food.y) { st.gain(1); st.placeFood(); } else st.body.pop();
-          }
-        },
-        draw: function (st) {
-          var g = st.g, c = st.cell;
-          g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.font = '16px serif';
-          g.fillText(st.food.icon, st.food.x * c + c / 2, st.food.y * c + c / 2 + 1);
-          for (var i = st.body.length - 1; i > 0; i--) { g.fillStyle = i % 2 ? '#f5eee1' : '#e8dcc4'; g.beginPath(); g.arc(st.body[i].x * c + c / 2, st.body[i].y * c + c / 2, c * 0.42, 0, 6.3); g.fill(); }
-          drawDot(g, st.body[0].x * c + c / 2, st.body[0].y * c + c / 2, c * 0.62, st.mouth);
-        },
-        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
-      });
-    }
-
-    /* Pair Up: flip two cards at a time and find the matching dishes. */
-    function pairGame() {
-      var s = screen();
-      words('Find the pairs. I will pretend I am not watching.', 'happy');
-      var icons = shuffle(Data.ITEMS.map(function (d) { return d.icon; }).filter(function (v, i, a) { return a.indexOf(v) === i; })).slice(0, 8);
-      var deck = shuffle(icons.concat(icons)), first = null, lock = false, found = 0, moves = 0, t0 = Date.now();
-      var hud = h('p', 'dg-score', 'Score 0'), grid = h('div', 'dg-cards');
-      s.appendChild(hud); s.appendChild(grid);
-      s.appendChild(h('p', 'fine', 'Tap two cards. Match them all, in as few tries as you can.'));
-      var timers = [];
-      deck.forEach(function (icon) {
-        var c = h('button', 'dg-flip');
-        c.type = 'button'; c.setAttribute('aria-label', 'Card');
-        c.appendChild(h('span', 'dg-face', icon));
-        c.addEventListener('click', function () {
-          if (lock || c.classList.contains('is-up') || c.classList.contains('is-done')) return;
-          Sound.tick(); c.classList.add('is-up');
-          if (!first) { first = c; return; }
-          moves++; lock = true;
-          if (first.textContent === c.textContent) {
-            first.classList.add('is-done'); c.classList.add('is-done'); first = null; lock = false; found++;
-            Sound.climb(found * 2); Dot.mood(dotEl, 'happy', 700);
-            if (found === 8) {
-              var secs = Math.round((Date.now() - t0) / 1000);
-              timers.push(setTimeout(function () { results('pair', Math.max(5, 60 - moves * 2 + Math.max(0, 40 - secs)), pairGame, ['Memory is overrated.', 'Everyone drops one. Or six.']); }, 500));
-            }
-          } else {
-            var a = first; first = null;
-            timers.push(setTimeout(function () { a.classList.remove('is-up'); c.classList.remove('is-up'); lock = false; }, 650));
-          }
-        });
-        grid.appendChild(c);
-      });
-      cleanup = function () { timers.forEach(clearTimeout); };
-    }
-
-    /* Odd Dish: one of them is not like the others. Be quick. */
-    function oddGame() {
-      var s = screen();
-      words('One of these is different. You have twenty-five seconds.', 'thinking');
-      var SETS = [['\u{1F345}', '\u{1F34E}'], ['\u{1F34B}', '\u{1F9C0}'], ['\u{1F9C5}', '\u{1F9C4}'], ['\u{1F35E}', '\u{1F950}'], ['\u{1F355}', '\u{1F9C0}'], ['\u{1F35C}', '\u{1F35D}'], ['\u{1F353}', '\u{1F352}'], ['\u{1F954}', '\u{1F360}']];
-      var score = 0, left = 25, over = false, n = 3;
-      var hud = h('p', 'dg-score', 'Score 0 · 25s'), grid = h('div', 'dg-odd');
-      s.appendChild(hud); s.appendChild(grid);
-      s.appendChild(h('p', 'fine', 'Tap the odd one out. A wrong tap costs two seconds.'));
-      function paint() { hud.textContent = 'Score ' + score + ' · ' + left + 's'; }
-      function board() {
-        clear2(grid);
-        var size = Math.min(6, n + Math.floor(score / 4)), pair = shuffle(pickOne(SETS)), odd = Math.floor(Math.random() * size * size);
-        grid.style.setProperty('--n', size);
-        for (var i = 0; i < size * size; i++) {
-          var b = h('button', 'dg-odd-cell', i === odd ? pair[1] : pair[0]);
-          b.type = 'button'; b.setAttribute('aria-label', 'Dish');
-          b.addEventListener('pointerdown', function (e) {
-            e.preventDefault();
-            if (over) return;
-            if (this === grid.children[odd]) { score++; Sound.climb(Math.min(14, score)); board(); }
-            else { left = Math.max(0, left - 2); Sound.bust(); Dot.mood(dotEl, 'sad', 500); }
-            paint();
-          });
-          grid.appendChild(b);
         }
-      }
-      board();
-      var clock = setInterval(function () {
-        left--; paint();
-        if (left <= 0) { over = true; stopGame(); results('odd', score, oddGame, ['Thirty seconds. Felt longer.', 'Memory is overrated.']); }
-      }, 1000);
-      cleanup = function () { over = true; clearInterval(clock); };
+      });
     }
 
-    /* Perfect Sear: stop the marker inside the green. It gets smaller and faster. */
-    function searGame() {
-      var keyHandler = null;
+    /* Dot Jump: bounce up through the kitchen. Springs, moving shelves and shelves that crumble. */
+    function jumpGame() {
       canvasGame({
-        id: 'sear', label: 'Perfect Sear', again: searGame,
-        intro: 'Stop the marker in the green. A perfect sear. Do not rush. Rush a bit.',
-        how: 'Tap the board, or press space, to stop the marker.',
-        notes: ['It was a bit burnt. Fine.', 'Everyone drops one. Or six.'],
+        id: 'jump', label: 'Dot Jump', again: jumpGame, W: 340, H: 460, lives: 0,
+        intro: 'Up we go. Land on the shelves. Grab the dishes. Do not fall.',
+        how: 'Drag left and right (or use the arrow keys) to steer. Dot bounces by itself.',
+        notes: ['Gravity again. It is always gravity.', 'I was nearly at the ceiling.'],
+        hudText: function (st) { return 'Height ' + Math.floor(st.height / 10) + ' · ' + st.dishes + ' dishes'; },
         setup: function (st) {
-          st.m = 0; st.dir = 1; st.zone = { c: 0.5, w: 0.3 }; st.flash = 0;
-          function stop() {
-            var hit = Math.abs(st.m - st.zone.c) <= st.zone.w / 2;
-            if (hit) { st.gain(1); st.flash = 1; st.zone = { c: 0.15 + Math.random() * 0.7, w: Math.max(0.07, 0.3 - st.score * 0.018) }; } else { st.hurt(); st.flash = -1; }
-          }
-          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); stop(); });
-          keyHandler = function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); stop(); } };
-          document.addEventListener('keydown', keyHandler);
+          st.x = st.W / 2; st.y = st.H - 90; st.vy = -520; st.height = 0; st.dishes = 0; st.cam = 0; st.keys = {}; st.pl = []; st.top = st.H;
+          function shelf(y) { var r = Math.random(), t = st.height > 200 && r < 0.18 ? 'move' : st.height > 400 && r < 0.3 ? 'crumble' : r > 0.93 ? 'spring' : 'norm'; var p = { x: 20 + Math.random() * (st.W - 80), y: y, w: 62, t: t, dx: 50 + Math.random() * 40, gone: false }; if (Math.random() < 0.28) p.food = DISH(); st.pl.push(p); }
+          st.shelf = shelf; for (var y = st.H - 40; y > -40; y -= 62) shelf(y); st.pl[0] = { x: st.W / 2 - 40, y: st.H - 40, w: 80, t: 'norm', dx: 0 };
+          st.on(document, 'keydown', function (e) { st.keys[e.key] = true; }); st.on(document, 'keyup', function (e) { st.keys[e.key] = false; });
         },
         update: function (st, dt) {
-          st.m += st.dir * (0.7 + st.score * 0.06) * dt;
-          if (st.m > 1) { st.m = 1; st.dir = -1; } if (st.m < 0) { st.m = 0; st.dir = 1; }
-          st.flash *= 0.9;
+          var tx = st.ptr.down ? st.ptr.x : null;
+          if (st.keys.ArrowLeft) st.x -= 230 * dt; else if (st.keys.ArrowRight) st.x += 230 * dt; else if (tx !== null) st.x += (tx - st.x) * Math.min(1, dt * 10);
+          if (st.x < -10) st.x = st.W + 10; if (st.x > st.W + 10) st.x = -10;
+          var oy = st.y; st.vy += 1150 * dt; st.y += st.vy * dt;
+          if (st.y < st.H * 0.4) { var d = st.H * 0.4 - st.y; st.y = st.H * 0.4; st.height += d; st.pl.forEach(function (p) { p.y += d; }); }
+          st.pl.forEach(function (p) {
+            if (p.t === 'move') { p.x += p.dx * dt; if (p.x < 0 || p.x + p.w > st.W) p.dx = -p.dx; }
+            if (!p.gone && st.vy > 0 && oy + 14 <= p.y + 4 && st.y + 14 >= p.y && st.x > p.x - 8 && st.x < p.x + p.w + 8) {
+              if (p.t === 'crumble') { p.gone = true; st.burst(p.x + 30, p.y, '#b58a5a', 10); Sound.shrug(); }
+              else { st.vy = p.t === 'spring' ? -860 : -560; st.mouth = 'open'; st.mouthT = 0.2; if (p.t === 'spring') { st.burst(st.x, p.y, '#ff5252', 10); st.pop(st.x, p.y - 20, 'BOING', '#ff8a80'); Sound.climb(10); } else Sound.tick(); }
+            }
+            if (p.food && Math.hypot(st.x - (p.x + p.w / 2), st.y - (p.y - 18)) < 24) { p.food = null; st.dishes++; st.score += 5; st.pop(st.x, st.y - 24, '+5', '#e0a340'); st.burst(st.x, st.y, '#e0a340', 8); Sound.climb(Math.min(14, st.dishes * 2)); st.hud(); }
+          });
+          st.pl = st.pl.filter(function (p) { return p.y < st.H + 20 && !p.gone; });
+          var hi = Math.min.apply(null, st.pl.map(function (p) { return p.y; }));
+          while (hi > -30) { hi -= 56 + Math.min(40, st.height / 80); st.shelf(hi); }
+          st.score = Math.floor(st.height / 10) + st.dishes * 5; st.hud();
+          if (st.y > st.H + 30) { st.over = true; st.shake = 10; Sound.bust(); }
         },
         draw: function (st) {
-          var g = st.g, x0 = 24, w = st.W - 48, y = st.H / 2;
-          g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(x0, y - 14, w, 28);
-          g.fillStyle = st.flash > 0.1 ? '#8ee08e' : '#4caf50'; g.fillRect(x0 + (st.zone.c - st.zone.w / 2) * w, y - 14, st.zone.w * w, 28);
-          g.fillStyle = '#fff'; g.fillRect(x0 + st.m * w - 3, y - 26, 6, 52);
-          if (st.flash < -0.1) { g.fillStyle = 'rgba(255,80,60,' + (-st.flash * 0.35) + ')'; g.fillRect(0, 0, st.W, st.H); }
-          drawDot(g, st.W / 2, y - 90, 30, st.mouth);
-        },
-        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
+          var g = st.g;
+          st.pl.forEach(function (p) {
+            g.fillStyle = p.t === 'spring' ? '#ff5252' : p.t === 'crumble' ? '#9c7a52' : p.t === 'move' ? '#64b5f6' : '#7bd17b';
+            g.beginPath(); g.roundRect ? g.roundRect(p.x, p.y, p.w, 10, 5) : g.rect(p.x, p.y, p.w, 10); g.fill();
+            if (p.food) { g.font = '22px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.fillText(p.food, p.x + p.w / 2, p.y - 16); }
+          });
+          drawDot(g, st.x, st.y, 15, st.vy < 0 ? 'open' : st.mouth);
+        }
       });
+    }
+
+    /* Kitchen Rush: customers queue with orders and run out of patience. Serve the right dish, fast, and keep the combo. */
+    function rushGame() {
+      var s = screen();
+      words('Orders are in. Serve the right dish before they lose patience.', 'happy');
+      var MENU = shuffle(Data.ITEMS.filter(function (d) { return !d.tags.drink; })).slice(0, 6).map(function (d) { return d.icon; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+      var score = 0, lives = 3, combo = 0, over = false, queue = [null, null, null], t = 0, spawnIn = 0.5, last = performance.now(), raf = 0;
+      var hud = h('p', 'dg-score', ''), room = h('div', 'dg-queue'), menu = h('div', 'dg-menu'), slots = [];
+      function paint() { hud.textContent = 'Score ' + score + ' · ' + (combo > 1 ? '×' + combo + ' · ' : '') + new Array(Math.max(0, lives) + 1).join('♥ ').trim(); }
+      for (var i = 0; i < 3; i++) { var sl = h('div', 'dg-cust'); sl.appendChild(h('span', 'dg-face-c', '')); sl.appendChild(h('span', 'dg-order', '')); var bar = h('i', 'dg-pat'); sl.appendChild(bar); slots.push(sl); room.appendChild(sl); }
+      MENU.forEach(function (icon) {
+        var b = h('button', 'dg-dish-btn', icon); b.type = 'button'; b.setAttribute('aria-label', 'Dish');
+        b.addEventListener('pointerdown', function (e) { e.preventDefault(); serve(icon); });
+        menu.appendChild(b);
+      });
+      s.appendChild(hud); s.appendChild(room); s.appendChild(menu);
+      s.appendChild(h('p', 'fine', 'Tap the dish a customer ordered. The wrong dish breaks your combo.'));
+      function serve(icon) {
+        if (over) return;
+        var best = -1;
+        queue.forEach(function (c, k) { if (c && c.want === icon && (best < 0 || c.pat < queue[best].pat)) best = k; });
+        if (best < 0) { combo = 0; Sound.bust(); Dot.mood(dotEl, 'shrug', 500); paint(); return; }
+        var c = queue[best]; combo++; score += Math.round(10 + c.pat * 10) * Math.min(5, combo); queue[best] = null;
+        slots[best].classList.add('is-happy'); setTimeout(function () { slots[best].classList.remove('is-happy'); }, 350);
+        Sound.climb(Math.min(14, combo * 2)); Dot.mood(dotEl, 'happy', 500); paint();
+      }
+      function frame(now) {
+        var dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+        spawnIn -= dt;
+        if (spawnIn <= 0) { var free = queue.map(function (c, k) { return c ? -1 : k; }).filter(function (k) { return k >= 0; }); if (free.length) queue[pickOne(free)] = { want: pickOne(MENU), pat: 1, rate: 0.085 + Math.min(0.12, t * 0.0016) }; spawnIn = Math.max(0.9, 2.4 - t * 0.03); }
+        queue.forEach(function (c, k) {
+          if (c) { c.pat -= c.rate * dt; if (c.pat <= 0) { queue[k] = null; lives--; combo = 0; Sound.bust(); Dot.mood(dotEl, 'sad', 600); paint(); if (lives <= 0) { over = true; } } }
+          var sl = slots[k]; sl.classList.toggle('is-empty', !c);
+          if (c) { sl.children[1].textContent = c.want; sl.children[2].style.width = Math.max(0, c.pat * 100) + '%'; sl.children[2].style.background = c.pat < 0.3 ? '#ff5252' : '#e0a340'; sl.children[0].textContent = c.pat < 0.3 ? '\u{1F620}' : c.pat < 0.6 ? '\u{1F610}' : '\u{1F642}'; }
+        });
+        if (over) { setTimeout(function () { if (open) results('rush', score, rushGame, ['The queue won. The queue always wins.', 'They were very hungry.']); }, 500); return; }
+        raf = requestAnimationFrame(frame);
+      }
+      paint(); raf = requestAnimationFrame(frame);
+      cleanup = function () { over = true; cancelAnimationFrame(raf); };
+    }
+
+    /* Chop Beat: ingredients fall in time to a beat. Chop them as they cross the line. */
+    function chopGame() {
+      canvasGame({
+        id: 'chop', label: 'Chop Beat', again: chopGame, W: 320, H: 460, lives: 0,
+        intro: 'Chop to the beat. Perfect timing, perfect dish.',
+        how: 'Tap a lane (or press D, F, J, K) as each ingredient crosses the line.',
+        notes: ['I have no rhythm. It was the metronome.', 'The onions were off-beat.'],
+        hudText: function (st) { return 'Score ' + st.score + (st.combo > 2 ? ' · ×' + st.combo : ''); },
+        setup: function (st) {
+          st.bpm = 112; st.beat = 60 / st.bpm; st.lane = st.W / 4; st.hit = st.H - 70; st.travel = 1.5; st.notes = []; st.combo = 0; st.miss = 0; st.start = 0; st.nextBeat = 1; st.ticked = -1; st.flash = [0, 0, 0, 0]; st.judge = '';
+          var ICONS = ['\u{1F955}', '\u{1F9C5}', '\u{1F345}', '\u{1F336}\u{FE0F}'];
+          st.icons = ICONS;
+          function chop(l) {
+            var best = null, bd = 0.2;
+            st.notes.forEach(function (n) { if (!n.done && n.lane === l) { var d = Math.abs(n.time - st.t); if (d < bd) { bd = d; best = n; } } });
+            st.flash[l] = 1;
+            if (!best) { st.combo = 0; st.miss++; st.hud(); return; }
+            best.done = true; var perfect = bd < 0.07;
+            st.combo++; st.score += (perfect ? 100 : 50) * Math.min(4, 1 + Math.floor(st.combo / 8)); st.judge = perfect ? 'Perfect' : 'Good';
+            st.pop(l * st.lane + st.lane / 2, st.hit - 30, st.judge, perfect ? '#e0a340' : '#fff'); st.burst(l * st.lane + st.lane / 2, st.hit, perfect ? '#e0a340' : '#fff', perfect ? 12 : 6);
+            st.mouth = 'open'; st.mouthT = 0.15; Sound.climb(Math.min(14, st.combo)); st.hud();
+          }
+          st.cv.addEventListener('pointerdown', function () { chop(Math.max(0, Math.min(3, Math.floor(st.ptr.x / st.lane)))); });
+          var K = { d: 0, f: 1, j: 2, k: 3, D: 0, F: 1, J: 2, K: 3 }; st.on(document, 'keydown', function (e) { if (K[e.key] !== undefined) chop(K[e.key]); });
+        },
+        update: function (st, dt) {
+          // a short pattern generator: on most beats one note, sometimes two, with a phrase that repeats
+          while (st.nextBeat * st.beat < st.t + st.travel && st.nextBeat < 90) {
+            var b = st.nextBeat++, r = (b * 7919) % 11;
+            if (b > 3 && r < 8) { var l = (b * 5 + (b >> 2)) % 4; st.notes.push({ time: b * st.beat, lane: l, done: false }); if (r < 2) st.notes.push({ time: b * st.beat, lane: (l + 2) % 4, done: false }); }
+          }
+          var bi = Math.floor(st.t / st.beat); if (bi !== st.ticked) { st.ticked = bi; if (bi % 4 === 0) Sound.tick(); }
+          st.notes.forEach(function (n) { if (!n.done && !n.missed && st.t - n.time > 0.2) { n.missed = true; st.combo = 0; st.miss++; st.pop(n.lane * st.lane + st.lane / 2, st.hit + 20, 'Miss', '#ff8a80'); st.hud(); } });
+          st.notes = st.notes.filter(function (n) { return st.t - n.time < 0.6; });
+          for (var i = 0; i < 4; i++) st.flash[i] = Math.max(0, st.flash[i] - dt * 5);
+          if (st.nextBeat >= 90 && !st.notes.length) st.over = true;
+        },
+        draw: function (st) {
+          var g = st.g;
+          for (var i = 0; i < 4; i++) { g.fillStyle = 'rgba(255,255,255,' + (0.04 + st.flash[i] * 0.2) + ')'; g.fillRect(i * st.lane + 2, 0, st.lane - 4, st.H); }
+          g.fillStyle = '#e0a340'; g.fillRect(0, st.hit - 2, st.W, 4);
+          g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '30px serif'; g.fillStyle = '#fff';
+          st.notes.forEach(function (n) { if (n.done) return; var y = st.hit - (n.time - st.t) / st.travel * (st.hit + 30); g.globalAlpha = n.missed ? 0.3 : 1; g.fillText(st.icons[n.lane], n.lane * st.lane + st.lane / 2, y); });
+          g.globalAlpha = 1;
+          drawDot(g, st.W / 2, st.H - 28, 18, st.mouth);
+        }
+      });
+    }
+
+    /* Evolve: slide the board; two of the same dish merge into the next one up. */
+    function evolveGame() {
+      var s = screen();
+      words('Merge matching dishes. Reach the crown. Or just reach dinner.', 'happy');
+      var CHAIN = ['\u{1F95A}', '\u{1F373}', '\u{1F95E}', '\u{1F96A}', '\u{1F354}', '\u{1F355}', '\u{1F35D}', '\u{1F363}', '\u{1F370}', '\u{1F451}'];
+      var N = 4, grid = [], tiles = [], score = 0, over = false, id = 0, busy = false;
+      var hud = h('p', 'dg-score', 'Score 0'), board = h('div', 'dg-board');
+      for (var i = 0; i < N * N; i++) board.appendChild(h('span', 'dg-bg'));
+      var layer = h('div', 'dg-tiles'); board.appendChild(layer);
+      s.appendChild(hud); s.appendChild(board); s.appendChild(h('p', 'fine', 'Swipe, or use the arrow keys.'));
+      for (var r = 0; r < N; r++) { grid.push([null, null, null, null]); }
+      function spawn() {
+        var free = []; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) if (!grid[r][c]) free.push([r, c]);
+        if (!free.length) return; var p = pickOne(free), t = { id: id++, v: Math.random() < 0.88 ? 0 : 1, r: p[0], c: p[1], el: h('span', 'dg-tile is-new', '') };
+        grid[p[0]][p[1]] = t; tiles.push(t); layer.appendChild(t.el); place(t);
+      }
+      function place(t) { t.el.textContent = CHAIN[t.v]; t.el.style.setProperty('--r', t.r); t.el.style.setProperty('--c', t.c); t.el.setAttribute('data-v', t.v); }
+      function move(dr, dc) {
+        if (over || busy) return;
+        var moved = false, gained = 0, order = [0, 1, 2, 3]; if (dr > 0 || dc > 0) order.reverse();
+        var merged = {};
+        order.forEach(function (a) { order.forEach(function (b) {
+          var r = dr ? a : b, c = dr ? b : a, t = grid[r][c]; if (!t) return;
+          var nr = r, nc = c;
+          while (true) {
+            var tr = nr + dr, tc = nc + dc; if (tr < 0 || tc < 0 || tr >= N || tc >= N) break;
+            var o = grid[tr][tc];
+            if (!o) { nr = tr; nc = tc; continue; }
+            if (o.v === t.v && !merged[o.id] && t.v < CHAIN.length - 1) { grid[r][c] = null; t.r = tr; t.c = tc; place(t); t.dead = true; o.v++; merged[o.id] = 1; gained += (o.v + 1) * 10; moved = true; setTimeout(function (x, y) { place(x); x.el.classList.remove('is-pop'); void x.el.offsetWidth; x.el.classList.add('is-pop'); t.el.remove(); }.bind(null, o, t), 120); return; }
+            break;
+          }
+          if (nr !== r || nc !== c) { grid[r][c] = null; grid[nr][nc] = t; t.r = nr; t.c = nc; place(t); moved = true; }
+        }); });
+        tiles = tiles.filter(function (t) { return !t.dead; });
+        if (!moved) return;
+        score += gained; hud.textContent = 'Score ' + score; Sound.climb(Math.min(14, gained / 10)); if (gained) Dot.mood(dotEl, 'happy', 500);
+        busy = true; setTimeout(function () { spawn(); busy = false; check(); }, 130);
+      }
+      function check() {
+        for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { var t = grid[r][c]; if (!t) return; if (c < N - 1 && grid[r][c + 1] && grid[r][c + 1].v === t.v) return; if (r < N - 1 && grid[r + 1][c] && grid[r + 1][c].v === t.v) return; }
+        over = true; setTimeout(function () { if (open) results('evolve', score, evolveGame, ['The board filled up. It does that.', 'So many eggs.']); }, 500);
+      }
+      spawn(); spawn();
+      var sx = 0, sy = 0;
+      board.addEventListener('pointerdown', function (e) { sx = e.clientX; sy = e.clientY; });
+      board.addEventListener('pointerup', function (e) { var dx = e.clientX - sx, dy = e.clientY - sy; if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return; if (Math.abs(dx) > Math.abs(dy)) move(0, dx > 0 ? 1 : -1); else move(dy > 0 ? 1 : -1, 0); });
+      var kh = function (e) { var m = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }[e.key]; if (m) { e.preventDefault(); move(m[0], m[1]); } };
+      document.addEventListener('keydown', kh);
+      cleanup = function () { over = true; document.removeEventListener('keydown', kh); };
     }
 
     /* Dot Says: watch the pads light up, then play them back. */
