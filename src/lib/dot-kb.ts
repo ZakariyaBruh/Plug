@@ -163,7 +163,7 @@ export const FACTS: Fact[] = [
   {
     topic: 'dot',
     keys: ['dot', 'mascot', 'companion', 'buddy', 'pet', 'pat', 'bond', 'friend', 'quiet mode', 'turn off', 'hide dot', 'move dot', 'your name'],
-    text: 'I am Dot. Tap me to chat, hold me for this menu, drag me anywhere. Press pat in the menu and I get fond of you. In Profile you can make me quieter, or turn me off, and I will not be offended. Slightly offended.',
+    text: 'I am Dot. Tap me, hold me for a menu where we can chat, drag me anywhere. Press pat in the menu and I get fond of you. In Profile you can make me quieter, or turn me off, and I will not be offended. Slightly offended.',
   },
   {
     topic: 'dot games',
