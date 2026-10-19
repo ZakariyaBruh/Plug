@@ -12243,9 +12243,13 @@
       { id: 'rush', icon: '\u{1F9D1}\u{200D}\u{1F373}', name: 'Kitchen Rush', blurb: 'Serve the queue before they lose patience.' },
       { id: 'chop', icon: '\u{1F941}', name: 'Chop Beat', blurb: 'Chop ingredients in time to the beat.' },
       { id: 'evolve', icon: '\u{1F451}', name: 'Evolve', blurb: 'Merge dishes up from an egg to a crown.' },
+      { id: 'flap', icon: '\u{1F426}', name: 'Dot Flap', blurb: 'Tap to flap through the forks.' },
+      { id: 'stack', icon: '\u{1F35E}', name: 'Dish Stack', blurb: 'Stack the dishes. Time it right.' },
+      { id: 'run', icon: '\u{1F3C3}', name: 'Spice Run', blurb: 'Run, jump the fire, duck the pans.' },
+      { id: 'pair', icon: '\u{1F0CF}', name: 'Pair Up', blurb: 'Flip cards and find the matching dishes.' },
       { id: 'says', icon: '\u{1F9E0}', name: 'Dot Says', blurb: 'Watch the pads. Copy the pattern.' }
     ];
-    var RUN = function () { return { arena: arenaGame, jump: jumpGame, rush: rushGame, chop: chopGame, evolve: evolveGame, says: simonGame }; };
+    var RUN = function () { return { arena: arenaGame, jump: jumpGame, rush: rushGame, chop: chopGame, evolve: evolveGame, flap: flapGame, stack: stackGame, run: runGame, pair: pairGame, says: simonGame }; };
     function menu() {
       stopGame();
       var s = screen();
@@ -12641,6 +12645,182 @@
       var kh = function (e) { var m = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }[e.key]; if (m) { e.preventDefault(); move(m[0], m[1]); } };
       document.addEventListener('keydown', kh);
       cleanup = function () { over = true; document.removeEventListener('keydown', kh); };
+    }
+
+    /* Dot Flap: tap to flap, squeeze through the gaps between the forks. */
+    function flapGame() {
+      var keyHandler = null;
+      canvasGame({
+        id: 'flap', label: 'Dot Flap', again: flapGame,
+        intro: 'Tap to flap. Squeeze through the forks. Gravity is not my friend.',
+        how: 'Tap the board, or press space.',
+        notes: ['Everyone drops one. Or six.', 'It was the fork’s fault.'],
+        setup: function (st) {
+          st.lives = 1; st.y = st.H / 2; st.vy = 0; st.pipes = []; st.spawn = 0.4; st.started = false;
+          function flap() { st.started = true; st.vy = -300; st.mouth = 'open'; st.mouthT = 0.15; }
+          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); flap(); });
+          keyHandler = function (e) { if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); flap(); } };
+          document.addEventListener('keydown', keyHandler);
+        },
+        update: function (st, dt) {
+          if (!st.started) { st.y = st.H / 2 + Math.sin(st.t * 4) * 6; return; }
+          st.vy += 900 * dt; st.y += st.vy * dt;
+          st.spawn -= dt;
+          if (st.spawn <= 0) { st.spawn = 1.55; st.pipes.push({ x: st.W + 30, gap: 70 + Math.random() * (st.H - 200), passed: false }); }
+          var speed = 120 + Math.min(80, st.score * 4);
+          for (var i = st.pipes.length - 1; i >= 0; i--) {
+            var p = st.pipes[i];
+            p.x -= speed * dt;
+            if (!p.passed && p.x < 70) { p.passed = true; st.gain(1); st.pop(90, st.y - 24, '+1'); st.burst(90, st.y, '#e0a340', 6); }
+            if (Math.abs(p.x - 90) < 23 + 18 && (st.y - 18 < p.gap - 62 || st.y + 18 > p.gap + 62)) { st.hurt(); }
+            if (p.x < -40) st.pipes.splice(i, 1);
+          }
+          if (st.y > st.H - 18 || st.y < 18) st.hurt();
+        },
+        draw: function (st) {
+          var g = st.g;
+          g.fillStyle = '#e0a340';
+          st.pipes.forEach(function (p) {
+            g.fillRect(p.x - 22, 0, 44, p.gap - 62); g.fillRect(p.x - 22, p.gap + 62, 44, st.H);
+            g.fillStyle = '#f0c070'; g.fillRect(p.x - 26, p.gap - 76, 52, 14); g.fillRect(p.x - 26, p.gap + 62, 52, 14); g.fillStyle = '#e0a340';
+          });
+          drawDot(g, 90, st.y, 18, st.mouth);
+          if (!st.started) { g.fillStyle = '#fff'; g.font = '14px sans-serif'; g.textAlign = 'center'; g.fillText('Tap to start', st.W / 2, st.H * 0.7); }
+        },
+        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
+      });
+    }
+
+    /* Dish Stack: drop each dish exactly on the last one. What overhangs is cut off. */
+    function stackGame() {
+      var keyHandler = null;
+      canvasGame({
+        id: 'stack', label: 'Dish Stack', again: stackGame,
+        intro: 'Stack the dishes. Time it right. Do not think about the wobble.',
+        how: 'Tap the board, or press space, to drop the dish.',
+        notes: ['Memory is overrated.', 'It was the dish’s fault.'],
+        setup: function (st) {
+          st.lives = 1; st.h = 22; st.blocks = [{ x: st.W / 2 - 80, w: 160, icon: '\u{1F35E}' }]; st.cx = 0; st.dir = 1; st.w = 160; st.shift = 0;
+          st.cx = 0;
+          function drop() {
+            var top = st.blocks[st.blocks.length - 1], left = Math.max(top.x, st.cx), right = Math.min(top.x + top.w, st.cx + st.w);
+            if (right - left < 4) { st.hurt(); return; }
+            var perfect = Math.abs(st.cx - top.x) < 5;
+            var nx = perfect ? top.x : left, nw = perfect ? top.w : right - left;
+            st.blocks.push({ x: nx, w: nw, icon: pickOne(Data.ITEMS).icon });
+            if (perfect) { st.pop(st.cx + st.w / 2, 120, 'Perfect', '#e0a340'); st.burst(st.cx + nw / 2, 160, '#e0a340', 14); }
+            st.w = nw; st.score++; st.mouth = 'open'; st.mouthT = 0.3; Sound.climb(Math.min(14, st.score)); st.hud();
+          }
+          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); drop(); });
+          keyHandler = function (e) { if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); drop(); } };
+          document.addEventListener('keydown', keyHandler);
+        },
+        update: function (st, dt) {
+          var speed = 130 + st.score * 9;
+          st.cx += st.dir * speed * dt;
+          if (st.cx < 0) { st.cx = 0; st.dir = 1; }
+          if (st.cx + st.w > st.W) { st.cx = st.W - st.w; st.dir = -1; }
+          var want = Math.max(0, st.blocks.length - 11) * st.h;
+          st.shift += (want - st.shift) * Math.min(1, dt * 6);
+        },
+        draw: function (st) {
+          var g = st.g, base = st.H - 30 + st.shift;
+          st.blocks.forEach(function (b, i) {
+            var y = base - i * st.h;
+            g.fillStyle = 'hsl(' + ((i * 23 + 30) % 360) + ',60%,58%)';
+            g.fillRect(b.x, y, b.w, st.h - 2);
+          });
+          var y = base - st.blocks.length * st.h;
+          g.fillStyle = '#f5eee1'; g.fillRect(st.cx, y, st.w, st.h - 2);
+          drawDot(g, st.cx + st.w / 2, y - 16, 14, st.mouth);
+        },
+        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
+      });
+    }
+
+    /* Pair Up: flip two cards at a time and find the matching dishes. */
+    function pairGame() {
+      var s = screen();
+      words('Find the pairs. I will pretend I am not watching.', 'happy');
+      var icons = shuffle(Data.ITEMS.map(function (d) { return d.icon; }).filter(function (v, i, a) { return a.indexOf(v) === i; })).slice(0, 8);
+      var deck = shuffle(icons.concat(icons)), first = null, lock = false, found = 0, moves = 0, t0 = Date.now();
+      var hud = h('p', 'dg-score', 'Score 0'), grid = h('div', 'dg-cards');
+      s.appendChild(hud); s.appendChild(grid);
+      s.appendChild(h('p', 'fine', 'Tap two cards. Match them all, in as few tries as you can.'));
+      var timers = [];
+      deck.forEach(function (icon) {
+        var c = h('button', 'dg-flip');
+        c.type = 'button'; c.setAttribute('aria-label', 'Card');
+        c.appendChild(h('span', 'dg-face', icon));
+        c.addEventListener('click', function () {
+          if (lock || c.classList.contains('is-up') || c.classList.contains('is-done')) return;
+          Sound.tick(); c.classList.add('is-up');
+          if (!first) { first = c; return; }
+          moves++; lock = true;
+          if (first.textContent === c.textContent) {
+            first.classList.add('is-done'); c.classList.add('is-done'); first = null; lock = false; found++;
+            Sound.climb(found * 2); Dot.mood(dotEl, 'happy', 700);
+            if (found === 8) {
+              var secs = Math.round((Date.now() - t0) / 1000);
+              timers.push(setTimeout(function () { results('pair', Math.max(5, 60 - moves * 2 + Math.max(0, 40 - secs)), pairGame, ['Memory is overrated.', 'Everyone drops one. Or six.']); }, 500));
+            }
+          } else {
+            var a = first; first = null;
+            timers.push(setTimeout(function () { a.classList.remove('is-up'); c.classList.remove('is-up'); lock = false; }, 650));
+          }
+        });
+        grid.appendChild(c);
+      });
+      cleanup = function () { timers.forEach(clearTimeout); };
+    }
+
+    /* Spice Run: Dot runs, you jump. Hop the flames, duck under the pans, grab the dishes. */
+    function runGame() {
+      canvasGame({
+        id: 'run', label: 'Spice Run', again: runGame, W: 360, H: 340, lives: 3,
+        intro: 'Run. Jump the fire. Stay under the pans. Eat on the way.',
+        how: 'Tap (or press space) to jump. Tap again in the air to jump twice.',
+        notes: ['The fire was faster. Fire usually is.', 'I tripped over a chilli.'],
+        hudText: function (st) { return Math.floor(st.dist / 10) + ' m · ' + st.dishes + ' dishes'; },
+        setup: function (st) {
+          st.gy = st.H - 70; st.y = st.gy; st.vy = 0; st.jumps = 0; st.dist = 0; st.dishes = 0; st.obs = []; st.spawn = 1; st.inv = 0; st.sx = 0;
+          function jump() { if (st.jumps < 2) { st.vy = st.jumps ? -440 : -520; st.jumps++; st.burst(70, st.y + 14, '#fff', 5); Sound.tick(); } }
+          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); jump(); });
+          st.on(document, 'keydown', function (e) { if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); jump(); } });
+        },
+        update: function (st, dt) {
+          var sp = 190 + Math.min(150, st.dist / 40);
+          st.dist += sp * dt; st.sx = (st.sx + sp * dt) % 40; st.inv -= dt;
+          st.vy += 1300 * dt; st.y += st.vy * dt;
+          if (st.y >= st.gy) { st.y = st.gy; st.vy = 0; st.jumps = 0; }
+          st.spawn -= dt;
+          if (st.spawn <= 0) {
+            st.spawn = Math.max(0.55, 1.4 - st.dist / 4000) + Math.random() * 0.5;
+            var r = Math.random();
+            if (r < 0.5) st.obs.push({ x: st.W + 20, y: st.gy + 4, k: 'fire', icon: '\u{1F525}' });
+            else if (r < 0.72) st.obs.push({ x: st.W + 20, y: st.gy - 56, k: 'pan', icon: '\u{1F373}' });
+            else st.obs.push({ x: st.W + 20, y: st.gy - (Math.random() < 0.5 ? 0 : 70), k: 'food', icon: DISH() });
+            if (Math.random() < 0.25) st.obs.push({ x: st.W + 70, y: st.gy - 30, k: 'food', icon: DISH() });
+          }
+          st.obs.forEach(function (o) {
+            o.x -= sp * dt;
+            if (o.gone || Math.abs(o.x - 70) > 24 || Math.abs(o.y - st.y) > 28) return;
+            if (o.k === 'food') { o.gone = true; st.dishes++; st.score += 5; st.pop(o.x, o.y - 16, '+5', '#e0a340'); st.burst(o.x, o.y, '#e0a340', 8); Sound.climb(Math.min(14, st.dishes)); }
+            else if (st.inv <= 0) { o.gone = true; st.inv = 1.2; st.hurt(); st.burst(70, st.y, '#ff5252', 12); }
+          });
+          st.obs = st.obs.filter(function (o) { return !o.gone && o.x > -30; });
+          st.score = Math.floor(st.dist / 10) + st.dishes * 5; st.hud();
+        },
+        draw: function (st) {
+          var g = st.g;
+          g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(0, st.gy + 20, st.W, st.H);
+          g.fillStyle = 'rgba(255,255,255,.2)'; for (var x = -st.sx; x < st.W; x += 40) g.fillRect(x, st.gy + 30, 22, 3);
+          g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '28px serif'; g.fillStyle = '#fff';
+          st.obs.forEach(function (o) { g.fillText(o.icon, o.x, o.y); });
+          if (st.inv > 0 && Math.floor(st.inv * 12) % 2) g.globalAlpha = 0.4;
+          drawDot(g, 70, st.y, 20, st.y < st.gy ? 'open' : st.mouth); g.globalAlpha = 1;
+        }
+      });
     }
 
     /* Dot Says: watch the pads light up, then play them back. */
