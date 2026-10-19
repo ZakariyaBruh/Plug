@@ -7395,3 +7395,12 @@ html.vt-active .buddy { view-transition-name: buddy; }
 .dg-slot.is-hint { color: var(--amber); } .dg-slots.is-done .dg-slot { border-color: #5cb85c; color: #5cb85c; }
 .dg-letter { width: 2.6rem; height: 2.8rem; border: 1px solid var(--hair-lit); border-radius: 10px; background: var(--raise, #1b1b1d); color: var(--ink); font: 700 1.2rem var(--display, sans-serif); cursor: pointer; touch-action: manipulation; transition: transform .15s var(--spring), opacity .15s; }
 .dg-letter:disabled { opacity: .2; } .dg-letter:active { transform: scale(.9); } .dg-letter.is-bad { border-color: #d9534f; background: color-mix(in srgb, #d9534f 25%, transparent); }
+
+/* --- games: polish --- */
+.dg-stars { margin: 0; font-size: 2.2rem; letter-spacing: .15em; color: rgb(255 255 255 / .18); }
+.dg-stars span { display: inline-block; opacity: 0; transform: scale(.3) rotate(-25deg); animation: dg-star .5s var(--spring) forwards; }
+.dg-stars span.is-on { color: var(--amber); text-shadow: 0 0 14px color-mix(in srgb, var(--amber) 70%, transparent); }
+@keyframes dg-star { to { opacity: 1; transform: none; } }
+.dg-pause { margin-top: var(--s2); }
+.dg-canvas { box-shadow: 0 18px 40px -20px rgb(0 0 0 / .8); }
+@media (prefers-reduced-motion: reduce) { .dg-stars span { animation: none; opacity: 1; transform: none; } }
