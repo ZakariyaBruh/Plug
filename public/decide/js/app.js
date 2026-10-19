@@ -12286,9 +12286,13 @@
       { id: 'stack', icon: '\u{1F35E}', name: 'Dish Stack', blurb: 'Stack the dishes. Time it right.' },
       { id: 'run', icon: '\u{1F3C3}', name: 'Spice Run', blurb: 'Run, jump the fire, duck the pans.' },
       { id: 'pair', icon: '\u{1F0CF}', name: 'Pair Up', blurb: 'Flip cards and find the matching dishes.' },
+      { id: 'sort', icon: '\u{1F9FA}', name: 'Sort It', blurb: 'Sweet, savoury or a drink? Sort fast.' },
+      { id: 'flip', icon: '\u{1F373}', name: 'Flip Out', blurb: 'Four pans. Flip each one when it is golden.' },
+      { id: 'scramble', icon: '\u{1F524}', name: 'Dish Scramble', blurb: 'Unshuffle the letters of a dish.' },
+      { id: 'spit', icon: '\u{1F3AF}', name: 'Seed Spit', blurb: 'Aim, mind the wind, hit the plate.' },
       { id: 'says', icon: '\u{1F9E0}', name: 'Dot Says', blurb: 'Watch the pads. Copy the pattern.' }
     ];
-    var RUN = function () { return { arena: arenaGame, jump: jumpGame, rush: rushGame, chop: chopGame, evolve: evolveGame, flap: flapGame, stack: stackGame, run: runGame, pair: pairGame, says: simonGame }; };
+    var RUN = function () { return { arena: arenaGame, jump: jumpGame, rush: rushGame, chop: chopGame, evolve: evolveGame, flap: flapGame, stack: stackGame, run: runGame, pair: pairGame, sort: sortGame, flip: flipGame, scramble: scrambleGame, spit: spitGame, says: simonGame }; };
     function menu() {
       stopGame();
       var s = screen();
@@ -12332,7 +12336,8 @@
     function results(game, score, again, notes) {
       var b = bestOf(game, score);
       var s = screen();
-      s.appendChild(h('p', 'dg-line is-big', 'Score ' + score));
+      var big = h('p', 'dg-line is-big', 'Score 0'); s.appendChild(big);
+      var from = performance.now(); (function tick(now) { var k = Math.min(1, (now - from) / 900); big.textContent = 'Score ' + Math.round(score * (1 - Math.pow(1 - k, 3))); if (k < 1 && open) requestAnimationFrame(tick); })(from);
       s.appendChild(h('p', 'dg-score', b.beat ? 'New best' : 'Best ' + b.best));
       words(b.beat ? pickOne(['A new best. I am not crying. You are.', 'Record. I will tell the dishes.']) : score >= b.best * 0.8 ? pickOne(['So close to your best.', 'Nearly. Again?']) : pickOne(notes), b.beat ? 'celebrate' : 'shrug');
       finish(game, b.beat || score > 0);
@@ -12373,7 +12378,7 @@
       var hud = h('p', 'dg-score', '');
       s.appendChild(hud); s.appendChild(cv);
       s.appendChild(h('p', 'fine', opts.how));
-      var st = { W: W, H: H, g: g, cv: cv, score: 0, lives: opts.lives === undefined ? 3 : opts.lives, t: 0, over: false, paused: false, mouth: 'smile', mouthT: 0, fx: [], pops: [], shake: 0, ptr: { x: W / 2, y: H / 2, down: false } };
+      var st = { W: W, H: H, g: g, cv: cv, score: 0, lives: opts.lives === undefined ? 3 : opts.lives, t: 0, over: false, paused: false, mouth: 'smile', mouthT: 0, fx: [], pops: [], shake: 0, count: opts.count === 0 ? 0 : 3, ptr: { x: W / 2, y: H / 2, down: false } };
       var last = performance.now(), raf = 0, hooks = [];
       function hearts() { return st.lives > 0 ? new Array(st.lives + 1).join('♥ ').trim() : '—'; }
       st.hud = function () { hud.textContent = (opts.hudText ? opts.hudText(st) : 'Score ' + st.score) + (opts.lives === 0 ? '' : ' · ' + hearts()); };
@@ -12388,7 +12393,10 @@
       cv.addEventListener('pointerup', function () { st.ptr.down = false; });
       function frame(now) {
         var dt = Math.min(0.05, (now - last) / 1000); last = now;
-        if (!st.over) { st.t += dt; st.mouthT -= dt; if (st.mouthT <= 0) st.mouth = 'smile'; if (!st.paused) opts.update(st, dt); }
+        if (!st.over) {
+          if (st.count > 0) st.count -= dt;
+          else { st.t += dt; st.mouthT -= dt; if (st.mouthT <= 0) st.mouth = 'smile'; if (!st.paused) opts.update(st, dt); }
+        }
         st.fx.forEach(function (p) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; p.life -= dt; });
         st.fx = st.fx.filter(function (p) { return p.life > 0; });
         st.pops.forEach(function (p) { p.y -= 34 * dt; p.life -= dt; });
@@ -12404,7 +12412,12 @@
         st.pops.forEach(function (p) { g.globalAlpha = Math.min(1, p.life * 2); g.fillStyle = p.c; g.fillText(p.text, p.x, p.y); });
         g.globalAlpha = 1;
         g.restore();
-        if (st.over) { cancelAnimationFrame(raf); setTimeout(function () { if (open) results(opts.id, st.score, opts.again, opts.notes); }, 700); return; }
+        if (st.count > 0) {
+          g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(0, 0, W, H);
+          g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 64px sans-serif'; g.fillText(String(Math.ceil(st.count)), W / 2, H / 2);
+          g.font = '14px sans-serif'; g.fillText('Get ready', W / 2, H / 2 + 52);
+        }
+        if (st.over) { cancelAnimationFrame(raf); setTimeout(function () { if (open) results(opts.id, st.score, opts.again, opts.notes); }, 1100); return; }
         raf = requestAnimationFrame(frame);
       }
       opts.setup(st);
@@ -12550,7 +12563,7 @@
       var s = screen();
       words('Orders are in. Serve the right dish before they lose patience.', 'happy');
       var MENU = shuffle(Data.ITEMS.filter(function (d) { return !d.tags.drink; })).slice(0, 6).map(function (d) { return d.icon; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
-      var score = 0, lives = 3, combo = 0, over = false, queue = [null, null, null], t = 0, spawnIn = 0.5, last = performance.now(), raf = 0;
+      var score = 0, lives = 3, combo = 0, over = false, queue = [null, null, null], t = 0, spawnIn = 2.2, last = performance.now(), raf = 0;
       var hud = h('p', 'dg-score', ''), room = h('div', 'dg-queue'), menu = h('div', 'dg-menu'), slots = [];
       function paint() { hud.textContent = 'Score ' + score + ' · ' + (combo > 1 ? '×' + combo + ' · ' : '') + new Array(Math.max(0, lives) + 1).join('♥ ').trim(); }
       for (var i = 0; i < 3; i++) { var sl = h('div', 'dg-cust'); sl.appendChild(h('span', 'dg-face-c', '')); sl.appendChild(h('span', 'dg-order', '')); var bar = h('i', 'dg-pat'); sl.appendChild(bar); slots.push(sl); room.appendChild(sl); }
@@ -12573,7 +12586,7 @@
       function frame(now) {
         var dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
         spawnIn -= dt;
-        if (spawnIn <= 0) { var free = queue.map(function (c, k) { return c ? -1 : k; }).filter(function (k) { return k >= 0; }); if (free.length) queue[pickOne(free)] = { want: pickOne(MENU), pat: 1, rate: 0.085 + Math.min(0.12, t * 0.0016) }; spawnIn = Math.max(0.9, 2.4 - t * 0.03); }
+        if (spawnIn <= 0) { var free = queue.map(function (c, k) { return c ? -1 : k; }).filter(function (k) { return k >= 0; }); if (free.length) queue[pickOne(free)] = { want: pickOne(MENU), pat: 1, rate: 0.055 + Math.min(0.14, t * 0.0018) }; spawnIn = Math.max(0.9, 2.4 - t * 0.03); }
         queue.forEach(function (c, k) {
           if (c) { c.pat -= c.rate * dt; if (c.pat <= 0) { queue[k] = null; lives--; combo = 0; Sound.bust(); Dot.mood(dotEl, 'sad', 600); paint(); if (lives <= 0) { over = true; } } }
           var sl = slots[k]; sl.classList.toggle('is-empty', !c);
@@ -12690,12 +12703,12 @@
     function flapGame() {
       var keyHandler = null;
       canvasGame({
-        id: 'flap', label: 'Dot Flap', again: flapGame,
+        id: 'flap', label: 'Dot Flap', again: flapGame, lives: 3,
         intro: 'Tap to flap. Squeeze through the forks. Gravity is not my friend.',
         how: 'Tap the board, or press space.',
         notes: ['Everyone drops one. Or six.', 'It was the fork’s fault.'],
         setup: function (st) {
-          st.lives = 1; st.y = st.H / 2; st.vy = 0; st.pipes = []; st.spawn = 0.4; st.started = false;
+          st.y = st.H / 2; st.vy = 0; st.pipes = []; st.spawn = 0.4; st.started = false; st.inv = 0;
           function flap() { st.started = true; st.vy = -300; st.mouth = 'open'; st.mouthT = 0.15; }
           st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); flap(); });
           keyHandler = function (e) { if (e.key === ' ' || e.key === 'ArrowUp') { e.preventDefault(); flap(); } };
@@ -12711,10 +12724,12 @@
             var p = st.pipes[i];
             p.x -= speed * dt;
             if (!p.passed && p.x < 70) { p.passed = true; st.gain(1); st.pop(90, st.y - 24, '+1'); st.burst(90, st.y, '#e0a340', 6); }
-            if (Math.abs(p.x - 90) < 23 + 18 && (st.y - 18 < p.gap - 62 || st.y + 18 > p.gap + 62)) { st.hurt(); }
+            if (st.inv <= 0 && Math.abs(p.x - 90) < 22 + 14 && (st.y - 14 < p.gap - 62 || st.y + 14 > p.gap + 62)) { st.hurt(); st.inv = 1.4; st.vy = -260; }
             if (p.x < -40) st.pipes.splice(i, 1);
           }
-          if (st.y > st.H - 18 || st.y < 18) st.hurt();
+          st.inv -= dt;
+          if (st.y > st.H - 18) { st.y = st.H - 18; st.vy = -380; if (st.inv <= 0) { st.hurt(); st.inv = 1.4; } }
+          if (st.y < 18) { st.y = 18; st.vy = 0; }
         },
         draw: function (st) {
           var g = st.g;
@@ -12734,16 +12749,16 @@
     function stackGame() {
       var keyHandler = null;
       canvasGame({
-        id: 'stack', label: 'Dish Stack', again: stackGame,
+        id: 'stack', label: 'Dish Stack', again: stackGame, lives: 3,
         intro: 'Stack the dishes. Time it right. Do not think about the wobble.',
         how: 'Tap the board, or press space, to drop the dish.',
         notes: ['Memory is overrated.', 'It was the dish’s fault.'],
         setup: function (st) {
-          st.lives = 1; st.h = 22; st.blocks = [{ x: st.W / 2 - 80, w: 160, icon: '\u{1F35E}' }]; st.cx = 0; st.dir = 1; st.w = 160; st.shift = 0;
+          st.h = 22; st.blocks = [{ x: st.W / 2 - 80, w: 160, icon: '\u{1F35E}' }]; st.cx = 0; st.dir = 1; st.w = 160; st.shift = 0;
           st.cx = 0;
           function drop() {
             var top = st.blocks[st.blocks.length - 1], left = Math.max(top.x, st.cx), right = Math.min(top.x + top.w, st.cx + st.w);
-            if (right - left < 4) { st.hurt(); return; }
+            if (right - left < 4) { st.hurt(); st.cx = 0; st.dir = 1; return; }
             var perfect = Math.abs(st.cx - top.x) < 5;
             var nx = perfect ? top.x : left, nw = perfect ? top.w : right - left;
             st.blocks.push({ x: nx, w: nw, icon: pickOne(Data.ITEMS).icon });
@@ -12843,7 +12858,7 @@
           }
           st.obs.forEach(function (o) {
             o.x -= sp * dt;
-            if (o.gone || Math.abs(o.x - 70) > 24 || Math.abs(o.y - st.y) > 28) return;
+            if (o.gone || Math.abs(o.x - 70) > (o.k === 'food' ? 26 : 17) || Math.abs(o.y - st.y) > (o.k === 'food' ? 30 : 22)) return;
             if (o.k === 'food') { o.gone = true; st.dishes++; st.score += 5; st.pop(o.x, o.y - 16, '+5', '#e0a340'); st.burst(o.x, o.y, '#e0a340', 8); Sound.climb(Math.min(14, st.dishes)); }
             else if (st.inv <= 0) { o.gone = true; st.inv = 1.2; st.hurt(); st.burst(70, st.y, '#ff5252', 12); }
           });
@@ -12858,6 +12873,147 @@
           st.obs.forEach(function (o) { g.fillText(o.icon, o.x, o.y); });
           if (st.inv > 0 && Math.floor(st.inv * 12) % 2) g.globalAlpha = 0.4;
           drawDot(g, 70, st.y, 20, st.y < st.gy ? 'open' : st.mouth); g.globalAlpha = 1;
+        }
+      });
+    }
+
+    /* Sort It: one dish at a time, and three bins. Sweet, savoury or a drink, as fast as you can read it. */
+    function sortGame() {
+      var s = screen();
+      words('Sweet, savoury or a drink. Sort them. No dithering.', 'thinking');
+      var left = 40, score = 0, streak = 0, over = false, card = null, hits = 0, tries = 0;
+      var hud = h('p', 'dg-score', ''), face = h('div', 'dg-sortcard'), bins = h('div', 'dg-bins');
+      function kind(d) { return d.tags.drink === 1 ? 'drink' : d.tags.sweet === 1 ? 'sweet' : 'savoury'; }
+      var POOL = Data.ITEMS.filter(function (d) { return d.tags.drink === 1 || d.tags.sweet === 1 || (d.tags.sweet !== 0.5 && d.tags.meat === 1) || d.tags.veg === 1; });
+      function paint() { hud.textContent = 'Score ' + score + (streak > 2 ? ' · ×' + streak : '') + ' · ' + left + 's'; }
+      function next() { card = pickOne(POOL); clear2(face); face.appendChild(h('span', 'dg-sort-icon', card.icon)); face.appendChild(h('strong', '', card.name)); face.classList.remove('is-in'); void face.offsetWidth; face.classList.add('is-in'); }
+      [['sweet', '\u{1F370}', 'Sweet'], ['savoury', '\u{1F356}', 'Savoury'], ['drink', '\u{1F964}', 'Drink']].forEach(function (b, i) {
+        var btn = h('button', 'dg-bin');
+        btn.type = 'button'; btn.appendChild(h('span', 'dg-move-icon', b[1])); btn.appendChild(h('span', '', b[2]));
+        btn.addEventListener('pointerdown', function (e) { e.preventDefault(); pick(b[0]); });
+        bins.appendChild(btn);
+      });
+      function pick(k) {
+        if (over || !card) return; tries++;
+        if (kind(card) === k) { hits++; streak++; score += 10 * Math.min(5, 1 + Math.floor(streak / 4)); Sound.climb(Math.min(14, streak)); face.classList.add('is-ok'); }
+        else { streak = 0; left = Math.max(0, left - 3); Sound.bust(); Dot.mood(dotEl, 'sad', 500); face.classList.add('is-bad'); }
+        var f = face; setTimeout(function () { f.classList.remove('is-ok', 'is-bad'); }, 220); paint(); next();
+      }
+      next(); paint();
+      s.appendChild(hud); s.appendChild(face); s.appendChild(bins);
+      s.appendChild(h('p', 'fine', 'Tap a bin, or press 1, 2 or 3. A wrong sort costs three seconds.'));
+      var kh = function (e) { var m = { 1: 'sweet', 2: 'savoury', 3: 'drink', ArrowLeft: 'sweet', ArrowDown: 'savoury', ArrowRight: 'drink' }[e.key]; if (m) pick(m); };
+      document.addEventListener('keydown', kh);
+      var clock = setInterval(function () { left--; paint(); if (left <= 0) { over = true; stopGame(); results('sort', score, sortGame, ['Pizza is savoury. Probably.', 'Tomato is a fruit. I will not discuss it.']); } }, 1000);
+      cleanup = function () { over = true; clearInterval(clock); document.removeEventListener('keydown', kh); };
+    }
+
+    /* Flip Out: four pans. Flip each when it is golden, not before, and never after. */
+    function flipGame() {
+      var s = screen();
+      words('Four pans. Flip when it is golden. Not raw. Not burnt.', 'happy');
+      var score = 0, lives = 3, combo = 0, over = false, t = -2.5, last = performance.now(), raf = 0;
+      var hud = h('p', 'dg-score', ''), grid = h('div', 'dg-pans'), pans = [];
+      function paint() { hud.textContent = 'Score ' + score + (combo > 2 ? ' · ×' + combo : '') + ' · ' + new Array(Math.max(0, lives) + 1).join('♥ ').trim(); }
+      function fresh(p) { p.icon = DISH(); p.v = 0; p.rate = 0.2 + Math.random() * 0.08 + Math.min(0.2, Math.max(0, t) * 0.0035); p.wait = 0.4 + Math.random() * 0.8; }
+      for (var i = 0; i < 4; i++) { var p = { el: h('button', 'dg-pan') }; p.el.type = 'button'; p.el.setAttribute('aria-label', 'Pan'); p.food = h('span', 'dg-pan-food', ''); p.ring = h('i', 'dg-pan-ring'); p.el.appendChild(p.ring); p.el.appendChild(p.food); fresh(p); p.wait += i * 0.5; (function (pp) { pp.el.addEventListener('pointerdown', function (e) { e.preventDefault(); flip(pp); }); })(p); pans.push(p); grid.appendChild(p.el); }
+      function flip(p) {
+        if (over || p.wait > 0) return;
+        if (p.v >= 0.62 && p.v <= 0.92) { combo++; var gold = Math.abs(p.v - 0.77) < 0.07; score += (gold ? 30 : 15) * Math.min(4, combo); Sound.climb(Math.min(14, combo * 2)); p.el.classList.add(gold ? 'is-perfect' : 'is-good'); Dot.mood(dotEl, 'happy', 400); }
+        else { combo = 0; lives--; Sound.bust(); Dot.mood(dotEl, 'sad', 500); p.el.classList.add('is-bad'); if (lives <= 0) over = true; }
+        var el = p.el; setTimeout(function () { el.classList.remove('is-perfect', 'is-good', 'is-bad'); }, 350); fresh(p); p.wait = 0.6; paint();
+      }
+      s.appendChild(hud); s.appendChild(grid); s.appendChild(h('p', 'fine', 'Tap a pan when its ring is in the green. Early is raw, late is burnt.'));
+      function frame(now) {
+        var dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+        if (t > 0) pans.forEach(function (p) {
+          if (p.wait > 0) { p.wait -= dt; p.food.textContent = ''; p.ring.style.setProperty('--ring', 0); return; }
+          p.v += p.rate * dt; p.food.textContent = p.icon;
+          p.ring.style.setProperty('--ring', Math.min(1, p.v)); p.el.classList.toggle('is-ready', p.v >= 0.62 && p.v <= 0.92);
+          if (p.v > 1) { lives--; combo = 0; Sound.bust(); p.el.classList.add('is-bad'); var el = p.el; setTimeout(function () { el.classList.remove('is-bad'); }, 350); fresh(p); p.wait = 0.8; paint(); if (lives <= 0) over = true; }
+        });
+        if (over) { setTimeout(function () { if (open) results('flip', score, flipGame, ['Everything was burnt. Except the toast. Nothing was toast.', 'The pans were too hot. They always are.']); }, 600); return; }
+        raf = requestAnimationFrame(frame);
+      }
+      paint(); raf = requestAnimationFrame(frame);
+      cleanup = function () { over = true; cancelAnimationFrame(raf); };
+    }
+
+    /* Dish Scramble: a dish with its letters shuffled. Put them back in order. */
+    function scrambleGame() {
+      var s = screen();
+      words('A dish, but the letters have been shuffled. Unshuffle it.', 'thinking');
+      var NAMES = Data.ITEMS.map(function (d) { return d; }).filter(function (d) { return /^[A-Za-z]{4,9}$/.test(d.name); });
+      var score = 0, round = 0, ROUNDS = 6, over = false, timers = [];
+      var hud = h('p', 'dg-score', ''), icon = h('div', 'dg-scr-icon'), slots = h('div', 'dg-slots'), pool = h('div', 'dg-letters'), row = h('div', 'dg-row');
+      s.appendChild(hud); s.appendChild(icon); s.appendChild(slots); s.appendChild(pool); s.appendChild(row);
+      s.appendChild(h('p', 'fine', 'Tap the letters in order. Hint reveals one letter but costs points.'));
+      var dish, answer, typed, usedBtns, hinted, left, clock;
+      function paint() { hud.textContent = 'Word ' + (round + 1) + ' of ' + ROUNDS + ' · Score ' + score + ' · ' + left + 's'; }
+      function load() {
+        dish = pickOne(NAMES); answer = dish.name.toUpperCase(); typed = ''; usedBtns = []; hinted = 0; left = 25;
+        icon.textContent = dish.icon; clear2(slots); clear2(pool);
+        for (var i = 0; i < answer.length; i++) slots.appendChild(h('span', 'dg-slot', ''));
+        var letters = shuffle(answer.split('')); if (letters.join('') === answer) letters = letters.reverse();
+        letters.forEach(function (ch, k) { var b = h('button', 'dg-letter', ch); b.type = 'button'; b.addEventListener('pointerdown', function (e) { e.preventDefault(); put(b, ch); }); pool.appendChild(b); });
+        paintSlots(); paint();
+      }
+      function paintSlots() { Array.prototype.forEach.call(slots.children, function (sl, i) { sl.textContent = typed[i] || ''; sl.classList.toggle('is-hint', i < hinted); }); }
+      function put(b, ch) {
+        if (over || b.disabled) return;
+        if (ch !== answer[typed.length]) { b.classList.add('is-bad'); setTimeout(function () { b.classList.remove('is-bad'); }, 250); Sound.bust(); left = Math.max(1, left - 2); paint(); return; }
+        b.disabled = true; usedBtns.push(b); typed += ch; Sound.tick(); paintSlots();
+        if (typed === answer) { score += 20 + left * 2 - hinted * 10; Sound.climb(10); Dot.mood(dotEl, 'happy', 600); slots.classList.add('is-done'); timers.push(setTimeout(function () { slots.classList.remove('is-done'); round++; if (round >= ROUNDS) finishGame(); else load(); }, 700)); }
+      }
+      row.appendChild(btn('Hint', 'dg-btn', function () { if (over || typed.length >= answer.length) return; var want = answer[typed.length], b = Array.prototype.filter.call(pool.children, function (x) { return !x.disabled && x.textContent === want; })[0]; if (b) { hinted++; put(b, want); } }));
+      function finishGame() { over = true; clearInterval(clock); results('scramble', Math.max(0, score), scrambleGame, ['Pasta is not spelled that way. Or is it.', 'Letters. They keep moving.']); }
+      clock = setInterval(function () { if (over) return; left--; paint(); if (left <= 0) { round++; if (round >= ROUNDS) finishGame(); else load(); } }, 1000);
+      load();
+      cleanup = function () { over = true; clearInterval(clock); timers.forEach(clearTimeout); };
+    }
+
+    /* Seed Spit: drag back and let go. Wind moves the seed; the plate drifts up and down. */
+    function spitGame() {
+      canvasGame({
+        id: 'spit', label: 'Seed Spit', again: spitGame, W: 360, H: 380, lives: 0,
+        intro: 'Eight seeds. One plate. Mind the wind. I will not be blamed.',
+        how: 'Drag back from Dot to aim and set the power, then let go.',
+        notes: ['The wind did that. Not me.', 'The plate moved. I saw it move.'],
+        hudText: function (st) { return 'Score ' + st.score + ' · ' + st.shots + ' seeds left'; },
+        setup: function (st) {
+          st.shots = 8; st.px = 60; st.py = st.H - 60; st.aim = null; st.seed = null; st.wind = (Math.random() - 0.5) * 160; st.ty = 150; st.tx = st.W - 56; st.trail = [];
+          st.cv.addEventListener('pointerdown', function (e) { if (!st.seed && st.shots > 0) st.aim = { x: st.ptr.x, y: st.ptr.y }; });
+          st.cv.addEventListener('pointerup', function () {
+            if (!st.aim || st.seed) return;
+            var dx = st.px - st.ptr.x, dy = st.py - st.ptr.y, pw = Math.min(130, Math.hypot(dx, dy));
+            st.aim = null;
+            if (pw < 14) return;
+            var a = Math.atan2(dy, dx); st.seed = { x: st.px, y: st.py, vx: Math.cos(a) * pw * 4.2, vy: Math.sin(a) * pw * 4.2 }; st.shots--; st.trail = []; st.mouth = 'open'; st.mouthT = 0.3; Sound.tick(); st.hud();
+          });
+        },
+        update: function (st, dt) {
+          st.ty = st.H * 0.42 + Math.sin(st.t * 0.9) * 90;
+          if (st.seed) {
+            var sd = st.seed; sd.vx += st.wind * dt; sd.vy += 420 * dt; sd.x += sd.vx * dt; sd.y += sd.vy * dt; st.trail.push([sd.x, sd.y]);
+            var d = Math.hypot(sd.x - st.tx, sd.y - st.ty);
+            if (d < 34) { var pts = d < 9 ? 50 : d < 20 ? 25 : 10; st.score += pts; st.pop(sd.x, sd.y - 10, pts === 50 ? 'Bullseye +50' : '+' + pts, '#e0a340'); st.burst(sd.x, sd.y, '#e0a340', pts === 50 ? 22 : 10); Sound.climb(pts / 4); st.seed = null; st.wind = (Math.random() - 0.5) * 160; st.hud(); }
+            else if (sd.y > st.H || sd.x > st.W + 20 || sd.x < -20) { st.pop(Math.max(20, Math.min(st.W - 20, sd.x)), st.H - 20, 'Miss', '#ff8a80'); st.seed = null; st.wind = (Math.random() - 0.5) * 160; }
+          }
+          if (!st.seed && st.shots <= 0) st.over = true;
+        },
+        draw: function (st) {
+          var g = st.g;
+          g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(0, st.py + 22, st.W, st.H);
+          [34, 20, 9].forEach(function (r, i) { g.fillStyle = ['#e0a340', '#f5eee1', '#d9534f'][i]; g.beginPath(); g.arc(st.tx, st.ty, r, 0, 6.3); g.fill(); });
+          g.fillStyle = '#fff'; g.font = '13px sans-serif'; g.textAlign = 'center'; g.fillText('wind ' + (st.wind > 0 ? '→' : '←') + ' ' + Math.round(Math.abs(st.wind) / 16), st.W / 2, 24);
+          if (st.aim) {
+            var dx = st.px - st.ptr.x, dy = st.py - st.ptr.y, pw = Math.min(130, Math.hypot(dx, dy)), a = Math.atan2(dy, dx), vx = Math.cos(a) * pw * 4.2, vy = Math.sin(a) * pw * 4.2;
+            g.fillStyle = 'rgba(255,255,255,.55)';
+            for (var k = 1; k < 14; k++) { var tt = k * 0.07; g.beginPath(); g.arc(st.px + vx * tt + 0.5 * st.wind * tt * tt, st.py + vy * tt + 0.5 * 420 * tt * tt, 2.2, 0, 6.3); g.fill(); }
+          }
+          g.fillStyle = 'rgba(255,255,255,.3)'; st.trail.forEach(function (p) { g.fillRect(p[0], p[1], 2, 2); });
+          if (st.seed) { g.fillStyle = '#fff'; g.beginPath(); g.arc(st.seed.x, st.seed.y, 4, 0, 6.3); g.fill(); }
+          drawDot(g, st.px, st.py, 20, st.aim ? 'open' : st.mouth);
         }
       });
     }

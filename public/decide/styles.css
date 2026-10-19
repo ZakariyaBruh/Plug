@@ -7372,3 +7372,26 @@ html.vt-active .buddy { view-transition-name: buddy; }
 @keyframes dot-liquid { 0%, 100% { transform: scale(1.08, .86) skewX(0deg); } 33% { transform: scale(.94, 1.04) skewX(3deg); } 66% { transform: scale(1.04, .92) skewX(-3deg); } }
 @keyframes fx-puddle { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(1.12); } }
 @media (prefers-reduced-motion: reduce) { .mascot[data-form] .dot-body, .dot-fx > * { animation: none !important; } }
+
+/* --- Play with Dot: sort, flip, scramble --- */
+.dg-sortcard { display: grid; justify-items: center; gap: .3rem; width: min(100%, 300px); padding: var(--s4); border: 2px solid var(--hair-lit); border-radius: 18px; background: var(--raise, #1b1b1d); transition: border-color .15s, background .15s; }
+.dg-sortcard.is-in { animation: dg-pop .25s var(--spring) both; }
+.dg-sortcard.is-ok { border-color: #5cb85c; background: color-mix(in srgb, #5cb85c 14%, var(--raise, #1b1b1d)); }
+.dg-sortcard.is-bad { border-color: #d9534f; background: color-mix(in srgb, #d9534f 14%, var(--raise, #1b1b1d)); }
+.dg-sort-icon { font-size: 3.4rem; line-height: 1; }
+.dg-bins { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s2); width: min(100%, 330px); }
+.dg-bin { display: grid; justify-items: center; gap: .2rem; padding: var(--s3) .3rem; border: 1px solid var(--hair-lit); border-radius: 14px; background: none; color: var(--ink); font: inherit; cursor: pointer; touch-action: manipulation; transition: transform .15s var(--spring), border-color .2s; -webkit-tap-highlight-color: transparent; }
+.dg-bin:active { transform: scale(.94); border-color: var(--amber); }
+.dg-pans { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--s3); width: min(100%, 300px); }
+.dg-pan { --v: 0; position: relative; aspect-ratio: 1; border: 0; border-radius: 50%; background: #25252a; cursor: pointer; display: grid; place-items: center; touch-action: manipulation; -webkit-tap-highlight-color: transparent; transition: transform .12s var(--spring); }
+.dg-pan-ring { position: absolute; inset: 4px; border-radius: 50%; background: conic-gradient(from 0deg, #4caf50 0 0, transparent 0); mask: radial-gradient(circle, transparent 60%, #000 62%); -webkit-mask: radial-gradient(circle, transparent 60%, #000 62%); background: conic-gradient(#e0a340 calc(var(--ring, 0) * 1turn), rgb(255 255 255 / .1) 0); }
+.dg-pan.is-ready .dg-pan-ring { background: conic-gradient(#5cb85c calc(var(--ring, 0) * 1turn), rgb(255 255 255 / .1) 0); }
+.dg-pan-food { font-size: 2.6rem; z-index: 1; }
+.dg-pan.is-ready { transform: scale(1.05); box-shadow: 0 0 22px rgb(92 184 92 / .5); }
+.dg-pan.is-perfect { box-shadow: 0 0 28px #e0a340; } .dg-pan.is-good { box-shadow: 0 0 20px #5cb85c; } .dg-pan.is-bad { box-shadow: 0 0 22px #d9534f; }
+.dg-scr-icon { font-size: 3.4rem; line-height: 1; }
+.dg-slots, .dg-letters { display: flex; flex-wrap: wrap; gap: .35rem; justify-content: center; }
+.dg-slot { width: 2rem; height: 2.4rem; display: grid; place-items: center; border-bottom: 3px solid var(--hair-lit); font: 700 1.3rem var(--display, sans-serif); }
+.dg-slot.is-hint { color: var(--amber); } .dg-slots.is-done .dg-slot { border-color: #5cb85c; color: #5cb85c; }
+.dg-letter { width: 2.6rem; height: 2.8rem; border: 1px solid var(--hair-lit); border-radius: 10px; background: var(--raise, #1b1b1d); color: var(--ink); font: 700 1.2rem var(--display, sans-serif); cursor: pointer; touch-action: manipulation; transition: transform .15s var(--spring), opacity .15s; }
+.dg-letter:disabled { opacity: .2; } .dg-letter:active { transform: scale(.9); } .dg-letter.is-bad { border-color: #d9534f; background: color-mix(in srgb, #d9534f 25%, transparent); }
