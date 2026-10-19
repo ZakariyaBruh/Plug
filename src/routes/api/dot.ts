@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { askFree } from '#/lib/free-ai'
-import { bestFact, factsAsText, meaningfulWords } from '#/lib/dot-kb'
+import { bestFact, factsAsText } from '#/lib/dot-kb'
 import { langLine } from '#/lib/lang'
 
 /*
