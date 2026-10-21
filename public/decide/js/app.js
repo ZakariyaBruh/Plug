@@ -566,8 +566,12 @@
     setTimeout(function () { el.style.viewTransitionName = ''; }, 900);
   }
 
+  // True while the browser's own back or forward is being replayed: it has already
+  // animated the change, so doing it again would be a second one.
+  var instantNav = false;
+
   function vt(change, dir) {
-    if (reduceMotion || !document.startViewTransition || document.visibilityState !== 'visible') return change();
+    if (instantNav || reduceMotion || !document.startViewTransition || document.visibilityState !== 'visible') return change();
     var root = document.documentElement;
     try {
       root.style.setProperty('--vt-dir', String(dir || 1));
@@ -581,11 +585,66 @@
     } catch (err) { root.classList.remove('vt-active'); change(); }
   }
 
-  // Which way the page is travelling, from where the two sit in the rail.
+  // Which way the page is travelling, from where the two sit in the navigation.
   function railIndex(name) {
     var links = $$('.rail-link'), at = -1;
     links.forEach(function (el, i) { if (el.dataset.view === name) at = i; });
     return at;
+  }
+
+  /*
+   * The browser's own name for where you are. Every history entry used to read
+   * "morsels45 — what should you eat?", so the back button's list was the same
+   * line five times over; a title per section makes it a list of places.
+   */
+  var HOME_TITLE = document.title;
+  var VIEW_TITLES = {
+    dishes: 'Dishes', menu: 'Tonight’s menu', nearby: 'Nearby', planner: 'Meal planner',
+    kitchen: 'Recipes & kitchen', scan: 'Scan food', chat: 'Ask', news: 'Food news',
+    radio: 'TV & radio', daily: 'Your day', profile: 'Profile', help: 'How to use morsels45'
+  };
+  function titleFor(name) { return VIEW_TITLES[name] ? VIEW_TITLES[name] + ' · morsels45' : HOME_TITLE; }
+
+  /*
+   * A real-time game has thumbs mashing near the bottom of a phone, so the tab
+   * bar steps out of the way for as long as one is on screen (see body.is-playing
+   * in the stylesheet). The same list of panels Dot already treats as "playing".
+   */
+  var GAME_PANELS = /^(arcade|swipe|endless|duel|knockout|blitz|spin|together)$/;
+  function syncPlaying() {
+    document.body.classList.toggle('is-playing', !!landed && view === 'decide' && GAME_PANELS.test(panel));
+  }
+
+  // Both ways of wearing the navigation say which section is current: the list
+  // (a column, or the sheet on a phone) and the tab bar.
+  function paintNav(name) {
+    $$('.rail-link').forEach(function (el) {
+      var on = el.dataset.view === name;
+      el.classList.toggle('is-current', on);
+      if (on) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current');
+    });
+    var inBar = false;
+    $$('.tab-link[data-view]').forEach(function (el) {
+      var on = el.dataset.view === name;
+      inBar = inBar || on;
+      el.classList.toggle('is-current', on);
+      if (on) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current');
+    });
+    // A section that is not one of the four is behind More, and More says so.
+    var more = $('tab-more');
+    if (more) more.classList.toggle('is-current', !inBar);
+    keepRailInView();
+  }
+
+  // The column scrolls inside itself, so a section chosen from somewhere else
+  // (a card on the landing, ?go=help, the tour) has to be brought into view.
+  function keepRailInView() {
+    var box = document.querySelector('.rail-scroll');
+    var cur = document.querySelector('.rail-link.is-current');
+    if (!box || !cur || box.scrollHeight <= box.clientHeight) return;
+    var b = box.getBoundingClientRect(), c = cur.getBoundingClientRect(), pad = 12;
+    if (c.top < b.top + pad) box.scrollTop -= b.top + pad - c.top;
+    else if (c.bottom > b.bottom - pad) box.scrollTop += c.bottom - b.bottom + pad;
   }
 
   function setView(name) {
@@ -596,16 +655,15 @@
     if (view === 'radio' && name !== 'radio') leaveTv();
     var travel = railIndex(name) >= railIndex(view) ? 1 : -1;
     view = name;
+    syncPlaying();
+    closeNav(false);
     vt(function () {
       $$('.view').forEach(function (el) {
         el.classList.toggle('is-current', el.id === 'view-' + name);
       });
-      $$('.rail-link').forEach(function (el) {
-        var on = el.dataset.view === name;
-        el.classList.toggle('is-current', on);
-        el.setAttribute('aria-current', on ? 'page' : 'false');
-      });
+      paintNav(name);
     }, travel);
+    routeChanged();
     if (typeof Buddy !== 'undefined' && Buddy) Buddy.onView(name);
     if (name === 'decide') renderIntro();
     if (name === 'profile') renderProfile();
@@ -628,6 +686,7 @@
     // so it gets no screen transition: its own cards move instead.
     var same = panel === name;
     panel = name;
+    syncPlaying();
     (same ? function (f) { f(); } : vt)(function () {
       $$('#view-decide .panel').forEach(function (el) {
         el.classList.toggle('is-current', el.id === 'panel-' + name);
@@ -637,51 +696,204 @@
     });
   }
 
-  $$('.rail-link').forEach(function (el) {
-    el.addEventListener('click', function () {
-      // Decide means "take me to the deciding screen". Mid-question that is
-      // where you already are, so the answers survive; anywhere else — a
-      // finished result, a recipe, or never having started — it means start
-      // again, which is a question on screen and not the home screen.
-      if (el.dataset.view === 'decide' && panel !== 'question') return goDecide();
-      leaveEndless();
-      // Now that the rail is reachable from the landing, going anywhere from
-      // there has to put the landing away — otherwise the section loads
-      // underneath it and the tap looks like it did nothing.
-      hideLanding();
-      setView(el.dataset.view);
-    });
+  /*
+   * Going somewhere, from the column, the tab bar or the sheet.
+   *
+   * Decide means "take me to the deciding screen". Mid-question that is where
+   * you already are, so the answers survive; anywhere else — a finished result,
+   * a recipe, or never having started — it means start again, which is a
+   * question on screen and not the home screen.
+   *
+   * From the keyboard the new page's heading takes focus, so the next Tab is
+   * the page and not the next link in the menu. A pointer is left where it is.
+   */
+  function navTo(name, event) {
+    closeNav(false);
+    if (name === 'decide' && panel !== 'question') return goDecide();
+    leaveEndless();
+    // Now that the navigation is reachable from the landing, going anywhere from
+    // there has to put the landing away — otherwise the section loads
+    // underneath it and the tap looks like it did nothing.
+    hideLanding();
+    setView(name);
+    if (event && event.detail === 0) focusHeading(name);
+  }
+
+  function focusHeading(name) {
+    setTimeout(function () {
+      var h = document.querySelector('#view-' + name + ' .head-title');
+      if (!h) return;
+      h.setAttribute('tabindex', '-1');
+      try { h.focus({ preventScroll: true }); } catch (err) { /* fine */ }
+    }, 140);
+  }
+
+  $$('.rail-link, .tab-link[data-view]').forEach(function (el) {
+    el.addEventListener('click', function (event) { navTo(el.dataset.view, event); });
   });
 
   /*
-   * How much of the top of the screen is already spoken for.
-   *
-   * The top bar is fixed and the rail is fixed beside it on a wide screen —
-   * but under 60rem the rail becomes a second bar, sticky directly under the
-   * first one. Anything else that wants to stick to the top has to clear both,
-   * and how tall the rail is there depends on how many rows its links wrap
-   * into, which depends on the width and the language. So it is measured and
-   * published as a custom property rather than guessed at in the stylesheet,
-   * where the guess would be wrong on exactly the screens that matter most.
-   *
-   * Without it a sticky element pins at the top bar's height and spends the
-   * whole session hidden behind the rail, which looks precisely like a sticky
-   * element that was never written.
+   * How much of the top of the screen is already spoken for: the top bar, and
+   * nothing else. The navigation used to be a second sticky bar under it on a
+   * narrow screen, and how tall that was depended on how many rows its links
+   * wrapped into. It is a column or a sheet now, so there is only one thing up
+   * there — but its height still changes with the text size and the language,
+   * so it is measured rather than guessed, and the sticky elements that clear
+   * it (see --stack-top in the stylesheet) keep clearing it.
    */
   var narrowRail = null;
   try { narrowRail = window.matchMedia('(max-width: 60rem)'); } catch (err) {}
 
   function measureStack() {
     var bar = document.querySelector('.topbar');
-    var rail = document.querySelector('.rail');
-    var top = bar ? bar.getBoundingClientRect().height : 0;
-    if (rail && narrowRail && narrowRail.matches) top += rail.getBoundingClientRect().height;
-    document.documentElement.style.setProperty('--stack-top', Math.round(top) + 'px');
+    document.documentElement.style.setProperty('--stack-top', Math.round(bar ? bar.getBoundingClientRect().height : 0) + 'px');
   }
 
   measureStack();
   window.addEventListener('resize', measureStack);
   window.addEventListener('orientationchange', measureStack);
+
+  /*
+   * "More", the sheet behind the tab bar. On a phone the navigation list is
+   * closed and out of the tab order until this opens it; Escape, the scrim, a
+   * choice, or focus leaving all put it away again.
+   */
+  var tabMore = $('tab-more');
+  var railBox = $('rail');
+  function navIsOpen() { return document.body.classList.contains('nav-open'); }
+
+  function openNav() {
+    if (navIsOpen() || !tabMore) return;
+    document.body.classList.add('nav-open');
+    tabMore.setAttribute('aria-expanded', 'true');
+    // Focus goes in on the next frame, when the sheet is really showing: a link
+    // that is still hidden cannot take it, and asking too early silently fails.
+    var cur = document.querySelector('.rail-link.is-current') || document.querySelector('.rail-link');
+    var focusIn = function () { if (cur && navIsOpen()) { try { cur.focus({ preventScroll: true }); } catch (err) { /* fine */ } } };
+    requestAnimationFrame(function () { focusIn(); if (document.activeElement !== cur) setTimeout(focusIn, 60); });
+    keepRailInView();
+    Sound.tick();
+  }
+
+  function closeNav(returnFocus) {
+    if (!navIsOpen()) return;
+    document.body.classList.remove('nav-open');
+    if (tabMore) tabMore.setAttribute('aria-expanded', 'false');
+    if (returnFocus && tabMore) { try { tabMore.focus({ preventScroll: true }); } catch (err) { /* fine */ } }
+  }
+
+  if (tabMore) tabMore.addEventListener('click', function () { if (navIsOpen()) closeNav(true); else openNav(); });
+  if ($('nav-scrim')) $('nav-scrim').addEventListener('click', function () { closeNav(true); });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && navIsOpen()) { event.preventDefault(); closeNav(true); }
+  });
+  if (railBox) railBox.addEventListener('focusout', function (event) {
+    var to = event.relatedTarget;
+    if (navIsOpen() && to && !railBox.contains(to) && to !== tabMore) closeNav(false);
+  });
+  // Rotating a tablet, or widening a window, turns the sheet back into a column.
+  if (narrowRail) {
+    var widened = function () { if (!narrowRail.matches) closeNav(false); };
+    if (narrowRail.addEventListener) narrowRail.addEventListener('change', widened);
+    else if (narrowRail.addListener) narrowRail.addListener(widened);
+  }
+
+  /*
+   * THE BACK BUTTON.
+   *
+   * Thirteen sections swapped in place and the address never changed, so back
+   * left the app, reload dropped you on the front door, and no section could be
+   * linked to. Each change of place now writes one history entry, `#/planner`
+   * and so on (the landing is the bare address), and back and forward replay
+   * them.
+   *
+   * What counts as a place is the section, not the panel inside Decide: a game
+   * in progress is one entry, and coming back to it shows the screen you left
+   * rather than starting over.
+   *
+   * It is committed a tick late, from the state as it ends up, because moving
+   * between places is several calls in a row (put the landing away, change the
+   * view) and only the last of them is somewhere anybody was.
+   */
+  var ROUTES = ['decide', 'dishes', 'menu', 'nearby', 'planner', 'kitchen', 'scan', 'chat', 'news', 'radio', 'daily', 'profile', 'help'];
+  var routed = null;
+  var routeTimer = 0;
+  var replaying = false;
+
+  function currentRoute() { return landed ? view : 'home'; }
+
+  function routeFromHash(hash) {
+    var m = /^#\/?([a-z]+)$/.exec(hash || '');
+    return m && ROUTES.indexOf(m[1]) !== -1 ? m[1] : null;
+  }
+
+  // The same address with the one-shot ?go= taken off, so a reload does not do it twice.
+  function routeUrl(route) {
+    var search = location.search.replace(/([?&])go=[^&]*&?/, '$1').replace(/[?&]$/, '');
+    return location.pathname + search + (route === 'home' ? '' : '#/' + route);
+  }
+
+  function routeChanged() {
+    if (replaying || routeTimer) return;
+    routeTimer = setTimeout(commitRoute, 0);
+  }
+
+  function commitRoute() {
+    routeTimer = 0;
+    var route = currentRoute();
+    document.title = route === 'home' ? HOME_TITLE : titleFor(route);
+    if (route === routed) return;
+    // The tour walks through nine sections in a minute; that is a demonstration, not
+    // nine places somebody went, so it keeps the address honest and writes no history.
+    var touring = false;
+    try { touring = typeof Tour !== 'undefined' && !!Tour && Tour.isOpen(); } catch (err) { /* not built yet */ }
+    try {
+      if (routed === null || touring) history.replaceState({ m45: route }, '', routeUrl(route));
+      else history.pushState({ m45: route }, '', routeUrl(route));
+    } catch (err) { /* a sandboxed frame can refuse; the app works without it */ }
+    routed = route;
+  }
+
+  // The browser moved us, so move there without animating it (a swipe-back has
+  // already shown its own) and without writing another entry.
+  function replayRoute(route) {
+    if (route === currentRoute()) { routed = route; return; }
+    replaying = true;
+    instantNav = true;
+    try {
+      closeNav(false);
+      leaveEndless();
+      if (route === 'home') goHome();
+      else if (route === 'decide' && panel === 'home') goDecide();
+      else { hideLanding(); setView(route); }
+    } finally {
+      replaying = false;
+      instantNav = false;
+    }
+    routed = route;
+    document.title = route === 'home' ? HOME_TITLE : titleFor(route);
+  }
+
+  // A hash that is not one of ours (an anchor somebody adds later) is not a place
+  // to go; only an empty one means the front door.
+  window.addEventListener('popstate', function () {
+    var route = routeFromHash(location.hash);
+    if (route === null && location.hash && location.hash !== '#') return;
+    replayRoute(route || 'home');
+  });
+
+  // The way past the menu for somebody on a keyboard: thirteen links stand between
+  // the top of the page and the page. A button rather than a "#content" link, which
+  // would write a hash the history above would then have to understand.
+  var skipLink = $('skip-link');
+  if (skipLink) skipLink.addEventListener('click', function () {
+    var target = document.body.classList.contains('is-landing')
+      ? $('landing-start')
+      : document.querySelector('.view.is-current .head-title') || $('content');
+    if (!target) return;
+    if (!target.matches('button, a, input, select, textarea, [tabindex]')) target.setAttribute('tabindex', '-1');
+    try { target.focus(); } catch (err) { /* fine */ }
+  });
 
   // The brand in the top bar is a real link to /decide/, so it still works
   // opened in a new tab and still means something with no JavaScript. Once the
@@ -11533,9 +11745,16 @@
       return true;
     }
 
+    // How much of the bottom of the screen the tab bar has taken (0 when it is not
+    // showing), so Dot rests above it rather than under it.
+    function lift() {
+      var bar = $('tabbar');
+      return bar ? Math.round(bar.getBoundingClientRect().height) : 0;
+    }
+
     // Where Dot lives when it is not visiting something.
     function homeSpot() {
-      var vw = window.innerWidth, vh = window.innerHeight, m = 16;
+      var vw = window.innerWidth, vh = window.innerHeight - lift(), m = 16;
       if (home && !playing()) return { x: Math.max(m, Math.min(vw - SIZE - m, home.x)), y: Math.max(70, Math.min(vh - SIZE - m, home.y)) };
       if (playing()) return { x: vw - SIZE - m, y: 76 };
       return { x: vw - SIZE - m, y: vh - SIZE - m };
@@ -11544,7 +11763,7 @@
     // Glide to a spot (top-left of the face), on a spring, and say which side the
     // bubble should open on so it never leaves the screen.
     function go(x, y, instant) {
-      var vw = window.innerWidth, vh = window.innerHeight, m = 8;
+      var vw = window.innerWidth, vh = window.innerHeight - lift(), m = 8;
       x = Math.max(m, Math.min(vw - SIZE - m, x));
       y = Math.max(64, Math.min(vh - SIZE - m, y));
       at = { x: x, y: y };
@@ -11587,6 +11806,16 @@
       if (bb) { bb.hidden = true; bb.classList.remove('has-action'); }
       if ($('q-say')) $('q-say').hidden = true;
     }
+
+    // Dot sits over the page, so a bubble can land on whatever somebody is trying
+    // to read or press. It never blocks a tap (pointer-events: none), but it can
+    // cover the words. Touching anything else means they are busy: it goes.
+    document.addEventListener('pointerdown', function (event) {
+      var bb = $('buddy-bubble');
+      if (!bb || bb.hidden) return;
+      if (event.target && event.target.closest && event.target.closest('#buddy')) return;
+      bubbleOff();
+    }, true);
 
     // May Dot say something nobody asked it to? Not in Quiet mode; not twice
     // within the cooldown; not past a cap for the visit.
@@ -13047,8 +13276,8 @@
     var KEY = 'morsels-tour';
     var STEPS = [
       { text: 'Hi! I am Dot. I will show you round morsels45. It takes about a minute.', mood: 'happy' },
-      { sel: ['.rail'], text: 'This is the menu. Everything in the app lives here.', mood: 'happy' },
-      { sel: ['.rail-link[data-view="decide"]'], text: 'Decide is home. Answer a few yes or no questions and I will land on dinner. There are other ways to decide too: swiping, duels, Endless and action games.', mood: 'celebrate' },
+      { sel: ['#tabbar', '.rail'], text: 'This is the menu. Everything in the app lives here.', mood: 'happy' },
+      { sel: ['.tab-link[data-view="decide"]', '.rail-link[data-view="decide"]'], text: 'Decide is home. Answer a few yes or no questions and I will land on dinner. There are other ways to decide too: swiping, duels, Endless and action games.', mood: 'celebrate' },
       { view: 'dishes', sel: ['#view-dishes .head'], text: 'Every dish in one place. Search, filter, and tap one for its recipe.', mood: 'happy' },
       { view: 'planner', sel: ['#view-planner .head', '#view-planner'], text: 'Plan your week. You can copy one day across the whole week with a single tap.', mood: 'wink' },
       { view: 'kitchen', sel: ['#view-kitchen .head', '#view-kitchen'], text: 'Recipes, timers and a converter, for when you are actually cooking.', mood: 'happy' },
@@ -13056,12 +13285,12 @@
       { view: 'menu', sel: ['#view-menu .head'], text: 'A special evening? Tell me the occasion and I will write you five courses that belong together.', mood: 'happy' },
       { view: 'nearby', sel: ['#view-nearby .head'], text: 'Find places near you that serve the dish you landed on.', mood: 'happy' },
       { view: 'chat', sel: ['#chat-mode', '#view-chat .head'], text: 'Ask a question. Standard is free, three a day. Advanced is Premium, and it knows your taste.', mood: 'thinking' },
-      { sel: ['.rail-link[data-view="radio"]'], text: 'Free TV and radio to cook and eat to.', mood: 'happy' },
+      { sel: ['.rail-link[data-view="radio"]', '#tab-more'], text: 'Free TV and radio to cook and eat to.', mood: 'happy' },
       { view: 'daily', sel: ['#view-daily .head'], text: 'Five little things a day, and a streak that grows when you show up.', mood: 'celebrate' },
       { view: 'profile', sel: ['#view-profile .head'], text: 'Your taste, your level, your language, and how much I talk. It is all here.', mood: 'happy' },
       { sel: ['#buddy'], text: 'That is me in the corner. Tap me and I say something. Pick me up and drop me anywhere, and I stay put until you move me again.', mood: 'love' },
       { sel: ['#buddy'], text: 'Hold me for a menu: ask me about morsels45, play a game, take this tour again, or give me a pat.', mood: 'happy' },
-      { sel: ['.rail-link[data-view="decide"]'], text: 'While you decide I ride the progress bar and react to your answers. Tap me there for a hint: how many dishes each answer would leave.', mood: 'thinking' },
+      { sel: ['.tab-link[data-view="decide"]', '.rail-link[data-view="decide"]'], text: 'While you decide I ride the progress bar and react to your answers. Tap me there for a hint: how many dishes each answer would leave.', mood: 'thinking' },
       { text: 'That is everything. Go on, decide something. I will be right here.', mood: 'celebrate', last: true }
     ];
     var open = false, n = 0, root = null, ui = {}, back = null, timer = 0;
@@ -18004,6 +18233,8 @@
   function showLanding() {
     fillDrift();
     landed = false;
+    syncPlaying();
+    routeChanged();
     vt(function () {
       $('landing').hidden = false;
       document.body.classList.add('is-landing');
@@ -18034,6 +18265,8 @@
 
   function hideLanding() {
     landed = true;
+    syncPlaying();
+    routeChanged();
     stopReel();
     vt(function () {
       $('landing').hidden = true;
@@ -18314,6 +18547,15 @@
     if (progress.plan()) progress.clearPlan();
 
     var go = here.searchParams.get('go');
+    // A reload, or a link, at "#/planner": the same places ?go= knows, spelled the
+    // way the history writes them. Ask's route is "chat" but its ?go= is "ask".
+    // "#/decide" is not one of them: a game cannot be rebuilt from an address, and
+    // the front door already knows what to do with one that was interrupted (it
+    // offers to resume it), which starting a fresh game here would walk past.
+    if (!go) {
+      var deep = routeFromHash(location.hash);
+      if (deep && deep !== 'decide') go = deep === 'chat' ? 'ask' : deep;
+    }
     if (go === 'decide') restart();
     else if (go === 'tonight') showTonight();
     else if (go === 'quick') startQuick();
@@ -18334,6 +18576,12 @@
     else if (go === 'tv') { hideLanding(); media.tab = 'tv'; setView('radio'); }
     else if (go === 'listen') { hideLanding(); media.tab = 'radio'; setView('radio'); }
     else if (go === 'help') { hideLanding(); setView('help'); }
+    else if (go === 'menu') { hideLanding(); setView('menu'); }
+    else if (go === 'nearby') { hideLanding(); setView('nearby'); }
+    // Arriving straight at a section: start at its heading, so the first Tab is
+    // the page and not the menu (the front door's start button is hidden now,
+    // and the browser would otherwise carry on from where that used to be).
+    if (view !== 'decide' && landed) focusHeading(view);
 
     /*
      * ?prompt= — see a prompt now, instead of playing until one is due.
