@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
 import { askGemini } from '#/lib/gemini'
+import { langLine } from '#/lib/lang'
 
 /*
  * /api/suggest — what to eat next, argued from what you already liked.
@@ -26,7 +27,7 @@ const MAX_LIKED = 24 // how much history is worth sending
 const WANT = 4 // dishes asked for
 const MAX_OUTPUT_TOKENS = 700
 
-type Ask = { liked?: unknown; avoid?: unknown; answers?: unknown }
+type Ask = { liked?: unknown; avoid?: unknown; answers?: unknown; lang?: unknown }
 
 function names(raw: unknown, cap: number): string[] {
   if (!Array.isArray(raw)) return []
@@ -110,7 +111,7 @@ export const Route = createFileRoute('/api/suggest')({
         const { res, lastStatus } = await askGemini(
           key,
           JSON.stringify({
-            systemInstruction: { parts: [{ text: instruction(liked, avoid, answers) }] },
+            systemInstruction: { parts: [{ text: instruction(liked, avoid, answers) + langLine(ask.lang) }] },
             contents: [{ role: 'user', parts: [{ text: 'What should I eat?' }] }],
             generationConfig: {
               maxOutputTokens: MAX_OUTPUT_TOKENS,

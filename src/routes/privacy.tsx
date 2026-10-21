@@ -71,10 +71,13 @@ const SECTIONS: Section[] = [
   {
     id: 'ai',
     heading: 'The AI features',
-    lede: 'Three features send what you type to Google, with nothing attached that says who you are.',
+    lede: 'The AI features send what you type to an AI service, with nothing attached that says who you are.',
     body: [
-      'Ask anything, the menu builder and the five daily suggestions are answered by Google’s Gemini. What you type into the chat box, or the situation you describe to the menu builder, is sent to Google to be answered, along with a short list of dishes you have liked and avoided so the answer is worth having.',
-      'Nothing identifying goes with it: no name, no email, no account number, no location. Google’s own terms govern what they do with it, and if that is not something you want, those three features are the only ones that use them — the decide game itself never calls out anywhere.',
+      'The assistant has two tiers. Standard — the three free questions a day, and what a Premium member can pick for a quick answer — is answered by Pollinations (text.pollinations.ai), a free public AI service that needs no account or key, and, if that does not answer, by LLM7 (llm7.io), another. They are sent the conversation so far and our instruction, and nothing else: not your taste profile, not your name, not your account. Our server makes the request, so they see our server’s address and not yours. If neither answers, you are told it is busy and the question is not counted.',
+      'Advanced, for Premium members, is answered by Google’s Gemini. It is also sent a short list of dishes you have liked and avoided and the food rules you have set, so the answer is worth having; a photo, only if you attach one, shrunk on your device and sent once, not kept; and, only if you switch on “Look it up”, Gemini searches the web for that question. Your last Advanced conversation is kept in this browser only, so it is there tomorrow; “New chat” deletes it.',
+      'When you hold Dot and talk to it, what you type, plus the last few lines of that chat, is sent to the same free services (Pollinations, then LLM7), together with a fixed list of facts about the app. Dot is a companion for a short friendly chat, not a general assistant, and declines tasks. Nothing about you goes with it, and nothing is kept: the chat lives in the page and is gone when you close it.',
+      'The menu builder and the five daily suggestions are answered by Google’s Gemini, with the same short list of dishes you have liked and avoided.',
+      'Nothing identifying goes with any of it: no name, no email, no account number, no location. Each service’s own terms govern what it does with what it receives, and if that is not something you want, these features are the only ones that use them — the decide game itself never calls out anywhere.',
     ],
   },
   {
@@ -192,11 +195,12 @@ const SECTIONS: Section[] = [
   {
     id: 'logs',
     heading: 'Server logs',
-    lede: 'Your IP is never stored. A scrambled, one-day version of it counts your free AI questions, and is deleted the next day.',
+    lede: 'Your IP is never stored. Your free AI questions are counted against your free account, or, if you are not signed in, a scrambled one-day version of your address.',
     body: [
       'The AI features limit how often one person can call them. For the burst limit — no more than a dozen questions a minute — the server holds the IP address your request arrived from in memory only, for that minute, and never writes it down.',
-      'The free allowance — three assistant questions a day — has to survive a server restart, so it is counted in a database (Turso). What is stored is not your IP address: it is a keyed hash of it, made with a secret that changes every day, next to a number from 0 to 3 and the date. Tomorrow the same address makes a different hash, so days cannot be joined into a history, and the hash cannot be turned back into an address without our secret. Rows from earlier days are deleted as soon as the next question is counted. Nothing else about you is attached to it.',
-      'If you are a Premium member you are not counted against it. A household sharing one internet connection shares one allowance — the price of not asking anybody to sign in.',
+      'The free allowance — three Standard assistant questions a day — has to survive a server restart, so it is counted in a database (Turso). If you are signed in with a free Whop account, the count is kept against your Whop user id, a number from 0 to 3 and the date, so it follows you from one device to another and clearing your browser does not refill it. Rows from earlier days are deleted as soon as the next question is counted, and the count is never joined to what you asked.',
+      'If you are not signed in, what is stored is not your IP address: it is a keyed hash of it, made with a secret that changes every day, next to a number from 0 to 3 and the date. Tomorrow the same address makes a different hash, so days cannot be joined into a history, and the hash cannot be turned back into an address without our secret. A household sharing one internet connection shares that allowance — the price of not asking anybody to sign in.',
+      'If you are a Premium member you are not counted against it. Dot, the companion, remembers your days together, pats and games in this browser only; none of it is sent anywhere.',
       'When a sign-in does not finish, the server notes the step it stopped at and the kind of browser or app it happened in — “Safari (iOS)”, say — and the site you came from, but nothing that identifies you. Those notes are kept for seven days, so a broken sign-in can be found and fixed.',
       'Ordinary request logs are handled by Cloudflare, which serves this site.',
     ],
@@ -293,7 +297,8 @@ const THIRD_PARTIES: [string, string][] = [
   ...(GA4_ON
     ? ([['Google Analytics', 'Counts page views and the seventeen events named above. No advertising features.']] as [string, string][])
     : []),
-  ['Google (Gemini)', 'Answers the chat, the menu builder and the five daily suggestions; fills and balances the meal planner; plans dinner parties; estimates nutrition and cost per dish; writes the daily briefing; reads recipes from pasted text, from photos and from web pages with no recipe card; and reads a fridge photo once, which is not kept.'],
+  ['Google (Gemini)', 'Answers the Advanced assistant (Premium), the menu builder and the five daily suggestions; fills and balances the meal planner; plans dinner parties; estimates nutrition and cost per dish; writes the daily briefing; reads recipes from pasted text, from photos and from web pages with no recipe card; and reads a fridge photo once, which is not kept.'],
+  ['Pollinations and LLM7', 'Free public AI services that answer Standard assistant questions, and Dot’s answers about morsels45, without an account or key. Asked by our server with the conversation only — never your taste profile, name or account — so they see our server, not you.'],
   ['Open Food Facts', 'The product database behind Scan food. Asked by our server with the barcode only.'],
   ['Hyperbeam', 'Runs the shared browser, when you open one.'],
   ['OpenStreetMap and Photon', 'Look up places near you, when you use Nearby and allow location.'],
@@ -305,7 +310,7 @@ const THIRD_PARTIES: [string, string][] = [
   ['Wikimedia Commons', 'Where the dish pages’ photographs come from, each credited under it. Our server fetches them and the page shows them from this site, so your browser never contacts Wikimedia.'],
   ['Radio Browser', 'The directory the radio’s stations come from. Asked by our server, never by your device.'],
   ['Radio stations', 'Each station you play streams straight to you from its own broadcaster, which sees your IP address as any website would.'],
-  ['Turso', 'Holds the daily count of free AI questions, against a hashed address that changes every day — and, if you use them, your daily check-in, journal line and trivia answer, your planned weeks, your cookbook and your daily AI request counts, against your Whop user id.'],
+  ['Turso', 'Holds the daily count of free AI questions — against your Whop user id if you are signed in, otherwise against a hashed address that changes every day — and, if you use them, your daily check-in, journal line and trivia answer, your planned weeks, your cookbook and your daily AI request counts, against your Whop user id.'],
   ['Cloudflare', 'Serves this site.'],
 ]
 

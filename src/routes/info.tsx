@@ -148,7 +148,7 @@ function InfoPage() {
                 See Premium — {OFFER_SHORT}
               </Link>
             </div>
-            <p className="mt-6 text-sm text-[var(--text-dim)]">No account needed to start. A free account adds the meal planner, and TV and radio to cook and eat to. Premium is the rest of the hub.</p>
+            <p className="mt-6 text-sm text-[var(--text-dim)]">No account needed to start. A free account adds the meal planner and one TV group and one radio group a day to cook and eat to. Premium is the rest of the hub, including every TV and radio group.</p>
             <a href="#try-it" className="mt-3 inline-block text-sm text-[var(--amber)] underline underline-offset-4">
               Or try five questions right here ↓
             </a>
@@ -243,6 +243,10 @@ function InfoPage() {
                 ['🎲', 'Shortlist', 'Eight dishes from what you like. One of them lands. No questions.'],
                 ['👥', 'Together', 'Up to six of you, one phone. Five either-ors each, then one dish the whole table can live with.'],
                 ['💘', 'Swipe', 'One dish at a time. Right for yes, left for no — and every no sharpens what comes next.'],
+                ['🧱', 'Smash', 'A wall of dishes and a ball. Smash what you do not want; what is left is dinner.'],
+                ['🎱', 'Drop Zone', 'Drop balls down a pegboard into dishes and nudge them on the way.'],
+                ['⚔️', 'Slice', 'Dishes fly across the screen. Swipe the ones you want, let the rest go.'],
+                ['🏇', 'Dish Derby', 'Eight dishes race. Cheer your favourite, sabotage the rest, reroll the field if you do not fancy it.'],
               ].map(([icon, name, hook]) => (
                 <div key={name} className="rounded-2xl border border-[var(--border)] bg-[var(--bg)] p-6">
                   <p className="text-2xl" aria-hidden="true">
@@ -261,8 +265,8 @@ function InfoPage() {
             <p className="text-sm font-semibold uppercase tracking-widest text-[var(--amber)]">Free, account and Premium</p>
             <h2 className="mt-2 text-3xl font-bold">Free decides. An account plans. Premium does the rest.</h2>
             <p className="mt-3 max-w-xl text-[var(--text-dim)]">
-              {THE_GIFT} A free account adds the meal calendar and its AI, and TV and radio to cook and eat to. Premium
-              adds the shopping list, nutrition and budget, the dinner-party planner, your own recipes
+              {THE_GIFT} A free account adds the meal calendar and its AI, and one TV group and one radio group a day to cook and eat to. Premium
+              adds every TV and radio group, the shopping list, nutrition and budget, the dinner-party planner, your own recipes
               and recipes from websites, the food scanner, the fridge photo, hands-free cooking, the
               daily briefing and the shared browser.
             </p>

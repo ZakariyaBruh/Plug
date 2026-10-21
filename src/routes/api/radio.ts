@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { isPremium } from '#/lib/allowance'
+import { freePicks, isFree } from '#/lib/free-channel'
 import { identifyVisitor } from '#/lib/session'
 import { RADIO_CATEGORIES, categoryStations, countPlay, isRadioCategory, isStationId } from '#/lib/radio'
 
@@ -11,8 +13,8 @@ function json(body: unknown, status = 200, cache = 'no-store') {
 }
 
 /*
- * /api/radio — the radio. Free, account-only, like the daily three: see
- * lib/radio.ts for where the stations come from and how each group is chosen.
+ * /api/radio — the radio. Premium, except for one TV group and one radio group a day that are
+ * free with an account (lib/free-channel.ts): see lib/radio.ts for where the stations come from and how each group is chosen.
  *
  *   GET  /api/radio?cat=jazz   one group's stations (food when none is
  *                              named), with the list of groups: names to
@@ -29,7 +31,7 @@ export const Route = createFileRoute('/api/radio')({
         const userId = await identifyVisitor(request)
         const asked = new URL(request.url).searchParams.get('cat') ?? 'food'
         const category = isRadioCategory(asked) ? asked : 'food'
-        const groups = { categories: RADIO_CATEGORIES, category }
+        const groups = { categories: RADIO_CATEGORIES, category, free: freePicks() }
         let stations
         try {
           stations = await categoryStations(category)
@@ -37,12 +39,12 @@ export const Route = createFileRoute('/api/radio')({
           console.error(`radio: the directory could not be reached for ${category}`, err)
           return json({ signedIn: !!userId, ...groups, error: 'directory_unavailable' }, 502)
         }
-        if (!userId) {
-          return json({
-            signedIn: false,
-            ...groups,
-            stations: stations.map(({ id, name, favicon, emoji, country, tags }) => ({ id, name, favicon, emoji, country, tags })),
-          })
+        const teaser = stations.map(({ id, name, favicon, emoji, country, tags }) => ({ id, name, favicon, emoji, country, tags }))
+        if (!userId) return json({ signedIn: false, ...groups, stations: teaser })
+        // Every group but today's free one is Premium; Premium is looked up
+        // only when it matters. Without it: names and logos, no streams.
+        if (!isFree('radio', category) && !(await isPremium(request))) {
+          return json({ signedIn: true, locked: true, ...groups, stations: teaser })
         }
         // Private: the list is the same for everybody, but who may have the
         // streams is not, so no shared cache gets to hand them on.

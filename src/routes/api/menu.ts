@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { ALL_DISHES } from '#/lib/dishes'
 import { askGemini } from '#/lib/gemini'
+import { langLine } from '#/lib/lang'
 
 /*
  * /api/menu — five courses that go together, argued for.
@@ -34,6 +35,7 @@ const MAX_PROMPT = 400
 const MAX_OUTPUT_TOKENS = 700
 
 type Ask = {
+  lang?: unknown
   mode?: unknown
   prompt?: unknown
   answers?: unknown
@@ -197,7 +199,7 @@ export const Route = createFileRoute('/api/menu')({
         const { res, lastStatus } = await askGemini(
           key,
           JSON.stringify({
-            systemInstruction: { parts: [{ text: instruction(said, liked, avoid, pinned) }] },
+            systemInstruction: { parts: [{ text: instruction(said, liked, avoid, pinned) + langLine(ask.lang) }] },
             contents: [{ role: 'user', parts: [{ text: 'Write me the menu.' }] }],
             generationConfig: {
               maxOutputTokens: MAX_OUTPUT_TOKENS,

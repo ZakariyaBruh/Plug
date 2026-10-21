@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { isPremium } from '#/lib/allowance'
 import { checkProductAccess } from '#/lib/session'
 import { PREMIUM_PRODUCT_ID } from '#/lib/products'
 
@@ -254,15 +255,27 @@ export const Route = createFileRoute('/api/order-together')({
         // Premium, and only Premium. This is the one thing here that costs real
         // money per minute somebody is using it, so it is the one thing the
         // subscription actually buys rather than merely unlocks.
-        const { signedIn, hasAccess } = await checkProductAccess(PREMIUM_PRODUCT_ID)
-        if (!hasAccess) {
+        //
+        // BOTH WAYS OF KNOWING WHO THIS IS. This app is served inside Whop's
+        // frame, where the session cookie is third-party and often never sent;
+        // checking the cookie alone refused real subscribers as signed-out, and
+        // the page answered with the Premium sheet instead of a browser. Every
+        // other Premium route here falls back to Whop's signed iframe token, so
+        // this one does too (isPremium tries the cookie, then the token).
+        if (!(await isPremium(request))) {
+          const { signedIn } = await checkProductAccess(PREMIUM_PRODUCT_ID).catch(() => ({ signedIn: false }))
           return json({ error: signedIn ? 'premium_required' : 'sign_in_required' }, 403)
         }
         if (tooManyStarts(request.headers.get('cf-connecting-ip') ?? 'unknown')) {
           return json({ error: 'too_fast' }, 429)
         }
 
-        const create = (shape: { width: number; height: number }) =>
+        const home = regionFor(request.headers.get('cf-ipcountry'))
+        // Where to try, in order: the nearest region, then the others. A region
+        // with no free machine is a bad reason to have no browser at all.
+        const regions = [home, ...['EU', 'NA', 'AS'].filter((r) => r !== home)]
+
+        const create = (shape: { width: number; height: number }, region: string) =>
           fetch(ENGINE, {
             method: 'POST',
             headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
@@ -281,29 +294,49 @@ export const Route = createFileRoute('/api/order-together')({
                * 400, which is how the first version of this failed every time.
                */
               timeout: { absolute: SESSION_MAX, offline: 60 },
-              region: regionFor(request.headers.get('cf-ipcountry')),
+              region,
               // The app refuses ad formats that misbehave in its own pages; a
               // browser it opens on somebody's behalf gets the same treatment.
               ublock: true,
             }),
           }).catch(() => null)
 
-        let made = await create(size)
-
-        // A shape Hyperbeam will not run is a bad reason to have no browser at
-        // all. If a size taken from somebody's phone is refused, the desktop
-        // default is tried once — a letterboxed browser beats none, and the
-        // refusal is logged so an unhappy shape can be found rather than
-        // silently absorbed forever.
-        if (made?.status === 400 && (size.width !== DEFAULT_SIZE.width || size.height !== DEFAULT_SIZE.height)) {
-          console.error('order-together: hyperbeam refused', size.width + 'x' + size.height)
-          made = await create(DEFAULT_SIZE)
+        /*
+         * THE FIRST ATTEMPT USED TO BE THE ONLY ONE. A network blip, a 429, or
+         * a 5xx from Hyperbeam ended the request and the page said "could not
+         * open it" — and the cause was never logged, so it could not be found
+         * afterwards. Now: up to three tries, each in the next region, with a
+         * short pause, and every refusal logged with its status and body.
+         * A 400 is a refusal of the request itself, not of the moment, so it is
+         * only retried once, at the default shape (below); a 401/403 is the key
+         * and is not retried at all.
+         */
+        let made: Response | null = null
+        let shape = size
+        for (let attempt = 0; attempt < 3; attempt++) {
+          made = await create(shape, regions[attempt])
+          if (made?.ok) break
+          const status = made?.status ?? 0
+          const detail = made ? await made.clone().text().catch(() => '') : 'network error'
+          console.error(
+            'order-together: hyperbeam refused',
+            status || 'network error',
+            regions[attempt],
+            shape.width + 'x' + shape.height,
+            detail.slice(0, 200),
+          )
+          if (status === 401 || status === 403) break
+          // A shape Hyperbeam will not run is a bad reason to have no browser:
+          // fall back to the desktop default, once.
+          if (status === 400) {
+            if (shape.width === DEFAULT_SIZE.width && shape.height === DEFAULT_SIZE.height) break
+            shape = DEFAULT_SIZE
+            continue
+          }
+          await new Promise((r) => setTimeout(r, 400 * (attempt + 1)))
         }
 
-        if (!made?.ok) {
-          console.error('order-together: hyperbeam refused', made?.status ?? 'network error')
-          return json({ error: 'unavailable' }, 502)
-        }
+        if (!made?.ok) return json({ error: 'unavailable' }, 502)
 
         const session = (await made.json()) as {
           session_id?: string

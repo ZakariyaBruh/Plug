@@ -162,7 +162,7 @@
 
   function head(mechanic, title, sub) {
     return el('header', { class: 'head' }, [
-      el('p', { class: 'mechanic', text: mechanic }),
+      el('p', { class: 'mechanic kicker', text: mechanic, 'aria-hidden': 'true' }),
       el('h1', { class: 'head-title', text: title }),
       sub ? el('p', { class: 'head-sub', text: sub }) : null
     ]);
@@ -453,8 +453,17 @@
     var todayIso = isoDay(new Date());
     DAYS.forEach(function (day) {
       var date = dayDate(plan.week, day);
+      var hasMeals = MEALS.some(function (meal) { return slotItems(day + '-' + meal).length; });
       var row = el('div', { class: 'hub-day' + (isoDay(date) === todayIso ? ' is-today' : '') }, [
-        el('p', { class: 'hub-day-name' }, [DAY_NAME[day], el('span', { text: ' ' + shortDate(date) })])
+        el('div', { class: 'hub-day-head' }, [
+          el('p', { class: 'hub-day-name' }, [DAY_NAME[day], el('span', { text: ' ' + shortDate(date) })]),
+          hasMeals ? el('button', {
+            class: 'hub-copy', type: 'button',
+            'aria-label': 'Copy ' + DAY_NAME[day] + ' to other days',
+            text: 'Copy to\u2026',
+            on: { click: function () { openCopy(day); } }
+          }) : null
+        ])
       ]);
       MEALS.forEach(function (meal) { row.appendChild(renderSlot(day + '-' + meal, meal)); });
       grid.appendChild(row);
@@ -538,6 +547,7 @@
 
     function add(item) {
       addToSlot(picker.slot, item);
+      dot({ breakfast: 'Breakfast. Optimistic.', lunch: 'Lunch. Sensible.', dinner: 'Dinner, handled.', snack: 'A snack. Bold of you to plan it.' }[meal]);
       Sound.tick();
       dlg.close();
       renderPlanner();
@@ -588,7 +598,113 @@
     input.focus();
   }
 
+  /* ---- copy a day across the week -------------------------------------- */
+
+  var copier = { dialog: null };
+
+  function cloneItems(list) {
+    return list.map(function (item) { return JSON.parse(JSON.stringify(item)); });
+  }
+
+  // Copies `from`'s meals onto each day in `targets`. "fill" only touches meals
+  // that are still empty, so a half-planned week is not overwritten; "replace"
+  // makes the target day match the source exactly, empty meals included.
+  function copyDay(from, targets, mode) {
+    var before = JSON.stringify(plan.data.slots);
+    var changed = 0;
+    targets.forEach(function (day) {
+      if (day === from) return;
+      MEALS.forEach(function (meal) {
+        var source = slotItems(from + '-' + meal);
+        var key = day + '-' + meal;
+        if (mode === 'fill' && slotItems(key).length) return;
+        if (mode === 'fill' && !source.length) return;
+        if (JSON.stringify(slotItems(key)) === JSON.stringify(source)) return;
+        setSlot(key, cloneItems(source));
+        changed++;
+      });
+    });
+    return { before: before, changed: changed, days: targets.filter(function (d) { return d !== from; }).length };
+  }
+
+  function openCopy(from) {
+    if (!copier.dialog) {
+      copier.dialog = el('dialog', { class: 'hub-picker hub-copy-dialog', 'aria-label': 'Copy a day' });
+      document.body.appendChild(copier.dialog);
+      copier.dialog.addEventListener('click', function (e) { if (e.target === copier.dialog) copier.dialog.close(); });
+    }
+    var dlg = clear(copier.dialog);
+    var boxes = {};
+    var list = el('div', { class: 'hub-copy-days' });
+    DAYS.forEach(function (day) {
+      if (day === from) return;
+      var box = el('input', { type: 'checkbox', checked: true });
+      boxes[day] = box;
+      list.appendChild(el('label', { class: 'hub-copy-day' }, [box, ' ' + DAY_NAME[day]]));
+    });
+
+    var mode = store('copy-mode') || 'fill';
+    var fill = el('input', { type: 'radio', name: 'copy-mode', value: 'fill', checked: mode !== 'replace' });
+    var replace = el('input', { type: 'radio', name: 'copy-mode', value: 'replace', checked: mode === 'replace' });
+    var apply = el('button', { class: 'go go-sm', type: 'button' }, [el('span', { class: 'go-label', text: 'Copy' })]);
+    var hint = el('p', { class: 'fine' });
+
+    function chosen() { return DAYS.filter(function (d) { return boxes[d] && boxes[d].checked; }); }
+    function refresh() {
+      var n = chosen().length;
+      apply.disabled = !n;
+      hint.textContent = replace.checked
+        ? 'Replaces everything on the ticked days, including meals you left empty here.'
+        : 'Leaves any meal you have already planned on those days alone.';
+    }
+    list.addEventListener('change', refresh);
+    fill.addEventListener('change', refresh);
+    replace.addEventListener('change', refresh);
+
+    function setAll(on) { Object.keys(boxes).forEach(function (d) { boxes[d].checked = on; }); refresh(); }
+
+    apply.addEventListener('click', function () {
+      var m = replace.checked ? 'replace' : 'fill';
+      store('copy-mode', m);
+      var done = copyDay(from, chosen(), m);
+      dlg.close();
+      planner.ai = { kind: 'copy', from: from, days: done.days, changed: done.changed, undo: done.before };
+      if (done.changed) dot('Efficient.');
+      if (done.changed) Sound.win();
+      renderPlanner();
+    });
+
+    dlg.appendChild(el('div', { class: 'hub-picker-head' }, [
+      el('p', { class: 'hub-picker-title', text: 'Copy this day to\u2026' }),
+      el('button', { class: 'quiet', type: 'button', text: 'Close', on: { click: function () { dlg.close(); } } })
+    ]));
+    dlg.appendChild(el('div', { class: 'hub-copy-quick' }, [
+      el('button', { class: 'quiet', type: 'button', text: 'Whole week', on: { click: function () { setAll(true); } } }),
+      el('button', { class: 'quiet', type: 'button', text: 'Weekdays', on: { click: function () {
+        Object.keys(boxes).forEach(function (d) { boxes[d].checked = ['mon', 'tue', 'wed', 'thu', 'fri'].indexOf(d) !== -1; });
+        refresh();
+      } } }),
+      el('button', { class: 'quiet', type: 'button', text: 'Weekend', on: { click: function () {
+        Object.keys(boxes).forEach(function (d) { boxes[d].checked = d === 'sat' || d === 'sun'; });
+        refresh();
+      } } }),
+      el('button', { class: 'quiet', type: 'button', text: 'None', on: { click: function () { setAll(false); } } })
+    ]));
+    dlg.appendChild(list);
+    dlg.appendChild(el('div', { class: 'hub-copy-modes' }, [
+      el('label', {}, [fill, ' Only fill meals that are empty']),
+      el('label', {}, [replace, ' Replace what is there'])
+    ]));
+    dlg.appendChild(hint);
+    dlg.appendChild(apply);
+    refresh();
+    dlg.showModal();
+  }
+
   /* ---- the calendar's AI ----------------------------------------------- */
+
+  // Dot, if it is about: a word at the moments that deserve one, never more.
+  function dot(text, mood) { if (window.M45Dot) window.M45Dot.say(text, mood || 'happy', 3000); }
 
   function emptySlots(which) {
     var meals = which === 'dinner' ? ['dinner'] : which === 'main' ? ['lunch', 'dinner'] : MEALS;
@@ -627,6 +743,7 @@
         .then(function (res) {
           res.fills.forEach(function (f) { addToSlot(f.slot, { t: 'dish', name: f.name, ai: true }); });
           planner.ai = { kind: 'fill', count: res.fills.length, undo: before };
+          dot('Look at you, planning.', 'celebrate');
           Sound.win();
           renderPlanner();
         })
@@ -635,7 +752,7 @@
 
     prepBtn.addEventListener('click', function () {
       busyButton(prepBtn, true);
-      clear(out).appendChild(note('Planning your prep…'));
+      clear(out).appendChild(note('Planning your prep. Pans are being counted…'));
       api('/api/planner-ai', { method: 'POST', body: { action: 'prep', slots: slotsForAi(), rules: M.effectiveRules() } })
         .then(function (res) {
           plan.data.prep = { sessions: res.sessions, keeps: res.keeps };
@@ -649,7 +766,7 @@
 
     balanceBtn.addEventListener('click', function () {
       busyButton(balanceBtn, true);
-      clear(out).appendChild(note('Reading your week…'));
+      clear(out).appendChild(note('Reading your week. No judgement…'));
       api('/api/planner-ai', { method: 'POST', body: { action: 'balance', slots: slotsForAi(), rules: M.effectiveRules() } })
         .then(function (res) {
           planner.ai = { kind: 'balance', notes: res.notes, swaps: res.swaps };
@@ -675,6 +792,19 @@
           savePlan();
           renderPlanner();
         } } })
+      ]));
+    }
+    if (ai && ai.kind === 'copy') {
+      out.appendChild(el('p', { class: 'hub-note is-good' }, [
+        ai.changed
+          ? 'Copied to the days you chose. '
+          : 'Nothing to copy \u2014 those days already match, or have those meals planned. ',
+        ai.changed ? el('button', { class: 'link-btn', type: 'button', text: 'Undo', on: { click: function () {
+          plan.data.slots = JSON.parse(ai.undo);
+          planner.ai = null;
+          savePlan();
+          renderPlanner();
+        } } }) : null
       ]));
     }
     if (ai && ai.kind === 'balance') {
@@ -2989,8 +3119,8 @@
       what: 'Ask any food question in your own words, the way you would ask a friend — “what can I make with eggs and spinach?”' },
     { view: 'news', icon: '\u{1F4F0}', name: 'News', tier: 'free', extra: 'Premium adds a short summary of the day’s food news at the top.',
       what: 'The latest food stories from newspapers and food websites.' },
-    { view: 'radio', icon: '\u{1F4FA}', name: 'TV & radio', tier: 'account',
-      what: 'Something to watch or listen to while you cook and eat, free. Tap a group — cooking shows, music, comedy, travel, calm nature and more on the TV; jazz, classical, oldies, lo-fi and more on the radio.' },
+    { view: 'radio', icon: '\u{1F4FA}', name: 'TV & radio', tier: 'mixed', extra: 'One TV group and one radio group are free each day, picked at random; Premium has every group.',
+      what: 'Something to watch or listen to while you cook and eat. Tap a group — cooking shows, music, comedy, travel, calm nature and more on the TV; jazz, classical, oldies, lo-fi and more on the radio.' },
     { view: 'daily', icon: '☀️', name: 'Daily', tier: 'account',
       what: 'A one-minute check-in each day: how you are feeling, one good thing, and a food question everybody gets the same day.' },
     { view: 'profile', icon: '\u{1F464}', name: 'Profile', tier: 'free',

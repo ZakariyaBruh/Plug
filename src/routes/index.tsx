@@ -67,8 +67,8 @@ const HOME_TIERS: { name: string; note: string; premium?: boolean; items: [strin
     note: 'Just sign in with Whop — same on every device.',
     items: [
       ['Meal-prep calendar', 'plan the week; its AI fills the gaps and plans your prep'],
-      ['TV to cook and eat to', 'food shows, music, comedy, travel and more, live, with what is on'],
-      ['Radio to cook and eat to', 'food and dining stations, jazz, classical, oldies and more'],
+      ['TV to cook and eat to', 'one group free every day (food shows, music, comedy, travel and more); every group with Premium'],
+      ['Radio to cook and eat to', 'one group free every day (food and dining, jazz, classical, oldies and more); every group with Premium'],
       ['Kitchen timers & converter', 'several timers at once; cups, ounces, gas marks'],
       ['In season', 'what is good this month, and what to cook with it'],
       ['The daily three', 'a mood, one good thing, a food question'],

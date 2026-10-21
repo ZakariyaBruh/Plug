@@ -38,7 +38,19 @@ export type GeminiResult = {
   lastStatus: number
 }
 
-export async function askGemini(key: string, body: string, label: string): Promise<GeminiResult> {
+export type GeminiOptions = {
+  /** Which two models, in order. Defaults to the fast pair above. */
+  models?: readonly [string, string]
+  staggerMs?: number
+  attemptMs?: number
+  timeoutMs?: number
+}
+
+export async function askGemini(key: string, body: string, label: string, opts: GeminiOptions = {}): Promise<GeminiResult> {
+  const models = opts.models ?? GEMINI_MODELS
+  const stagger = opts.staggerMs ?? STAGGER_MS
+  const attemptMs = opts.attemptMs ?? ATTEMPT_MS
+  const timeoutMs = opts.timeoutMs ?? TIMEOUT_MS
   const running: AbortController[] = []
   let winner: AbortController | null = null
   let lastStatus = 0
@@ -52,7 +64,7 @@ export async function askGemini(key: string, body: string, label: string): Promi
   const attempt = async (model: string): Promise<Response> => {
     const control = new AbortController()
     running.push(control)
-    const timer = setTimeout(() => control.abort(), ATTEMPT_MS)
+    const timer = setTimeout(() => control.abort(), attemptMs)
     try {
       const res = await fetch(endpoint(model), {
         method: 'POST',
@@ -75,21 +87,21 @@ export async function askGemini(key: string, body: string, label: string): Promi
     }
   }
 
-  const first = attempt(GEMINI_MODELS[0])
+  const first = attempt(models[0])
   // The backup starts at whichever comes first: the stagger, or the first
   // attempt failing. Waiting out the stagger after a fast 503 was dead time.
   const backup = new Promise<void>((resolve) => {
-    const t = setTimeout(resolve, STAGGER_MS)
+    const t = setTimeout(resolve, stagger)
     first.catch(() => {
       clearTimeout(t)
       resolve()
     })
   }).then(() => {
     if (winner) throw new Error('already answered')
-    return attempt(GEMINI_MODELS[1])
+    return attempt(models[1])
   })
 
-  const capped = new Promise<null>((r) => setTimeout(() => r(null), TIMEOUT_MS))
+  const capped = new Promise<null>((r) => setTimeout(() => r(null), timeoutMs))
   const res = await Promise.race([Promise.any([first, backup]).catch(() => null), capped])
   stopOthers(winner)
   if (!res) {

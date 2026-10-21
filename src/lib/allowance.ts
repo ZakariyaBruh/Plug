@@ -1,6 +1,8 @@
-import { db } from '#/lib/db'
-import { checkProductAccess, checkProductAccessFor } from '#/lib/session'
+import { db, today } from '#/lib/db'
+import { checkProductAccess, checkProductAccessFor, identifyVisitor } from '#/lib/session'
 import { whopUserId } from '#/lib/whop-token'
+import { hasPremium } from '#/lib/gate'
+import { spendOne, usageToday } from '#/lib/hub-store'
 import { PREMIUM_PRODUCT_ID } from '#/lib/products'
 
 /*
@@ -10,7 +12,14 @@ import { PREMIUM_PRODUCT_ID } from '#/lib/products'
  * to be counted in the browser, which meant clearing site data — or opening a
  * private window — refilled it, and the number on screen was a suggestion.
  *
- * WHO "ONE PERSON" IS. There is no sign-in to count against, so it is the IP
+ * WHO "ONE PERSON" IS. A free Whop account, when the visitor is signed in to
+ * one: the three questions belong to the account, are counted in the database
+ * against its id, and follow it from phone to laptop — so neither clearing site
+ * data nor changing network refills them. (That is the "free account" the
+ * allowance is for. Nobody is made to sign in to ask, so a visitor who is not
+ * signed in is still counted, below.)
+ *
+ * WITHOUT AN ACCOUNT there is nothing to count against, so it is the IP
  * address the request came from, and never the address itself: what is
  * stored is an HMAC of it under a key that changes every day. The same
  * address produces a different row tomorrow, so two days' rows cannot be
@@ -34,10 +43,7 @@ import { PREMIUM_PRODUCT_ID } from '#/lib/products'
 
 export const CHAT_PER_DAY = 3
 
-/** UTC calendar day, which is when the allowance refills. */
-export function today(now = new Date()): string {
-  return now.toISOString().slice(0, 10)
-}
+export { today }
 
 const enc = new TextEncoder()
 
@@ -121,4 +127,47 @@ export async function isPremium(request: Request): Promise<boolean> {
     console.error('allowance: premium check failed', err)
     return false
   }
+}
+
+/*
+ * Where one visitor stands today: who is being counted, and how many of the
+ * three they have used. `left` is null when the ledger could not be read, which
+ * the page treats as "not counting" and never as zero.
+ */
+export type Standing = {
+  who: 'account' | 'visitor'
+  userId: string | null
+  key: string | null
+  day: string
+  used: number | null
+  left: number | null
+}
+
+export async function standing(request: Request): Promise<Standing> {
+  const day = today()
+  const userId = await identifyVisitor(request).catch(() => null)
+  let who: Standing['who'] = 'visitor'
+  let key: string | null = null
+  let used: number | null
+  if (userId) {
+    who = 'account'
+    used = await usageToday(userId, 'chat')
+  } else {
+    key = await visitorKey(request.headers.get('cf-connecting-ip') ?? 'unknown', day)
+    used = key ? await usedToday(key, 'chat', day) : null
+  }
+  return { who, userId, key, day, used, left: used === null ? null : Math.max(0, CHAT_PER_DAY - used) }
+}
+
+/** Counted only once an answer exists to give. */
+export async function spendOnStanding(s: Standing): Promise<number | null> {
+  if (s.who === 'account' && s.userId) return spendOne(s.userId, 'chat')
+  if (s.key) return spend(s.key, 'chat', s.day)
+  return null
+}
+
+/** Premium, for whoever is asking: the account if there is one, otherwise the cookie or token routes. */
+export async function premiumFor(request: Request, s: Standing): Promise<boolean> {
+  if (s.userId) return hasPremium(s.userId)
+  return isPremium(request)
 }

@@ -27,7 +27,9 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiCheckinRouteImport } from './routes/api/checkin'
 import { Route as ApiCookbookRouteImport } from './routes/api/cookbook'
 import { Route as ApiDailyRouteImport } from './routes/api/daily'
+import { Route as ApiDailySummaryRouteImport } from './routes/api/daily-summary'
 import { Route as ApiDbHealthRouteImport } from './routes/api/db-health'
+import { Route as ApiDotRouteImport } from './routes/api/dot'
 import { Route as ApiFridgeRouteImport } from './routes/api/fridge'
 import { Route as ApiHouseholdRouteImport } from './routes/api/household'
 import { Route as ApiJournalRouteImport } from './routes/api/journal'
@@ -58,7 +60,6 @@ import { Route as TogetherCodeRouteImport } from './routes/together.$code'
 import { Route as ApiOauthCallbackRouteImport } from './routes/api/oauth/callback'
 import { Route as ApiOauthLoginRouteImport } from './routes/api/oauth/login'
 import { Route as ApiOauthLogoutRouteImport } from './routes/api/oauth/logout'
-import { Route as ApiReferralPingRouteImport } from './routes/api/referral/ping'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -150,9 +151,19 @@ const ApiDailyRoute = ApiDailyRouteImport.update({
   path: '/api/daily',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDailySummaryRoute = ApiDailySummaryRouteImport.update({
+  id: '/api/daily-summary',
+  path: '/api/daily-summary',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDbHealthRoute = ApiDbHealthRouteImport.update({
   id: '/api/db-health',
   path: '/api/db-health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDotRoute = ApiDotRouteImport.update({
+  id: '/api/dot',
+  path: '/api/dot',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiFridgeRoute = ApiFridgeRouteImport.update({
@@ -305,11 +316,6 @@ const ApiOauthLogoutRoute = ApiOauthLogoutRouteImport.update({
   path: '/api/oauth/logout',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiReferralPingRoute = ApiReferralPingRouteImport.update({
-  id: '/api/referral/ping',
-  path: '/api/referral/ping',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -330,7 +336,9 @@ export interface FileRoutesByFullPath {
   '/api/checkin': typeof ApiCheckinRoute
   '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/daily-summary': typeof ApiDailySummaryRoute
   '/api/db-health': typeof ApiDbHealthRoute
+  '/api/dot': typeof ApiDotRoute
   '/api/fridge': typeof ApiFridgeRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/journal': typeof ApiJournalRoute
@@ -361,7 +369,6 @@ export interface FileRoutesByFullPath {
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
-  '/api/referral/ping': typeof ApiReferralPingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -382,7 +389,9 @@ export interface FileRoutesByTo {
   '/api/checkin': typeof ApiCheckinRoute
   '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/daily-summary': typeof ApiDailySummaryRoute
   '/api/db-health': typeof ApiDbHealthRoute
+  '/api/dot': typeof ApiDotRoute
   '/api/fridge': typeof ApiFridgeRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/journal': typeof ApiJournalRoute
@@ -413,7 +422,6 @@ export interface FileRoutesByTo {
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
-  '/api/referral/ping': typeof ApiReferralPingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -435,7 +443,9 @@ export interface FileRoutesById {
   '/api/checkin': typeof ApiCheckinRoute
   '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
+  '/api/daily-summary': typeof ApiDailySummaryRoute
   '/api/db-health': typeof ApiDbHealthRoute
+  '/api/dot': typeof ApiDotRoute
   '/api/fridge': typeof ApiFridgeRoute
   '/api/household': typeof ApiHouseholdRoute
   '/api/journal': typeof ApiJournalRoute
@@ -466,7 +476,6 @@ export interface FileRoutesById {
   '/api/oauth/callback': typeof ApiOauthCallbackRoute
   '/api/oauth/login': typeof ApiOauthLoginRoute
   '/api/oauth/logout': typeof ApiOauthLogoutRoute
-  '/api/referral/ping': typeof ApiReferralPingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -489,7 +498,9 @@ export interface FileRouteTypes {
     | '/api/checkin'
     | '/api/cookbook'
     | '/api/daily'
+    | '/api/daily-summary'
     | '/api/db-health'
+    | '/api/dot'
     | '/api/fridge'
     | '/api/household'
     | '/api/journal'
@@ -520,7 +531,6 @@ export interface FileRouteTypes {
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
-    | '/api/referral/ping'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -541,7 +551,9 @@ export interface FileRouteTypes {
     | '/api/checkin'
     | '/api/cookbook'
     | '/api/daily'
+    | '/api/daily-summary'
     | '/api/db-health'
+    | '/api/dot'
     | '/api/fridge'
     | '/api/household'
     | '/api/journal'
@@ -572,7 +584,6 @@ export interface FileRouteTypes {
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
-    | '/api/referral/ping'
   id:
     | '__root__'
     | '/'
@@ -593,7 +604,9 @@ export interface FileRouteTypes {
     | '/api/checkin'
     | '/api/cookbook'
     | '/api/daily'
+    | '/api/daily-summary'
     | '/api/db-health'
+    | '/api/dot'
     | '/api/fridge'
     | '/api/household'
     | '/api/journal'
@@ -624,7 +637,6 @@ export interface FileRouteTypes {
     | '/api/oauth/callback'
     | '/api/oauth/login'
     | '/api/oauth/logout'
-    | '/api/referral/ping'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -646,7 +658,9 @@ export interface RootRouteChildren {
   ApiCheckinRoute: typeof ApiCheckinRoute
   ApiCookbookRoute: typeof ApiCookbookRoute
   ApiDailyRoute: typeof ApiDailyRoute
+  ApiDailySummaryRoute: typeof ApiDailySummaryRoute
   ApiDbHealthRoute: typeof ApiDbHealthRoute
+  ApiDotRoute: typeof ApiDotRoute
   ApiFridgeRoute: typeof ApiFridgeRoute
   ApiHouseholdRoute: typeof ApiHouseholdRoute
   ApiJournalRoute: typeof ApiJournalRoute
@@ -676,7 +690,6 @@ export interface RootRouteChildren {
   ApiOauthCallbackRoute: typeof ApiOauthCallbackRoute
   ApiOauthLoginRoute: typeof ApiOauthLoginRoute
   ApiOauthLogoutRoute: typeof ApiOauthLogoutRoute
-  ApiReferralPingRoute: typeof ApiReferralPingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -807,11 +820,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDailyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/daily-summary': {
+      id: '/api/daily-summary'
+      path: '/api/daily-summary'
+      fullPath: '/api/daily-summary'
+      preLoaderRoute: typeof ApiDailySummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/db-health': {
       id: '/api/db-health'
       path: '/api/db-health'
       fullPath: '/api/db-health'
       preLoaderRoute: typeof ApiDbHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/dot': {
+      id: '/api/dot'
+      path: '/api/dot'
+      fullPath: '/api/dot'
+      preLoaderRoute: typeof ApiDotRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/fridge': {
@@ -1024,13 +1051,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiOauthLogoutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/referral/ping': {
-      id: '/api/referral/ping'
-      path: '/api/referral/ping'
-      fullPath: '/api/referral/ping'
-      preLoaderRoute: typeof ApiReferralPingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -1064,7 +1084,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCheckinRoute: ApiCheckinRoute,
   ApiCookbookRoute: ApiCookbookRoute,
   ApiDailyRoute: ApiDailyRoute,
+  ApiDailySummaryRoute: ApiDailySummaryRoute,
   ApiDbHealthRoute: ApiDbHealthRoute,
+  ApiDotRoute: ApiDotRoute,
   ApiFridgeRoute: ApiFridgeRoute,
   ApiHouseholdRoute: ApiHouseholdRoute,
   ApiJournalRoute: ApiJournalRoute,
@@ -1094,7 +1116,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiOauthCallbackRoute: ApiOauthCallbackRoute,
   ApiOauthLoginRoute: ApiOauthLoginRoute,
   ApiOauthLogoutRoute: ApiOauthLogoutRoute,
-  ApiReferralPingRoute: ApiReferralPingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

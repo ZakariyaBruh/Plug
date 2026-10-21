@@ -163,9 +163,21 @@
      =========================================================================== -->
 <div class="welcome" id="welcome" hidden>
   <div class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="welcome-heading">
+    <span class="mascot mascot-lg" id="mascot-w" aria-hidden="true"></span>
     <p class="mechanic" id="welcome-step">Step 1 of 4</p>
     <h2 class="welcome-heading" id="welcome-heading" tabindex="-1"></h2>
     <p class="welcome-sub" id="welcome-sub"></p>
+
+    <!-- The language card. Always the first thing, because every card after
+         it is written in a language the reader may not have. -->
+    <section class="welcome-pane" id="welcome-pane-lang" hidden>
+      <ul class="lang-list" id="lang-welcome-list"></ul>
+      <p class="lang-warn" id="lang-warn-welcome" data-i18n="lang.warn" hidden>This page has been
+      translated. Some of it may read oddly or be wrong &mdash; the English is the
+      original.</p>
+      <p class="fine" data-i18n="lang.note">Dishes, recipes and the news stay in English for
+      now &mdash; your browser can translate those if you ask it to.</p>
+    </section>
 
     <!-- What it is. Numbers read out of the catalogue at load, the same ones
          the landing uses, so this cannot become a claim nobody checks. -->
@@ -290,6 +302,7 @@
 
 <div class="landing" id="landing" hidden>
   <div class="landing-glow" aria-hidden="true"></div>
+  <div class="landing-drift" id="landing-drift" aria-hidden="true"></div>
 
   <div class="landing-inner">
     <!-- The name and its squiggle used to be here. The top bar now keeps its
@@ -301,21 +314,34 @@
     <!-- The reel spins through real dishes from the catalogue. It is the one
          piece of pure decoration in the app, and it is here because the
          catalogue told as a number lands differently from the dishes going past. -->
-    <div class="reel" id="reel" aria-hidden="true">
-      <span class="reel-item is-on">🍜</span>
-    </div>
+
 
     <!-- Only for somebody who has been here before. A first-timer gets the
          pitch clean, with nothing in front of it. -->
-    <p class="landing-hello" id="landing-hello" hidden></p>
+    <div class="landing-hello-row" id="landing-hello-row" hidden><span class="mascot" id="mascot-l" aria-hidden="true"></span><p class="landing-hello" id="landing-hello" hidden></p></div>
 
     <!-- Word for word what the site's own hero says, which is the point: the
          two screens are the same product and used to end on a promise to read
          minds. An assistant asks. -->
-    <h1 class="landing-ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s what I&rsquo;m for.</em></h1>
-    <p class="landing-sub">A few easy either-ors &mdash; sweet or savoury, hot or cold. Then one
+    <h1 class="landing-ask" data-i18n-html="landing.ask">You&rsquo;re hungry.<br>You don&rsquo;t know what you want.<br><em>That&rsquo;s what I&rsquo;m for.</em></h1>
+    <p class="landing-sub" data-i18n="landing.sub">A few easy either-ors &mdash; sweet or savoury, hot or cold. Then one
     answer, with the recipe behind it. Close but not quite? Point me lighter, spicier, sooner, and
     I answer again that way.</p>
+
+        <section class="hook" id="hook" aria-label="A quick pick">
+      <div class="hook-glow" aria-hidden="true"></div>
+      <div class="hook-window" id="hook-window" aria-hidden="true"><div class="hook-strip" id="hook-strip"><span>🍜</span></div></div>
+      <div class="hook-body" aria-live="polite">
+        <p class="hook-lead" id="hook-lead">Spinning for you&hellip;</p>
+        <p class="hook-name" id="hook-name">&nbsp;</p>
+        <p class="hook-blurb" id="hook-blurb"></p>
+        <p class="hook-tags" id="hook-tags"></p>
+      </div>
+      <div class="hook-actions">
+        <button class="go" id="hook-go" type="button" disabled><span class="go-label">Go with it</span></button>
+        <button class="plain" id="hook-spin" type="button" disabled>Not that &mdash; spin again</button>
+      </div>
+    </section>
 
     <!--
       AN INTERRUPTED DECISION, OFFERED BACK.
@@ -540,6 +566,30 @@
         <span class="mode-name">Swipe</span>
         <span class="mode-hook">One dish at a time. Right for yes, left for no. Like three, then pick between them.</span>
       </button>
+      <button class="mode-card" id="smash-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#129521;</span>
+        <span class="mode-name">Smash</span>
+        <span class="mode-hook">A wall of dishes and a ball. Smash the ones you don&rsquo;t want, lock the ones you do, and whatever&rsquo;s left standing is dinner.</span>
+      </button>
+      <button class="mode-card" id="drop-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#127921;</span>
+        <span class="mode-name">Drop Zone</span>
+        <span class="mode-hook">Drop balls down a pegboard into dishes and nudge them on the way. Don&rsquo;t like the bins? Reshuffle them.</span>
+      </button>
+      <button class="mode-card" id="slice-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#9876;&#65039;</span>
+        <span class="mode-name">Slice</span>
+        <span class="mode-hook">Dishes fly across the screen. Swipe through the ones you want and let the rest go. Bombs cost a heart.</span>
+      </button>
+      <button class="mode-card mode-card-wide" id="derby-btn">
+        <span class="mode-lock">&#128274; Premium</span>
+        <span class="mode-icon" aria-hidden="true">&#127943;</span>
+        <span class="mode-name">Dish Derby</span>
+        <span class="mode-hook">Eight dishes line up for a race. Back your favourite, cheer it on, and slip a pat of butter under the one you don&rsquo;t fancy. Don&rsquo;t like the field? Reroll it. The podium is dinner.</span>
+      </button>
     </div>
 
     <section class="strip" id="mood-wrap" hidden>
@@ -693,18 +743,18 @@
   <!-- ============================ rail ============================ -->
   <nav class="rail" aria-label="Sections">
     <ul class="rail-list">
-      <li><button class="rail-link is-current" data-view="decide">Decide</button></li>
-      <li><button class="rail-link" data-view="dishes">Dishes</button></li>
+      <li><button class="rail-link is-current" data-i18n="nav.decide" data-view="decide">Decide</button></li>
+      <li><button class="rail-link" data-i18n="nav.dishes" data-view="dishes">Dishes</button></li>
       <li><button class="rail-link" data-view="planner">Meal planner</button></li>
       <li><button class="rail-link" data-view="kitchen">Recipes &amp; kitchen</button></li>
       <li><button class="rail-link" data-view="scan">Scan food</button></li>
-      <li><button class="rail-link" data-view="menu">Menu</button></li>
-      <li><button class="rail-link" data-view="nearby">Nearby</button></li>
-      <li><button class="rail-link" data-view="chat">Ask</button></li>
-      <li><button class="rail-link" data-view="news">News</button></li>
+      <li><button class="rail-link" data-i18n="nav.menu" data-view="menu">Menu</button></li>
+      <li><button class="rail-link" data-i18n="nav.nearby" data-view="nearby">Nearby</button></li>
+      <li><button class="rail-link" data-i18n="nav.ask" data-view="chat">Ask</button></li>
+      <li><button class="rail-link" data-i18n="nav.news" data-view="news">News</button></li>
       <li><button class="rail-link" data-view="radio">TV &amp; radio</button></li>
       <li><button class="rail-link" data-view="daily">Daily</button></li>
-      <li><button class="rail-link" data-view="profile">Profile</button></li>
+      <li><button class="rail-link" data-i18n="nav.profile" data-view="profile">Profile</button></li>
       <li><button class="rail-link" data-view="help">Help</button></li>
     </ul>
 
@@ -736,6 +786,7 @@
           </button>
         </div>
 
+        <div class="q-track" id="q-track" ><div class="q-progress" aria-hidden="true"><i id="q-progress-fill"></i></div><span class="q-rider mascot" id="q-rider"></span><span class="q-say" id="q-say" hidden></span></div>
         <p class="reaction" id="reaction" aria-live="polite">&nbsp;</p>
         <h2 class="q-title" id="q-text">What sounds better?</h2>
 
@@ -879,6 +930,21 @@
              this profile has not done yet, and one line saying what is new
              tomorrow - only things that really do refill each day. Painted
              by app.js (paintNext). No counter, no guilt, nothing locked. -->
+        <!-- WHAT PREMIUM IS, SHOWN AT THE MOMENT THE FREE PART HAS JUST WORKED.
+             Not before: nobody wants a pitch for something they have not used.
+             Right after a real answer, the seven things behind the door, each
+             one a real feature, and the trial said plainly. Painted by app.js
+             (paintPeek) and absent entirely for anybody who already has it. -->
+        <section class="strip pp" id="peek" hidden aria-labelledby="peek-title">
+          <h2 class="strip-title" id="peek-title">That was the free half</h2>
+          <p class="peek-sub">There are seven more things in here. Have a look.</p>
+          <div class="peek-rail" id="peek-rail" role="list"></div>
+          <div class="peek-cta">
+            <button class="go" id="peek-go" type="button"><span class="go-label">Try Premium free for seven days</span></button>
+            <p class="fine">Nothing is charged until day eight. Cancel from your account page, one link.</p>
+          </div>
+        </section>
+
         <section class="strip" id="next-strip" hidden>
           <h2 class="strip-title">Free, while you&rsquo;re here</h2>
           <div class="plan-cues" id="next-row"></div>
@@ -1251,6 +1317,49 @@
 
         <p class="pane-line swipe-status" id="swipe-status">Right for yes, left for no. Like three and you choose between them.</p>
         <button class="plain" id="swipe-cancel">Never mind, take me back</button>
+      </div>
+
+
+      <!-- arcade: four action games sharing one stage. Dish Derby, Smash, Drop Zone
+           and Slice all end the same way: whatever you went for most is
+           offered, with the runners-up, and one of them is dinner. -->
+      <div class="panel" id="panel-arcade">
+        <p class="mechanic"><span id="arc-name">Dish Derby</span> <span class="tag-premium">Premium</span></p>
+
+        <div class="arc-hud" id="arc-hud" hidden>
+          <p><span class="arc-k" id="arc-k-score">Score</span> <b id="arc-score">0</b></p>
+          <p><span class="arc-k" id="arc-k-combo">Combo</span> <b id="arc-combo">x1</b></p>
+          <p><span class="arc-k">Time</span> <b id="arc-time">0</b></p>
+          <p><span class="arc-k" id="arc-k-lives">Lives</span> <b id="arc-lives" aria-live="polite">&#9829;&#9829;&#9829;</b></p>
+        </div>
+
+        <div class="arc-intro" id="arc-intro">
+          <p class="swipe-empty-face" id="arc-icon" aria-hidden="true">&#129530;</p>
+          <h2 class="q-title" id="arc-title">Dish Derby</h2>
+          <p class="pane-line" id="arc-how"></p>
+          <p class="fine" id="arc-best" hidden></p>
+          <div class="opening-actions">
+            <button class="go" id="arc-start">Go</button>
+          </div>
+        </div>
+
+        <div class="arc-stage" id="arc-stage" hidden role="application" aria-label="Game area. Needs a mouse, finger or the arrow keys."></div>
+
+        <div class="swipe-picks arc-end" id="arc-end" hidden>
+          <h2 class="q-title" id="arc-end-title">Pick one.</h2>
+          <p class="pane-line" id="arc-end-line"></p>
+          <p class="fine" id="arc-end-stats"></p>
+          <p class="arc-new" id="arc-end-new" hidden>A new best!</p>
+          <ul class="swipe-picked" id="arc-picked"></ul>
+          <div class="opening-actions">
+            <button class="go" id="arc-again">None of these &mdash; go again</button>
+            <button class="plain" id="arc-ask">Ask me questions instead</button>
+          </div>
+        </div>
+
+        <div class="arc-lockbar"><button class="quiet" id="arc-lock" hidden><span id="arc-lock-label">Fresh wall</span> <b id="arc-lock-n"></b></button></div>
+
+        <button class="plain" id="arc-cancel">Never mind, take me back</button>
       </div>
 
       <!-- ==================================================================
@@ -1662,7 +1771,7 @@
          ========================================================================= -->
     <section class="view" id="view-nearby" aria-label="Nearby">
       <header class="head">
-        <p class="mechanic">Around you</p>
+        <p class="mechanic kicker">Around you</p>
         <h1 class="head-title">Nearby</h1>
       </header>
 
@@ -1748,19 +1857,40 @@
         <h1 class="head-title">Ask anything</h1>
         <p class="head-sub">Food is what it knows best &mdash; what to eat, what goes with what,
         what to do with half a cabbage &mdash; but it will have a go at whatever you ask.</p>
-        <p class="fine chat-beta">Beta &mdash; it runs on a service that is busy a lot of the
+        <p class="fine chat-beta">Beta &mdash; it runs on services that are busy a lot of the
         time, so it will occasionally not answer. Ask again and it usually does.</p>
+        <div class="chat-mode" id="chat-mode" role="group" aria-label="Which assistant">
+          <button type="button" class="chat-mode-btn is-on" data-mode="standard" aria-pressed="true">Standard <span class="chat-mode-tag">Free</span></button>
+          <button type="button" class="chat-mode-btn" data-mode="advanced" aria-pressed="false">Advanced <span class="chat-mode-tag is-plus">Premium</span></button>
+        </div>
+        <p class="fine chat-mode-note" id="chat-mode-note"></p>
       </header>
+
+      <div class="chat-tools" id="chat-tools" hidden>
+        <div class="filters" id="chat-skills" role="group" aria-label="What kind of help"></div>
+        <div class="chat-tools-row">
+          <button type="button" class="chat-mini" id="chat-search" aria-pressed="false">Look it up on the web</button>
+          <button type="button" class="chat-mini" id="chat-new">New chat</button>
+        </div>
+      </div>
 
       <ul class="chat" id="chat-log" aria-live="polite"></ul>
 
       <p class="chat-empty" id="chat-empty">Tap one, or say it your way:</p>
       <div class="filters" id="chat-seeds" role="group" aria-label="Suggestions"></div>
 
+      <div class="chat-attach" id="chat-attach" hidden></div>
       <form class="chat-form" id="chat-form">
         <label class="sr-only" for="chat-input">Ask about food</label>
+        <button class="chat-tool" id="chat-photo" type="button" aria-label="Attach a photo" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></svg>
+        </button>
+        <input type="file" id="chat-file" accept="image/*" hidden>
         <input class="chat-input" id="chat-input" autocomplete="off"
                maxlength="500" placeholder="Ask me anything about food&hellip;">
+        <button class="chat-tool" id="chat-mic" type="button" aria-label="Speak your question" aria-pressed="false">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+        </button>
         <button class="go go-sm" id="chat-send" type="submit">
           <span class="go-label">Ask</span>
           <span class="go-arrow" aria-hidden="true">
@@ -1774,15 +1904,17 @@
            arrives without warning is a trick. Hidden entirely on Premium,
            where there is no number to report. -->
       <p class="fine chat-left" id="chat-left" hidden></p>
+      <p class="fine" id="chat-account" hidden>Sign in with a free account and your free questions follow you to every device.</p>
 
       <p class="fine chat-foot">Answers come from a model and can be wrong &mdash; worth checking
-      anything that matters. It cannot see your kitchen, your location, or what you have eaten
-      before, and it is not a doctor, a lawyer or an accountant.</p>
+      anything that matters. It cannot see your kitchen or your location, and it is not a doctor,
+      a lawyer or an accountant. Standard questions are answered by a free public model and
+      never include your taste profile; Advanced questions go to Google&rsquo;s Gemini with it.</p>
     </section>
 
     <section class="view" id="view-news" aria-label="Food news">
       <header class="head">
-        <p class="mechanic">Worth reading</p>
+        <p class="mechanic kicker">Worth reading</p>
         <h1 class="head-title">Food news</h1>
         <p class="head-sub">Recipes, restaurants and the odd argument about bread &mdash;
         from <b>the Guardian</b>, <b>Eater</b>, <b>NYT Dining</b>, <b>The Kitchn</b>,
@@ -1864,7 +1996,7 @@
 
     <!-- ------------------------- TV & RADIO ------------------------- -->
     <!-- ===============================================================
-         TV AND RADIO — free with an account, like the daily three.
+         TV AND RADIO — one group free a day with an account, all of it with Premium.
          lib/tv.ts and lib/radio.ts say where each comes from.
 
          In groups, a dozen at most in each: food first, then what people
@@ -1884,7 +2016,7 @@
          =============================================================== -->
     <section class="view" id="view-radio" aria-label="TV and radio">
       <header class="head">
-        <p class="mechanic">Free with an account</p>
+        <p class="mechanic">One free TV group and one free radio group a day</p>
         <h1 class="head-title">TV &amp; radio</h1>
         <p class="head-sub">Something to watch or listen to while you cook and eat. Free
         channels and stations in groups &mdash; food shows first, then music, comedy, travel,
@@ -1893,13 +2025,14 @@
       </header>
 
       <div class="radio-signin" id="radio-signedout" hidden>
-        <p class="fine">TV and radio come free with an account &mdash; not Premium, just
-        signed in.</p>
+        <p class="fine">Sign in to watch and listen. One TV group and one radio group are free every day; the rest is Premium.</p>
         <!-- target="_top": see the note on #invite-signin. -->
         <a class="go go-sm" id="radio-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dradio" target="_top">
           <span class="go-label">Sign in with Whop to watch and listen</span>
         </a>
       </div>
+
+      <p class="fine media-free" id="media-free-note" hidden></p>
 
       <div class="filters media-tabs" role="tablist" aria-label="TV or radio">
         <button class="filter" id="tab-tv" data-tab="tv" role="tab" type="button">&#x1F4FA; TV</button>
@@ -2000,7 +2133,7 @@
          scrolling the opening screen to the bottom and finding one button. -->
     <section class="view" id="view-menu" aria-label="Tonight&rsquo;s menu">
       <header class="head">
-        <p class="mechanic">Feeding people</p>
+        <p class="mechanic kicker">Feeding people</p>
         <h1 class="head-title">Tonight&rsquo;s menu</h1>
         <p class="head-sub">Five courses that actually go together &mdash; something to pick at, a starter, a main, a pudding and something to finish. Not five heavy things, and not five from the same kitchen unless that is the point of it. They come <b>one at a time</b>:
         say yes to the starter before you are shown the main, and each one is chosen to go
@@ -2178,7 +2311,7 @@
 
     <section class="view" id="view-dishes" aria-label="Dishes">
       <header class="head">
-        <p class="mechanic">The list</p>
+        <p class="mechanic kicker">The list</p>
         <h1 class="head-title">Dishes</h1>
       </header>
 
@@ -2229,25 +2362,55 @@
     </section>
 
     <!-- =========================================================================
-         THE DAILY THREE — three small, free things that have nothing to do
-         with dinner. Deciding what to eat is an episodic problem: most
-         people are not doing it every day, so there was nothing here to come
-         back for on the days they are not. These three are account-only, not
-         Premium (see lib/habits.ts) — what they need is to be the same
-         wherever you sign in, not something to pay for.
+         DAILY — one page for the day. A dish to have, five small things to
+         tick off, a streak and a calendar that show it adding up. Three of the
+         five (mood, one good thing, the day's question) are kept with an
+         account, free (see lib/habits.ts); the dish and the decision work
+         without one.
          ========================================================================= -->
     <section class="view" id="view-daily" aria-label="Daily">
       <header class="head">
-        <p class="mechanic">Every day</p>
-        <h1 class="head-title">Your daily three</h1>
-        <p class="head-sub">Nothing to do with dinner. A mood to log, one good thing to write
-        down, and a question nobody in the world answered differently today &mdash; three
-        small reasons to open this even on a day with no decision to make.</p>
+        <p class="mechanic" id="daily-date">Today</p>
+        <h1 class="head-title">Your day</h1>
+        <p class="head-sub" id="daily-sub">Five small things, a dish worth having, and a streak that
+        grows when you show up.</p>
       </header>
 
+      <div class="daily-hero">
+        <div class="daily-ring" id="daily-ring" role="img" aria-label="Done today">
+          <svg viewBox="0 0 36 36" aria-hidden="true">
+            <circle class="daily-ring-track" cx="18" cy="18" r="15.9"/>
+            <circle class="daily-ring-fill" id="daily-ring-fill" cx="18" cy="18" r="15.9" pathLength="100"/>
+          </svg>
+          <b id="daily-ring-n">0/5</b>
+        </div>
+        <div class="daily-hero-text">
+          <p class="daily-streak" id="daily-streak">0 day streak</p>
+          <p class="fine" id="daily-streak-sub">Do any one thing today to start it.</p>
+        </div>
+      </div>
+
+      <section class="strip daily-dish" id="daily-dish" hidden>
+        <p class="mechanic">Dish of the day</p>
+        <div class="daily-dish-row">
+          <span class="daily-dish-icon" id="daily-dish-icon" aria-hidden="true"></span>
+          <div>
+            <h2 class="strip-title" id="daily-dish-name"></h2>
+            <p class="fine" id="daily-dish-blurb"></p>
+          </div>
+        </div>
+        <div class="daily-dish-actions">
+          <button class="go go-sm" id="daily-dish-open" type="button"><span class="go-label">Read about it</span></button>
+          <button class="quiet" id="daily-dish-ate" type="button">I had it today</button>
+          <button class="quiet" id="daily-dish-skip" type="button">Show me another</button>
+        </div>
+      </section>
+
+      <ol class="daily-quests" id="daily-quests" aria-label="Today's list"></ol>
+
       <div id="daily-signedout">
-        <p class="fine">These come free with an account &mdash; not Premium, just signed in.</p>
-        <!-- target="_top": see the note on #invite-signin above. -->
+        <p class="fine">Mood, one good thing and the day&rsquo;s question come free with an account &mdash; not Premium, just signed in.</p>
+        <!-- target="_top": Whop's sign-in page refuses to render inside a frame. -->
         <a class="quiet" id="daily-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Ddaily" target="_top">Sign in with Whop</a>
       </div>
 
@@ -2285,13 +2448,19 @@
           <div class="trivia-choices" id="trivia-choices"></div>
           <p class="fine" id="trivia-result" hidden></p>
         </section>
+
+        <section class="strip daily-cal" id="daily-cal-wrap">
+          <h2 class="strip-title">The last six weeks</h2>
+          <div class="daily-cal-grid" id="daily-cal" role="img" aria-label="Days you did something, over the last six weeks"></div>
+          <p class="fine" id="daily-cal-note"></p>
+        </section>
       </div>
     </section>
 
     <!-- ------------------------- PROFILE ------------------------- -->
     <section class="view" id="view-profile" aria-label="Your profile">
       <header class="head">
-        <p class="mechanic">You</p>
+        <p class="mechanic kicker">You</p>
         <h1 class="head-title" id="profile-name">Snacker</h1>
         <p class="head-sub"><b id="profile-xp">0</b> XP &middot; <span id="profile-next">keep going</span></p>
         <i class="thread thread-wide"><span id="profile-xp-fill"></span></i>
@@ -2352,40 +2521,6 @@
         </div>
       </section>
 
-      <!-- INVITE A FRIEND, EARN A DAY OF PREMIUM.
-           Three states, one strip: signed out (with or without somebody
-           else's link already remembered), signed in and still earning a
-           friend's ten minutes, and signed in with an invite link of your
-           own. See the referral section in app.js and lib/referrals.ts. -->
-      <section class="strip" id="invite-wrap">
-        <h2 class="strip-title">Invite a friend, earn a day of Premium</h2>
-
-        <div id="invite-signedout">
-          <p class="fine" id="invite-note">Sign in free to get your own invite link.</p>
-          <ul class="invite-perks">
-            <li>Invite friends, earn free Premium days</li>
-            <li>Bonus days at 3 and 10 friends</li>
-            <li>Works on any device you sign into</li>
-          </ul>
-          <!-- target="_top": this page is always inside Whop's own iframe
-               when opened from an experience (see js/app.js's `framed`), and
-               Whop's own sign-in page refuses to render inside a frame — so
-               without this the click just does nothing, with no error. -->
-          <a class="quiet" id="invite-signin" href="/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile" target="_top">Sign in with Whop</a>
-        </div>
-
-        <div id="invite-mine" hidden>
-          <p class="fine">Send this to a friend. Once they sign in and play for ten minutes, you get a day of Premium — no limit on how many friends.</p>
-          <p class="invite-code-row">
-            <button class="invite-code" id="referral-link" type="button" aria-label="Copy your invite link"></button>
-            <span class="invite-copied" id="invite-copied" hidden>Copied</span>
-          </p>
-          <p class="fine" id="invite-progress" hidden></p>
-          <p class="fine" id="invite-stats"></p>
-          <p class="fine" id="invite-bonus" hidden></p>
-        </div>
-      </section>
-
       <section class="strip" id="insight-wrap">
         <h2 class="strip-title">What your history says <span class="tag-premium">Premium</span></h2>
         <ul class="insights" id="insights"></ul>
@@ -2408,6 +2543,44 @@
            rules under it were made free and the badge was left behind, which
            is a worse lie than the badge ever was a sale. One strip now, the
            same three groups the welcome uses, and no badge on any of it. -->
+      <section class="strip" id="strip-buddy">
+        <h2 class="strip-title">Dot</h2>
+        <p class="fine">A small round companion who remembers your days together, comments on what you are doing, and keeps out of the way while you play. It never nags and never sends anything while you are away.</p>
+        <div class="buddy-bond" id="buddy-bond">
+          <div class="buddy-bond-head"><strong id="bond-level">Just met</strong><span class="fine">Closer with every dish, visit and pat.</span></div>
+          <div class="buddy-bond-bar" aria-hidden="true"><i id="bond-fill"></i></div>
+          <dl class="buddy-bond-stats">
+            <div><dt>Days together</dt><dd id="bond-days">0</dd></div>
+            <div><dt>Decisions together</dt><dd id="bond-decisions">0</dd></div>
+            <div><dt>Pats</dt><dd id="bond-pats">0</dd></div>
+            <div><dt>Games</dt><dd id="bond-games">0</dd></div>
+          </dl>
+        </div>
+        <div class="buddy-controls">
+          <button class="quiet" id="buddy-tour" type="button">Take the tour</button>
+          <button class="quiet" id="buddy-games" type="button">Play with Dot</button>
+          <button class="quiet" id="buddy-toggle" type="button" aria-pressed="true">Dot is here</button>
+          <button class="quiet" id="buddy-quiet" type="button" aria-pressed="true">Balanced: now and then</button>
+          <button class="quiet" id="buddy-play" type="button" aria-pressed="false">Stays put</button>
+          <button class="quiet" id="buddy-home" type="button">Put Dot back</button>
+        </div>
+        <p class="fine">Press and hold Dot for its menu: ask about morsels45, play, take the tour or pat it. Pick it up to move it. Tap a dish on the answer screen and Dot will take a bite.</p>
+      </section>
+
+      <section class="strip" id="strip-language">
+        <h2 class="strip-title" data-i18n="lang.eyebrow">Language</h2>
+        <p class="fine" data-i18n="lang.sub">The app changes straight away. You can
+        change it again whenever you like, from your profile.</p>
+        <ul class="lang-list" id="lang-list"></ul>
+        <p class="lang-warn" id="lang-warn-view" data-i18n="lang.warn" hidden>This page has been
+        translated. Some of it may read oddly or be wrong &mdash; the English is the
+        original.</p>
+        <p class="fine" data-i18n="lang.ai">Answers from the AI will come back in your
+        language.</p>
+        <p class="fine" data-i18n="lang.note">Dishes, recipes and the news stay in English
+        for now &mdash; your browser can translate those if you ask it to.</p>
+      </section>
+
       <section class="strip">
         <h2 class="strip-title">What you don&rsquo;t eat</h2>
         <p class="fine">Answered once, applied to every decision, every mode and every
@@ -2593,42 +2766,6 @@
   </div>
 </dialog>
 
-<!-- ===========================================================================
-     THE COMEBACK ANNOUNCEMENT — said once, ever, to somebody genuinely
-     coming back on a later day (see returningDay() in app.js). Not on the
-     usual roster and never about money: this is the one place in the app
-     that says "we built something new," and it is said once in a profile's
-     whole lifetime so it never curdles into an ad.
-
-     No corner "x". Three ways out, not one: the first button goes to the
-     invite card, through real sign-in first if that is not done yet (see
-     app.js — its label says which, "See my invite link" or "Sign in for
-     my link", so it is never a guess what tapping it does). "Play the
-     game" goes straight back to a decision, and "Skip" is the pure
-     dismissal — the only one of the three disabled for
-     the first five seconds, long enough to actually read three sentences,
-     short enough that nobody is trapped. The hold is shown two ways at
-     once, not left to a digit nobody is watching: a solid bar under the
-     button that visibly drains over the same five seconds, driven by a
-     single CSS transition rather than a redraw every tick, so the motion
-     reads as continuous rather than as a clock ticking down. A bar of its
-     own, not a tint behind the label, because a tint behind text has to
-     fight that text for contrast and a thing meant to be unmissable should
-     not be the thing most likely to end up unreadable.
-     =========================================================================== -->
-<dialog class="sheet enjoy-sheet" id="comeback-sheet" aria-labelledby="comeback-title">
-  <span class="sheet-art" aria-hidden="true">🎉</span>
-  <h2 class="sheet-name" id="comeback-title"></h2>
-  <p class="sheet-note" id="comeback-body"></p>
-  <div class="enjoy-actions">
-    <button class="go go-sm" id="comeback-go" type="button"></button>
-    <button class="quiet" id="comeback-play" type="button"></button>
-    <span class="skip-timer-wrap">
-      <button class="quiet" id="comeback-skip" type="button" disabled></button>
-      <span class="skip-timer-track" aria-hidden="true"><span class="skip-timer-fill" id="comeback-skip-fill"></span></span>
-    </span>
-  </div>
-</dialog>
 
 <!-- The third prompt, and the only one that asks for nothing. It is never
      shown to somebody who has not already said they like this. -->
@@ -2887,6 +3024,10 @@
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
+<div class="buddy" id="buddy" aria-hidden="true" hidden>
+  <p class="buddy-bubble" id="buddy-bubble" hidden></p>
+  <button class="buddy-face mascot" id="mascot-b" type="button" tabindex="-1"></button>
+</div>
 <script src="js/data.js"></script>
 <script src="js/recipes.js"></script>
 <script src="js/flavor.js"></script>
@@ -2903,6 +3044,7 @@
 <script src="js/confetti.js"></script>
 <script src="js/places.js"></script>
 <script src="js/mapview.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/app.js"></script>
 <script src="js/hub.js"></script>
 </body>

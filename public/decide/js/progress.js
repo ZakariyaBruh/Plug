@@ -247,6 +247,7 @@
       badges: [],
       muted: false,
       history: [],            // [{ name, icon, at }], newest first
+      dailyDish: null,        // { day, offset, ate } — the Daily page's dish of the day
       recent: [],             // [{ name, icon }], newest first
       favourites: [],         // [{ name, icon }] the player saved, newest first
       rules: [],              // tags never to be served, e.g. ['meat']
@@ -273,6 +274,15 @@
        * no way to tell this morning's shelf from last Tuesday's.
        */
       daily: null,
+
+      /*
+       * Which language the app is in, and whether the chooser has been
+       * answered. They are two facts, not one: '' for lang would be
+       * indistinguishable from "chose English", and somebody who deliberately
+       * picked English would be asked again on every visit.
+       */
+      lang: 'en',
+      langAsked: false,
       tuned: false,           // did they tell us what they like, on purpose
       loves: [],              // tags they said they like, as opposed to played
       pantry: [],             // what is in the cupboard, for "what can I make?"
@@ -319,23 +329,6 @@
       shareAt: 0,             // decisions at the last showing
       shareShown: 0,          // times it has been shown, ever
 
-      // Said once, ever, on a genuine later-day return — see maybeShowComeback
-      // in app.js. There used to be a whole rotating roster of unsolicited
-      // Premium offers here (ambient timer, per-game budget, milestone and
-      // first-decision cards); all of it is gone, and this one flag is what
-      // replaced the state it used to need.
-      comebackShown: false,
-
-      // Whoever's invite link this profile arrived on — see the referral
-      // section in app.js. Set at most once, from the first ?ref= this
-      // profile ever saw, and never overwritten by a later one: it decides
-      // who a friend's ten minutes of play is worth a day of Premium to.
-      referredBy: null,
-      // The server's own running total for this profile's referral, in
-      // seconds — mirrored here only so the invite card has something to
-      // show between heartbeats. The ten-minute threshold is decided
-      // server-side; this number never counts anything on its own.
-      referralSeconds: 0,
 
       /*
        * What a Standard profile has used up of the AI features.

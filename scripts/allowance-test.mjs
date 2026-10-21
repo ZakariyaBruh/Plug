@@ -45,11 +45,14 @@ delete process.env.TURSO_AUTH_TOKEN
 check((await visitorKey('203.0.113.7', '2026-09-23')) === null, 'no secret, no key — never an unsalted hash')
 
 check(/like 'ip:%' and day < \?/.test(lib), 'the sweep only ever deletes rows this app wrote')
-check(route.indexOf('await spend(') > route.indexOf('if (!reply)'), 'a question is only counted once it was answered')
+check(route.indexOf('await spendOnStanding(') > route.indexOf('if (!reply)'), 'a question is only counted once it was answered')
 check(/error: 'limit'/.test(route) && /why === 'limit'/.test(app), 'the refusal the server sends is one the game handles')
 
 check(!/never written to a database/.test(privacy), 'privacy no longer claims nothing is written down')
 check(/\['Turso'/.test(privacy), 'Turso is named among the third parties')
+check(/Pollinations/.test(privacy) && /Whop user id/.test(privacy), 'privacy names the free model services and the per-account count')
+check(/premiumFor\(request, mine\)\)\) return json\(\{ error: 'premium_required'/.test(route), 'Advanced is refused unless the server has checked Premium')
+check(!/GEMINI_API_KEY[^\n]*standard/i.test(route), 'standard does not need the paid key to start')
 check(/keyed hash/.test(privacy) && /changes every day/.test(privacy), 'privacy says what is stored and that it changes daily')
 
 if (failed) {

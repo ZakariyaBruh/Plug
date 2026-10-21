@@ -430,7 +430,7 @@ export const SITE_TITLE = 'morsels45: What Should I Eat?'
 export const SITE_META_DESCRIPTION =
   'Can’t decide what to eat? Answer a few quick questions and get one dish with its recipe. Then plan your week, shop for it and cook it. Free to start.'
 export const SITE_DESCRIPTION =
-  `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner and TV and radio to cook and eat to are free with an account; Premium adds the shopping list, nutrition, budget, your own recipes, recipes from websites, a food scanner that says how healthy something is, and more.`
+  `${WHAT_IT_IS} Deciding and your food rules are free; the meal planner is free with an account, which also brings one TV group and one radio group to cook and eat to every day; Premium adds every TV and radio group, the shopping list, nutrition, budget, your own recipes, recipes from websites, a food scanner that says how healthy something is, and more.`
 
 declare global {
   interface Window {
@@ -503,7 +503,7 @@ export const STANDARD = [
   'Endless — two dishes and a clock. Every pick buys time back, and buys back less each time. 200 picks a day',
   `All ${DISH_COUNT} dishes in the catalogue`,
   DIET_FREE_SHORT,
-  'Ask anything — three free questions a day, unlimited on Premium',
+  'Ask anything — three free questions a day on your free account, unlimited on Premium',
   'Food news — the latest six headlines a day, with the publishers’ own summaries. Opening the pieces themselves is Premium',
   'Write me a menu — one every couple of days',
   'Browse, search, and filter the menu',
@@ -627,6 +627,8 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Picks tuned to you', 'Rate a dish and it changes what comes up next.'],
       ['Something new', 'Two questions, then a few dishes you have not had — chosen from the ones you actually liked, each with a reason for why it follows. Only ever real dishes off this menu, so every suggestion has its recipe behind it.'],
       ['Save unlimited dishes', 'Standard saves none. Premium keeps everything you like.'],
+      ['The advanced assistant', 'Ask anything on Gemini: it knows your taste and your food rules, reads a photo, can look things up on the web, suggests what to ask next, helps you plan, cook or choose, and remembers the conversation. Standard questions are free and three a day.'],
+      ['Play with Dot', 'Ten games with the companion in the corner — an arena survival, a climber, a merging pot, a bubble shooter, match-three, an invaders shooter, a lane crosser, a stacker, an aiming game and a memory pattern. Dot also changes shape with what it is looking at: hot goes red, cold goes blue, a drink melts. Hold Dot for a menu that answers questions about morsels45, and take its guided tour. Free for everyone.'],
       ['Five extra looks', 'Ember, matcha, ink, paper, neon.'],
     ],
   },
@@ -675,6 +677,10 @@ export const PREMIUM_SECTIONS: { name: string; blurb: string; items: [string, st
       ['Shortlist', 'Eight dishes from what you like. Tap out the ones you are not in the mood for, swap them for ones you have not seen, and stop the reel yourself on what is left.'],
       ['Together', 'Up to six of you round one phone. Five either-ors each, then one dish the whole table can live with — and what you all turned out to agree on.'],
       ['Swipe', 'A deck, one dish at a time. Right for yes, left for no. Every no re-sorts what is left away from it, and three yeses end it with a choice between the three.'],
+      ['Smash', 'A wall of dishes and a ball. Smash the ones you do not want, lock the ones you do, and whatever is left standing is dinner. Do not like the wall? Deal a fresh one.'],
+      ['Drop Zone', 'Drop balls down a pegboard into dishes and nudge them as they fall. Where they land is a vote. Do not like the bins? Reshuffle them.'],
+      ['Slice', 'Dishes are thrown across the screen. Swipe through the ones you want and let the rest go; bombs cost a heart, and the pace keeps changing. What you sliced most is dinner.'],
+      ['Dish Derby', 'Eight dishes line up for a race. Back a favourite, cheer it on, slip a pat of butter under the one you do not fancy, boost whoever you like. Do not like the field? Reroll it. The podium is dinner. Every one of these games has a way to say none of these, and what you reject shapes the next round.'],
       ['Endless, with no count on it', 'Endless itself is free and always will be — but a free profile gets 200 picks a day and then it stops until tomorrow. Premium takes the daily count off entirely: the only thing that ends a run is the clock.'],
       ['A second wind', 'Once a run, the clock reaching zero does not end it. No prompt, no countdown, no button to press — it simply keeps going with a few seconds back and the streak reset. The one thing that kills a run, survived, once.'],
     ],

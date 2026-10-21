@@ -34,3 +34,8 @@ export function db(): Client | null {
   client = url && authToken ? createClient({ url, authToken }) : null
   return client
 }
+
+/** UTC calendar day, which is when the daily allowances refill. */
+export function today(now = new Date()): string {
+  return now.toISOString().slice(0, 10)
+}

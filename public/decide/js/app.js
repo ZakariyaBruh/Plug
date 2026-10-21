@@ -551,21 +551,62 @@
     Recipes: Recipes
   };
 
+  /*
+   * Screens move like an app, not like a web page. Where the browser can do a
+   * View Transition, the change of screen is a short cross-fade with a little
+   * travel, and anything given a view-transition-name (the dish you chose, see
+   * landSwipe) glides from where it was to where it lands instead of cutting.
+   * Everywhere else, and for anybody who asked for less motion, it is simply
+   * the change. State is always set at once; only the painting is wrapped.
+   */
+  // Names the element the next screen will pick up, so the dish travels.
+  function carry(el) {
+    if (!el || !el.style || reduceMotion || !document.startViewTransition) return;
+    el.style.viewTransitionName = 'dish-art';
+    setTimeout(function () { el.style.viewTransitionName = ''; }, 900);
+  }
+
+  function vt(change, dir) {
+    if (reduceMotion || !document.startViewTransition || document.visibilityState !== 'visible') return change();
+    var root = document.documentElement;
+    try {
+      root.style.setProperty('--vt-dir', String(dir || 1));
+      // The names are only on while a transition runs: a view-transition-name
+      // makes an element a stacking context for good, and the page does not need
+      // that the rest of the time.
+      root.classList.add('vt-active');
+      var run = document.startViewTransition(change);
+      var done = function () { root.classList.remove('vt-active'); };
+      run.finished.then(done, done);
+    } catch (err) { root.classList.remove('vt-active'); change(); }
+  }
+
+  // Which way the page is travelling, from where the two sit in the rail.
+  function railIndex(name) {
+    var links = $$('.rail-link'), at = -1;
+    links.forEach(function (el, i) { if (el.dataset.view === name) at = i; });
+    return at;
+  }
+
   function setView(name) {
     // Leaving the menu tab is a decision about the menu, so it is taken here,
     // before `view` moves on and the old one is unknowable. See leaveMenu.
     if (view === 'menu' && name !== 'menu') leaveMenu();
     // Same for the TV: leaving it pauses it, unless it is in picture-in-picture.
     if (view === 'radio' && name !== 'radio') leaveTv();
+    var travel = railIndex(name) >= railIndex(view) ? 1 : -1;
     view = name;
-    $$('.view').forEach(function (el) {
-      el.classList.toggle('is-current', el.id === 'view-' + name);
-    });
-    $$('.rail-link').forEach(function (el) {
-      var on = el.dataset.view === name;
-      el.classList.toggle('is-current', on);
-      el.setAttribute('aria-current', on ? 'page' : 'false');
-    });
+    vt(function () {
+      $$('.view').forEach(function (el) {
+        el.classList.toggle('is-current', el.id === 'view-' + name);
+      });
+      $$('.rail-link').forEach(function (el) {
+        var on = el.dataset.view === name;
+        el.classList.toggle('is-current', on);
+        el.setAttribute('aria-current', on ? 'page' : 'false');
+      });
+    }, travel);
+    if (typeof Buddy !== 'undefined' && Buddy) Buddy.onView(name);
     if (name === 'decide') renderIntro();
     if (name === 'profile') renderProfile();
     if (name === 'dishes') renderDishes();
@@ -583,11 +624,17 @@
   }
 
   function setPanel(name) {
+    // The same panel repainting (the next question) is not a change of screen,
+    // so it gets no screen transition: its own cards move instead.
+    var same = panel === name;
     panel = name;
-    $$('#view-decide .panel').forEach(function (el) {
-      el.classList.toggle('is-current', el.id === 'panel-' + name);
+    (same ? function (f) { f(); } : vt)(function () {
+      $$('#view-decide .panel').forEach(function (el) {
+        el.classList.toggle('is-current', el.id === 'panel-' + name);
+      });
+      window.scrollTo(0, 0);
+      if (typeof Buddy !== 'undefined' && Buddy) Buddy.onPanel();
     });
-    window.scrollTo(0, 0);
   }
 
   $$('.rail-link').forEach(function (el) {
@@ -722,10 +769,12 @@
   var HELLOS = [
     { until: 11, lines: ['Morning. Breakfast counts as a decision too.',
                          'Morning. Let us get the first one out of the way.',
-                         'Morning. Nothing has gone wrong yet.'] },
+                         'Morning. Nothing has gone wrong yet.',
+                         'Morning. The fridge has not improved overnight.'] },
     { until: 15, lines: ['Afternoon. Lunch, then.',
                          'Afternoon. Something to eat, is it?',
-                         'Afternoon. Whatever is left in the fridge, probably.'] },
+                         'Afternoon. Whatever is left in the fridge, probably.',
+                         'Afternoon. The meeting could have been an email. Lunch could not.'] },
     /*
      * "Evening. This is the big one." was doing nothing. It announced that
      * something important was about to happen and then the same screen
@@ -739,17 +788,22 @@
     { until: 21, lines: ['Evening. The one everybody argues about.',
                          'Evening. Nobody minds, apparently.',
                          'Evening. You have been putting this off since four.',
-                         'Evening. Right then.'] },
+                         'Evening. Right then.',
+                         'Evening. Cereal is not a plan. Probably.'] },
     { until: 24, lines: ['Late one. Let us be quick about it.',
                          'Late. No judgement here.',
-                         'Late. Toast is a valid answer, for the record.'] }
+                         'Late. Toast is a valid answer, for the record.',
+                         'Late. The kitchen is technically still open.'] }
   ];
 
   function paintHello(state, played) {
     var el = $('landing-hello');
     if (!el) return;
     el.hidden = !played;
+    var row = $('landing-hello-row');
+    if (row) row.hidden = !played;
     if (!played) return;
+
 
     var hour = new Date().getHours();
     var band = HELLOS.filter(function (h) { return hour < h.until; })[0] || HELLOS[HELLOS.length - 1];
@@ -790,8 +844,46 @@
      */
     var back = returningDay();
     var last = (state.history || [])[0];
+    /*
+     * A LONG ABSENCE, ACKNOWLEDGED, NOT HELD AGAINST ANYBODY.
+     *
+     * After four days or more, Dot is a little flat when the page opens: the
+     * mouth turns down, it slumps, and the line is dry about itself rather than
+     * about the person ("It was quiet. I reorganised the dishes. Twice."). The
+     * moment anybody touches anything, it perks up. That is the whole of it:
+     * nothing is sent while you are away, there is no counter of days missed,
+     * and no line ever suggests you owed it a visit. It is a face that is glad
+     * you are back, which is the only version of this that is kind.
+     */
+    if (back && awayDays >= 4) {
+      var quiet = [
+        awayDays + ' days. It was quiet. I reorganised the dishes. Twice.',
+        awayDays + ' days. I did not wait by the door. Okay, I did.',
+        'Oh. You\u2019re back. ' + awayDays + ' days. I\u2019m fine. Slightly dusty.'
+      ];
+      el.textContent = quiet[Math.floor(Math.random() * quiet.length)];
+      wistful = true;
+      dotMood('mascot-l', 'wistful', 0);
+      return;
+    }
+    wistful = false;
+    dotMood('mascot-l', 'happy', 1800);
     if (back && last && last.name) {
-      el.textContent = 'Welcome back. Last time: ' + last.name + '.';
+      /*
+       * A friend, not a form. These are the things a person who had been paying
+       * attention would say: what you had, how long it has been, and the dish you
+       * keep coming back to. Each is counted from this device's own history and
+       * left out when the numbers do not carry it — it never pretends to know
+       * more than it does, and it never scolds anybody for staying away.
+       */
+      var gap = last.at ? Math.floor((Date.now() - last.at) / 86400000) : 0;
+      var times = (state.history || []).filter(function (e) { return e.name === last.name; }).length;
+      var pool;
+      if (times >= 3) pool = [last.name + ' again? No judgement. Okay, a little.'];
+      else if (gap >= 7) pool = ['Look who it is. ' + gap + ' days. You had ' + last.name + ', last time.'];
+      else if (gap >= 2) pool = [gap + ' days. I kept your seat warm. You had ' + last.name + ', last time.'];
+      else pool = ['Back already. Yesterday was ' + last.name + '. Any regrets?', 'Welcome back. Last time: ' + last.name + '.'];
+      el.textContent = pool[Math.floor(Math.random() * pool.length)];
       return;
     }
 
@@ -811,7 +903,11 @@
    * line never appeared for anybody. The stamp keeps the old value here
    * instead, where it survives for the rest of the visit.
    */
+  // Dot lives further down the file; the front door can paint before it exists.
+  function dotMood(id, mood, hold) { if (typeof Dot !== 'undefined' && Dot) Dot.mood($(id), mood, hold); }
   var cameBackFrom = null;
+  var awayDays = 0;       // whole days since the visit before this one
+  var wistful = false;    // Dot is still waiting for somebody to say hello
 
   function returningDay() {
     return !!cameBackFrom;
@@ -832,6 +928,7 @@
     if (st.seen === today) return;
     var previous = st.seen;
     cameBackFrom = previous && previous !== today ? previous : null;
+    awayDays = cameBackFrom ? Math.round((Date.parse(today) - Date.parse(previous)) / 864e5) : 0;
     st.seen = today;
     progress.save();
     if (previous && (st.decisions || 0) > 0) {
@@ -843,140 +940,6 @@
       }, 0);
     }
   })();
-
-  /* ------------------------------------------------------- the comeback */
-  /*
-   * SAID ONCE, EVER, TO SOMEBODY ACTUALLY COMING BACK.
-   *
-   * This is what replaced the old ad rotation's job of telling a free
-   * profile something is new — but only the one honest version of that
-   * sentence: it fires at most once in a profile's whole lifetime, only on
-   * a genuine later-day return (see returningDay() above), and it is not a
-   * pitch. Nothing here asks for money, and there is nothing to refuse
-   * twice or silence for good, because there is no second one coming.
-   *
-   * FIVE SECONDS BEFORE THE WAY OUT, not an instant close. Not a dark
-   * pattern — the delay is short and the reason is the opposite of one: a
-   * message said exactly once in somebody's whole time here is worth the
-   * length of two sentences, and the hold is shown two ways at once rather
-   * than left to a digit nobody is watching: a solid bar under the button
-   * that visibly drains over the same five seconds, as one CSS transition
-   * set going below rather than a width recomputed on every tick, so the
-   * motion reads as continuous — and the count, printed on the button
-   * itself, alongside it.
-   */
-  var COMEBACK_HOLD = 5;
-  var comebackTimer = null;
-
-  function openComeback(preview) {
-    if (!preview) {
-      progress.state.comebackShown = true;
-      progress.save();
-    }
-
-    $('comeback-title').textContent = 'Something new, since you were last here';
-    $('comeback-body').textContent =
-      'You can now invite a friend and earn a free day of Premium once they sign in and ' +
-      'play for ten minutes — no limit on how many friends. Invite three and you get two ' +
-      'extra days on top; invite ten and you get five more. It is tied to your account, ' +
-      'not this browser, so it is already on wherever you sign in next.';
-    // What the button actually does differs by whether there is already a
-    // link to show — "Take a look" was true of neither case and told
-    // nobody what tapping it would do.
-    $('comeback-go').textContent = premiumApi.status.signedIn
-      ? 'See my invite link'
-      : 'Sign in for my link';
-    $('comeback-play').textContent = 'Play the game';
-
-    var skip = $('comeback-skip');
-    var fill = $('comeback-skip-fill');
-    var left = COMEBACK_HOLD;
-    skip.disabled = true;
-    skip.textContent = 'Skip (' + left + ')';
-
-    // The fill: snapped to full with no transition, then — after the browser
-    // has actually painted that frame — eased down to empty over the whole
-    // hold in one go. Setting the end state in the same tick as the start
-    // state is the classic way this silently does nothing: the browser
-    // coalesces both and there is no transition to see, only the final value.
-    fill.style.transition = 'none';
-    fill.style.transform = 'scaleX(1)';
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        fill.style.transition = 'transform ' + COMEBACK_HOLD + 's linear';
-        fill.style.transform = 'scaleX(0)';
-      });
-    });
-
-    clearInterval(comebackTimer);
-    comebackTimer = setInterval(function () {
-      left -= 1;
-      if (left > 0) { skip.textContent = 'Skip (' + left + ')'; return; }
-      clearInterval(comebackTimer);
-      skip.disabled = false;
-      skip.textContent = 'Skip';
-    }, 1000);
-
-    var dlg = $('comeback-sheet');
-    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
-  }
-
-  function closeComeback() {
-    clearInterval(comebackTimer);
-    var dlg = $('comeback-sheet');
-    if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
-  }
-
-  $('comeback-skip').addEventListener('click', function () {
-    if ($('comeback-skip').disabled) return;
-    Sound.tick();
-    closeComeback();
-  });
-
-  $('comeback-go').addEventListener('click', function () {
-    closeComeback();
-    // Signed in already: the link is a tap away, no need to leave. Not
-    // signed in: there is no link to show yet, so this goes to the one
-    // place that can make one — real sign-in, not the profile view, which
-    // would only show the same "sign in for your own link" note again.
-    if (premiumApi.status.signedIn) {
-      setView('profile');
-      highlightInvite();
-    } else {
-      // window.location.href would only move the iframe: this page is
-      // always inside Whop's own frame when opened from an experience (see
-      // `framed` above), and Whop's sign-in page refuses to render inside
-      // one — so the click would look like it did nothing at all. Writing
-      // to the TOP frame's location is allowed even across origins
-      // specifically so a page like this one can break out for sign-in.
-      var url = '/api/oauth/login?redirect_to=%2Fdecide%2F%3Fgo%3Dprofile';
-      try { window.top.location.href = url; } catch (err) { window.location.href = url; }
-    }
-  });
-
-  $('comeback-play').addEventListener('click', function () {
-    closeComeback();
-    hideLanding();
-    setView('decide');
-    restart();
-  });
-
-  // ESC is refused while the countdown still holds the button — the one
-  // other way most dialogs close, and it would otherwise skip the count
-  // entirely.
-  $('comeback-sheet').addEventListener('cancel', function (e) {
-    if ($('comeback-skip').disabled) { e.preventDefault(); return; }
-    closeComeback();
-  });
-
-  function maybeShowComeback() {
-    if (progress.state.comebackShown) return;
-    if (!returningDay()) return;
-    var last = (progress.state.history || [])[0];
-    if (!last || !last.name) return;
-    if (anySheetOpen()) return;
-    openComeback();
-  }
 
   function renderIntro() {
     var state = progress.state;
@@ -1010,11 +973,10 @@
      * reach by deciding, and that is where it still is — done-again-btn on
      * the reward panel, where it is true by construction.
      */
-    label('landing-start', 'Decide for me');
+    label('landing-start', I18n.t('landing.start', 'Decide for me'));
     paintHello(state, played);
     // After the landing has actually painted, so it never competes with the
     // entrance animation for the one thing somebody looks at first.
-    setTimeout(maybeShowComeback, 1200);
     paintEndlessCard();
 
     // "Surprise me" and the week plan need a profile worth shortcutting to:
@@ -1035,6 +997,7 @@
     $('spin-btn').classList.toggle('is-locked', !isPlus());
     $('together-btn').classList.toggle('is-locked', !isPlus());
     $('swipe-btn').classList.toggle('is-locked', !isPlus());
+    ['derby-btn', 'smash-btn', 'drop-btn', 'slice-btn'].forEach(function (id) { $(id).classList.toggle('is-locked', !isPlus()); });
     $('mood-wrap').classList.toggle('is-locked', !isPlus());
     $('week-wrap').classList.toggle('is-locked', !isPlus());
     $('surprise-btn').classList.toggle('is-locked', !isPlus());
@@ -1497,7 +1460,7 @@
       return;
     }
     if (beam.busy) {
-      return toast('\u{23F3}', 'Still opening', 'The browser is starting up.');
+      return toast('\u{23F3}', 'Still opening', 'The browser is starting up. Nobody is hurrying it.');
     }
 
     var gen = beam.gen;
@@ -1557,11 +1520,11 @@
         var why = answer.body && answer.body.error;
         if (why === 'too_fast') {
           return toast('\u{23F1}\u{FE0F}', 'Slow down a moment',
-            'That is a lot of browsers at once. Try again shortly.');
+            'That is a lot of browsers at once. Even the cloud needs a minute. Try again shortly.');
         }
         if (why === 'premium_required' || why === 'sign_in_required') return goPremium(spec.title);
         return toast('\u{1F6AB}', 'Could not open it',
-          'The shared browser did not start. Try again in a moment.');
+          'The shared browser did not start. It has been spoken to. Try again in a moment.');
       }
       beam.session = answer.body.sessionId || null;
       beam.url = answer.body.embedUrl;
@@ -3034,7 +2997,7 @@
     fetch('/api/suggest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ liked: history.liked, avoid: history.avoid, answers: picks.answers })
+      body: JSON.stringify({ liked: history.liked, avoid: history.avoid, answers: picks.answers, lang: I18n.get() })
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
         return { ok: res.ok, body: body };
@@ -3480,6 +3443,7 @@
     $('menu-now-step').textContent =
       'Course ' + (menuRun.step + 1) + ' of ' + menuRun.menu.length;
     $('menu-now-when').textContent = entry.course.label;
+    if (menuRun.step > 0 && typeof Buddy !== 'undefined' && Buddy) Buddy.say(menuRun.step + 1 === menuRun.menu.length ? 'Last one. Nearly civilised.' : 'Next course. Pace yourself.', 'happy', 3000);
     $('menu-now-art').textContent = entry.dish.icon;
     $('menu-now-why').textContent = entry.why || entry.dish.blurb;
     $('menu-take-label').textContent = 'That’s ' + entry.course.word;
@@ -4005,7 +3969,8 @@
         prompt: ask.prompt || '',
         answers: ask.answers || null,
         liked: liked.liked,
-        avoid: liked.avoid
+        avoid: liked.avoid,
+        lang: I18n.get()
       })
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
@@ -4144,10 +4109,148 @@
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 900);
   }
 
+  /*
+   * A small burst from the thing you just touched. Six dots out on straight
+   * lines, gone in 450ms. Motion that answers a tap, built on the Web Animations
+   * API so there is no stylesheet to keep in step and nothing left in the DOM.
+   */
+  function sparkle(source, count) {
+    if (reduceMotion || !source || !source.animate) return;
+    var box = source.getBoundingClientRect();
+    var cx = box.left + box.width / 2, cy = box.top + box.height / 2;
+    var n = count || 7;
+    for (var i = 0; i < n; i++) {
+      var dot = document.createElement('i');
+      dot.className = 'spark';
+      dot.style.left = cx + 'px'; dot.style.top = cy + 'px';
+      document.body.appendChild(dot);
+      var ang = (Math.PI * 2 * i) / n + Math.random() * 0.5, dist = 34 + Math.random() * 26;
+      // An arc, not a line: out and up on the way, gravity on the way down.
+      var dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist;
+      var a = dot.animate([
+        { transform: 'translate(-50%,-50%) scale(1)', opacity: 1, offset: 0 },
+        { transform: 'translate(calc(-50% + ' + dx * 0.7 + 'px), calc(-50% + ' + (dy * 0.7 - 12) + 'px)) scale(.8)', opacity: 1, offset: 0.55 },
+        { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + (dy + 16) + 'px)) scale(.15)', opacity: 0, offset: 1 }
+      ], { duration: 520, easing: 'cubic-bezier(.2,0,0,1)' });
+      a.onfinish = (function (d) { return function () { if (d.parentNode) d.parentNode.removeChild(d); }; })(dot);
+    }
+  }
+
+  // A number that arrives rather than appears.
+  function countUp(el, to, prefix) {
+    if (reduceMotion || !el.animate) { el.textContent = (prefix || '') + to; return; }
+    var start = performance.now(), dur = 700;
+    (function frame(now) {
+      var t = Math.min(1, (now - start) / dur);
+      var eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = (prefix || '') + Math.round(to * eased);
+      if (t < 1) requestAnimationFrame(frame);
+    })(start);
+  }
+
   function replay(el) {
     el.classList.remove('is-new');
     void el.offsetWidth;
     el.classList.add('is-new');
+  }
+
+  // How far through: a bar that fills as you go, so the answers visibly add up.
+  function paintProgress() {
+    var fill = $('q-progress-fill');
+    if (!fill) return;
+    var total = parseInt(String($('q-total').textContent).replace(/\D/g, ''), 10) || 20;
+    var frac = Math.min(1, game.answers.length / total);
+    fill.style.width = Math.round(frac * 100) + '%';
+    // Dot rides the end of the bar, and hops along as it grows.
+    var track = $('q-track'), rider = $('q-rider');
+    if (track) {
+      var was = parseFloat(track.style.getPropertyValue('--p')) || 0;
+      track.style.setProperty('--p', frac.toFixed(3));
+      if (rider && frac > was) Dot.mood(rider, 'bounce', 700);
+    }
+    if (game.answers.length === 0) riderSaid = {};
+    else if (typeof Buddy !== 'undefined' && Buddy) {
+      if (frac >= 0.5 && !riderSaid.half) { riderSaid.half = 1; Buddy.remark('halfway', 'happy', 3200); }
+      else if (frac >= 0.8 && !riderSaid.near) { riderSaid.near = 1; Buddy.remark('nearly', 'celebrate', 3200); }
+    }
+  }
+  var riderSaid = {};
+
+  // The rider watches the options as you move over them: it likes the left one,
+  // squints at the right one, and winks at "either".
+  (function riderWatches() {
+    var rider = $('q-rider');
+    if (!rider) return;
+    function feel(mood, x) {
+      Dot.mood(rider, mood, 900);
+      rider.style.setProperty('--ex', x + 'px');
+      setTimeout(function () { rider.style.setProperty('--ex', '0px'); }, 900);
+    }
+    function on(id, mood, x) {
+      var b = $(id);
+      if (!b) return;
+      ['pointerenter', 'focus'].forEach(function (ev) { b.addEventListener(ev, function () { if (!reduceMotion) feel(mood, x); }); });
+    }
+    // Dot's eyes follow the pointer; a tap gives a real hint (what each answer would leave), the next tap a word.
+    document.addEventListener('pointermove', function (e) {
+      if (reduceMotion || view !== 'decide' || panel !== 'question') return;
+      var r = rider.getBoundingClientRect(), dx = e.clientX - (r.left + 15), dy = e.clientY - (r.top + 15), d = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      rider.style.setProperty('--ex', (dx / d * 1.7).toFixed(1) + 'px'); rider.style.setProperty('--ey', (dy / d * 1.7).toFixed(1) + 'px');
+    }, { passive: true });
+    var hinted = false;
+    function liveAfter(value) {
+      var w = game.branch(current.tag, value), mx = Math.max.apply(null, w);
+      return w.filter(function (x) { return x > mx * 0.05; }).length;
+    }
+    rider.addEventListener('click', function () {
+      if (typeof Buddy === 'undefined' || !Buddy) return;
+      hinted = !hinted;
+      if (hinted && current && current.tag) {
+        try {
+          Buddy.say('Yes keeps about ' + liveAfter('yes') + ' dishes. No keeps about ' + liveAfter('no') + '.', 'thinking', 4600, 'asked');
+          Dot.mood(rider, 'bounce', 700);
+          return;
+        } catch (err) { /* fall through to a word */ }
+      }
+      Buddy.stageTap();
+    });
+    on('choice-yes', 'happy', -1.6);
+    on('choice-no', 'shrug', 1.6);
+    on('choice-either', 'wink', 0);
+    on('choice-neither', 'wink', 0);
+  })();
+
+  /*
+   * The question changes like a card being dealt. The one you answered is lifted
+   * off as a copy and flies toward the button you pressed, tilting a degree, while
+   * the real next question comes in from the other side. Going back reverses it.
+   */
+  var qDir = 1;
+  function qLeave(dir) {
+    if (reduceMotion) return;
+    var title = $('q-text'), picks = document.querySelector('#panel-question .picks');
+    if (!title || !picks || !picks.animate) return;
+    var a = title.getBoundingClientRect(), b = picks.getBoundingClientRect();
+    if (!b.width) return;
+    var ghost = document.createElement('div');
+    ghost.className = 'q-ghost';
+    ghost.style.cssText = 'left:' + b.left + 'px;top:' + a.top + 'px;width:' + b.width + 'px';
+    var t = title.cloneNode(true), p = picks.cloneNode(true);
+    [t, p].forEach(function (n) { n.removeAttribute('id'); Array.prototype.forEach.call(n.querySelectorAll('[id]'), function (x) { x.removeAttribute('id'); }); ghost.appendChild(n); });
+    document.body.appendChild(ghost);
+    var run = ghost.animate([
+      { transform: 'none', opacity: 1 },
+      { transform: 'translateX(' + (dir * 70) + 'px) rotate(' + (dir * 1.6) + 'deg)', opacity: 0 }
+    ], { duration: 280, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' });
+    run.onfinish = function () { if (ghost.parentNode) ghost.parentNode.removeChild(ghost); };
+  }
+
+  function swapQuestion() {
+    var pq = $('panel-question');
+    pq.style.setProperty('--qdir', String(qDir));
+    pq.classList.remove('q-swap');
+    void pq.offsetWidth;
+    pq.classList.add('q-swap');
   }
 
   function renderQuestion(q) {
@@ -4161,7 +4264,9 @@
     $('q-total').textContent = '/' + (together.live
       ? TOGETHER_ASKS
       : Math.min(Engine.MAX_QUESTIONS, Data.QUESTIONS.length));
+    paintProgress();
     $('q-text').textContent = q.text;
+    swapQuestion();
     $('yes-icon').textContent = q.yesIcon;
     $('yes-label').textContent = q.yes;
     $('no-icon').textContent = q.noIcon;
@@ -4251,7 +4356,11 @@
     var line = Flavor.reaction(current.tag, value, Math.random);
     if (value === 'either') Sound.shrug(); else Sound.tick();
     floatXp(gained, source);
+    if (source) { sparkle(source); source.classList.remove('is-chosen'); void source.offsetWidth; source.classList.add('is-chosen'); }
+    qDir = value === 'no' ? -1 : 1;
+    qLeave(value === 'yes' ? -1 : value === 'no' ? 1 : 0);
 
+    var answeredTag = current.tag;
     game.answer(current.tag, value);
     step();
     saveResume();
@@ -4259,6 +4368,9 @@
     // After step(), so the new question's render doesn't clear it.
     $('reaction').textContent = line;
     replay($('reaction'));
+    Buddy.react(value === 'yes' || value === 'no' ? 'happy' : 'shrug', 1300);
+    Buddy.onAnswer(value, answeredTag);
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) { /* fine */ }
   }
 
   /* ---------------------------------------------------------- the funnel */
@@ -4449,6 +4561,8 @@
       });
     }
 
+    Buddy.react('happy', 1600);
+    Buddy.onResult(item);
     fillAlternates(item);
     paintPair(item);
     // Which directions are worth offering depends on what is on screen, so
@@ -4508,7 +4622,7 @@
 
     if (result === 'full') {
       Sound.reject();
-      return toast('\u{2728}', 'Saved list is full', 'That is as many as this profile holds.');
+      return toast('\u{2728}', 'Saved list is full', 'That is as many as this profile holds. Impressive, honestly.');
     }
 
     if (result === 'banned') {
@@ -4590,7 +4704,7 @@
     if (!favourites.length) {
       Sound.reject();
       return toast('\u{1F914}', 'Nothing to pick from',
-        'Everything you have saved is ruled out by what you do not eat.');
+        'Everything you have saved is ruled out by what you do not eat. Principles are expensive.');
     }
 
     // With a profile, even this short a list gets ordered rather than shuffled.
@@ -4699,7 +4813,7 @@
       if (panel !== 'reward') return;
       fillSlot();
     }, 1400);
-    $('xp-total').textContent = '+' + outcome.total;
+    countUp($('xp-total'), outcome.total, '+');
 
     var list = $('awards');
     list.innerHTML = '';
@@ -4722,9 +4836,12 @@
     renderRating(item);
     paintKeep();
     paintNext();
+    paintPeek();
     paintWhy();
     paintPlan(item);
     setPanel('reward');
+    Buddy.react('celebrate', 2200);
+    Buddy.onDone();
     paintStreak();
     Sound.win();
     Confetti.burst({ y: window.innerHeight * 0.3 });
@@ -5155,7 +5272,7 @@
        */
       Sound.reject();
       toast('\u{1F937}', 'Your browser said no',
-        'It would not let me hand over a file. The plan is still saved here.');
+        'It would not let me hand over a file. The plan is still saved here, unbothered.');
     }
   }
 
@@ -5229,6 +5346,7 @@
   }
 
   function toast(icon, title, text) {
+    if (typeof Buddy !== 'undefined' && Buddy) Buddy.react('happy', 900);
     toastQueue.push({ icon: icon, title: title, text: text });
     if (!toasting) nextToast();
   }
@@ -5455,7 +5573,7 @@
   ];
 
   function anySheetOpen() {
-    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet', 'comeback-sheet'];
+    var ids = ['enjoy-sheet', 'share-sheet', 'ad-sheet', 'dish-sheet'];
     for (var i = 0; i < ids.length; i++) {
       var dlg = document.getElementById(ids[i]);
       if (dlg && dlg.open) return true;
@@ -5860,7 +5978,7 @@
       // Nothing left that fits. Say so rather than silently doing nothing.
       Sound.reject();
       return toast('\u{1F937}', 'Nothing left that way',
-        'That is everything I have in that direction. Try another.');
+        'That is everything I have in that direction. I checked twice. Try another.');
     }
 
     rankedItems = ranked.slice(0, 8).map(function (r) { return r.item; });
@@ -5909,7 +6027,7 @@
       var left = rankedItems.filter(function (d) { return d !== dropped; });
       if (!left.length) {
         toast('\u{1F937}', 'That is the lot',
-          'You have turned down everything that round came up with. Pick a way to play again.');
+          'You have turned down everything that round came up with. Bold. Pick a way to play again.');
         return goHome();
       }
       rankedItems = left;
@@ -6764,8 +6882,8 @@
   }
 
   function renderChat() {
-    paintChatSeeds();
-    paintChatLeft();
+    paintChatMode();
+    restoreChat();
     fetchChatLeft();
     // Deliberately not focused: on a phone, focus throws the keyboard up over
     // half the screen, including the chips that mean you need not type at all.
@@ -6773,35 +6891,24 @@
 
   function paintChatSeeds() {
     var wrap = $('chat-seeds');
-    if (wrap.childNodes.length) return;   // built once
-    CHAT_SEEDS.forEach(function (seed) {
+    var adv = chatMode() === 'advanced';
+    if (wrap.childNodes.length && wrap.dataset.mode === (adv ? 'a' : 's')) return;
+    clear2(wrap);
+    wrap.dataset.mode = adv ? 'a' : 's';
+    (adv ? CHAT_SEEDS_ADV : CHAT_SEEDS).forEach(function (seed) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'filter';
       btn.textContent = seed;
       btn.addEventListener('click', function () {
+        // The photo question needs a photo first.
+        if (adv && seed === CHAT_SEEDS_ADV[1] && !chat.image) { $('chat-file').click(); return; }
+        if (adv && /nearby/.test(seed)) { chat.search = true; paintChatMode(); }
         $('chat-input').value = seed;
         askChat();
       });
       wrap.appendChild(btn);
     });
-  }
-
-  // One row, whoever said it. `pending` is the row that stands in for an answer
-  // that has not arrived, so it can be replaced in place rather than removed
-  // and re-added, which would jump the scroll.
-  function chatRow(role, text, pending) {
-    var li = document.createElement('li');
-    li.className = 'chat-row is-' + role + (pending ? ' is-pending' : '');
-    var who = document.createElement('span');
-    who.className = 'chat-who';
-    who.textContent = role === 'user' ? 'You' : 'morsels45';
-    var body = document.createElement('p');
-    body.className = 'chat-text';
-    body.textContent = text;
-    li.appendChild(who);
-    li.appendChild(body);
-    return li;
   }
 
   /*
@@ -6829,6 +6936,7 @@
       .then(function (body) {
         if (body && typeof body.left === 'number') {
           chat.left = body.left;
+          chat.account = body.account === true;
           paintChatLeft();
         }
       })
@@ -6839,18 +6947,296 @@
   function paintChatLeft() {
     var el = $('chat-left');
     var left = chatLeft();
-    if (isPlus() || left === null) { el.hidden = true; return; }
+    if (isPlus() || left === null) { el.hidden = true; $('chat-account').hidden = true; return; }
     el.hidden = false;
+    $('chat-account').hidden = !(chat.account === false && left > 0);
     el.textContent = left > 0
       ? left + (left === 1 ? ' free question left today' : ' of ' + CHAT_FREE + ' free questions left today') +
         '. Premium asks as many as you like.'
       : 'That is today\u2019s three free questions used \u2014 three more tomorrow. Premium asks as many as you like.';
   }
 
+  /*
+   * TWO ASSISTANTS, ONE BOX.
+   *
+   * Standard is free: three questions a day on a free account, answered by a
+   * quick public model. Advanced is Premium: Gemini, with what you have told
+   * the app about your taste, a photo if you attach one, the web if you ask
+   * it to look something up, follow-ups to tap, and a conversation that is
+   * still here tomorrow. Which one answers is decided by the server from who
+   * you are, not from this switch; the switch only says which you are asking
+   * for.
+   */
+  var CHAT_SAVE = 'morsels-chat-saved', CHAT_MODE = 'morsels-chat-mode';
+  var CHAT_SKILLS = [
+    { id: 'chat', label: 'Anything' },
+    { id: 'plan', label: 'Plan it' },
+    { id: 'cook', label: 'Cook with me' },
+    { id: 'compare', label: 'Help me choose' }
+  ];
+  var CHAT_SEEDS_ADV = [
+    'Plan my dinners for the week',
+    'What can I make with what is in this photo?',
+    'Cook me something I will love, step by step',
+    'Which of my favourites should I have tonight?',
+    'Is there a good place for a late breakfast nearby?',
+    'Compare a stir-fry and a curry for tonight'
+  ];
+  chat.mode = 'standard';
+  chat.skill = 'chat';
+  chat.search = false;
+  chat.image = null;
+  chat.account = null;
+  chat.listening = null;
+  try { chat.mode = localStorage.getItem(CHAT_MODE) === 'standard' ? 'standard' : (localStorage.getItem(CHAT_MODE) === 'advanced' ? 'advanced' : null); } catch (err) { /* fine */ }
+
+  function chatMode() {
+    if (!isPlus()) return 'standard';
+    return chat.mode === 'standard' ? 'standard' : 'advanced';
+  }
+
+  function paintChatMode() {
+    var adv = chatMode() === 'advanced';
+    $$('#chat-mode .chat-mode-btn').forEach(function (btn) {
+      var on = btn.dataset.mode === (adv ? 'advanced' : 'standard');
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+    var note = $('chat-mode-note');
+    note.textContent = adv
+      ? 'Advanced knows your taste, reads a photo, can look things up and keeps this conversation.'
+      : isPlus()
+        ? 'Standard is the quick one. Switch to Advanced for the full answer.'
+        : 'Standard is free: three questions a day on your account. Premium unlocks Advanced.';
+    $('chat-tools').hidden = !adv;
+    $('chat-photo').hidden = !adv;
+    $('chat-input').placeholder = adv ? 'Ask anything, or attach a photo…' : 'Ask me anything about food…';
+    $$('#chat-skills .filter').forEach(function (btn) {
+      var on = btn.dataset.skill === chat.skill;
+      btn.classList.toggle('is-on', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+    $('chat-search').setAttribute('aria-pressed', String(chat.search));
+    $('chat-search').classList.toggle('is-on', chat.search);
+    var wrap = $('chat-seeds');
+    if (wrap.dataset.mode !== (adv ? 'a' : 's')) { clear2(wrap); paintChatSeeds(); }
+    paintChatLeft();
+  }
+
+  function setChatMode(mode) {
+    if (mode === 'advanced' && !isPlus()) return goPremium('The advanced assistant');
+    chat.mode = mode;
+    try { localStorage.setItem(CHAT_MODE, mode); } catch (err) { /* fine */ }
+    paintChatMode();
+  }
+
+  // **bold**, "- " lists and "1. " steps, built as elements with text nodes
+  // only. A model's words never reach innerHTML.
+  function inlineInto(node, text) {
+    var parts = String(text).split(/(\*\*[^*]+\*\*)/);
+    parts.forEach(function (part) {
+      if (!part) return;
+      if (/^\*\*[^*]+\*\*$/.test(part)) {
+        var b = document.createElement('strong');
+        b.textContent = part.slice(2, -2);
+        node.appendChild(b);
+      } else node.appendChild(document.createTextNode(part));
+    });
+  }
+  function richInto(box, text) {
+    clear2(box);
+    var list = null, kind = '';
+    String(text).split(/\r?\n/).forEach(function (raw) {
+      var line = raw.replace(/\s+$/, '');
+      var bullet = /^\s*[-*•]\s+(.*)$/.exec(line);
+      var step = /^\s*\d+[.)]\s+(.*)$/.exec(line);
+      if (bullet || step) {
+        var want = bullet ? 'ul' : 'ol';
+        if (!list || kind !== want) { list = document.createElement(want); kind = want; box.appendChild(list); }
+        var li = document.createElement('li');
+        inlineInto(li, (bullet || step)[1]);
+        list.appendChild(li);
+        return;
+      }
+      list = null;
+      if (!line.trim()) return;
+      var p = document.createElement('p');
+      inlineInto(p, line.replace(/^#{1,6}\s+/, ''));
+      box.appendChild(p);
+    });
+  }
+
+  // One row, whoever said it. `pending` is the row that stands in for an answer
+  // that has not arrived, so it can be replaced in place rather than removed
+  // and re-added, which would jump the scroll. `rich` rows hold formatted text.
+  function chatRow(role, text, pending, rich) {
+    var li = document.createElement('li');
+    li.className = 'chat-row is-' + role + (pending ? ' is-pending' : '');
+    var who = document.createElement('span');
+    who.className = 'chat-who';
+    who.textContent = role === 'user' ? 'You' : 'morsels45';
+    var body = document.createElement(rich ? 'div' : 'p');
+    body.className = 'chat-text' + (rich ? ' is-rich' : '');
+    if (rich) richInto(body, text); else body.textContent = text;
+    li.appendChild(who);
+    li.appendChild(body);
+    return li;
+  }
+
+  function saveChat() {
+    if (!isPlus()) return;
+    try { localStorage.setItem(CHAT_SAVE, JSON.stringify(chat.turns.slice(-20))); } catch (err) { /* fine */ }
+  }
+
+  function restoreChat() {
+    if (!isPlus() || chat.turns.length) return;
+    var saved = [];
+    try { saved = JSON.parse(localStorage.getItem(CHAT_SAVE) || '[]') || []; } catch (err) { saved = []; }
+    if (!saved.length) return;
+    var log = $('chat-log');
+    saved.forEach(function (t) {
+      if (!t || typeof t.text !== 'string') return;
+      var model = t.role === 'model';
+      chat.turns.push({ role: model ? 'model' : 'user', text: t.text.slice(0, 2400) });
+      log.appendChild(chatRow(model ? 'bot' : 'user', t.text.slice(0, 2400), false, model));
+    });
+    $('chat-empty').hidden = true;
+  }
+
+  function newChat() {
+    stopTyping();
+    chat.turns = [];
+    chat.image = null;
+    paintChatAttach();
+    clear2($('chat-log'));
+    $('chat-empty').hidden = false;
+    try { localStorage.removeItem(CHAT_SAVE); } catch (err) { /* fine */ }
+    Buddy.say('Fresh page. Ask away.', 'happy', 2400, 'asked');
+  }
+
+  // A picture, shrunk on this device before it is sent anywhere.
+  function chatPhoto(file) {
+    if (!file || !/^image\//.test(file.type)) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var max = 1024, scale = Math.min(1, max / Math.max(img.width, img.height));
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        var url = canvas.toDataURL('image/jpeg', 0.8);
+        chat.image = { mime: 'image/jpeg', data: url.slice(url.indexOf(',') + 1), preview: url };
+        paintChatAttach();
+        $('chat-input').focus();
+      };
+      img.src = String(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
+  function paintChatAttach() {
+    var box = $('chat-attach');
+    clear2(box);
+    box.hidden = !chat.image;
+    if (!chat.image) return;
+    var img = document.createElement('img');
+    img.src = chat.image.preview;
+    img.alt = 'The photo you attached';
+    var x = document.createElement('button');
+    x.type = 'button';
+    x.className = 'chat-attach-x';
+    x.setAttribute('aria-label', 'Remove the photo');
+    x.textContent = '×';
+    x.addEventListener('click', function () { chat.image = null; paintChatAttach(); });
+    box.appendChild(img);
+    box.appendChild(x);
+  }
+
+  // Dictation, where the browser offers it. The audio goes to the browser's own
+  // speech service, not to us; what comes back is only text in the box.
+  function chatMic() {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var btn = $('chat-mic');
+    if (!SR) { btn.hidden = true; return; }
+    var LOCALES = { en: 'en-GB', ms: 'ms-MY', th: 'th-TH', hi: 'hi-IN', ar: 'ar-SA' };
+    btn.addEventListener('click', function () {
+      if (chat.listening) { try { chat.listening.stop(); } catch (err) { /* fine */ } return; }
+      var rec = new SR();
+      rec.lang = LOCALES[I18n.get()] || 'en-GB';
+      rec.interimResults = true;
+      rec.continuous = false;
+      rec.onresult = function (event) {
+        var said = '';
+        for (var i = 0; i < event.results.length; i++) said += event.results[i][0].transcript;
+        $('chat-input').value = said.slice(0, 500);
+      };
+      rec.onend = function () { chat.listening = null; btn.classList.remove('is-on'); btn.setAttribute('aria-pressed', 'false'); $('chat-input').focus(); };
+      rec.onerror = function () { chat.listening = null; btn.classList.remove('is-on'); };
+      try { rec.start(); chat.listening = rec; btn.classList.add('is-on'); btn.setAttribute('aria-pressed', 'true'); Buddy.react('surprised', 900); } catch (err) { chat.listening = null; }
+    });
+  }
+
+  function chatProfile() {
+    var h = pickedHistory(), st = progress.state;
+    var diets = (st.diets || []).map(function (id) {
+      for (var i = 0; i < ProgressLib.DIETS.length; i++) if (ProgressLib.DIETS[i].id === id) return ProgressLib.DIETS[i].label;
+      return null;
+    }).filter(Boolean);
+    return { liked: h.liked.slice(0, 25), avoid: h.avoid.slice(0, 25), rules: diets.concat((st.rules || []).map(String)).slice(0, 25) };
+  }
+
+  function addCopy(row, reply) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chat-mini';
+    btn.textContent = 'Copy';
+    btn.addEventListener('click', function () {
+      var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1600); };
+      try { navigator.clipboard.writeText(reply).then(done, function () {}); } catch (err) { /* fine */ }
+    });
+    var bar = row.querySelector('.chat-bar');
+    if (!bar) { bar = document.createElement('div'); bar.className = 'chat-bar'; row.appendChild(bar); }
+    bar.appendChild(btn);
+  }
+
+  function addSources(row, sources) {
+    if (!sources || !sources.length) return;
+    var wrap = document.createElement('p');
+    wrap.className = 'fine chat-sources';
+    wrap.appendChild(document.createTextNode('Looked up: '));
+    sources.forEach(function (s, i) {
+      if (!/^https:\/\//.test(s.url)) return;
+      var a = document.createElement('a');
+      a.href = s.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.textContent = s.title || s.url.replace(/^https:\/\//, '').split('/')[0];
+      wrap.appendChild(a);
+      if (i < sources.length - 1) wrap.appendChild(document.createTextNode(' · '));
+    });
+    row.appendChild(wrap);
+  }
+
+  function addFollowups(row, list) {
+    if (!list || !list.length) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'chat-follow';
+    list.slice(0, 3).forEach(function (q) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter';
+      btn.textContent = q;
+      btn.addEventListener('click', function () { wrap.remove(); $('chat-input').value = q; askChat(); });
+      wrap.appendChild(btn);
+    });
+    row.appendChild(wrap);
+  }
+
   function askChat() {
     if (chat.busy) return;
     var field = $('chat-input');
+    var mode = chatMode();
     var text = field.value.trim().slice(0, 500);
+    if (!text && mode === 'advanced' && chat.image) text = 'What can I make with this?';
     if (!text) return;
 
     // Checked before the question is sent, so nothing is spent on a request
@@ -6870,26 +7256,36 @@
     // thing this app asks anybody to do.
     chat.busy = true;
     $('chat-send').disabled = true;
+    Buddy.think(true);
 
     var log = $('chat-log');
-    log.appendChild(chatRow('user', text, false));
+    var sentImage = mode === 'advanced' ? chat.image : null;
+    log.appendChild(chatRow('user', (sentImage ? '\u{1F4F7} ' : '') + text, false));
 
     // The assistant is what was asked for, so it is what answers — nothing
     // stands in for it while it works and nothing is substituted if it fails.
-    var waiting = chatRow('bot', 'Thinking\u2026', true);
+    var waiting = chatRow('bot', mode === 'advanced' && chat.search ? 'Looking it up…' : 'Thinking…', true);
     log.appendChild(waiting);
     waiting.scrollIntoView({ block: 'nearest' });
     Sound.tick();
 
     chat.turns.push({ role: 'user', text: text });
+    if (sentImage) { chat.image = null; paintChatAttach(); }
 
+    var payload = { messages: chat.turns.slice(-12), lang: I18n.get(), mode: mode };
+    if (mode === 'advanced') {
+      payload.profile = chatProfile();
+      payload.skill = chat.skill;
+      payload.search = chat.search;
+      if (sentImage) payload.image = { mime: sentImage.mime, data: sentImage.data };
+    }
 
     fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       // A relative path, so this is whatever host the app is actually being
       // served from — the phone's, not a machine it was written on.
-      body: JSON.stringify({ messages: chat.turns.slice(-12) })
+      body: JSON.stringify(payload)
     }).then(function (res) {
       return res.json().catch(function () { return {}; }).then(function (body) {
         return { ok: res.ok, status: res.status, body: body };
@@ -6899,6 +7295,7 @@
     }).then(function (answer) {
       chat.busy = false;
       $('chat-send').disabled = false;
+      Buddy.think(false);
 
       if (answer.body && typeof answer.body.left === 'number') {
         chat.left = answer.body.left;
@@ -6909,26 +7306,39 @@
         progress.state.chatAsks = (progress.state.chatAsks || 0) + 1;
         progress.save();
         var reply = String(answer.body.reply);
+        var adv = answer.body.mode === 'advanced';
         chat.turns.push({ role: 'model', text: reply });
+        saveChat();
         // Built empty, then written into. The dish buttons wait for the last
         // character so they do not appear under half a sentence.
-        var row = chatRow('bot', '', false);
+        var row = chatRow('bot', '', false, adv);
         waiting.replaceWith(row);
         row.scrollIntoView({ block: 'nearest' });
-        typeInto(row.querySelector('.chat-text'), reply, function () {
+        var finish = function () {
           addDishTaps(row, reply);
+          if (adv) { addSources(row, answer.body.sources); addFollowups(row, answer.body.followups); }
+          addCopy(row, reply);
           row.scrollIntoView({ block: 'nearest' });
-        });
+        };
+        if (adv) { richInto(row.querySelector('.chat-text'), reply); row.classList.add('is-in'); finish(); }
+        else typeInto(row.querySelector('.chat-text'), reply, finish);
         return;
       }
 
       // The last question did not get an answer, so it does not belong in the
       // history either — leaving it there would send it again with the next one.
       chat.turns.pop();
+      if (sentImage) { chat.image = sentImage; paintChatAttach(); }
       var why = (answer.body && answer.body.error) || '';
+      if (why === 'premium_required') {
+        waiting.replaceWith(chatRow('bot', 'The advanced assistant is part of Premium. Standard is still here, and free.', false));
+        chat.mode = 'standard';
+        paintChatMode();
+        return goPremium('The advanced assistant');
+      }
       if (why === 'limit') {
         waiting.replaceWith(chatRow('bot',
-          'That is today\u2019s three free questions. Three more tomorrow \u2014 or Premium asks as many as you like.', false));
+          'That is today’s three free questions. Three more tomorrow — or Premium asks as many as you like.', false));
         return goPremium('Asking anything');
       }
       var said = why === 'too_fast'
@@ -6939,11 +7349,30 @@
             ? 'The assistant had nothing to say to that'
             : 'The assistant did not answer in time';
 
-      var row = chatRow('bot', said + '. Ask again \u2014 it usually works second time.', false);
+      var row = chatRow('bot', said + '. Ask again — it usually works second time.', false);
       waiting.replaceWith(row);
       row.scrollIntoView({ block: 'nearest' });
     });
   }
+
+  $$('#chat-mode .chat-mode-btn').forEach(function (btn) { btn.addEventListener('click', function () { setChatMode(btn.dataset.mode); }); });
+  (function wireChatTools() {
+    var wrap = $('chat-skills');
+    CHAT_SKILLS.forEach(function (sk) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter';
+      btn.dataset.skill = sk.id;
+      btn.textContent = sk.label;
+      btn.addEventListener('click', function () { chat.skill = sk.id; paintChatMode(); $('chat-input').focus(); });
+      wrap.appendChild(btn);
+    });
+    $('chat-search').addEventListener('click', function () { chat.search = !chat.search; paintChatMode(); });
+    $('chat-new').addEventListener('click', newChat);
+    $('chat-photo').addEventListener('click', function () { $('chat-file').click(); });
+    $('chat-file').addEventListener('change', function () { chatPhoto(this.files && this.files[0]); this.value = ''; });
+    chatMic();
+  })();
 
   /*
    * A named dish, made tappable.
@@ -7490,7 +7919,7 @@
       if (oneBatch && !result.fresh) {
         toast('\u{1F4F0}', 'Nothing new yet',
           'You have read everything the publishers have filed. There will be more ' +
-          'by this evening.');
+          'by this evening. Go and eat something.');
       } else {
         toast('\u{1F4F0}', 'Back to the top', 'Newest first again.');
       }
@@ -7747,6 +8176,8 @@
     // A theme is Premium, so a lapsed subscription goes back to the one the app
     // ships with rather than keeping a perk it is no longer paying for.
     var id = isPlus() ? (progress.state.theme || '') : '';
+    var before = document.documentElement.getAttribute('data-theme') || '';
+    if (id !== before && before !== undefined && typeof Buddy !== 'undefined' && Buddy && view === 'profile') setTimeout(function () { Buddy.say('Ooh. New look.', 'happy', 2800); }, 250);
     if (id) document.documentElement.setAttribute('data-theme', id);
     else document.documentElement.removeAttribute('data-theme');
     // The browser chrome follows the page, and so does the colour scheme —
@@ -7901,6 +8332,7 @@
 
   function openSheet(dish) {
     sheetOpener = document.activeElement;
+    if (typeof Buddy !== 'undefined' && Buddy) Buddy.form(dish, 6000);
     sheetDish = dish;
     $('sheet-icon').textContent = dish.icon;
     $('sheet-name').textContent = dish.name;
@@ -8022,7 +8454,7 @@
     var result = progress.toggleFavourite(sheetDish);
     if (result === 'full') {
       Sound.reject();
-      return toast('\u{2728}', 'Saved list is full', 'That is as many as this profile holds.');
+      return toast('\u{2728}', 'Saved list is full', 'That is as many as this profile holds. Impressive, honestly.');
     }
     Sound.tick();
     paintSheetActions();
@@ -8195,7 +8627,6 @@
 
     renderKnown();
     renderPlus();
-    renderInvite();
     renderFavourites();
     renderDietGroups('diet-groups', 'diet-caveats');
     renderCustomRules();
@@ -8306,6 +8737,7 @@
         'Shortlist: eight dishes, tap out the ones you are not in the mood for',
         'Together: up to six of you round one phone, one dish you can all live with',
         'Swipe: like three out of the deck, then choose between the three',
+        'Dish Derby, Smash, Drop Zone and Slice: four action games, each with a way to say none of these',
         'Endless with no daily count on it \u2014 free stops at ' + ENDLESS_DAY + ' picks a day',
         'A second wind: one run-ending clock, survived, every run',
         'Themed runs \u2014 an evening of nothing but quick, or comfort, or veg'
@@ -8382,7 +8814,9 @@
   // The top bar is fixed above the whole page, landing included, so it is
   // the one place that always shows who is signed in — the same account
   // strip the rest of the site (home, /premium, /account) already carries.
+  var lastTopStatus = null;
   function paintTopbar(status) {
+    lastTopStatus = status;
     var account = $('topbar-account');
     if (account) {
       account.classList.toggle('is-premium', !!status.hasPremium);
@@ -8398,7 +8832,7 @@
         account.title = (status.username || 'Account') + (status.hasPremium ? ' · Premium' : '');
         account.href = '/account';
       } else {
-        account.textContent = 'Sign in';
+        account.textContent = I18n.t('top.signin', 'Sign in');
         account.removeAttribute('title');
         account.href = '/api/oauth/login?redirect_to=%2Fdecide%2F';
       }
@@ -8445,41 +8879,6 @@
 
   window.addEventListener('focus', function () { syncPremium(true); });
 
-  /* --------------------------------------------------------- invite a friend */
-  /*
-   * EARN A DAY OF PREMIUM BY GETTING A FRIEND PLAYING.
-   *
-   * The code in the link is simply the referrer's own Whop user id (see
-   * lib/referrals.ts) — there is nothing to decode here and nothing this
-   * file invents. Captured at most once, from the first ?ref= this profile
-   * ever saw: a later link from somebody else never overwrites it, matching
-   * the server's own rule that whoever's row was created first is who a
-   * friend's play time counts for.
-   *
-   * THE HEARTBEAT only runs for someone who is both referred and signed in.
-   * Signing in is the "make an account" step this depends on, and it is what
-   * turns an anonymous visit into a play time worth paying a real day out
-   * on — an anonymous profile can be reset and replayed for free in a way a
-   * Whop account cannot. It stops once ten minutes are in, by the server's
-   * own reply, and there is nothing left to gain by continuing to ping.
-   */
-  var QUALIFY_SECONDS = 600;
-  var HEARTBEAT_MS = 20e3;
-
-  (function captureReferral() {
-    var params = new URLSearchParams(window.location.search);
-    var ref = params.get('ref');
-    if (ref && !progress.state.referredBy) {
-      progress.state.referredBy = ref;
-      progress.save();
-    }
-    if (params.has('ref')) {
-      params.delete('ref');
-      var rest = params.toString();
-      window.history.replaceState(null, '', window.location.pathname + (rest ? '?' + rest : ''));
-    }
-  })();
-
   /*
    * SIGN-IN THAT DID NOT FINISH. The callback sends people back here with
    * ?signin=failed rather than dropping them on the home page with nothing
@@ -8508,108 +8907,6 @@
     document.body.appendChild(box);
   })();
 
-  function inviteLink(userId) {
-    return window.location.origin + '/decide/?ref=' + encodeURIComponent(userId);
-  }
-
-  function renderInvite() {
-    var wrap = $('invite-wrap');
-    if (!wrap) return;
-    var status = premiumApi.status;
-    var signedOutWrap = $('invite-signedout');
-    var mineWrap = $('invite-mine');
-
-    if (!status.signedIn) {
-      signedOutWrap.hidden = false;
-      mineWrap.hidden = true;
-      $('invite-note').textContent = progress.state.referredBy
-        ? 'A friend invited you — sign in free and play for ten minutes to get them a day of Premium.'
-        : 'Sign in free to get your own invite link.';
-      return;
-    }
-
-    signedOutWrap.hidden = true;
-    mineWrap.hidden = false;
-    $('referral-link').textContent = status.userId ? inviteLink(status.userId) : '…';
-
-    var referredBy = progress.state.referredBy;
-    var progressLine = $('invite-progress');
-    if (referredBy && referredBy !== status.userId && (progress.state.referralSeconds || 0) < QUALIFY_SECONDS) {
-      var minutes = Math.min(10, Math.floor((progress.state.referralSeconds || 0) / 60));
-      progressLine.hidden = false;
-      progressLine.textContent = minutes + ' of 10 minutes played for whoever invited you.';
-    } else {
-      progressLine.hidden = true;
-    }
-
-    $('invite-stats').textContent = status.invited === 0
-      ? 'Nobody has used your link yet.'
-      : status.qualified + ' of ' + status.invited + ' invited friend' +
-        (status.invited === 1 ? '' : 's') + ' have played long enough to earn you a day.';
-
-    var bonus = $('invite-bonus');
-    if (status.bonusUntil) {
-      bonus.hidden = false;
-      bonus.textContent = 'Free Premium is active until ' +
-        new Date(status.bonusUntil).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) + '.';
-    } else {
-      bonus.hidden = true;
-    }
-  }
-
-  /*
-   * THE LINK, HANDED OVER RATHER THAN LEFT TO BE FOUND.
-   *
-   * Called once, right after a sign-in that was specifically for this —
-   * see ?go=profile above. Scrolling to the card and giving it a moment's
-   * glow is the honest version of "automatically give you a link": the
-   * actual link still has to come from the server once signed in, so this
-   * cannot hand over text that is not real yet, but it can make sure
-   * nobody has to go looking for where it landed.
-   */
-  function highlightInvite() {
-    var wrap = $('invite-wrap');
-    if (!wrap) return;
-    setTimeout(function () {
-      wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      wrap.classList.add('is-highlighted');
-      setTimeout(function () { wrap.classList.remove('is-highlighted'); }, 2600);
-    }, 300);
-  }
-
-  (function wireInvite() {
-    // Named referral-link rather than invite-link: that id already belonged
-    // to the Together feature's own share-link input (line ~1396), and
-    // getElementById silently returns whichever comes first in the
-    // document — which was never this one. A collision on an id does not
-    // throw; it just means two different features were quietly fighting
-    // over the same element, and this half of that fight always lost.
-    var link = $('referral-link');
-    if (link) link.addEventListener('click', function () {
-      var text = link.textContent;
-      var flash = function () {
-        var flag = $('invite-copied');
-        flag.hidden = false;
-        Sound.tick();
-        setTimeout(function () { flag.hidden = true; }, 1600);
-      };
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(flash, function () {});
-          return;
-        }
-      } catch (err) { /* falls through to the old way */ }
-      try {
-        var range = document.createRange();
-        range.selectNodeContents(link);
-        var sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-        flash();
-      } catch (err) { /* never */ }
-    });
-  })();
-
   /* ------------------------------------------------------------ daily three */
   /*
    * THREE SMALL, FREE, ACCOUNT-ONLY THINGS THAT HAVE NOTHING TO DO WITH
@@ -8622,21 +8919,232 @@
    * sync, since the point of all three is that they are the same wherever
    * you sign in, not whatever this one tab last saw.
    */
-  var daily = { busy: false };
+  var dayPage = {
+    busy: false,
+    summary: null,
+    done: { decide: false, dish: false, mood: false, good: false, question: false }
+  };
   var MOOD_FACES = { great: '\u{1F525}', good: '\u{1F642}', okay: '\u{1F610}', rough: '\u{1F615}', bad: '\u{1F629}' };
 
-  function renderDaily() {
-    var signedIn = premiumApi.status.signedIn;
-    $('daily-signedout').hidden = signedIn;
-    $('daily-signedin').hidden = !signedIn;
-    if (!signedIn) return;
-    loadCheckin();
-    loadJournal();
-    loadTrivia();
+  /*
+   * THE FIVE THINGS. Two are about food and live on this device (decide,
+   * the dish of the day); three are kept with an account (mood, one good
+   * thing, the day's question). The ring counts all five, so somebody who is
+   * not signed in sees exactly what signing in would add rather than a page
+   * that looks complete and quietly is not.
+   */
+  var QUESTS = [
+    { id: 'decide', icon: '\u{1F3B2}', title: 'Decide what to eat', hint: 'One decision, any way you like.', account: false },
+    { id: 'dish', icon: '\u{1F37D}\u{FE0F}', title: 'Have the dish of the day', hint: 'Cook it, order it or find it nearby.', account: false },
+    { id: 'mood', icon: '\u{1F642}', title: 'Log how today is going', hint: 'Five faces, one tap.', account: true, target: 'checkin-wrap' },
+    { id: 'good', icon: '✨', title: 'Write one good thing', hint: 'One line is enough.', account: true, target: 'journal-wrap' },
+    { id: 'question', icon: '❓', title: 'Answer today’s question', hint: 'The same one for everybody.', account: true, target: 'trivia-wrap' }
+  ];
+
+  function dayPageKey() { return ProgressLib.dayKey(new Date()); }
+
+  // The same dish for everybody on a given day (and a given "show me another"),
+  // chosen from what this player has not ruled out.
+  function dishOfTheDay() {
+    var rules = effectiveRules();
+    var pool = Data.ITEMS.filter(function (dish) {
+      if (progress.isBanned(dish.name)) return false;
+      return !rules.some(function (tag) { return (dish.tags[tag] || 0) > 0; });
+    });
+    if (!pool.length) pool = Data.ITEMS.slice();
+    var state = progress.state.dailyDish;
+    var day = dayPageKey();
+    var offset = state && state.day === day ? (state.offset || 0) : 0;
+    var h = 2166136261;
+    var seed = day + ':' + offset;
+    for (var i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return pool[(h >>> 0) % pool.length];
   }
+
+  function dishState() {
+    var st = progress.state.dailyDish;
+    return st && st.day === dayPageKey() ? st : { day: dayPageKey(), offset: 0, ate: false };
+  }
+
+  function decidedToday() {
+    var last = (progress.state.history || [])[0];
+    return !!(last && last.at && ProgressLib.dayKey(new Date(last.at)) === dayPageKey());
+  }
+
+  function paintDish() {
+    var dish = dishOfTheDay();
+    var st = dishState();
+    $('daily-dish').hidden = false;
+    $('daily-dish-icon').textContent = dish.icon;
+    $('daily-dish-name').textContent = dish.name;
+    $('daily-dish-blurb').textContent = dish.blurb;
+    $('daily-dish-ate').textContent = st.ate ? 'Had it ✓' : 'I had it today';
+    $('daily-dish-ate').classList.toggle('is-on', !!st.ate);
+    dayPage.done.dish = !!st.ate;
+  }
+
+  $('daily-dish-open').addEventListener('click', function () { openSheet(dishOfTheDay()); });
+  $('daily-dish-ate').addEventListener('click', function () {
+    var st = dishState();
+    st.ate = !st.ate;
+    progress.state.dailyDish = st;
+    progress.save();
+    Sound[st.ate ? 'win' : 'tick']();
+    paintDish();
+    paintDayPage();
+  });
+  $('daily-dish-skip').addEventListener('click', function () {
+    var st = dishState();
+    st.offset = (st.offset || 0) + 1;
+    st.ate = false;
+    progress.state.dailyDish = st;
+    progress.save();
+    Sound.tick();
+    paintDish();
+    paintDayPage();
+  });
 
   function dayLabel(streak) {
     return streak + ' day' + (streak === 1 ? '' : 's') + ' in a row.';
+  }
+
+  // Ring, streak line, checklist. Called after anything that can change them.
+  function paintDayPage() {
+    var signedIn = premiumApi.status.signedIn;
+    dayPage.done.decide = decidedToday();
+    var count = QUESTS.filter(function (q) { return dayPage.done[q.id]; }).length;
+    $('daily-ring-n').textContent = count + '/' + QUESTS.length;
+    $('daily-ring-fill').style.strokeDasharray = (count / QUESTS.length * 100) + ' 100';
+    $('daily-ring').classList.toggle('is-full', count === QUESTS.length);
+    $('daily-ring').setAttribute('aria-label', count + ' of ' + QUESTS.length + ' done today');
+    // Small wins get noticed: the moment a task ticks over, and the days that
+    // make a streak worth mentioning. Once each, and never on first paint.
+    if (dayPage.seen !== undefined && count > dayPage.seen) {
+      Sound.win();
+      if (!reduceMotion) Confetti.burst({ y: window.innerHeight * 0.25 });
+      toast('\u2705', count === QUESTS.length ? 'All five' : 'One down', count === QUESTS.length
+        ? 'Every box ticked. Frankly, show-off behaviour.'
+        : (QUESTS.length - count) + ' to go. No rush. Mostly.');
+    }
+    dayPage.seen = count;
+
+    var streak = signedIn && dayPage.summary ? dayPage.summary.streak : (progress.state.streak || 0);
+    $('daily-streak').textContent = streak + ' day streak';
+    var MILESTONES = [3, 7, 14, 30, 100];
+    var told = 0;
+    try { told = Number(localStorage.getItem('morsels-streak-told') || 0); } catch (err) { told = 0; }
+    var hit = MILESTONES.filter(function (m) { return streak >= m && m > told; }).pop();
+    if (hit && dayPage.seen !== undefined) {
+      try { localStorage.setItem('morsels-streak-told', String(hit)); } catch (err) { /* fine */ }
+      Sound.win();
+      if (!reduceMotion) Confetti.burst({ y: window.innerHeight * 0.25 });
+      toast('\u{1F525}', hit + ' days in a row', hit < 7 ? 'That is a habit forming. Try not to look at it directly.' : 'That is a habit. We are proud, quietly.');
+    }
+    var sub = $('daily-streak-sub');
+    if (signedIn && dayPage.summary) {
+      sub.textContent = dayPage.summary.best > streak
+        ? 'Best this month: ' + dayPage.summary.best + '. ' + dayPage.summary.activeThisWeek + ' of the last 7 days.'
+        : dayPage.summary.activeThisWeek + ' of the last 7 days.';
+    } else {
+      sub.textContent = streak > 0 ? 'From your decisions. Sign in to count check-ins too.' : 'Make a decision today to start it.';
+    }
+    $('daily-sub').textContent = count === QUESTS.length
+      ? 'All five done. See you tomorrow.'
+      : (QUESTS.length - count) + ' to go today.';
+
+    var list = $('daily-quests');
+    list.innerHTML = '';
+    QUESTS.forEach(function (q) {
+      var li = document.createElement('li');
+      var locked = q.account && !signedIn;
+      var done = !!dayPage.done[q.id];
+      li.className = 'daily-quest' + (done ? ' is-done' : '') + (locked ? ' is-locked' : '');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'daily-quest-btn';
+      var tick = document.createElement('span');
+      tick.className = 'daily-quest-tick';
+      tick.setAttribute('aria-hidden', 'true');
+      tick.textContent = done ? '✓' : q.icon;
+      var text = document.createElement('span');
+      text.className = 'daily-quest-text';
+      var title = document.createElement('b');
+      title.textContent = q.title;
+      var hint = document.createElement('small');
+      hint.textContent = locked ? 'Sign in to unlock' : q.hint;
+      text.appendChild(title);
+      text.appendChild(hint);
+      btn.appendChild(tick);
+      btn.appendChild(text);
+      btn.addEventListener('click', function () {
+        Sound.tick();
+        if (q.id === 'decide') { hideLanding(); setView('decide'); return; }
+        if (q.id === 'dish') { var d = $('daily-dish'); if (d) d.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+        var target = $(signedIn ? q.target : 'daily-signedout');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  }
+
+  // Six weeks, Monday first, the most recent week last. Days come from the
+  // server's own calendar (UTC), so it agrees with the three things it counts.
+  function paintCalendar() {
+    var grid = $('daily-cal');
+    var s = dayPage.summary;
+    if (!grid || !s) return;
+    grid.innerHTML = '';
+    var end = new Date(s.today + 'T00:00:00Z');
+    var mondayOffset = (end.getUTCDay() + 6) % 7;
+    var start = new Date(end.getTime() - (mondayOffset + 35) * 864e5);
+    ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(function (d) {
+      var head = document.createElement('span');
+      head.className = 'daily-cal-head';
+      head.textContent = d;
+      grid.appendChild(head);
+    });
+    for (var i = 0; i < 42; i++) {
+      var day = new Date(start.getTime() + i * 864e5).toISOString().slice(0, 10);
+      var cell = document.createElement('span');
+      var level = s.days[day] || 0;
+      cell.className = 'daily-cal-cell lv' + level + (day === s.today ? ' is-today' : '') + (day > s.today ? ' is-future' : '');
+      cell.title = day + (level ? ' — ' + level + ' of 3 things' : '');
+      grid.appendChild(cell);
+    }
+    var active = Object.keys(s.days).length;
+    $('daily-cal-note').textContent = active === 0
+      ? 'Nothing yet. The first tap fills the first square.'
+      : active + ' active day' + (active === 1 ? '' : 's') + ' in the last six weeks. Darker means more of the three done.';
+  }
+
+  function loadSummary() {
+    fetch('/api/daily-summary', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.signedIn) return;
+        dayPage.summary = data;
+        dayPage.done.mood = !!data.doneToday.checkin;
+        dayPage.done.good = !!data.doneToday.journal;
+        dayPage.done.question = !!data.doneToday.trivia;
+        paintDayPage();
+        paintCalendar();
+      })
+      .catch(function () {});
+  }
+
+  function renderDaily() {
+    var signedIn = premiumApi.status.signedIn;
+    $('daily-date').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+    $('daily-signedout').hidden = signedIn;
+    $('daily-signedin').hidden = !signedIn;
+    paintDish();
+    paintDayPage();
+    if (!signedIn) return;
+    loadSummary();
+    loadCheckin();
+    loadJournal();
+    loadTrivia();
   }
 
   /* -- check-in -- */
@@ -8649,6 +9157,8 @@
   }
 
   function paintCheckin(state) {
+    dayPage.done.mood = !!state.today;
+    paintDayPage();
     $$('#mood-row .mood-btn').forEach(function (btn) {
       btn.classList.toggle('is-picked', btn.dataset.mood === state.today);
     });
@@ -8668,8 +9178,8 @@
 
   $$('#mood-row .mood-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      if (daily.busy) return;
-      daily.busy = true;
+      if (dayPage.busy) return;
+      dayPage.busy = true;
       fetch('/api/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -8677,12 +9187,13 @@
       })
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          daily.busy = false;
+          dayPage.busy = false;
           if (data.error) return;
           paintCheckin(data);
+          loadSummary();
           Sound.tick();
         })
-        .catch(function () { daily.busy = false; });
+        .catch(function () { dayPage.busy = false; });
     });
   });
 
@@ -8696,6 +9207,8 @@
   }
 
   function paintJournal(state) {
+    dayPage.done.good = !!state.today;
+    paintDayPage();
     var input = $('journal-input');
     // Not disabled once written: the day's row is an upsert server-side (see
     // lib/habits.ts), so editing today's line back is really just saving it
@@ -8722,8 +9235,8 @@
   $('journal-save').addEventListener('click', function () {
     var input = $('journal-input');
     var text = input.value.trim();
-    if (!text || daily.busy) return;
-    daily.busy = true;
+    if (!text || dayPage.busy) return;
+    dayPage.busy = true;
     fetch('/api/journal', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -8731,12 +9244,13 @@
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        daily.busy = false;
+        dayPage.busy = false;
         if (data.error) return;
         paintJournal(data);
+        loadSummary();
         Sound.tick();
       })
-      .catch(function () { daily.busy = false; });
+      .catch(function () { dayPage.busy = false; });
   });
 
   /* -- trivia -- */
@@ -8749,8 +9263,8 @@
   }
 
   function answerTrivia(index) {
-    if (daily.busy) return;
-    daily.busy = true;
+    if (dayPage.busy) return;
+    dayPage.busy = true;
     fetch('/api/trivia', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -8758,15 +9272,18 @@
     })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        daily.busy = false;
+        dayPage.busy = false;
         if (data.error) return;
         paintTrivia(data);
+        loadSummary();
         Sound[data.correct ? 'win' : 'reject']();
       })
-      .catch(function () { daily.busy = false; });
+      .catch(function () { dayPage.busy = false; });
   }
 
   function paintTrivia(state) {
+    dayPage.done.question = !!state.answered;
+    paintDayPage();
     $('trivia-question').textContent = state.question;
     $('trivia-stats').textContent = state.totalAnswered > 0
       ? state.totalCorrect + ' of ' + state.totalAnswered + ' correct' +
@@ -8901,6 +9418,19 @@
     });
   }
 
+  // Today's one free group, said plainly above the list, so a locked row
+  // never has to be tapped to find out why. The same pick for TV and radio:
+  // the server chooses it (lib/free-channel.ts) and sends it with every list.
+  function paintFreeNote(free) {
+    var note = $('media-free-note');
+    if (!note) return;
+    if (!free || !free.tv || !free.radio) { note.hidden = true; return; }
+    var label = function (g) { return (g.emoji ? g.emoji + ' ' : '') + g.name; };
+    note.textContent = 'Today\u2019s free picks \u2014 TV: ' + label(free.tv) + ' \u00b7 radio: ' + label(free.radio) +
+      '. Every other group is Premium, and the free ones change every day.';
+    note.hidden = false;
+  }
+
   // Something tapped while signed out: the answer is the sign-in button, so
   // take them to it rather than doing nothing.
   function nudgeRadioSignin() {
@@ -8968,12 +9498,14 @@
     // A list fetched signed out has no streams in it, so signing in since
     // means asking again.
     var cached = radio.byCat[cat];
-    if (cached && cached.withStreams !== premiumApi.status.signedIn) { delete radio.byCat[cat]; cached = null; }
+    if (cached && cached.signedIn !== premiumApi.status.signedIn) { delete radio.byCat[cat]; cached = null; }
     paintRadioResume();
     $('radio-error').hidden = true;
     if (!cached) { radio.stations = null; return loadRadio(); }
     radio.stations = cached.stations;
     radio.withStreams = cached.withStreams;
+    radio.locked = !!cached.locked;
+    paintFreeNote(cached.free);
     $('radio-loading').hidden = true;
     if ($('radio-list').dataset.cat === cat && $$('#radio-list .station').length === radio.stations.length) return paintStationStates();
     paintStations();
@@ -9001,11 +9533,13 @@
         (data.categories || []).forEach(function (c) { if (c.id === cat) group = c.name; });
         // Each station knows its group: the bar says it, and "next" stays in it.
         var stations = data.stations.map(function (st) { st.group = group; st.groupId = cat; return st; });
-        radio.byCat[cat] = { stations: stations, withStreams: !!data.signedIn };
+        radio.byCat[cat] = { stations: stations, withStreams: !!data.signedIn && !data.locked, signedIn: !!data.signedIn, locked: !!data.locked, free: data.free };
         // Another group was chosen while this one loaded: keep it for later.
         if (mediaCat('radio') !== cat) return;
         radio.stations = stations;
-        radio.withStreams = !!data.signedIn;
+        radio.withStreams = !!data.signedIn && !data.locked;
+        radio.locked = !!data.locked;
+        paintFreeNote(data.free);
         $('radio-loading').hidden = true;
         if (view === 'radio' && media.tab === 'radio') {
           $('radio-signedout').hidden = !!data.signedIn;
@@ -9079,7 +9613,7 @@
       btn.appendChild(text);
       btn.appendChild(state);
       btn.addEventListener('click', function () {
-        if (!st.url) { Sound.reject(); return nudgeRadioSignin(); }
+        if (!st.url) { Sound.reject(); return radio.locked ? goPremium('This station') : nudgeRadioSignin(); }
         if (radio.playing && radio.playing.id === st.id) return toggleRadio();
         radio.skips = 0;
         delete radio.dead[st.id];
@@ -9101,7 +9635,7 @@
       var state = btn.querySelector('.station-state');
       state.innerHTML = '';
       if (!radio.withStreams) {
-        state.textContent = 'Sign in';
+        state.textContent = radio.locked ? 'Premium' : 'Sign in';
       } else if (current && radio.state === 'live') {
         var dot = document.createElement('span');
         dot.className = 'live-dot';
@@ -9334,12 +9868,14 @@
     var cat = mediaCat('tv');
     if (tv.cats) paintCats('tv', tvCats(), renderTv);
     var cached = tv.byCat[cat];
-    if (cached && cached.withStreams !== premiumApi.status.signedIn) { delete tv.byCat[cat]; cached = null; }
+    if (cached && cached.signedIn !== premiumApi.status.signedIn) { delete tv.byCat[cat]; cached = null; }
     startTvTicker();
     $('tv-error').hidden = true;
     if (!cached) { tv.channels = null; return loadTv(); }
     tv.channels = cached.channels;
     tv.withStreams = cached.withStreams;
+    tv.locked = !!cached.locked;
+    paintFreeNote(cached.free);
     tv.checked = cached.checked;
     $('tv-loading').hidden = true;
     // Already drawn (this runs again on every window focus, from
@@ -9368,17 +9904,22 @@
       .then(function (data) {
         if (data.categories) tv.cats = data.categories;
         if (mediaCat('tv') === cat && view === 'radio' && media.tab === 'tv') paintCats('tv', tvCats(), renderTv);
-        if (!data.signedIn) return { data: data, channels: data.channels, checked: null };
+        if (!data.signedIn || data.locked) {
+          if (data.locked) $('radio-signedout').hidden = true;
+          return { data: data, channels: data.channels, checked: null };
+        }
         $('radio-signedout').hidden = true;
         return checkChannels(data.channels, cat).then(function (got) { return { data: data, channels: got.channels, checked: got.checked }; });
       })
       .then(function (got) {
         if (tv.loadingCat === cat) tv.loadingCat = null;
-        tv.byCat[cat] = { channels: got.channels, withStreams: !!got.data.signedIn, checked: got.checked };
+        tv.byCat[cat] = { channels: got.channels, withStreams: !!got.data.signedIn && !got.data.locked, signedIn: !!got.data.signedIn, locked: !!got.data.locked, free: got.data.free, checked: got.checked };
         // Another group was chosen while this one was checked: keep it for later.
         if (mediaCat('tv') !== cat) return;
         tv.channels = got.channels;
-        tv.withStreams = !!got.data.signedIn;
+        tv.withStreams = !!got.data.signedIn && !got.data.locked;
+        tv.locked = !!got.data.locked;
+        paintFreeNote(got.data.free);
         tv.checked = got.checked;
         $('tv-loading').hidden = true;
         if (view === 'radio' && media.tab === 'tv') {
@@ -9571,7 +10112,7 @@
       btn.appendChild(text);
       btn.appendChild(state);
       btn.addEventListener('click', function () {
-        if (!ch.stream) { Sound.reject(); return nudgeRadioSignin(); }
+        if (!ch.stream) { Sound.reject(); return tv.locked ? goPremium('This channel') : nudgeRadioSignin(); }
         if (tv.current && tv.current.id === ch.id) {
           var video = $('tv-video');
           if (video.paused) startVideo(video);
@@ -9599,7 +10140,7 @@
       var nowEl = btn.querySelector('.tv-now');
       var nextEl = btn.querySelector('.tv-next');
       if (on.now) nowEl.textContent = 'Now: ' + showLine(on.now) + ' · until ' + clockTime(on.now.stop);
-      else if (!tv.withStreams) nowEl.textContent = 'Sign in to see what’s on';
+      else if (!tv.withStreams) nowEl.textContent = tv.locked ? 'Premium — or today’s free group' : 'Sign in to see what’s on';
       else if (ch.hasGuide && !tv.guideAt) nowEl.textContent = 'Finding what’s on…';
       else nowEl.textContent = 'Live now';
       nextEl.textContent = on.next ? 'Next ' + clockTime(on.next.start) + ': ' + on.next.title : '';
@@ -9610,7 +10151,7 @@
       btn.classList.toggle('is-dead', !current && !!tv.dead[id]);
       var state = btn.querySelector('.station-state');
       state.innerHTML = '';
-      if (!tv.withStreams) state.textContent = 'Sign in';
+      if (!tv.withStreams) state.textContent = tv.locked ? 'Premium' : 'Sign in';
       else if (current) {
         var dot = document.createElement('span');
         dot.className = 'live-dot';
@@ -9878,44 +10419,6 @@
       } catch (err) {}
     }
   })();
-
-  var referralTimer = null;
-
-  function stopReferralHeartbeat() {
-    clearTimeout(referralTimer);
-    referralTimer = null;
-  }
-
-  function referralHeartbeat() {
-    var status = premiumApi.status;
-    var code = progress.state.referredBy;
-    var done = !code || !status.signedIn || code === status.userId ||
-      (progress.state.referralSeconds || 0) >= QUALIFY_SECONDS;
-    if (done) return stopReferralHeartbeat();
-
-    if (document.hidden) {
-      referralTimer = setTimeout(referralHeartbeat, HEARTBEAT_MS);
-      return;
-    }
-
-    fetch('/api/referral/ping', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: code, seconds: HEARTBEAT_MS / 1000 })
-    })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (result) {
-        if (!result || typeof result.secondsPlayed !== 'number') return;
-        progress.state.referralSeconds = result.secondsPlayed;
-        progress.save();
-        renderInvite();
-        if (result.justQualified) {
-          toast('\u{1F389}', 'A day of Premium, sent', 'The friend who invited you just earned it — thanks for playing.');
-        }
-      })
-      .catch(function () { /* missed this heartbeat; the next one tries again */ })
-      .then(function () { referralTimer = setTimeout(referralHeartbeat, HEARTBEAT_MS); });
-  }
 
   // Tag -> the words the questions actually use, so the profile reads back in
   // the app's own language: "Actual food", not "drink".
@@ -10214,7 +10717,7 @@
     renderProfile();
     renderDishes();
     renderIntro();
-    toast('\u{2764}', 'Noted', 'Your picks will follow that from now on.');
+    toast('\u{2764}', 'Noted', 'Your picks will follow that from now on. Noted, as promised.');
   });
 
   function paintTuneSummary() {
@@ -10450,6 +10953,2330 @@
     return new Date(time).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
   }
 
+  /* ------------------------------------------------------------------ Dot */
+  /*
+   * A small round face that reacts, and nothing else. No limbs, no accessories,
+   * no idling for attention: two eyes, a mouth and a blush on a plain circle, so
+   * the whole personality is a few degrees of squash and a different smile. It
+   * answers what you just did (a pick, a shrug, a "not quite", dinner sorted),
+   * it is decorative, and it holds perfectly still under reduced motion.
+   */
+  var Dot = (function () {
+    var SVG =
+      '<svg viewBox="0 0 48 48" class="dot" focusable="false">' +
+      '<g class="dot-body">' +
+      '<path class="dot-tuft" d="M24 7Q22 2.5 26.5 1.5Q26 5 24 7Z"/>' +
+      '<circle class="dot-face" cx="24" cy="26" r="18"/>' +
+      '<circle class="dot-blush" cx="13.5" cy="30" r="3"/><circle class="dot-blush" cx="34.5" cy="30" r="3"/>' +
+      '<g class="dot-eyes"><circle cx="18" cy="23" r="2.2"/><circle cx="30" cy="23" r="2.2"/></g>' +
+      '<g class="dot-eyes-down"><path d="M15.5 23Q18 25.5 20.5 23"/><path d="M27.5 23Q30 25.5 32.5 23"/></g>' +
+      '<g class="dot-sleep"><path d="M15.5 23.5H20.5"/><path d="M27.5 23.5H32.5"/></g>' +
+      '<g class="dot-happy"><path d="M15.5 24Q18 20.5 20.5 24"/><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
+      '<g class="dot-fx" aria-hidden="true">' +
+      '<ellipse class="fx-puddle" cx="24" cy="45" rx="14" ry="2.6"/>' +
+      '<g class="fx-steam"><path d="M16 9Q13 6 16 3"/><path d="M24 7Q21 4 24 1"/><path d="M32 9Q29 6 32 3"/></g>' +
+      '<g class="fx-frost"><path d="M9 13l4 4m0-4l-4 4M35 11l4 4m0-4l-4 4M21 43v0"/><circle cx="37" cy="31" r="1.3"/><circle cx="11" cy="34" r="1.3"/></g>' +
+      '<g class="fx-bubble"><circle cx="15" cy="34" r="2"/><circle cx="31" cy="30" r="1.6"/><circle cx="24" cy="38" r="2.2"/><circle cx="35" cy="37" r="1.3"/></g>' +
+      '<g class="fx-flame"><path d="M17 8Q13 3 18 0Q17 4 21 6Q20 8 17 8Z"/><path d="M29 8Q26 4 30 1Q30 4 33 6Q32 8 29 8Z"/></g>' +
+      '</g>' +
+      '<g class="dot-love"><path d="M18 26.5C14.3 24 13.8 21.4 15.9 20.2C17 19.6 18 20.2 18 21.2C18 20.2 19 19.6 20.1 20.2C22.2 21.4 21.7 24 18 26.5Z"/><path d="M30 26.5C26.3 24 25.8 21.4 27.9 20.2C29 19.6 30 20.2 30 21.2C30 20.2 31 19.6 32.1 20.2C34.2 21.4 33.7 24 30 26.5Z"/></g>' +
+      '<g class="dot-wink"><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
+      '<path class="dot-m dot-m-smile" d="M20 30Q24 34 28 30"/>' +
+      '<path class="dot-m dot-m-open" d="M19.5 29.5Q24 37 28.5 29.5Z"/>' +
+      '<path class="dot-m dot-m-flat" d="M20.5 31.5H27.5"/>' +
+      '<path class="dot-m dot-m-sad" d="M20 33Q24 29 28 33"/>' +
+      '</g></svg>';
+    function mount(node) {
+      if (!node || node.firstChild) return;
+      node.innerHTML = SVG;
+      node.setAttribute('data-mood', 'idle');
+    }
+    // Plays a mood and settles back. Re-setting the attribute after a reflow is
+    // what restarts the animation when the same mood fires twice in a row.
+    function mood(node, name, hold) {
+      if (!node) return;
+      mount(node);
+      clearTimeout(node._t);
+      node.setAttribute('data-mood', 'idle');
+      void node.offsetWidth;
+      node.setAttribute('data-mood', name);
+      if (hold !== 0) node._t = setTimeout(function () { node.setAttribute('data-mood', 'idle'); }, hold || 1400);
+    }
+    // A shape-shift: the face takes on what it is looking at (hot, cold, a drink...). ms 0 keeps it until told otherwise.
+    function form(node, name, ms) {
+      if (!node) return;
+      mount(node);
+      clearTimeout(node._f);
+      if (name) node.setAttribute('data-form', name); else node.removeAttribute('data-form');
+      if (name && ms) node._f = setTimeout(function () { node.removeAttribute('data-form'); }, ms);
+    }
+    // Which form a dish asks for, from what it is.
+    function formOf(dish) {
+      if (!dish || !dish.tags) return null;
+      var t = dish.tags, n = dish.name || '';
+      if (/ice cream|gelato|sorbet|frozen|slush|iced|granita|kulfi|popsicle/i.test(n)) return 'cold';
+      if (t.drink === 1) return 'drink';
+      if (t.spicy === 1) return 'spicy';
+      if (t.soupy === 1) return 'soupy';
+      if (t.fried === 1) return 'fried';
+      if (t.cheesy === 1) return 'cheesy';
+      if (t.seafood === 1) return 'seafood';
+      if (t.sweet === 1) return 'sweet';
+      if (t.veg === 1 && t.hot !== 1) return 'veg';
+      if (t.hot === 1) return 'hot';
+      if (t.fresh === 1 || t.hot === 0) return 'cold';
+      return null;
+    }
+    return { mount: mount, mood: mood, form: form, formOf: formOf };
+  })();
+  Array.prototype.forEach.call(document.querySelectorAll('.mascot'), Dot.mount);
+
+
+  /* ---------------------------------------------------------------- Buddy */
+  /*
+   * Dot, as a companion rather than a decoration. It lives in the corner of
+   * every screen, remembers the days you have spent together, gets closer the
+   * more you use the app (Just met, Pals, Friends, Best friends), can be patted
+   * with a long press, falls asleep when you leave it alone, and has something
+   * to say about the page you are on, the dish you landed on, and how a game
+   * went. It has a library of lines and never says the same one twice in a row.
+   *
+   * How it stays out of the way:
+   *  - it speaks only now and then (a cooldown of half a minute, a cap per
+   *    visit), the first time you see a page far more often than the fifth;
+   *  - Quiet mode: it speaks only when you tap it, and it is always one switch
+   *    away in the profile;
+   *  - it does not chase your taps unless you ask it to;
+   *  - it is hidden on the front door and during the welcome, and on a phone
+   *    while a game is being played;
+   *  - it never asks for anything, never guilts you for being away, and sends
+   *    nothing while you are gone. It is a small round thing that is glad you
+   *    came back, and it says so once.
+   *
+   * It does not move when the page does: during a screen change it is its own
+   * named element (see `html.vt-active .buddy` in the stylesheet), so the page
+   * slides under it rather than carrying a snapshot of it away.
+   *
+   * Lines are plain English; every one has a translation in each language, and
+   * in a language it has none for it simply stays quiet rather than switching
+   * to English halfway through a sentence.
+   */
+  var Buddy = (function () {
+    var KEY = 'morsels-buddy', POS = 'morsels-buddy-home', PLAY = 'morsels-buddy-move', TALK = 'morsels-buddy-talk', OLDQUIET = 'morsels-buddy-quiet', MEM = 'morsels-buddy-memory';
+    var on = true, playful = false, home = null, talk = 'normal';
+    var mem = { first: 0, days: [], pats: 0, games: 0, patDay: '', seen: {}, said: [], lvl: 0, hint: 0, ms: {} };
+    try {
+      on = localStorage.getItem(KEY) !== 'off';
+      playful = localStorage.getItem(PLAY) === 'on';
+      home = JSON.parse(localStorage.getItem(POS) || 'null');
+      var t = localStorage.getItem(TALK);
+      talk = t === 'quiet' || t === 'normal' || t === 'chatty' ? t : (localStorage.getItem(OLDQUIET) === 'on' ? 'quiet' : 'normal');
+      var m = JSON.parse(localStorage.getItem(MEM) || 'null');
+      if (m && typeof m === 'object') for (var key in mem) if (m[key] !== undefined) mem[key] = m[key];
+    } catch (err) { /* fine */ }
+    function save() { try { localStorage.setItem(MEM, JSON.stringify(mem)); } catch (err) { /* fine */ } }
+
+    var LINES = {
+      "first": [
+            "Hi. I am Dot. I live down here. Tap me if you like. Or do not."
+      ],
+      "morning": [
+            "Morning. Breakfast is a decision too.",
+            "Good morning. I have been awake for exactly one second.",
+            "Morning. Eggs? Toast? Both? Fine."
+      ],
+      "day": [
+            "Afternoon. Lunch is either happening or it is a regret.",
+            "Hello. Midday is prime snacking time.",
+            "Hi. The middle of the day. Dangerous for diets."
+      ],
+      "evening": [
+            "Evening. This is where dinner usually goes wrong. Not today.",
+            "Hello. Dinner o'clock, I believe.",
+            "Evening. You look hungry. I am a circle, I would not know."
+      ],
+      "night": [
+            "Late. The fridge light is not a meal plan.",
+            "Still up? Same. Something small, then bed.",
+            "Night shift. Snacks are allowed."
+      ],
+      "back1": [
+            "Welcome back. I kept your seat.",
+            "Oh, hello. I only noticed a little."
+      ],
+      "back3": [
+            "Oh, hello. It has been a couple of days. I did not count. (Two.)",
+            "You are back. Everything is where you left it, including me."
+      ],
+      "back7": [
+            "Still here. Always here. Hello.",
+            "There you are. I was getting sleepy."
+      ],
+      "dishes": [
+            "450 dishes. I have opinions about all of them.",
+            "Every one of these is described with total confidence.",
+            "Scroll as long as you like. The dishes are not going anywhere.",
+            "Tap one to see more. I will pretend not to watch.",
+            "Somewhere in here is the thing you want. Probably.",
+            "Fun fact: I have never eaten any of these."
+      ],
+      "planner": [
+            "A plan for the week. Brave.",
+            "Nobody has ever planned past Wednesday. Prove me wrong.",
+            "Future you will be so grateful. Or hungry. Mostly grateful.",
+            "Copy a day across the week if you are feeling efficient.",
+            "Empty slots are just meals waiting to happen.",
+            "A planned dinner is a dinner nobody argues about."
+      ],
+      "kitchen": [
+            "Recipes. I cannot smell anything, but I support this.",
+            "Cooking at home. Bold. Admirable. Slightly messy.",
+            "Step one of every recipe: pretend you read it first.",
+            "I would help, but I have no hands. It is a design choice.",
+            "Somewhere, a pan is warming up for you.",
+            "Wash as you go. Said every cook, once."
+      ],
+      "scan": [
+            "Point it at some food. I will pretend to be impressed.",
+            "Scanning food. The future is strange and tasty.",
+            "Hold still. The dish, not you.",
+            "Good lighting helps. Food is vain.",
+            "Show me what you have. I promise not to judge. Much.",
+            "Camera on. Appetite on."
+      ],
+      "menu": [
+            "A whole menu. Starter, main, dessert. Very civilised.",
+            "Three courses. I am practically a waiter.",
+            "Dessert first is not allowed. (It is allowed.)",
+            "Planning a feast? I am emotionally prepared.",
+            "A good menu has a story. Yours starts with soup, apparently.",
+            "Pick a starter and we will take it from there."
+      ],
+      "nearby": [
+            "Somewhere near you is a plate with your name on it.",
+            "Looking for food around you. I will wait here.",
+            "Local food is just food that is easy to walk to.",
+            "I cannot come with you. I can wave from in here.",
+            "The best place is probably the one you have not tried.",
+            "Leave a little room. There is always a dessert nearby."
+      ],
+      "chat": [
+            "Ask me anything. I will pass it on to someone cleverer.",
+            "Questions about food go here. Questions about me are weird.",
+            "Tell it what you fancy. It listens better than I do.",
+            "Go on. No question is too small. Or too specific.",
+            "Craving something strange? Typing it counts as research.",
+            "It is a very patient assistant. I am a very patient circle."
+      ],
+      "news": [
+            "News about food. The only kind I can handle.",
+            "Headlines, but make them edible.",
+            "Reading counts as snacking, spiritually.",
+            "Today in food: it is still food.",
+            "Catch up on the world. Come back for dinner.",
+            "I only read the headlines. And the recipes. And the headlines."
+      ],
+      "radio": [
+            "Dinner and a show. Excellent.",
+            "Something to watch while you chew.",
+            "Pick a channel. Any channel. Snacks optional.",
+            "Cooking shows make everything look easy. Do not trust them.",
+            "Turn it up. I will sway.",
+            "Free to watch, and I do not take a cut."
+      ],
+      "daily": [
+            "Five little things a day. Nobody is counting. (We are counting.)",
+            "Small tasks, small wins, one slowly growing streak.",
+            "No pressure. A streak is just a habit with a scoreboard.",
+            "Today is a fresh page. A good one, I think.",
+            "Do the easy one first. I always do.",
+            "Come back tomorrow for five more. Or do not. I will be fine."
+      ],
+      "profile": [
+            "This is you, according to your dinners.",
+            "Your whole food personality, in one place.",
+            "Look at all this progress. I am rather proud.",
+            "Turn me down, move me, silence me. I will not be offended. Slightly offended.",
+            "Statistics about you. Mostly flattering.",
+            "Every dish you chose is in here somewhere."
+      ],
+      "help": [
+            "Lost? Same, most days.",
+            "Questions are welcome. I will not know the answers.",
+            "If all else fails, have a snack.",
+            "The answers are here. I am just the company.",
+            "Read slowly. It is a good page.",
+            "Nobody reads the help page. You are special."
+      ],
+      "decide": [
+            "Time to decide. I will stay out of the way.",
+            "A few yes or no questions and dinner is sorted.",
+            "Answer honestly. Your stomach already knows.",
+            "No wrong answers. Some wrong dishes.",
+            "Let us find something good.",
+            "Your move. Mine is blinking."
+      ],
+      "boop1": [
+            "Hello.",
+            "Hi again.",
+            "Yes?",
+            "At your service. Loosely.",
+            "That tickles. Slightly."
+      ],
+      "boop2": [
+            "Please continue. Actually, stop. No, continue.",
+            "I have a job, you know.",
+            "I was in the middle of nothing. But still.",
+            "Careful. I am round. I roll."
+      ],
+      "boop3": [
+            "Okay. That is enough. (It is not.)",
+            "We are getting very close. Emotionally.",
+            "You must really like me.",
+            "I am going to start charging. In compliments."
+      ],
+      "offline": [
+        "Offline. I will keep you company.",
+        "No signal. I am still here."
+      ],
+      "online": [
+        "Back online. I did not go anywhere.",
+        "Signal is back. Told you."
+      ],
+      "halfway": [
+        "Halfway. I can see dinner from here.",
+        "Halfway there. Do not stop now."
+      ],
+      "nearly": [
+        "Nearly there. Do not lose your nerve.",
+        "Almost. I can smell it. Figuratively."
+      ],
+      "tourSkip": [
+        "No problem. Hold me any time and press Tour.",
+        "Skipped. The tour is in my menu if you change your mind."
+      ],
+      "boopHint": [
+            "Tip: hold me and I have a menu. Just a thought."
+      ],
+      "sleepy": [
+            "Zzz... huh? I was resting my eyes.",
+            "Five more minutes. Then dinner.",
+            "Shh. Dreaming about noodles."
+      ],
+      "wake": [
+            "Oh. Hi. I was resting my eyes.",
+            "I was not asleep. I was thinking. Very still.",
+            "Back. Did I miss anything delicious?"
+      ],
+      "pet": [
+            "Oh. That is nice.",
+            "Okay, that is very nice.",
+            "I could get used to this.",
+            "Do not stop. Please stop. No, do not stop.",
+            "Soft. I feel soft.",
+            "This is the best part of my day. Do not tell the dishes."
+      ],
+      "petAgain": [
+            "Still nice. Still counting.",
+            "You can do that all day.",
+            "Again? Yes. Again."
+      ],
+      "fried": [
+            "Crispy. Respect.",
+            "Fried food. Honest food.",
+            "The sound of that is excellent. I assume.",
+            "Golden brown is a personality."
+      ],
+      "sweet": [
+            "Dessert-adjacent. Bold.",
+            "Sweet tooth confirmed.",
+            "Sugar is a valid food group in this house.",
+            "Pudding energy. I respect it."
+      ],
+      "veg": [
+            "Vegetables. Look at you.",
+            "Green things. Your future self says thanks.",
+            "Colourful. Very responsible. Very you.",
+            "A salad is just a hopeful sandwich."
+      ],
+      "cheap": [
+            "Easy on the wallet.",
+            "Thrifty and delicious. A rare combo.",
+            "Budget friendly. Tastes like a win.",
+            "Your bank balance sends its thanks."
+      ],
+      "drink": [
+            "A drink. Hydration counts.",
+            "Sipping is an activity.",
+            "Cheers. I mean that sincerely.",
+            "Liquid dinner. Sometimes right."
+      ],
+      "spicy": [
+            "Spicy. I admire your confidence.",
+            "Keep milk nearby. I am only saying.",
+            "Brave. Truly brave.",
+            "Hot. I will stand back."
+      ],
+      "soupy": [
+            "Soup. Sensible.",
+            "Warm bowl, warm mood.",
+            "Soup solves most things. Not all. Most.",
+            "Slurping is encouraged."
+      ],
+      "cheesy": [
+            "Cheese. No notes.",
+            "Melty. Stretchy. Perfect.",
+            "Cheese is love in edible form.",
+            "I will not ask how much cheese. Enough."
+      ],
+      "plain": [
+            "Oh, good one.",
+            "That one suits you.",
+            "Strong choice.",
+            "I would pick it. If I ate."
+      ],
+      "quip": [
+            "Interesting.",
+            "Noted.",
+            "I see where this is going.",
+            "Mm. Okay.",
+            "You are very decisive today.",
+            "Good answer. Not that there are bad ones.",
+            "I am learning things about you.",
+            "Hmm. That narrows it down.",
+            "Somewhere a dish just got nervous."
+      ],
+      "manyNo": [
+            "Lots of no today. Picky is fine.",
+            "So many noes. The dish will be great, then."
+      ],
+      "manyYes": [
+            "Lots of yes. Easy to please. Great quality.",
+            "Yes, yes, yes. I like this mood."
+      ],
+      "reject": [
+            "Fair. The next one is better.",
+            "Noted. That one is out.",
+            "Not today, then.",
+            "I will never speak of it again.",
+            "Picky. I like it.",
+            "Rejected dishes go to a better place. A cupboard."
+      ],
+      "done": [
+            "Sorted. Go and eat it.",
+            "Dinner is decided. Take the rest of the day off.",
+            "Good choice. I mean it.",
+            "One more decision you did not have to lose sleep over.",
+            "Another dinner solved. We are a good team.",
+            "Go on. Eat. I will be here."
+      ],
+      "m1": [
+            "That is your first dish together. I am keeping it."
+      ],
+      "m10": [
+            "Ten decisions. We are officially in a routine."
+      ],
+      "m25": [
+            "Twenty five. I know your tastes better than my own. I do not have any."
+      ],
+      "m50": [
+            "Fifty. I would say I am running out of jokes. Not really."
+      ],
+      "m100": [
+            "A hundred decisions. I think we are friends now."
+      ],
+      "lvl1": [
+            "I think we are pals now. I am keeping this moment."
+      ],
+      "lvl2": [
+            "Friend. I said it. It is out there."
+      ],
+      "lvl3": [
+            "Best friend. Do not tell the others. There are no others."
+      ],
+      "nom": [
+            "Quality control. Looks fine.",
+            "Nom. Seems legitimate.",
+            "I had a bite. For safety.",
+            "Mm. Approved. Mostly.",
+            "Crumbs. I mean, pixels.",
+            "Ten out of ten. Would nibble again.",
+            "Do not tell the chef.",
+            "Tastes like a pixel. A good one."
+      ],
+      "nomAgain": [
+            "I already had mine.",
+            "One bite is the rule. I made the rule."
+      ],
+      "drag": [
+            "Wheee.",
+            "Put me down. Gently.",
+            "Where are we going?",
+            "Okay, I can see everything from up here.",
+            "This is fine. I am fine.",
+            "Nice view."
+      ],
+      "drop": [
+            "Home sweet here.",
+            "This spot is mine now.",
+            "Good spot. Slightly drafty.",
+            "Perfect. Do not move me again. (Move me again.)"
+      ],
+      "search": [
+            "Nothing. Even I am disappointed.",
+            "No matches. Try fewer words, or a snack.",
+            "That dish does not exist. Yet."
+      ],
+      "music": [
+            "Ooh. A tune.",
+            "I cannot clap. I will sway.",
+            "Good taste in music. And in dishes."
+      ],
+      "theme": [
+            "Ooh. New look.",
+            "Fancy. Do not tell the old one.",
+            "I like it. Very you."
+      ],
+      "home": [
+            "Home again.",
+            "Back in my corner. Cosy."
+      ],
+      "back": [
+            "Back again. Miss me?",
+            "Hello again. I never left."
+      ],
+      "combo": [
+            "Hot streak.",
+            "Show off.",
+            "Keep going. I am watching.",
+            "Unreal. Do it again."
+      ],
+      "gameWin": [
+            "That was good. Properly good.",
+            "High score energy.",
+            "Okay, you are better at this than me. Everyone is."
+      ],
+      "gameLose": [
+            "Everyone drops one. Or six.",
+            "It was the dish's fault.",
+            "Again? I believe in you. A bit."
+      ],
+      "menuNext": [
+            "Next course. Pace yourself."
+      ],
+      "menuLast": [
+            "Last one. Nearly civilised."
+      ]
+    };
+
+    function pad(n) { return n < 10 ? '0' + n : String(n); }
+    function ymd(d) { d = d || new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+    function dayNumber(s) { var p = s.split('-'); return Math.round(Date.UTC(+p[0], +p[1] - 1, +p[2]) / 86400000); }
+
+    // How long it has been since the last visit, read before today is written.
+    var gap = -1;
+    (function visit() {
+      var today = ymd(), last = mem.days.length ? mem.days[mem.days.length - 1] : null;
+      if (last) gap = dayNumber(today) - dayNumber(last);
+      if (last !== today) { mem.days.push(today); if (mem.days.length > 500) mem.days.shift(); save(); }
+    })();
+
+    var LEVELS = [{ name: 'Just met', at: 0 }, { name: 'Pals', at: 12 }, { name: 'Friends', at: 50 }, { name: 'Best friends', at: 150 }];
+    function score() { return ((progress && progress.state && progress.state.decisions) || 0) + mem.days.length * 4 + mem.pats * 2 + (mem.games || 0) * 2; }
+    function levelOf(s) { var at = 0; for (var i = 0; i < LEVELS.length; i++) if (s >= LEVELS[i].at) at = i; return at; }
+
+    var lastSpoke = 0, spoke = 0, hideTimer = 0, returnTimer = 0, greetTimer = 0, helloStarted = false, helloDone = false;
+    var lastView = '', boops = 0, lastBoop = 0, asked = 0, run = { yes: 0, no: 0, said: false }, wasMusic = false;
+    var SIZE = 50, at = { x: 0, y: 0 }, drag = null, nommed = {}, asleep = false, lastInput = Date.now(), ctx = -1;
+
+    function el() { return $('mascot-b'); }
+    function box() { return $('buddy'); }
+    // On the question screen the small Dot on the progress bar is Dot: it speaks and reacts instead of the corner one.
+    function onStage() { return view === 'decide' && panel === 'question' && !!$('q-rider') && on; }
+    function canShow() { return visible() || onStage(); }
+    function pick(list) { return list[Math.floor(Math.random() * list.length)]; }
+    function wide() { return window.innerWidth >= 1000; }
+    function playing() { return view === 'decide' && /^(arcade|swipe|endless|duel|knockout|blitz|spin|together)$/.test(panel); }
+    function night() { var h = new Date().getHours(); return h >= 23 || h < 5; }
+    function rest() { return asleep || night() ? 'sleepy' : 'idle'; }
+
+    // The next line in a category: one that has a translation in this language,
+    // and the one said least recently (or a fresh one) so nothing repeats.
+    function speakable(text) { return typeof I18n === 'undefined' || !I18n.has || I18n.has(text); }
+    function line(cat) {
+      var pool = (LINES[cat] || []).filter(speakable);
+      if (!pool.length) return null;
+      var best = [], bestAt = Infinity;
+      pool.forEach(function (l) {
+        var i = mem.said.indexOf(l);
+        if (i < bestAt) { bestAt = i; best = [l]; } else if (i === bestAt) best.push(l);
+      });
+      var out = pick(best);
+      var i = mem.said.indexOf(out);
+      if (i >= 0) mem.said.splice(i, 1);
+      mem.said.push(out);
+      if (mem.said.length > 120) mem.said.shift();
+      save();
+      return out;
+    }
+    function fill(pattern, value) { return pattern.replace('{0}', value); }
+
+    function visible() {
+      if (!on) return false;
+      if (typeof Play !== 'undefined' && Play.isOpen()) return false;
+      // The question screen has its own small Dot riding the progress bar; two Dots is one too many.
+      if (view === 'decide' && panel === 'question') return false;
+      if (document.body.classList.contains('is-landing') || document.body.classList.contains('is-welcoming')) return false;
+      // Out of the way of anything that is being played, unless there is room
+      // to sit beside it and cheer.
+      if (playing() && !wide()) return false;
+      return true;
+    }
+
+    // Where Dot lives when it is not visiting something.
+    function homeSpot() {
+      var vw = window.innerWidth, vh = window.innerHeight, m = 16;
+      if (home && !playing()) return { x: Math.max(m, Math.min(vw - SIZE - m, home.x)), y: Math.max(70, Math.min(vh - SIZE - m, home.y)) };
+      if (playing()) return { x: vw - SIZE - m, y: 76 };
+      return { x: vw - SIZE - m, y: vh - SIZE - m };
+    }
+
+    // Glide to a spot (top-left of the face), on a spring, and say which side the
+    // bubble should open on so it never leaves the screen.
+    function go(x, y, instant) {
+      var vw = window.innerWidth, vh = window.innerHeight, m = 8;
+      x = Math.max(m, Math.min(vw - SIZE - m, x));
+      y = Math.max(64, Math.min(vh - SIZE - m, y));
+      at = { x: x, y: y };
+      var b = box();
+      if (!b) return;
+      b.classList.toggle('is-instant', !!instant);
+      b.style.setProperty('--bx', Math.round(x) + 'px');
+      b.style.setProperty('--by', Math.round(y) + 'px');
+      b.classList.toggle('to-left', x > vw / 2);
+      b.classList.toggle('to-below', y < 150);
+    }
+    function goHome(instant) { var h = homeSpot(); go(h.x, h.y, instant); }
+
+    // Only does anything when something that matters has changed: whether Dot
+    // should be on screen at all, or whether the screen has become a game. A
+    // page change on its own moves nothing, which is what keeps it steady.
+    function sync() {
+      var b = box();
+      if (!b) return;
+      Dot.mount(el());
+      var show = visible();
+      if (show === b.hidden) {
+        b.hidden = !show;
+        if (!show) bubbleOff();
+        else {
+          if (!drag) goHome(true);
+          hello();
+        }
+        if (show && !el()._busy) el().setAttribute('data-mood', rest());
+      } else if (show && !drag) {
+        var key = playing() ? 1 : 0;
+        if (key !== ctx) goHome();
+      }
+      ctx = playing() ? 1 : 0;
+    }
+
+    function bubbleOff() {
+      clearTimeout(hideTimer);
+      var bb = $('buddy-bubble');
+      if (bb) { bb.hidden = true; bb.classList.remove('has-action'); }
+      if ($('q-say')) $('q-say').hidden = true;
+    }
+
+    // May Dot say something nobody asked it to? Not in Quiet mode; not twice
+    // within the cooldown; not past a cap for the visit.
+    function mayVolunteer() {
+      if (talk === 'quiet') return false;
+      var gapMs = talk === 'chatty' ? 12000 : 30000, cap = talk === 'chatty' ? 60 : 14;
+      return Date.now() - lastSpoke > gapMs && spoke < cap;
+    }
+
+    // force: 'asked' — you tapped it, always answers; true — a moment that
+    // deserves a word (a dish accepted), ignores the cooldown but not Quiet;
+    // otherwise it is a remark and is held to the cooldown.
+    function say(text, mood, ms, force) {
+      if (!canShow() || !text) return;
+      if (talk === 'quiet' && force !== 'asked') return;
+      if (!force && !mayVolunteer()) return;
+      lastSpoke = Date.now();
+      if (!force) spoke++;
+      var bb = onStage() ? $('q-say') : $('buddy-bubble');
+      bb.textContent = text;
+      bb.classList.remove('has-action');
+      bb.hidden = false;
+      bb.classList.remove('is-in'); void bb.offsetWidth; bb.classList.add('is-in');
+      if (mood) react(mood);
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(bubbleOff, Math.max(ms || 0, 2600 + text.length * 55));
+    }
+    function remark(cat, mood, ms, force) {
+      if (!force && (!canShow() || !mayVolunteer())) return;
+      var l = line(cat);
+      if (l) say(l, mood, ms, force);
+    }
+
+    function react(mood, hold) {
+      var node = onStage() ? $('q-rider') : el();
+      if (!node || !canShow()) return;
+      asleep = false;
+      node._busy = true;
+      Dot.mood(node, mood, hold || 1400);
+      clearTimeout(node._rest);
+      node._rest = setTimeout(function () { node._busy = false; node.setAttribute('data-mood', rest()); }, (hold || 1400) + 50);
+    }
+
+    // Dot hops over to a spot, stays a while, and wanders home.
+    function visit(x, y, stay) {
+      if (!visible() || drag) return;
+      go(x, y);
+      clearTimeout(returnTimer);
+      returnTimer = setTimeout(function () { if (!drag) goHome(); }, stay || 6500);
+    }
+    function beside(node, stay) {
+      if (!node || !node.getBoundingClientRect) return;
+      var r = node.getBoundingClientRect(), vw = window.innerWidth;
+      var x = r.right + 14 + SIZE < vw ? r.right + 14 : r.left - SIZE - 14;
+      visit(x, r.top + r.height / 2 - SIZE / 2, stay);
+    }
+
+    /* ---- the first word of a visit ---- */
+    function partOfDay() {
+      var h = new Date().getHours();
+      return h >= 5 && h < 11 ? 'morning' : h < 17 ? 'day' : h < 22 ? 'evening' : 'night';
+    }
+    function hello() {
+      if (helloStarted) return;
+      helloStarted = true;
+      setTimeout(function () {
+        if (!visible()) { helloStarted = false; return; }
+        helloDone = true;
+        var first = !mem.first;
+        if (first) mem.first = Date.now();
+        save();
+        if (talk === 'quiet') return;
+        var cat = first ? 'first' : gap >= 7 ? 'back7' : gap >= 3 ? 'back3' : gap >= 1 ? 'back1' : Math.random() < 0.55 ? partOfDay() : null;
+        if (cat) remark(cat, 'happy', 0, true);
+        checkLevel();
+        // The first time ever, a few seconds after hello: an offer of the tour. Once.
+        if (first && !(typeof Tour !== 'undefined' && Tour.done()) && speakable('Want a quick tour?') && speakable('Show me')) {
+          setTimeout(function () { if (visible() && !drag) offerAction({ text: 'Want a quick tour?', label: 'Show me', run: function () { Tour.start(); } }); }, 6500);
+        }
+      }, 1600);
+    }
+
+    // Closer: said once when the bond crosses a line.
+    function checkLevel(quietly) {
+      var lvl = levelOf(score());
+      if (lvl > mem.lvl) {
+        mem.lvl = lvl; save();
+        paintBond();
+        if (!quietly) remark('lvl' + lvl, 'celebrate', 5200, true);
+      }
+    }
+    function paintBond() {
+      var s = score(), lvl = levelOf(s), b = box();
+      if (b) b.setAttribute('data-bond', String(lvl));
+      var name = $('bond-level');
+      if (!name) return;
+      var from = LEVELS[lvl].at, to = LEVELS[lvl + 1] ? LEVELS[lvl + 1].at : from;
+      name.textContent = LEVELS[lvl].name;
+      $('bond-fill').style.width = (to === from ? 100 : Math.round(((s - from) / (to - from)) * 100)) + '%';
+      $('bond-days').textContent = String(mem.days.length);
+      $('bond-decisions').textContent = String((progress && progress.state && progress.state.decisions) || 0);
+      $('bond-pats').textContent = String(mem.pats);
+      if ($('bond-games')) $('bond-games').textContent = String(mem.games || 0);
+    }
+
+    /* ---- playing about ---- */
+    // Dot follows your taps around only if asked to (a switch in the profile),
+    // and never off the navigation or onto what you are typing in.
+    document.addEventListener('pointerdown', function (event) {
+      if (!on || !playful || drag || !visible()) return;
+      if (event.target.closest && event.target.closest('#buddy, input, textarea, select, [contenteditable], dialog, .welcome, .rail, .topbar, nav, a')) return;
+      if (view === 'decide' && panel === 'question') return;
+      var vw = window.innerWidth;
+      var x = event.clientX + 44 + SIZE < vw ? event.clientX + 44 : event.clientX - 44 - SIZE;
+      visit(x, event.clientY - SIZE / 2 - 8, 5200);
+    }, { passive: true });
+
+    document.addEventListener('pointerover', function (event) {
+      if (!on || drag || !visible() || !event.target.closest) return;
+      if (event.target.closest('.go') && Date.now() - lastSpoke > 3500 && !el()._busy) react('surprised', 900);
+    }, { passive: true });
+
+    // Falls asleep when left alone, wakes when you come back.
+    function wake() {
+      lastInput = Date.now();
+      if (!asleep) return;
+      asleep = false;
+      var node = el();
+      if (node && !node._busy) Dot.mood(node, 'surprised', 700);
+      setTimeout(function () { if (el() && !el()._busy) el().setAttribute('data-mood', rest()); }, 760);
+      if (Math.random() < 0.5) remark('wake', null, 0);
+    }
+    ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(function (name) { window.addEventListener(name, wake, { passive: true }); });
+    window.addEventListener('pointermove', function () { if (asleep || Date.now() - lastInput > 1000) wake(); }, { passive: true });
+    setInterval(function () {
+      var node = el();
+      if (!node || !visible() || asleep || node._busy || drag) return;
+      if (Date.now() - lastInput > 150000) { asleep = true; Dot.mood(node, 'sleepy', 0); }
+    }, 15000);
+
+    function spawnHeart(b, i) {
+      var h = document.createElement('span');
+      h.className = 'buddy-heart';
+      h.textContent = '♥';
+      h.style.left = (6 + Math.random() * 32) + 'px';
+      b.appendChild(h);
+      var gone = function () { if (h.parentNode) h.parentNode.removeChild(h); };
+      if (h.animate && !reduceMotion) {
+        var a = h.animate([
+          { transform: 'translateY(0) scale(.4)', opacity: 0 },
+          { transform: 'translateY(-14px) scale(1)', opacity: 1, offset: 0.25 },
+          { transform: 'translate(' + (Math.random() * 30 - 15).toFixed(0) + 'px,-52px) scale(.9)', opacity: 0 }
+        ], { duration: 1200 + Math.random() * 400, delay: i * 130, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' });
+        a.onfinish = gone;
+      } else setTimeout(gone, 1100);
+    }
+    function pat() {
+      var b = box();
+      if (!b) return;
+      var first = mem.patDay !== ymd();
+      if (first) { mem.patDay = ymd(); mem.pats++; save(); }
+      for (var i = 0; i < (reduceMotion ? 1 : 4); i++) spawnHeart(b, i);
+      react('love', 2200);
+      say(line(first ? 'pet' : 'petAgain'), null, 3800, 'asked');
+      try { if (navigator.vibrate) navigator.vibrate(first ? [10, 40, 10] : 8); } catch (err) { /* fine */ }
+      if (first) { paintBond(); setTimeout(function () { checkLevel(); }, 2600); }
+    }
+
+    // Pick Dot up and put it somewhere (it stays there), or hold it to pat it.
+    (function pointer() {
+      var node = $('mascot-b'), start = null, hold = 0;
+      node.addEventListener('contextmenu', function (event) { event.preventDefault(); });
+      node.addEventListener('pointerdown', function (event) {
+        start = { x: event.clientX, y: event.clientY, ox: at.x, oy: at.y, moved: false, patted: false };
+        try { node.setPointerCapture(event.pointerId); } catch (err) { /* fine */ }
+        clearTimeout(hold);
+        hold = setTimeout(function () { if (start && !start.moved) { start.patted = true; openMenu(); } }, 520);
+      });
+      node.addEventListener('pointermove', function (event) {
+        if (!start) return;
+        var dx = event.clientX - start.x, dy = event.clientY - start.y;
+        if (!start.moved && Math.sqrt(dx * dx + dy * dy) < 8) return;
+        if (!start.moved) {
+          start.moved = true; drag = true; clearTimeout(hold); clearTimeout(returnTimer);
+          box().classList.add('is-dragging'); Dot.mood(node, 'surprised', 0);
+          remark('drag', null, 2200, 'asked');
+        }
+        go(start.ox + dx, start.oy + dy, true);
+      });
+      var drop = function (event) {
+        clearTimeout(hold);
+        if (!start) return;
+        var s = start; start = null;
+        if (s.patted) { node._justDragged = true; setTimeout(function () { node._justDragged = false; }, 60); return; }
+        if (!s.moved) return;
+        drag = null;
+        box().classList.remove('is-dragging');
+        home = { x: at.x, y: at.y };
+        try { localStorage.setItem(POS, JSON.stringify(home)); } catch (err) { /* fine */ }
+        go(at.x, at.y);
+        Dot.mood(node, 'happy', 1200);
+        remark('drop', null, 2400, 'asked');
+        event.stopPropagation();
+        node._justDragged = true; setTimeout(function () { node._justDragged = false; }, 60);
+      };
+      node.addEventListener('pointerup', drop);
+      node.addEventListener('pointercancel', drop);
+    })();
+
+    /* ---- being alive ---- */
+    /*
+     * The small things that make it feel like somebody is there: it looks
+     * about, hops now and then, yawns before it falls asleep, leans into a
+     * scroll, watches the box you are typing in, and notices when you go
+     * offline or come back. Every one is a movement of Dot's own face or body.
+     * None speaks unprompted, none moves anything on the page, and none runs
+     * while it is busy, being dragged, asleep, hidden or in a menu or a game.
+     */
+    function calm() {
+      var node = el();
+      return node && visible() && !asleep && !node._busy && !drag && !menuOpen() && !document.hidden;
+    }
+    function look(x, y, ms) {
+      var node = el();
+      if (!node) return;
+      node.style.setProperty('--ex', x + 'px');
+      node.style.setProperty('--ey', y + 'px');
+      if (ms) setTimeout(function () { if (!watching) { node.style.setProperty('--ex', '0px'); node.style.setProperty('--ey', '0px'); } }, ms);
+    }
+    var watching = false, nextHop = Date.now() + 25000, nextLook = Date.now() + 6000, yawned = false;
+    setInterval(function () {
+      if (!calm() || reduceMotion) return;
+      var now = Date.now(), node = el();
+      if (now > nextLook) {
+        nextLook = now + 7000 + Math.random() * 9000;
+        look((Math.random() * 3.4 - 1.7).toFixed(1), (Math.random() * 2 - 1).toFixed(1), 1300);
+      }
+      if (now > nextHop) {
+        nextHop = now + 25000 + Math.random() * 25000;
+        var kinds = ['bounce', 'wiggle', 'wink'];
+        var kind = kinds[Math.floor(Math.random() * kinds.length)];
+        node._busy = true;
+        Dot.mood(node, kind, 1000);
+        setTimeout(function () { node._busy = false; node.setAttribute('data-mood', rest()); }, 1050);
+      }
+      // A yawn a little before it nods off.
+      var idle = now - lastInput;
+      if (idle > 110000 && idle < 150000 && !yawned) {
+        yawned = true;
+        node._busy = true;
+        Dot.mood(node, 'yawn', 1700);
+        setTimeout(function () { node._busy = false; node.setAttribute('data-mood', rest()); }, 1750);
+      }
+      if (idle < 5000) yawned = false;
+    }, 3000);
+
+    // Leans into the direction of a scroll, and settles.
+    (function leaning() {
+      if (reduceMotion) return;
+      var last = window.scrollY, timer = 0, ticking = false;
+      window.addEventListener('scroll', function () {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(function () {
+          ticking = false;
+          var node = box(), y = window.scrollY, d = y - last;
+          last = y;
+          if (!node || node.hidden) return;
+          node.style.setProperty('--lean', Math.max(-14, Math.min(14, d * 0.35)).toFixed(1) + 'deg');
+          clearTimeout(timer);
+          timer = setTimeout(function () { node.style.setProperty('--lean', '0deg'); }, 160);
+        });
+      }, { passive: true });
+    })();
+
+    // Watches the box you are typing in.
+    document.addEventListener('focusin', function (event) {
+      var t = event.target;
+      if (!t || !/^(INPUT|TEXTAREA)$/.test(t.tagName) || t.closest('.dot-menu') || !calm()) return;
+      var r = t.getBoundingClientRect(), b = el().getBoundingClientRect();
+      var dx = r.left + r.width / 2 - (b.left + b.width / 2), dy = r.top + r.height / 2 - (b.top + b.height / 2);
+      var d = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      watching = true;
+      el().dataset.watch = '1';
+      look((dx / d * 1.8).toFixed(1), (dy / d * 1.8).toFixed(1));
+    });
+    document.addEventListener('focusout', function () { if (watching) { watching = false; delete el().dataset.watch; look(0, 0); } });
+
+    window.addEventListener('offline', function () { remark('offline', 'sad', 3600); });
+    window.addEventListener('online', function () { remark('online', 'happy', 3200); });
+    // Back to the tab after a good while.
+    (function away() {
+      var left = 0;
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) { left = Date.now(); return; }
+        if (!left) return;
+        var gone = Date.now() - left; left = 0;
+        lastInput = Date.now();
+        if (gone > 1800000 && calm()) { react('surprised', 900); setTimeout(function () { remark('back', 'happy', 3000); }, 600); }
+        else if (gone > 120000 && calm()) react('wink', 900);
+      });
+    })();
+
+
+    window.addEventListener('resize', function () { if (!drag) goHome(true); });
+
+    // A line and one button, only ever in answer to a tap on Dot. It never
+    // pops up with a suggestion by itself.
+    var offered = {};
+    function offerAction(o) {
+      var bb = $('buddy-bubble');
+      bb.textContent = '';
+      bb.appendChild(document.createTextNode(o.text + ' '));
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = o.label;
+      btn.addEventListener('click', function (event) { event.stopPropagation(); bubbleOff(); o.run(); });
+      bb.appendChild(btn);
+      bb.classList.add('has-action');
+      bb.hidden = false;
+      bb.classList.remove('is-in'); void bb.offsetWidth; bb.classList.add('is-in');
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(bubbleOff, 7000);
+    }
+    var OFFERS = {
+      dishes: { text: 'Want me to pick one?', label: 'Pick one', run: function () {
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#view-dishes .dish'));
+        if (!rows.length) return say('Nothing to pick from. Awkward.', 'shrug', 3000, 'asked');
+        var row = rows[Math.floor(Math.random() * rows.length)];
+        row.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' });
+        if (row.animate && !reduceMotion) row.animate([{ background: 'color-mix(in srgb, var(--amber) 28%, transparent)' }, { background: 'transparent' }], { duration: 1800, easing: 'ease-out' });
+        setTimeout(function () { beside(row, 5200); say('That one. Look at it.', 'happy', 3200, 'asked'); }, 500);
+      } },
+      planner: { text: 'Fill the empty dinners?', label: 'Fill them', run: function () {
+        var b = Array.prototype.slice.call(document.querySelectorAll('#view-planner button')).filter(function (x) { return /Fill my empty meals/.test(x.textContent); })[0];
+        if (b) b.click(); else say('Nothing to fill. Show-off.', 'shrug', 3000, 'asked');
+      } },
+      daily: { text: 'Want to see what is next?', label: 'Show me', run: function () {
+        var q = document.querySelector('#daily-quests .daily-quest:not(.is-done):not(.is-locked) .daily-quest-btn');
+        if (q) { q.scrollIntoView({ block: 'center', behavior: reduceMotion ? 'auto' : 'smooth' }); setTimeout(function () { q.click(); }, 400); }
+        else say('All done. I have nothing. Go outside.', 'celebrate', 3200, 'asked');
+      } },
+      chat: { text: 'Got a question?', label: 'Ask', run: function () { var f = $('chat-input'); if (f) f.focus(); } }
+    };
+
+    /* ---- the menu: hold Dot ---- */
+    /*
+     * Press and hold Dot and it opens a small menu: ask it a question about
+     * morsels45, play something, take the tour, or pat it. The questions go to
+     * /api/dot, which answers from a fixed list of facts about this app and
+     * nothing else; asked about anything else, Dot says it only knows
+     * morsels45. It is a help menu with a face, not a chatbot.
+     */
+    var menu = null, dotTurns = [];
+    var ASKS = ['How do I start?', 'What is free?', 'What is Premium?', 'What can you do?', 'How do the games work?', 'How much does it cost?'];
+    function mk(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; }
+    function menuOpen() { return !!(menu && !menu.root.hidden); }
+
+    function buildMenu() {
+      var root = mk('div', 'dot-menu');
+      root.hidden = true;
+      root.setAttribute('role', 'dialog');
+      root.setAttribute('aria-label', 'Dot');
+      root.appendChild(mk('p', 'dot-menu-title', 'Talk to Dot'));
+      var form = mk('form', 'dot-menu-form');
+      var input = mk('input', 'dot-menu-input');
+      input.type = 'text'; input.maxLength = 200; input.autocomplete = 'off';
+      input.placeholder = 'Say something…';
+      input.setAttribute('aria-label', 'Say something to Dot');
+      var go = mk('button', 'dot-menu-go', 'Ask');
+      go.type = 'submit';
+      form.appendChild(input); form.appendChild(go);
+      root.appendChild(form);
+      var chips = mk('div', 'dot-menu-chips');
+      root.appendChild(chips);
+      var out = mk('p', 'dot-menu-out');
+      out.hidden = true;
+      out.setAttribute('aria-live', 'polite');
+      root.appendChild(out);
+      var row = mk('div', 'dot-menu-row');
+      function action(label, fn) { var b = mk('button', 'dot-menu-act', label); b.type = 'button'; b.addEventListener('click', function () { Sound.tick(); fn(); }); row.appendChild(b); }
+      action('Play', function () { closeMenu(); Play.open(); });
+      action('Pat', function () { closeMenu(); pat(); });
+      action('Tour', function () { closeMenu(); if (typeof Tour !== 'undefined') Tour.start(); });
+      action('Close', closeMenu);
+      root.appendChild(row);
+      form.addEventListener('submit', function (event) { event.preventDefault(); askDot(input.value); input.value = ''; });
+      document.body.appendChild(root);
+      menu = { root: root, input: input, chips: chips, out: out, busy: false };
+      document.addEventListener('pointerdown', function (event) {
+        if (!menuOpen()) return;
+        if (event.target.closest && event.target.closest('.dot-menu, #buddy')) return;
+        closeMenu();
+      }, true);
+      document.addEventListener('keydown', function (event) { if (menuOpen() && event.key === 'Escape') closeMenu(); });
+    }
+
+    function placeMenu() {
+      var r = menu.root, vw = window.innerWidth, vh = window.innerHeight;
+      r.style.left = r.style.top = r.style.bottom = '';
+      r.classList.toggle('is-sheet', vw < 620);
+      if (vw < 620) return;
+      var w = 288;
+      r.style.left = Math.max(12, Math.min(vw - w - 12, at.x + SIZE / 2 - w / 2)) + 'px';
+      if (at.y > vh / 2) r.style.bottom = (vh - at.y + 10) + 'px';
+      else r.style.top = (at.y + SIZE + 10) + 'px';
+    }
+
+    function openMenu() {
+      if (!visible()) return;
+      if (!menu) buildMenu();
+      bubbleOff();
+      clearTimeout(returnTimer);
+      clear2(menu.chips);
+      shuffleList(ASKS.filter(speakable)).slice(0, 3).forEach(function (q) {
+        var b = mk('button', 'dot-menu-chip', q);
+        b.type = 'button';
+        b.addEventListener('click', function () { Sound.tick(); askDot(q); });
+        menu.chips.appendChild(b);
+      });
+      menu.out.hidden = true;
+      placeMenu();
+      menu.root.hidden = false;
+      menu.root.classList.remove('is-in'); void menu.root.offsetWidth; menu.root.classList.add('is-in');
+      react('happy', 900);
+      try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) { /* fine */ }
+      // The keyboard would cover the menu on a phone, so only a pointer gets the focus.
+      if (window.innerWidth >= 620) menu.input.focus();
+    }
+    function closeMenu() { if (menu) menu.root.hidden = true; }
+    function shuffleList(list) { var a = list.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+    function askDot(question) {
+      question = String(question || '').trim().slice(0, 200);
+      if (!question || menu.busy) return;
+      var out = menu.out;
+      menu.busy = true;
+      out.hidden = false;
+      out.textContent = 'Let me check…';
+      out.classList.remove('is-in'); void out.offsetWidth; out.classList.add('is-in');
+      var node = el();
+      if (node) { node._busy = true; Dot.mood(node, 'thinking', 0); }
+      fetch('/api/dot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ question: question, lang: I18n.get(), history: dotTurns.slice(-6) })
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (b) { return { status: res.status, body: b }; });
+      }).catch(function () { return { status: 0, body: {} }; }).then(function (r) {
+        menu.busy = false;
+        var text = r.body && typeof r.body.answer === 'string' ? r.body.answer.trim() : '';
+        var mood = 'happy';
+        if (!text) {
+          mood = 'shrug';
+          text = r.status === 429 ? 'Slow down a little. Ask me again in a moment.'
+            : r.body && r.body.via === 'off_topic' ? 'I only know about morsels45. Try asking how to start, what is free, or what Premium is.'
+            : 'My brain is busy. Ask me again in a moment.';
+        }
+        if (r.body && r.body.answer) { dotTurns.push({ role: 'user', text: question }); dotTurns.push({ role: 'model', text: text.slice(0, 300) }); dotTurns = dotTurns.slice(-8); }
+        out.textContent = text.slice(0, 700);
+        out.classList.remove('is-in'); void out.offsetWidth; out.classList.add('is-in');
+        if (node) { node._busy = false; Dot.mood(node, mood, 1400); setTimeout(function () { node.setAttribute('data-mood', rest()); }, 1450); }
+        if (menuOpen()) placeMenu();
+      });
+    }
+
+
+    var TAGS = ['fried', 'sweet', 'veg', 'cheap', 'drink', 'spicy', 'soupy', 'cheesy'];
+    function topPick() {
+      var picks = (progress && progress.state && progress.state.picks) || {}, best = null, n = 0;
+      Object.keys(picks).forEach(function (k) { if (picks[k] > n) { n = picks[k]; best = k; } });
+      return n >= 3 ? best : null;
+    }
+
+    return {
+      sync: sync, say: say, react: react, visit: visit, beside: beside,
+      enabled: function () { return on; },
+      playful: function () { return playful; },
+      talk: function () { return talk; },
+      set: function (v) {
+        on = !!v;
+        try { localStorage.setItem(KEY, on ? 'on' : 'off'); } catch (err) { /* fine */ }
+        sync();
+        if (on) remark('back', 'happy', 3200, 'asked');
+      },
+      setPlayful: function (v) {
+        playful = !!v;
+        try { localStorage.setItem(PLAY, playful ? 'on' : 'off'); } catch (err) { /* fine */ }
+        if (!playful) goHome();
+      },
+      setTalk: function (v) {
+        talk = v === 'quiet' || v === 'chatty' ? v : 'normal';
+        try { localStorage.setItem(TALK, talk); } catch (err) { /* fine */ }
+      },
+      putBack: function () {
+        home = null;
+        try { localStorage.removeItem(POS); } catch (err) { /* fine */ }
+        goHome();
+        remark('home', 'happy', 2400, 'asked');
+      },
+      // A game with Dot finished: it counts towards the bond, quietly.
+      played: function () { mem.games = (mem.games || 0) + 1; save(); paintBond(); },
+      remark: remark,
+      // A tap on the small Dot riding the question bar.
+      stageTap: function () {
+        var now = Date.now();
+        if (now - lastBoop > 25000) boops = 0;
+        lastBoop = now; boops++;
+        react('happy', 900);
+        remark(boops <= 3 ? 'boop1' : boops <= 7 ? 'boop2' : 'boop3', null, 3200, 'asked');
+      },
+      openMenu: openMenu,
+      closeMenu: closeMenu,
+      pat: pat,
+      bond: function () { return { level: levelOf(score()), score: score(), days: mem.days.length, pats: mem.pats }; },
+      paintBond: paintBond,
+      // A page opens: a few words the first times you see it, rarely after.
+      onView: function (name) {
+        // Not while Dot is off screen or still saying hello, and a page counts
+        // once however many times the app repaints it.
+        if (!visible() || !helloDone || name === lastView) return;
+        lastView = name;
+        var n = mem.seen[name] || 0;
+        mem.seen[name] = n + 1; save();
+        if (name === 'profile') paintBond();
+        var p = n < 1 ? 1 : n < 4 ? 0.4 : 0.12;
+        if (talk === 'chatty') p = Math.min(1, p * 2);
+        if (talk === 'quiet' || Math.random() > p) return;
+        clearTimeout(greetTimer);
+        greetTimer = setTimeout(function () {
+          if (view !== name || !mayVolunteer()) return;
+          var text = null, r = Math.random();
+          if (name === 'dishes' && topPick() && r < 0.3) text = fill('{0} is your most picked dish. I will not tell anyone.', topPick());
+          else if (name === 'daily' && progress.state.streak >= 3 && r < 0.5) text = fill('A {0} day streak. I am keeping count, quietly.', progress.state.streak);
+          else if (name === 'profile' && mem.days.length >= 3 && r < 0.5) text = fill('{0} days together. Not that I am counting.', mem.days.length);
+          if (text && !speakable(text)) text = null;
+          if (text) say(text, 'happy');
+          else remark(name, 'happy');
+        }, 1300);
+      },
+      onPanel: function () { sync(); if (panel !== 'result' && el()) Dot.form(el(), null); },
+      // Take the shape of a dish: hot goes red, cold blue, a drink melts. ms 0 = until the panel changes.
+      form: function (dish, ms) { if (el() && visible()) Dot.form(el(), Dot.formOf(dish), ms || 0); },
+      onAnswer: function (value, tag) {
+        asked++;
+        if (value === 'yes') { run.yes++; run.no = 0; } else if (value === 'no') { run.no++; run.yes = 0; } else { run.yes = 0; run.no = 0; }
+        if (!run.said && run.no >= 4) { run.said = true; return remark('manyNo', 'shrug', 3200); }
+        if (!run.said && run.yes >= 4) { run.said = true; return remark('manyYes', 'happy', 3200); }
+        // The small Dot on the question bar reacts to what you just said yes to.
+        var rider = $('q-rider'), FORMS = { hot: 'hot', drink: 'drink', spicy: 'spicy', soupy: 'soupy', fried: 'fried', cheesy: 'cheesy', seafood: 'seafood', sweet: 'sweet', veg: 'veg' };
+        if (rider && !reduceMotion) { var f = value === 'yes' ? FORMS[tag] : (value === 'no' && tag === 'hot' ? 'cold' : null); if (f) Dot.form(rider, f, 2400); }
+        if (value === 'yes' && TAGS.indexOf(tag) >= 0 && Math.random() < 0.22) return remark(tag, 'happy', 3200);
+        if (asked % 7 === 0 && Math.random() < 0.55) remark('quip', 'shrug', 2800);
+      },
+      onResult: function (dish) {
+        run = { yes: 0, no: 0, said: false };
+        if (el() && visible()) Dot.form(el(), Dot.formOf(dish), 0);
+        var tag = TAGS.filter(function (t) { return dish.tags && dish.tags[t] === 1; })[0];
+        if (tag && Math.random() < 0.7) remark(tag, 'happy', 3600);
+        else if (!tag && Math.random() < 0.15) remark('plain', 'happy', 3200);
+      },
+      onReject: function () { if (Math.random() < 0.4) remark('reject', 'shrug', 3000); },
+      onDone: function () {
+        var n = (progress && progress.state && progress.state.decisions) || 0;
+        var ms = { 1: 'm1', 10: 'm10', 25: 'm25', 50: 'm50', 100: 'm100' }[n];
+        paintBond();
+        var up = levelOf(score()) > mem.lvl;
+        if (ms && !mem.ms[ms]) {
+          mem.ms[ms] = 1; save();
+          remark(ms, 'celebrate', 5200, true);
+          if (up) setTimeout(checkLevel, 5600);
+        } else if (up) checkLevel();
+        else remark('done', 'celebrate', 3400, true);
+      },
+      onGame: function (best) {
+        if (best) remark('gameWin', 'celebrate', 3600);
+        else if (Math.random() < 0.5) remark('gameLose', 'shrug', 3400);
+      },
+      // Quality control: Dot hops over to the dish and takes a bite.
+      nom: function (art) {
+        if (!visible() || !art) return;
+        var key = art.id + ':' + art.textContent;
+        if (nommed[key]) { remark('nomAgain', 'shrug', 2400, 'asked'); return; }
+        nommed[key] = true;
+        var r = art.getBoundingClientRect();
+        // Beside the dish if there is room on its left, otherwise above it: never
+        // on top of the name.
+        if (r.left - SIZE - 8 > 230) visit(r.left - SIZE - 8, r.top + r.height / 2 - SIZE / 2, 5200);
+        else visit(r.left, r.top - SIZE - 4, 5200);
+        setTimeout(function () {
+          react('celebrate', 900);
+          if (art.animate && !reduceMotion) art.animate([{ transform: 'scale(1)' }, { transform: 'scale(.78) rotate(-8deg)' }, { transform: 'scale(1)' }], { duration: 520, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+          sparkle(art, 6);
+          remark('nom', null, 3400, 'asked');
+        }, 650);
+      },
+      // From inside a game: it cheers, winces, and says when something big happens.
+      cheer: function (text) { if (speakable(text)) say(text, 'celebrate', 2200); else remark('combo', 'celebrate', 2200); },
+      wince: function () { react('sad', 900); },
+      boop: function () {
+        var now = Date.now();
+        if (now - lastBoop > 25000) boops = 0;
+        lastBoop = now; boops++;
+        react('happy', 900);
+        // Asleep when tapped.
+        if (rest() === 'sleepy' && night()) return remark('sleepy', null, 3200, 'asked');
+        // On pages that have something worth offering, the first tap offers it.
+        var offer = OFFERS[view];
+        if (offer && boops === 1 && (!offered[view] || now - offered[view] > 30000) && speakable(offer.text) && speakable(offer.label)) {
+          offered[view] = now;
+          return offerAction(offer);
+        }
+        // A second tap in a row: Dot suggests playing something.
+        if (boops === 2 && speakable('Fancy a game?') && speakable('Play')) {
+          return offerAction({ text: 'Fancy a game?', label: 'Play', run: function () { Play.open(); } });
+        }
+        if (boops === 4 && !mem.hint) { mem.hint = 1; save(); if (speakable(LINES.boopHint[0])) return say(LINES.boopHint[0], null, 3800, 'asked'); }
+        remark(boops <= 3 ? 'boop1' : boops <= 7 ? 'boop2' : 'boop3', null, 3200, 'asked');
+      },
+      think: function (yes) {
+        var node = el();
+        if (!node || !visible()) return;
+        node._busy = !!yes;
+        if (yes) Dot.mood(node, 'thinking', 0);
+        else Dot.mood(node, 'happy', 1000);
+      },
+      dance: function (yes) {
+        var node = el();
+        if (node) node.classList.toggle('is-dancing', !!yes);
+        if (yes && !wasMusic) { wasMusic = true; if (Math.random() < 0.7) remark('music', 'happy', 2800); }
+      },
+      // The old on/off switch, kept for anything still calling it.
+      setQuiet: function (v) { this.setTalk(v ? 'quiet' : 'normal'); },
+      quiet: function () { return talk === 'quiet'; },
+      idle: function () { /* Dot does not nag when you are slow. */ },
+      line: line
+    };
+  })();
+
+  /* ------------------------------------------------------- Play with Dot */
+  /*
+   * Three small games with Dot as the other player, for when the questions are
+   * the monotonous part: Rock Paper Dish, Dot Reads You (pick one of two
+   * dishes while Dot tries to guess which) and Guess My Dish (Dot has one in
+   * mind; ask about it, then name it). None of them decides anything and none
+   * is a sales pitch: they are there to be a break, with a companion that
+   * remembers you played.
+   *
+   * Dot is not cheating at any of them. Rock Paper Dish leans on what you
+   * played last, which is exactly what a person would try; Dot Reads You
+   * guesses from the tastes of the dishes you picked before, which is exactly
+   * what the app does to find your dinner. It says so while it does it.
+   *
+   * It is its own screen over the app, not a page: Escape or the cross closes
+   * it, the page behind is inert while it is open, and Dot in the corner goes
+   * away because Dot is in here.
+   */
+  var Play = (function () {
+    var open = false, root = null, say = null, body = null, dotEl = null, back = null;
+    var TASTE = 'morsels-dot-taste', STATS = 'morsels-dot-games';
+    var stats = {};
+    var taste = {};
+    try {
+      var sv = JSON.parse(localStorage.getItem(STATS) || 'null'); if (sv) for (var k in sv) if (typeof sv[k] === 'number') stats[k] = sv[k];
+      taste = JSON.parse(localStorage.getItem(TASTE) || '{}') || {};
+    } catch (err) { /* fine */ }
+    function save() { try { localStorage.setItem(STATS, JSON.stringify(stats)); localStorage.setItem(TASTE, JSON.stringify(taste)); } catch (err) { /* fine */ } }
+
+    function h(tag, cls, text) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text !== undefined) n.textContent = text;
+      return n;
+    }
+    function pickOne(list) { return list[Math.floor(Math.random() * list.length)]; }
+    function shuffle(list) { var a = list.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+    function words(text, mood, hold) {
+      say.textContent = text;
+      say.classList.remove('is-in'); void say.offsetWidth; say.classList.add('is-in');
+      if (mood) Dot.mood(dotEl, mood, hold || 1500);
+    }
+    function btn(label, cls, fn) {
+      var b = h('button', cls || 'dg-btn', label);
+      b.type = 'button';
+      b.addEventListener('click', function () { Sound.tick(); fn(b); });
+      return b;
+    }
+    function screen() { clear2(body); return body; }
+
+    /* ---- the picker ---- */
+    var GAMES = [
+      { id: 'arena', icon: '\u{1F336}\u{FE0F}', name: 'Food Fight', blurb: 'Survive the chillies. Level up, pick upgrades.' },
+      { id: 'jump', icon: '\u{1F680}', name: 'Dot Jump', blurb: 'Bounce up the kitchen. Springs, crumbling shelves.' },
+      { id: 'merge', icon: '\u{1F451}', name: 'Merge Pot', blurb: 'Drop dishes. Merge them up to a crown.' },
+      { id: 'pop', icon: '\u{1F52E}', name: 'Dish Pop', blurb: 'Aim, bounce, match three, bring the ceiling down.' },
+      { id: 'match', icon: '\u{1F36C}', name: 'Match Meal', blurb: 'Swap dishes, chain combos. Sixty seconds.' },
+      { id: 'invade', icon: '\u{1F47E}', name: 'Chilli Invaders', blurb: 'Hold the line against the marching chillies.' },
+      { id: 'cross', icon: '\u{1F6D2}', name: 'Kitchen Crossing', blurb: 'Hop across the lanes. Mind the trolleys.' },
+      { id: 'stack', icon: '\u{1F35E}', name: 'Dish Stack', blurb: 'Stack the dishes. Time it right.' },
+      { id: 'spit', icon: '\u{1F3AF}', name: 'Seed Spit', blurb: 'Aim, mind the wind, hit the plate.' },
+      { id: 'says', icon: '\u{1F9E0}', name: 'Dot Says', blurb: 'Watch the pads. Copy the pattern.' }
+    ];
+    var RUN = function () { return { arena: arenaGame, jump: jumpGame, merge: mergeGame, pop: popBubbles, match: matchGame, invade: invadeGame, cross: crossGame, stack: stackGame, spit: spitGame, says: simonGame }; };
+    function menu() {
+      stopGame();
+      var s = screen();
+      words(pickOne(['Pick a game. I will lose gracefully. Probably.', 'Games. My favourite thing after dishes.', 'Go on. Choose. I have all day.']), 'happy');
+      var grid = h('div', 'dg-grid');
+      GAMES.forEach(function (g) {
+        var card = h('button', 'dg-card-btn');
+        card.type = 'button';
+        card.appendChild(h('span', 'dg-card-icon', g.icon));
+        card.appendChild(h('strong', '', g.name));
+        var bestAll = {}; try { bestAll = JSON.parse(localStorage.getItem('morsels-dot-best') || '{}') || {}; } catch (err) { /* fine */ }
+        if (bestAll[g.id]) card.appendChild(h('span', 'dg-tag', '\u2605 ' + bestAll[g.id]));
+        card.appendChild(h('span', 'fine', g.blurb));
+        card.addEventListener('click', function () { Sound.tick(); RUN()[g.id](); });
+        grid.appendChild(card);
+      });
+      s.appendChild(grid);
+    }
+
+    function finish(game, won) {
+      stats[game] = (stats[game] || 0) + 1;
+      save();
+      if (typeof Buddy !== 'undefined') Buddy.played(game, won);
+    }
+    function endButtons(again) {
+      var row = h('div', 'dg-row');
+      row.appendChild(btn('Play again', 'dg-btn is-main', again));
+      row.appendChild(btn('Another game', 'dg-btn', menu));
+      body.appendChild(row);
+    }
+
+    /* ---- the action games ---- */
+    var cleanup = null;
+    function stopGame() { if (cleanup) { var f = cleanup; cleanup = null; f(); } }
+    function bestOf(game, score) {
+      var all = {};
+      try { all = JSON.parse(localStorage.getItem('morsels-dot-best') || '{}') || {}; } catch (err) { all = {}; }
+      var beat = score > (all[game] || 0);
+      if (beat) { all[game] = score; try { localStorage.setItem('morsels-dot-best', JSON.stringify(all)); } catch (err) { /* fine */ } }
+      return { best: Math.max(all[game] || 0, score), beat: beat };
+    }
+    // Score needed for one, two and three stars, per game.
+    var STARS = { merge: [300, 900, 2200], pop: [200, 600, 1400], match: [400, 1200, 3000], invade: [200, 600, 1400], cross: [30, 80, 160], arena: [8, 20, 40], jump: [40, 120, 260], rush: [150, 400, 900], chop: [1500, 3500, 6500], evolve: [300, 900, 2200], flap: [3, 8, 16], stack: [6, 14, 26], run: [60, 160, 320], pair: [40, 70, 100], sort: [80, 200, 420], flip: [150, 450, 1000], scramble: [60, 160, 280], spit: [40, 120, 220], says: [4, 8, 13] };
+    function starsFor(game, score) { var t = STARS[game] || [10, 30, 60]; return score >= t[2] ? 3 : score >= t[1] ? 2 : score >= t[0] ? 1 : 0; }
+    function results(game, score, again, notes) {
+      var b = bestOf(game, score);
+      var s = screen();
+      var big = h('p', 'dg-line is-big', 'Score 0'); s.appendChild(big);
+      var from = performance.now(); (function tick(now) { var k = Math.min(1, (now - from) / 900); big.textContent = 'Score ' + Math.round(score * (1 - Math.pow(1 - k, 3))); if (k < 1 && open) requestAnimationFrame(tick); })(from);
+      var stars = starsFor(game, score), row3 = h('p', 'dg-stars');
+      for (var si = 0; si < 3; si++) { var st3 = h('span', si < stars ? 'is-on' : '', '\u2605'); st3.style.animationDelay = (0.5 + si * 0.28) + 's'; row3.appendChild(st3); }
+      s.appendChild(row3);
+      s.appendChild(h('p', 'dg-score', b.beat ? 'New best' : 'Best ' + b.best));
+      words(b.beat ? pickOne(['A new best. I am not crying. You are.', 'Record. I will tell the dishes.']) : score >= b.best * 0.8 ? pickOne(['So close to your best.', 'Nearly. Again?']) : pickOne(notes), b.beat ? 'celebrate' : 'shrug');
+      finish(game, b.beat || score > 0);
+      endButtons(again);
+    }
+
+    // Dot, drawn on a canvas: a round face, two eyes, a blush and a mouth.
+    function drawDot(g, x, y, r, mouth) {
+      g.save();
+      g.fillStyle = '#f5eee1';
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#f5eee1';
+      g.beginPath(); g.moveTo(x, y - r + 1); g.quadraticCurveTo(x - r * .12, y - r * 1.28, x + r * .2, y - r * 1.34); g.quadraticCurveTo(x + r * .1, y - r * 1.1, x, y - r + 1); g.fill();
+      g.fillStyle = 'rgba(224,163,64,.55)';
+      g.beginPath(); g.arc(x - r * .58, y + r * .22, r * .17, 0, 6.3); g.arc(x + r * .58, y + r * .22, r * .17, 0, 6.3); g.fill();
+      g.fillStyle = '#2a2218';
+      g.beginPath(); g.arc(x - r * .3, y - r * .1, r * .1, 0, 6.3); g.arc(x + r * .3, y - r * .1, r * .1, 0, 6.3); g.fill();
+      g.strokeStyle = '#2a2218'; g.lineWidth = Math.max(1.5, r * .08); g.lineCap = 'round';
+      g.beginPath();
+      if (mouth === 'open') { g.fillStyle = '#2a2218'; g.ellipse(x, y + r * .34, r * .2, r * .27, 0, 0, 6.3); g.fill(); }
+      else if (mouth === 'sad') { g.arc(x, y + r * .6, r * .22, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); }
+      else { g.arc(x, y + r * .15, r * .26, Math.PI * .15, Math.PI * .85); g.stroke(); }
+      g.restore();
+    }
+
+    // The shared shell of the canvas games: a canvas, a clock, a loop, particles,
+    // floating numbers, screen shake, the pointer, and a teardown.
+    function canvasGame(opts) {
+      var s = screen();
+      words(opts.intro, 'happy');
+      var W = opts.W || 340, H = opts.H || 400, dpr = Math.min(2, window.devicePixelRatio || 1);
+      var cv = h('canvas', 'dg-canvas');
+      cv.width = W * dpr; cv.height = H * dpr;
+      cv.style.aspectRatio = W + ' / ' + H;
+      cv.setAttribute('aria-label', opts.label);
+      var g = cv.getContext('2d');
+      g.scale(dpr, dpr);
+      var hud = h('p', 'dg-score', '');
+      var pauseBtn = h('button', 'dg-btn dg-pause', 'Pause');
+      pauseBtn.type = 'button';
+      s.appendChild(hud); s.appendChild(cv);
+      s.appendChild(h('p', 'fine', opts.how));
+      s.appendChild(pauseBtn);
+      var st = { W: W, H: H, g: g, cv: cv, score: 0, lives: opts.lives === undefined ? 3 : opts.lives, t: 0, over: false, paused: false, mouth: 'smile', mouthT: 0, fx: [], pops: [], shake: 0, count: opts.count === 0 ? 0 : 3, ptr: { x: W / 2, y: H / 2, down: false } };
+      var last = performance.now(), raf = 0, hooks = [];
+      var BG = { arena: ['#2b1612', '#120a0a'], jump: ['#1a3b5c', '#0d1828'], flap: ['#27324d', '#11141f'], stack: ['#2b2542', '#13111f'], run: ['#3b2b19', '#18110a'], chop: ['#201a35', '#0d0a17'], spit: ['#1e3529', '#0c1510'] }[opts.id] || ['#222', '#111'];
+      var bokeh = []; for (var bi = 0; bi < 14; bi++) bokeh.push({ x: Math.random() * W, y: Math.random() * H, r: 6 + Math.random() * 22, v: 4 + Math.random() * 10 });
+      function togglePause() { if (st.over || st.count > 0) return; st.paused = !st.paused; pauseBtn.textContent = st.paused ? 'Resume' : 'Pause'; }
+      pauseBtn.addEventListener('click', function () { togglePause(); });
+      function hearts() { return st.lives > 0 ? new Array(st.lives + 1).join('♥ ').trim() : '—'; }
+      st.hud = function () { hud.textContent = (opts.hudText ? opts.hudText(st) : 'Score ' + st.score) + (opts.lives === 0 ? '' : ' · ' + hearts()); };
+      st.hurt = function () { if (st.over) return; try { if (navigator.vibrate) navigator.vibrate(40); } catch (err) { /* fine */ } st.lives--; st.mouth = 'sad'; st.mouthT = .5; st.shake = 9; Sound.bust(); Dot.mood(dotEl, 'sad', 700); if (st.lives <= 0) st.over = true; st.hud(); };
+      st.gain = function (n) { st.score += n; st.mouth = 'open'; st.mouthT = .25; Sound.climb(Math.min(14, st.score)); st.hud(); };
+      st.burst = function (x, y, color, n) { for (var i = 0; i < (n || 10); i++) { var a = Math.random() * 6.3, v = 40 + Math.random() * 160; st.fx.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: 0.5 + Math.random() * 0.4, c: color || '#e0a340' }); } };
+      st.pop = function (x, y, text, color) { st.pops.push({ x: x, y: y, text: text, life: 0.9, c: color || '#fff' }); };
+      st.on = function (target, ev, fn, o) { target.addEventListener(ev, fn, o); hooks.push([target, ev, fn, o]); };
+      function point(e) { var r = cv.getBoundingClientRect(); st.ptr.x = (e.clientX - r.left) / r.width * W; st.ptr.y = (e.clientY - r.top) / r.height * H; }
+      cv.addEventListener('pointermove', point);
+      cv.addEventListener('pointerdown', function (e) { point(e); st.ptr.down = true; try { cv.setPointerCapture(e.pointerId); } catch (err) { /* fine */ } });
+      cv.addEventListener('pointerup', function () { st.ptr.down = false; });
+      function frame(now) {
+        var dt = Math.min(0.05, (now - last) / 1000); last = now;
+        if (!st.over) {
+          if (st.count > 0) st.count -= dt;
+          else { st.t += dt; st.mouthT -= dt; if (st.mouthT <= 0) st.mouth = 'smile'; if (!st.paused) opts.update(st, dt); }
+        }
+        st.fx.forEach(function (p) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; p.life -= dt; });
+        st.fx = st.fx.filter(function (p) { return p.life > 0; });
+        st.pops.forEach(function (p) { p.y -= 34 * dt; p.life -= dt; });
+        st.pops = st.pops.filter(function (p) { return p.life > 0; });
+        st.shake = Math.max(0, st.shake - dt * 30);
+        g.clearRect(0, 0, W, H);
+        var grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, BG[0]); grad.addColorStop(1, BG[1]); g.fillStyle = grad; g.fillRect(0, 0, W, H);
+        g.fillStyle = 'rgba(255,255,255,.035)';
+        bokeh.forEach(function (b) { if (!reduceMotion && !st.paused) { b.y -= b.v * dt; if (b.y < -30) { b.y = H + 30; b.x = Math.random() * W; } } g.beginPath(); g.arc(b.x, b.y, b.r, 0, 6.3); g.fill(); });
+        g.save();
+        g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 5; g.shadowOffsetY = 2;
+        if (st.shake > 0.3 && !reduceMotion) g.translate((Math.random() - 0.5) * st.shake, (Math.random() - 0.5) * st.shake);
+        opts.draw(st);
+        st.fx.forEach(function (p) { g.globalAlpha = Math.max(0, p.life * 1.6); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, 2.6, 0, 6.3); g.fill(); });
+        g.globalAlpha = 1;
+        g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 15px sans-serif';
+        st.pops.forEach(function (p) { g.globalAlpha = Math.min(1, p.life * 2); g.fillStyle = p.c; g.fillText(p.text, p.x, p.y); });
+        g.globalAlpha = 1;
+        g.restore();
+        if (opts.lives > 1 && st.lives === 1 && !st.over) { var pulse = 0.12 + 0.08 * Math.sin(st.t * 6), vg = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.75); vg.addColorStop(0, 'rgba(255,0,0,0)'); vg.addColorStop(1, 'rgba(255,40,40,' + pulse + ')'); g.fillStyle = vg; g.fillRect(0, 0, W, H); }
+        if (st.paused && !st.over) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 28px sans-serif'; g.fillText('Paused', W / 2, H / 2); }
+        if (st.count > 0) {
+          g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(0, 0, W, H);
+          g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 64px sans-serif'; g.fillText(String(Math.ceil(st.count)), W / 2, H / 2);
+          g.font = '14px sans-serif'; g.fillText('Get ready', W / 2, H / 2 + 52);
+        }
+        if (st.over) { cancelAnimationFrame(raf); setTimeout(function () { if (open) results(opts.id, st.score, opts.again, opts.notes); }, 1100); return; }
+        raf = requestAnimationFrame(frame);
+      }
+      opts.setup(st);
+      st.hud();
+      st.on(document, 'keydown', function (e) { if (e.key === 'p' || e.key === 'P') togglePause(); });
+      st.on(document, 'visibilitychange', function () { if (document.hidden && !st.paused) togglePause(); });
+      raf = requestAnimationFrame(frame);
+      cleanup = function () { cancelAnimationFrame(raf); st.over = true; hooks.forEach(function (k) { k[0].removeEventListener(k[1], k[2], k[3]); }); if (opts.teardown) opts.teardown(st); };
+    }
+    function dirKeys(st, map) { st.on(document, 'keydown', function (e) { var f = map[e.key]; if (f) { e.preventDefault(); f(); } }); }
+    var DISH = function () { return pickOne(Data.ITEMS).icon; };
+
+    /* Food Fight: an arena. Dot throws seeds at the angry chillies on its own; you steer, collect the sparks, and pick an upgrade each level. */
+    function arenaGame() {
+      canvasGame({
+        id: 'arena', label: 'Food Fight', again: arenaGame, W: 360, H: 440, lives: 3,
+        intro: 'They are coming. I throw seeds. You do the moving.',
+        how: 'Drag to steer Dot (or use the arrow keys). It fires by itself. Pick an upgrade when you level up.',
+        notes: ['Chillies everywhere. I did warn you.', 'It was the onions. It is always the onions.'],
+        hudText: function (st) { return 'Level ' + st.lvl + ' · ' + st.score + ' down'; },
+        setup: function (st) {
+          st.x = st.W / 2; st.y = st.H / 2; st.en = []; st.sh = []; st.gems = []; st.fire = 0; st.spawn = 0; st.inv = 0; st.xp = 0; st.need = 6; st.lvl = 1;
+          st.rate = 0.55; st.multi = 1; st.magnet = 46; st.speed = 150; st.keys = {}; st.choice = null;
+          st.on(document, 'keydown', function (e) { st.keys[e.key] = true; if (st.choice && (e.key === '1' || e.key === '2')) pick(+e.key - 1); });
+          st.on(document, 'keyup', function (e) { st.keys[e.key] = false; });
+          st.cv.addEventListener('pointerdown', function () { if (st.choice) pick(st.ptr.x < st.W / 2 ? 0 : 1); });
+          var UPS = [
+            { n: 'Faster seeds', d: 'Fire 30% faster', f: function () { st.rate *= 0.7; } },
+            { n: 'Twin seeds', d: 'One more seed per shot', f: function () { st.multi++; } },
+            { n: 'Magnet', d: 'Sparks fly to you', f: function () { st.magnet += 50; } },
+            { n: 'Quick feet', d: 'Move faster', f: function () { st.speed += 40; } },
+            { n: 'Second helping', d: 'Restore a heart', f: function () { st.lives = Math.min(5, st.lives + 1); st.hud(); } }
+          ];
+          function pick(i) { st.choice[i].f(); st.choice = null; st.paused = false; st.burst(st.x, st.y, '#fff', 14); }
+          st.levelUp = function () { st.lvl++; st.xp = 0; st.need = Math.round(st.need * 1.35) + 2; st.paused = true; st.choice = shuffle(UPS).slice(0, 2); Sound.reveal && Sound.reveal(); st.hud(); };
+        },
+        update: function (st, dt) {
+          var tx = st.ptr.down ? st.ptr.x : st.x, ty = st.ptr.down ? st.ptr.y : st.y;
+          if (st.keys.ArrowLeft) tx = st.x - 50; if (st.keys.ArrowRight) tx = st.x + 50; if (st.keys.ArrowUp) ty = st.y - 50; if (st.keys.ArrowDown) ty = st.y + 50;
+          var dx = tx - st.x, dy = ty - st.y, d = Math.hypot(dx, dy);
+          if (d > 3) { var m = Math.min(d, st.speed * dt); st.x += dx / d * m; st.y += dy / d * m; }
+          st.x = Math.max(14, Math.min(st.W - 14, st.x)); st.y = Math.max(14, Math.min(st.H - 14, st.y));
+          st.inv -= dt;
+          st.spawn -= dt;
+          if (st.spawn <= 0) {
+            st.spawn = Math.max(0.28, 0.95 - st.t * 0.011);
+            var side = Math.floor(Math.random() * 4), ex = side % 2 ? (side === 1 ? st.W + 14 : -14) : Math.random() * st.W, ey = side % 2 ? Math.random() * st.H : (side === 0 ? -14 : st.H + 14);
+            var tough = st.t > 25 && Math.random() < Math.min(0.4, (st.t - 25) * 0.01);
+            st.en.push({ x: ex, y: ey, hp: tough ? 3 : 1, icon: tough ? '\u{1F9C5}' : '\u{1F336}\u{FE0F}', v: (tough ? 38 : 52) + st.t * 0.6 + Math.random() * 18 });
+          }
+          st.fire -= dt;
+          if (st.fire <= 0 && st.en.length) {
+            st.fire = st.rate;
+            var near = st.en.slice().sort(function (a, b) { return Math.hypot(a.x - st.x, a.y - st.y) - Math.hypot(b.x - st.x, b.y - st.y); })[0], ang = Math.atan2(near.y - st.y, near.x - st.x);
+            for (var k = 0; k < st.multi; k++) { var a2 = ang + (k - (st.multi - 1) / 2) * 0.22; st.sh.push({ x: st.x, y: st.y, vx: Math.cos(a2) * 320, vy: Math.sin(a2) * 320, life: 1.2 }); }
+            st.mouth = 'open'; st.mouthT = 0.1;
+          }
+          st.sh.forEach(function (b) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; });
+          st.en.forEach(function (e) {
+            var a = Math.atan2(st.y - e.y, st.x - e.x); e.x += Math.cos(a) * e.v * dt; e.y += Math.sin(a) * e.v * dt;
+            st.sh.forEach(function (b) { if (b.life > 0 && Math.hypot(b.x - e.x, b.y - e.y) < 15) { b.life = 0; e.hp--; st.burst(e.x, e.y, '#ff7043', 5); } });
+            if (e.hp <= 0 && !e.dead) { e.dead = true; st.score++; st.gems.push({ x: e.x, y: e.y }); st.pop(e.x, e.y - 10, '+1'); st.burst(e.x, e.y, '#ffb74d', 9); Sound.climb(Math.min(14, st.score)); st.hud(); }
+            if (!e.dead && st.inv <= 0 && Math.hypot(st.x - e.x, st.y - e.y) < 19) { e.dead = true; st.inv = 1.1; st.hurt(); st.burst(st.x, st.y, '#ff5252', 12); }
+          });
+          st.en = st.en.filter(function (e) { return !e.dead; }); st.sh = st.sh.filter(function (b) { return b.life > 0; });
+          st.gems = st.gems.filter(function (gm) {
+            var d2 = Math.hypot(st.x - gm.x, st.y - gm.y);
+            if (d2 < st.magnet) { gm.x += (st.x - gm.x) * Math.min(1, dt * 9); gm.y += (st.y - gm.y) * Math.min(1, dt * 9); }
+            if (d2 < 14) { st.xp++; Sound.tick(); if (st.xp >= st.need) st.levelUp(); return false; }
+            return true;
+          });
+        },
+        draw: function (st) {
+          var g = st.g;
+          g.fillStyle = 'rgba(255,255,255,.04)'; for (var i = 0; i < st.W; i += 40) { g.fillRect(i, 0, 1, st.H); } for (var j = 0; j < st.H; j += 40) { g.fillRect(0, j, st.W, 1); }
+          g.fillStyle = '#8be9fd'; st.gems.forEach(function (gm) { g.beginPath(); g.arc(gm.x, gm.y, 4, 0, 6.3); g.fill(); });
+          g.fillStyle = '#fff'; st.sh.forEach(function (b) { g.beginPath(); g.arc(b.x, b.y, 3.5, 0, 6.3); g.fill(); });
+          g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '24px serif'; g.fillStyle = '#fff';
+          st.en.forEach(function (e) { g.fillText(e.icon, e.x, e.y + 1); });
+          if (st.inv > 0 && Math.floor(st.inv * 12) % 2) g.globalAlpha = 0.4;
+          drawDot(g, st.x, st.y, 15, st.mouth); g.globalAlpha = 1;
+          g.fillStyle = 'rgba(255,255,255,.15)'; g.fillRect(0, st.H - 6, st.W, 6); g.fillStyle = '#8be9fd'; g.fillRect(0, st.H - 6, st.W * st.xp / st.need, 6);
+          if (st.choice) {
+            g.fillStyle = 'rgba(0,0,0,.72)'; g.fillRect(0, 0, st.W, st.H);
+            g.fillStyle = '#fff'; g.font = 'bold 16px sans-serif'; g.fillText('Level ' + st.lvl + '! Pick one', st.W / 2, 60);
+            st.choice.forEach(function (c, k) {
+              var x = 20 + k * (st.W / 2 - 10), w = st.W / 2 - 30;
+              g.fillStyle = '#26262a'; g.strokeStyle = '#e0a340'; g.lineWidth = 2; g.beginPath(); g.roundRect ? g.roundRect(x, 120, w, 170, 14) : g.rect(x, 120, w, 170); g.fill(); g.stroke();
+              g.fillStyle = '#e0a340'; g.font = 'bold 16px sans-serif'; g.fillText(c.n, x + w / 2, 175); g.fillStyle = '#ddd'; g.font = '13px sans-serif'; g.fillText(c.d, x + w / 2, 215);
+              g.fillStyle = '#888'; g.fillText(String(k + 1), x + w / 2, 265);
+            });
+          }
+        }
+      });
+    }
+
+    /* Dot Jump: bounce up through the kitchen. Springs, moving shelves and shelves that crumble. */
+    function jumpGame() {
+      canvasGame({
+        id: 'jump', label: 'Dot Jump', again: jumpGame, W: 340, H: 460, lives: 0,
+        intro: 'Up we go. Land on the shelves. Grab the dishes. Do not fall.',
+        how: 'Drag left and right (or use the arrow keys) to steer. Dot bounces by itself.',
+        notes: ['Gravity again. It is always gravity.', 'I was nearly at the ceiling.'],
+        hudText: function (st) { return 'Height ' + Math.floor(st.height / 10) + ' · ' + st.dishes + ' dishes'; },
+        setup: function (st) {
+          st.x = st.W / 2; st.y = st.H - 90; st.vy = -520; st.height = 0; st.dishes = 0; st.cam = 0; st.keys = {}; st.pl = []; st.top = st.H;
+          function shelf(y) { var r = Math.random(), t = st.height > 200 && r < 0.18 ? 'move' : st.height > 400 && r < 0.3 ? 'crumble' : r > 0.93 ? 'spring' : 'norm'; var p = { x: 20 + Math.random() * (st.W - 80), y: y, w: 62, t: t, dx: 50 + Math.random() * 40, gone: false }; if (Math.random() < 0.28) p.food = DISH(); st.pl.push(p); }
+          st.shelf = shelf; for (var y = st.H - 40; y > -40; y -= 62) shelf(y); st.pl[0] = { x: st.W / 2 - 40, y: st.H - 40, w: 80, t: 'norm', dx: 0 };
+          st.on(document, 'keydown', function (e) { st.keys[e.key] = true; }); st.on(document, 'keyup', function (e) { st.keys[e.key] = false; });
+        },
+        update: function (st, dt) {
+          var tx = st.ptr.down ? st.ptr.x : null;
+          if (st.keys.ArrowLeft) st.x -= 230 * dt; else if (st.keys.ArrowRight) st.x += 230 * dt; else if (tx !== null) st.x += (tx - st.x) * Math.min(1, dt * 10);
+          if (st.x < -10) st.x = st.W + 10; if (st.x > st.W + 10) st.x = -10;
+          var oy = st.y; st.vy += 1150 * dt; st.y += st.vy * dt;
+          if (st.y < st.H * 0.4) { var d = st.H * 0.4 - st.y; st.y = st.H * 0.4; st.height += d; st.pl.forEach(function (p) { p.y += d; }); }
+          st.pl.forEach(function (p) {
+            if (p.t === 'move') { p.x += p.dx * dt; if (p.x < 0 || p.x + p.w > st.W) p.dx = -p.dx; }
+            if (!p.gone && st.vy > 0 && oy + 14 <= p.y + 4 && st.y + 14 >= p.y && st.x > p.x - 8 && st.x < p.x + p.w + 8) {
+              if (p.t === 'crumble') { p.gone = true; st.burst(p.x + 30, p.y, '#b58a5a', 10); Sound.shrug(); }
+              else { st.vy = p.t === 'spring' ? -860 : -560; st.mouth = 'open'; st.mouthT = 0.2; if (p.t === 'spring') { st.burst(st.x, p.y, '#ff5252', 10); st.pop(st.x, p.y - 20, 'BOING', '#ff8a80'); Sound.climb(10); } else Sound.tick(); }
+            }
+            if (p.food && Math.hypot(st.x - (p.x + p.w / 2), st.y - (p.y - 18)) < 24) { p.food = null; st.dishes++; st.score += 5; st.pop(st.x, st.y - 24, '+5', '#e0a340'); st.burst(st.x, st.y, '#e0a340', 8); Sound.climb(Math.min(14, st.dishes * 2)); st.hud(); }
+          });
+          st.pl = st.pl.filter(function (p) { return p.y < st.H + 20 && !p.gone; });
+          var hi = Math.min.apply(null, st.pl.map(function (p) { return p.y; }));
+          while (hi > -30) { hi -= 56 + Math.min(40, st.height / 80); st.shelf(hi); }
+          st.score = Math.floor(st.height / 10) + st.dishes * 5; st.hud();
+          if (st.y > st.H + 30) { st.over = true; st.shake = 10; Sound.bust(); }
+        },
+        draw: function (st) {
+          var g = st.g;
+          st.pl.forEach(function (p) {
+            g.fillStyle = p.t === 'spring' ? '#ff5252' : p.t === 'crumble' ? '#9c7a52' : p.t === 'move' ? '#64b5f6' : '#7bd17b';
+            g.beginPath(); g.roundRect ? g.roundRect(p.x, p.y, p.w, 10, 5) : g.rect(p.x, p.y, p.w, 10); g.fill();
+            if (p.food) { g.font = '22px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.fillText(p.food, p.x + p.w / 2, p.y - 16); }
+          });
+          drawDot(g, st.x, st.y, 15, st.vy < 0 ? 'open' : st.mouth);
+        }
+      });
+    }
+
+    /* Dish Stack: drop each dish exactly on the last one. What overhangs is cut off. */
+    function stackGame() {
+      var keyHandler = null;
+      canvasGame({
+        id: 'stack', label: 'Dish Stack', again: stackGame, lives: 3,
+        intro: 'Stack the dishes. Time it right. Do not think about the wobble.',
+        how: 'Tap the board, or press space, to drop the dish.',
+        notes: ['Memory is overrated.', 'It was the dish’s fault.'],
+        setup: function (st) {
+          st.h = 22; st.blocks = [{ x: st.W / 2 - 80, w: 160, icon: '\u{1F35E}' }]; st.cx = 0; st.dir = 1; st.w = 160; st.shift = 0;
+          st.cx = 0;
+          function drop() {
+            var top = st.blocks[st.blocks.length - 1], left = Math.max(top.x, st.cx), right = Math.min(top.x + top.w, st.cx + st.w);
+            if (right - left < 4) { st.hurt(); st.cx = 0; st.dir = 1; return; }
+            var perfect = Math.abs(st.cx - top.x) < 5;
+            var nx = perfect ? top.x : left, nw = perfect ? top.w : right - left;
+            st.blocks.push({ x: nx, w: nw, icon: pickOne(Data.ITEMS).icon });
+            if (perfect) { st.pop(st.cx + st.w / 2, 120, 'Perfect', '#e0a340'); st.burst(st.cx + nw / 2, 160, '#e0a340', 14); }
+            st.w = nw; st.score++; st.mouth = 'open'; st.mouthT = 0.3; Sound.climb(Math.min(14, st.score)); st.hud();
+          }
+          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); drop(); });
+          keyHandler = function (e) { if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); drop(); } };
+          document.addEventListener('keydown', keyHandler);
+        },
+        update: function (st, dt) {
+          var speed = 130 + st.score * 9;
+          st.cx += st.dir * speed * dt;
+          if (st.cx < 0) { st.cx = 0; st.dir = 1; }
+          if (st.cx + st.w > st.W) { st.cx = st.W - st.w; st.dir = -1; }
+          var want = Math.max(0, st.blocks.length - 11) * st.h;
+          st.shift += (want - st.shift) * Math.min(1, dt * 6);
+        },
+        draw: function (st) {
+          var g = st.g, base = st.H - 30 + st.shift;
+          st.blocks.forEach(function (b, i) {
+            var y = base - i * st.h;
+            g.fillStyle = 'hsl(' + ((i * 23 + 30) % 360) + ',60%,58%)';
+            g.fillRect(b.x, y, b.w, st.h - 2);
+          });
+          var y = base - st.blocks.length * st.h;
+          g.fillStyle = '#f5eee1'; g.fillRect(st.cx, y, st.w, st.h - 2);
+          drawDot(g, st.cx + st.w / 2, y - 16, 14, st.mouth);
+        },
+        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
+      });
+    }
+
+    /* Seed Spit: drag back and let go. Wind moves the seed; the plate drifts up and down. */
+    function spitGame() {
+      canvasGame({
+        id: 'spit', label: 'Seed Spit', again: spitGame, W: 360, H: 380, lives: 0,
+        intro: 'Eight seeds. One plate. Mind the wind. I will not be blamed.',
+        how: 'Drag back from Dot to aim and set the power, then let go.',
+        notes: ['The wind did that. Not me.', 'The plate moved. I saw it move.'],
+        hudText: function (st) { return 'Score ' + st.score + ' · ' + st.shots + ' seeds left'; },
+        setup: function (st) {
+          st.shots = 8; st.px = 60; st.py = st.H - 60; st.aim = null; st.seed = null; st.wind = (Math.random() - 0.5) * 160; st.ty = 150; st.tx = st.W - 56; st.trail = [];
+          st.cv.addEventListener('pointerdown', function (e) { if (!st.seed && st.shots > 0) st.aim = { x: st.ptr.x, y: st.ptr.y }; });
+          st.cv.addEventListener('pointerup', function () {
+            if (!st.aim || st.seed) return;
+            var dx = st.px - st.ptr.x, dy = st.py - st.ptr.y, pw = Math.min(130, Math.hypot(dx, dy));
+            st.aim = null;
+            if (pw < 14) return;
+            var a = Math.atan2(dy, dx); st.seed = { x: st.px, y: st.py, vx: Math.cos(a) * pw * 4.2, vy: Math.sin(a) * pw * 4.2 }; st.shots--; st.trail = []; st.mouth = 'open'; st.mouthT = 0.3; Sound.tick(); st.hud();
+          });
+        },
+        update: function (st, dt) {
+          st.ty = st.H * 0.42 + Math.sin(st.t * 0.9) * 90;
+          if (st.seed) {
+            var sd = st.seed; sd.vx += st.wind * dt; sd.vy += 420 * dt; sd.x += sd.vx * dt; sd.y += sd.vy * dt; st.trail.push([sd.x, sd.y]);
+            var d = Math.hypot(sd.x - st.tx, sd.y - st.ty);
+            if (d < 34) { var pts = d < 9 ? 50 : d < 20 ? 25 : 10; st.score += pts; st.pop(sd.x, sd.y - 10, pts === 50 ? 'Bullseye +50' : '+' + pts, '#e0a340'); st.burst(sd.x, sd.y, '#e0a340', pts === 50 ? 22 : 10); Sound.climb(pts / 4); st.seed = null; st.wind = (Math.random() - 0.5) * 160; st.hud(); }
+            else if (sd.y > st.H || sd.x > st.W + 20 || sd.x < -20) { st.pop(Math.max(20, Math.min(st.W - 20, sd.x)), st.H - 20, 'Miss', '#ff8a80'); st.seed = null; st.wind = (Math.random() - 0.5) * 160; }
+          }
+          if (!st.seed && st.shots <= 0) st.over = true;
+        },
+        draw: function (st) {
+          var g = st.g;
+          g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(0, st.py + 22, st.W, st.H);
+          [34, 20, 9].forEach(function (r, i) { g.fillStyle = ['#e0a340', '#f5eee1', '#d9534f'][i]; g.beginPath(); g.arc(st.tx, st.ty, r, 0, 6.3); g.fill(); });
+          g.fillStyle = '#fff'; g.font = '13px sans-serif'; g.textAlign = 'center'; g.fillText('wind ' + (st.wind > 0 ? '→' : '←') + ' ' + Math.round(Math.abs(st.wind) / 16), st.W / 2, 24);
+          if (st.aim) {
+            var dx = st.px - st.ptr.x, dy = st.py - st.ptr.y, pw = Math.min(130, Math.hypot(dx, dy)), a = Math.atan2(dy, dx), vx = Math.cos(a) * pw * 4.2, vy = Math.sin(a) * pw * 4.2;
+            g.fillStyle = 'rgba(255,255,255,.55)';
+            for (var k = 1; k < 14; k++) { var tt = k * 0.07; g.beginPath(); g.arc(st.px + vx * tt + 0.5 * st.wind * tt * tt, st.py + vy * tt + 0.5 * 420 * tt * tt, 2.2, 0, 6.3); g.fill(); }
+          }
+          g.fillStyle = 'rgba(255,255,255,.3)'; st.trail.forEach(function (p) { g.fillRect(p[0], p[1], 2, 2); });
+          if (st.seed) { g.fillStyle = '#fff'; g.beginPath(); g.arc(st.seed.x, st.seed.y, 4, 0, 6.3); g.fill(); }
+          drawDot(g, st.px, st.py, 20, st.aim ? 'open' : st.mouth);
+        }
+      });
+    }
+
+    /* Merge Pot: drop dishes into the pot. Two of the same merge into the next one up. Do not let the pot overflow. */
+    function mergeGame() {
+      var CHAIN = ['\u{1F9C4}', '\u{1F345}', '\u{1F955}', '\u{1F336}\u{FE0F}', '\u{1F954}', '\u{1F373}', '\u{1F354}', '\u{1F355}', '\u{1F35C}', '\u{1F370}', '\u{1F451}'];
+      var R = function (t) { return 13 + t * 5.4; };
+      canvasGame({
+        id: 'merge', label: 'Merge Pot', again: mergeGame, W: 340, H: 480, lives: 0,
+        intro: 'Drop. Merge. Climb from a garlic clove to a crown. Mind the rim.',
+        how: 'Move to aim, tap to drop. Same dishes merge into the next one.',
+        notes: ['The pot overflowed. Pots do that.', 'So close to the crown. Allegedly.'],
+        setup: function (st) {
+          st.balls = []; st.cd = 0; st.next = Math.floor(Math.random() * 3); st.cur = Math.floor(Math.random() * 3); st.top = 80; st.full = 0; st.best = 0;
+          st.drop = function () {
+            if (st.cd > 0 || st.over) return;
+            var x = Math.max(22 + R(st.cur), Math.min(st.W - 22 - R(st.cur), st.ptr.x));
+            st.balls.push({ x: x, y: 40, vx: 0, vy: 60, t: st.cur, age: 0 });
+            st.cur = st.next; st.next = Math.floor(Math.random() * Math.min(4, 2 + Math.floor(st.score / 300))); st.cd = 0.5; Sound.tick();
+          };
+          st.cv.addEventListener('pointerup', function () { st.drop(); });
+          st.on(document, 'keydown', function (e) { if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); st.drop(); } if (e.key === 'ArrowLeft') st.ptr.x -= 24; if (e.key === 'ArrowRight') st.ptr.x += 24; });
+        },
+        update: function (st, dt) {
+          st.cd -= dt;
+          var L = 22, Rt = st.W - 22, F = st.H - 22, steps = 4, h2 = dt / steps;
+          for (var s2 = 0; s2 < steps; s2++) {
+            st.balls.forEach(function (b) { b.vy += 1000 * h2; b.x += b.vx * h2; b.y += b.vy * h2; b.age += h2; var r = R(b.t);
+              if (b.x < L + r) { b.x = L + r; b.vx = Math.abs(b.vx) * 0.3; } if (b.x > Rt - r) { b.x = Rt - r; b.vx = -Math.abs(b.vx) * 0.3; }
+              if (b.y > F - r) { b.y = F - r; b.vy = -Math.abs(b.vy) * 0.18; b.vx *= 0.96; } });
+            for (var i = 0; i < st.balls.length; i++) for (var j = i + 1; j < st.balls.length; j++) {
+              var a = st.balls[i], b2 = st.balls[j]; if (!a || !b2 || a.dead || b2.dead) continue;
+              var dx = b2.x - a.x, dy = b2.y - a.y, d = Math.hypot(dx, dy) || 0.01, min = R(a.t) + R(b2.t);
+              if (d < min) {
+                if (a.t === b2.t && a.t < CHAIN.length - 1 && (a.age > 0.05 || b2.age > 0.05)) {
+                  a.dead = b2.dead = true; var nt = a.t + 1; st.balls.push({ x: (a.x + b2.x) / 2, y: (a.y + b2.y) / 2, vx: 0, vy: -60, t: nt, age: 0 });
+                  var pts = (nt + 1) * 10; st.score += pts; st.pop((a.x + b2.x) / 2, (a.y + b2.y) / 2 - 18, '+' + pts, '#e0a340'); st.burst((a.x + b2.x) / 2, (a.y + b2.y) / 2, '#e0a340', 12 + nt); Sound.climb(Math.min(14, nt * 2)); st.hud();
+                  if (nt === CHAIN.length - 1) { st.score += 500; st.pop(st.W / 2, 120, 'CROWN +500', '#ffd54f'); st.shake = 8; }
+                  continue;
+                }
+                var nx = dx / d, ny = dy / d, over = (min - d) / 2, ma = R(a.t) * R(a.t), mb = R(b2.t) * R(b2.t), tot = ma + mb;
+                a.x -= nx * over * (mb / tot) * 2; a.y -= ny * over * (mb / tot) * 2; b2.x += nx * over * (ma / tot) * 2; b2.y += ny * over * (ma / tot) * 2;
+                var rv = (b2.vx - a.vx) * nx + (b2.vy - a.vy) * ny;
+                if (rv < 0) { var imp = -rv * 1.15; a.vx -= nx * imp * (mb / tot); a.vy -= ny * imp * (mb / tot); b2.vx += nx * imp * (ma / tot); b2.vy += ny * imp * (ma / tot); }
+              }
+            }
+            st.balls = st.balls.filter(function (b) { return !b.dead; });
+          }
+          // overflow: a settled ball above the rim for a while
+          var over2 = st.balls.some(function (b) { return b.age > 1.4 && b.y - R(b.t) < st.top && Math.abs(b.vy) < 60; });
+          st.full = over2 ? st.full + dt : Math.max(0, st.full - dt * 2);
+          if (st.full > 1.6) { st.over = true; st.shake = 10; Sound.bust(); }
+        },
+        draw: function (st) {
+          var g = st.g;
+          g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = 3; g.beginPath(); g.moveTo(20, st.top - 20); g.lineTo(20, st.H - 18); g.lineTo(st.W - 20, st.H - 18); g.lineTo(st.W - 20, st.top - 20); g.stroke();
+          g.setLineDash([6, 6]); g.strokeStyle = 'rgba(255,90,90,' + (0.25 + Math.min(0.7, st.full / 1.6)) + ')'; g.beginPath(); g.moveTo(20, st.top); g.lineTo(st.W - 20, st.top); g.stroke(); g.setLineDash([]);
+          g.textAlign = 'center'; g.textBaseline = 'middle';
+          st.balls.forEach(function (b) { var r = R(b.t); g.fillStyle = 'hsla(' + (b.t * 31 + 20) + ',55%,52%,.28)'; g.beginPath(); g.arc(b.x, b.y, r, 0, 6.3); g.fill(); g.strokeStyle = 'hsla(' + (b.t * 31 + 20) + ',60%,62%,.7)'; g.lineWidth = 2; g.stroke(); g.fillStyle = '#fff'; g.font = Math.round(r * 1.25) + 'px serif'; g.fillText(CHAIN[b.t], b.x, b.y + 1); });
+          var x = Math.max(22 + R(st.cur), Math.min(st.W - 22 - R(st.cur), st.ptr.x));
+          g.globalAlpha = st.cd > 0 ? 0.35 : 1; g.fillStyle = '#fff'; g.font = Math.round(R(st.cur) * 1.25) + 'px serif'; g.fillText(CHAIN[st.cur], x, 36);
+          g.globalAlpha = 0.25; g.fillRect(x - 0.5, 50, 1, st.H); g.globalAlpha = 1;
+          g.font = '12px sans-serif'; g.fillStyle = '#aaa'; g.fillText('next ' + CHAIN[st.next], st.W - 44, 14);
+        }
+      });
+    }
+
+    /* Dish Pop: aim and shoot. Three of a kind pop; whatever they were holding up falls. */
+    function popBubbles() {
+      var COLORS = ['#e8573b', '#e0a340', '#62b6ea', '#7bd17b', '#c58bf0'];
+      canvasGame({
+        id: 'pop', label: 'Dish Pop', again: popBubbles, W: 360, H: 480, lives: 0,
+        intro: 'Match three. Bring the ceiling down before it brings you down.',
+        how: 'Aim with your finger or mouse and tap to shoot. Bounce shots off the walls.',
+        notes: ['The ceiling won. It is a very patient ceiling.', 'I was aiming at the other one.'],
+        setup: function (st) {
+          st.R = 17; st.cols = 10; st.rows = 15; st.grid = []; st.icons = shuffle(Data.ITEMS.map(function (d) { return d.icon; }).filter(function (v, i, a) { return a.indexOf(v) === i; })).slice(0, 5);
+          for (var r = 0; r < st.rows; r++) { st.grid.push([]); for (var c = 0; c < st.cols; c++) st.grid[r].push(r < 6 ? Math.floor(Math.random() * 5) : -1); }
+          st.shot = null; st.cur = Math.floor(Math.random() * 5); st.next = Math.floor(Math.random() * 5); st.shots = 0; st.fall = [];
+          st.xy = function (r, c) { return { x: st.R + c * 2 * st.R + (r % 2 ? st.R : 0), y: st.R + r * st.R * 1.74 }; };
+          st.nb = function (r, c) { var o = r % 2 ? [[0, -1], [0, 1], [-1, 0], [-1, 1], [1, 0], [1, 1]] : [[0, -1], [0, 1], [-1, -1], [-1, 0], [1, -1], [1, 0]]; return o.map(function (d) { return [r + d[0], c + d[1]]; }).filter(function (p) { return p[0] >= 0 && p[0] < st.rows && p[1] >= 0 && p[1] < st.cols; }); };
+          st.cv.addEventListener('pointerup', function () {
+            if (st.shot || st.over || st.paused) return;
+            var dx = st.ptr.x - st.W / 2, dy = st.ptr.y - (st.H - 34), a = Math.atan2(dy, dx); if (dy > -20) return;
+            st.shot = { x: st.W / 2, y: st.H - 34, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560, c: st.cur }; st.cur = st.next; st.next = Math.floor(Math.random() * 5); Sound.tick();
+          });
+        },
+        update: function (st, dt) {
+          st.fall.forEach(function (f) { f.vy += 900 * dt; f.y += f.vy * dt; }); st.fall = st.fall.filter(function (f) { return f.y < st.H + 20; });
+          var sh = st.shot; if (!sh) return;
+          var steps = 3;
+          for (var k = 0; k < steps && st.shot; k++) {
+            sh.x += sh.vx * dt / steps; sh.y += sh.vy * dt / steps;
+            if (sh.x < st.R) { sh.x = st.R; sh.vx = Math.abs(sh.vx); } if (sh.x > st.W - st.R) { sh.x = st.W - st.R; sh.vx = -Math.abs(sh.vx); }
+            var hit = sh.y <= st.R;
+            for (var r = 0; r < st.rows && !hit; r++) for (var c = 0; c < st.cols; c++) if (st.grid[r][c] >= 0) { var p = st.xy(r, c); if (Math.hypot(p.x - sh.x, p.y - sh.y) < st.R * 1.8) { hit = true; break; } }
+            if (hit) { place(st, sh); st.shot = null; }
+          }
+        },
+        draw: function (st) {
+          var g = st.g; g.textAlign = 'center'; g.textBaseline = 'middle';
+          function bub(x, y, c) { g.fillStyle = COLORS[c] + '55'; g.beginPath(); g.arc(x, y, st.R - 1, 0, 6.3); g.fill(); g.strokeStyle = COLORS[c]; g.lineWidth = 2; g.stroke(); g.fillStyle = '#fff'; g.font = '20px serif'; g.fillText(st.icons[c], x, y + 1); }
+          for (var r = 0; r < st.rows; r++) for (var c = 0; c < st.cols; c++) if (st.grid[r][c] >= 0) { var p = st.xy(r, c); bub(p.x, p.y, st.grid[r][c]); }
+          st.fall.forEach(function (f) { bub(f.x, f.y, f.c); });
+          var lineY = st.xy(12, 0).y; g.setLineDash([5, 6]); g.strokeStyle = 'rgba(255,90,90,.45)'; g.beginPath(); g.moveTo(0, lineY); g.lineTo(st.W, lineY); g.stroke(); g.setLineDash([]);
+          var dx = st.ptr.x - st.W / 2, dy = st.ptr.y - (st.H - 34), a = Math.atan2(dy, dx);
+          if (!st.shot && dy < -20) { g.fillStyle = 'rgba(255,255,255,.5)'; for (var q = 1; q < 9; q++) { g.beginPath(); g.arc(st.W / 2 + Math.cos(a) * q * 26, st.H - 34 + Math.sin(a) * q * 26, 2, 0, 6.3); g.fill(); } }
+          if (st.shot) bub(st.shot.x, st.shot.y, st.shot.c);
+          drawDot(g, st.W / 2, st.H - 30, 22, st.mouth); bub(st.W / 2, st.H - 34, st.cur); g.globalAlpha = 0.8; bub(st.W / 2 - 60, st.H - 24, st.next); g.globalAlpha = 1;
+        }
+      });
+      function place(st, sh) {
+        var best = null, bd = 1e9;
+        for (var r = 0; r < st.rows; r++) for (var c = 0; c < st.cols; c++) if (st.grid[r][c] < 0) { var p = st.xy(r, c), d = Math.hypot(p.x - sh.x, p.y - sh.y); if (d < bd) { bd = d; best = [r, c]; } }
+        if (!best) { st.over = true; return; }
+        st.grid[best[0]][best[1]] = sh.c; st.shots++;
+        var seen = {}, stack = [best], grp = [];
+        while (stack.length) { var cur = stack.pop(), key = cur[0] + ',' + cur[1]; if (seen[key]) continue; seen[key] = 1; if (st.grid[cur[0]][cur[1]] !== sh.c) continue; grp.push(cur); st.nb(cur[0], cur[1]).forEach(function (n) { stack.push(n); }); }
+        if (grp.length >= 3) {
+          grp.forEach(function (p) { var xy = st.xy(p[0], p[1]); st.burst(xy.x, xy.y, COLORS[sh.c], 7); st.grid[p[0]][p[1]] = -1; }); st.score += grp.length * 10 + (grp.length - 3) * 10; st.pop(sh.x, sh.y - 16, '+' + (grp.length * 10), '#e0a340'); Sound.climb(Math.min(14, grp.length * 2));
+          var con = {}, q = []; for (var c2 = 0; c2 < st.cols; c2++) if (st.grid[0][c2] >= 0) { q.push([0, c2]); con['0,' + c2] = 1; }
+          while (q.length) { var p2 = q.pop(); st.nb(p2[0], p2[1]).forEach(function (n) { var k2 = n[0] + ',' + n[1]; if (!con[k2] && st.grid[n[0]][n[1]] >= 0) { con[k2] = 1; q.push(n); } }); }
+          var dropped = 0; for (var r2 = 0; r2 < st.rows; r2++) for (var c3 = 0; c3 < st.cols; c3++) if (st.grid[r2][c3] >= 0 && !con[r2 + ',' + c3]) { var xy2 = st.xy(r2, c3); st.fall.push({ x: xy2.x, y: xy2.y, vy: 0, c: st.grid[r2][c3] }); st.grid[r2][c3] = -1; dropped++; }
+          if (dropped) { st.score += dropped * 20; st.pop(st.W / 2, 140, 'Drop! +' + dropped * 20, '#8be9fd'); st.shake = 4; }
+          st.mouth = 'open'; st.mouthT = 0.3; st.hud();
+        }
+        if (st.shots % 6 === 0) { st.grid.pop(); var row = []; for (var cc = 0; cc < st.cols; cc++) row.push(Math.floor(Math.random() * 5)); st.grid.unshift(row); st.shake = 3; }
+        for (var rr = 12; rr < st.rows; rr++) for (var c4 = 0; c4 < st.cols; c4++) if (st.grid[rr][c4] >= 0) st.over = true;
+        var alive = st.grid.some(function (r3) { return r3.some(function (v) { return v >= 0; }); }); if (!alive) { st.score += 200; st.pop(st.W / 2, 200, 'Clear! +200', '#ffd54f'); for (var r5 = 0; r5 < 4; r5++) for (var c5 = 0; c5 < st.cols; c5++) st.grid[r5][c5] = Math.floor(Math.random() * 5); }
+      }
+    }
+
+    /* Match Meal: swap two neighbours to line up three. Cascades score more. Sixty seconds. */
+    function matchGame() {
+      var s = screen();
+      words('Swap neighbours. Line up three. Chain reactions are encouraged.', 'happy');
+      var N = 7, ICONS = shuffle(Data.ITEMS.map(function (d) { return d.icon; }).filter(function (v, i, a) { return a.indexOf(v) === i; })).slice(0, 6);
+      var grid = [], els = [], score = 0, left = 60, busy = true, over = false, sel = null, combo = 0, timers = [];
+      var hud = h('p', 'dg-score', ''), board = h('div', 'dg-match');
+      s.appendChild(hud); s.appendChild(board); s.appendChild(h('p', 'fine', 'Tap a dish, then a neighbour to swap. Four or more in a row add time.'));
+      function later(f, ms) { timers.push(setTimeout(f, ms)); }
+      function paint() { hud.textContent = 'Score ' + score + (combo > 1 ? ' · ×' + combo : '') + ' · ' + left + 's'; }
+      function tile(r, c, v, fromTop) { var e = h('span', 'dg-mt', ICONS[v]); e.style.setProperty('--r', fromTop ? -1 - Math.random() : r); e.style.setProperty('--c', c); board.appendChild(e); if (fromTop) { void e.offsetWidth; e.style.setProperty('--r', r); } e.addEventListener('pointerdown', function (ev) { ev.preventDefault(); tap(e); }); return { v: v, e: e }; }
+      function pos(e) { for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) if (grid[r][c] && grid[r][c].e === e) return [r, c]; return null; }
+      function setPos(t, r, c) { t.e.style.setProperty('--r', r); t.e.style.setProperty('--c', c); }
+      function matches() {
+        var out = {}, runs = [];
+        for (var r = 0; r < N; r++) { var c = 0; while (c < N) { var v = grid[r][c] && grid[r][c].v, k = c; while (k < N && grid[r][k] && grid[r][k].v === v) k++; if (v !== null && k - c >= 3) { runs.push(k - c); for (var x = c; x < k; x++) out[r + ',' + x] = 1; } c = Math.max(k, c + 1); } }
+        for (var c2 = 0; c2 < N; c2++) { var r2 = 0; while (r2 < N) { var v2 = grid[r2][c2] && grid[r2][c2].v, k2 = r2; while (k2 < N && grid[k2][c2] && grid[k2][c2].v === v2) k2++; if (v2 !== null && k2 - r2 >= 3) { runs.push(k2 - r2); for (var y = r2; y < k2; y++) out[y + ',' + c2] = 1; } r2 = Math.max(k2, r2 + 1); } }
+        return { cells: Object.keys(out), runs: runs };
+      }
+      function swap(a, b) { var t = grid[a[0]][a[1]]; grid[a[0]][a[1]] = grid[b[0]][b[1]]; grid[b[0]][b[1]] = t; setPos(grid[a[0]][a[1]], a[0], a[1]); setPos(grid[b[0]][b[1]], b[0], b[1]); }
+      function hasMove() { for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) for (var d = 0; d < 2; d++) { var r2 = r + d, c2 = c + (1 - d); if (r2 >= N || c2 >= N) continue; var t = grid[r][c]; grid[r][c] = grid[r2][c2]; grid[r2][c2] = t; var ok = matches().cells.length > 0; t = grid[r][c]; grid[r][c] = grid[r2][c2]; grid[r2][c2] = t; if (ok) return true; } return false; }
+      function resolve() {
+        var m = matches();
+        if (!m.cells.length) { combo = 0; busy = false; paint(); if (!hasMove()) shuffleBoard(); return; }
+        combo++; var pts = m.cells.length * 10 * combo; score += pts; if (m.runs.some(function (x) { return x >= 4; })) left += 3; Sound.climb(Math.min(14, combo * 3)); Dot.mood(dotEl, combo > 2 ? 'celebrate' : 'happy', 500); paint();
+        m.cells.forEach(function (k) { var p = k.split(','), t = grid[+p[0]][+p[1]]; t.e.classList.add('is-gone'); (function (e) { later(function () { e.remove(); }, 220); })(t.e); grid[+p[0]][+p[1]] = null; });
+        later(function () {
+          for (var c = 0; c < N; c++) { var w = N - 1; for (var r = N - 1; r >= 0; r--) if (grid[r][c]) { if (r !== w) { grid[w][c] = grid[r][c]; grid[r][c] = null; setPos(grid[w][c], w, c); } w--; } for (var r3 = w; r3 >= 0; r3--) grid[r3][c] = tile(r3, c, Math.floor(Math.random() * ICONS.length), true); }
+          later(resolve, 360);
+        }, 240);
+      }
+      function shuffleBoard() { var all = []; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) all.push(grid[r][c]); all = shuffle(all); var i = 0; for (r = 0; r < N; r++) for (c = 0; c < N; c++) { grid[r][c] = all[i++]; setPos(grid[r][c], r, c); } later(resolve, 350); }
+      function tap(e) {
+        if (busy || over) return; var p = pos(e); if (!p) return; Sound.tick();
+        if (!sel) { sel = p; e.classList.add('is-sel'); return; }
+        var a = sel, selEl = grid[a[0]][a[1]].e; selEl.classList.remove('is-sel'); sel = null;
+        if (Math.abs(a[0] - p[0]) + Math.abs(a[1] - p[1]) !== 1) { sel = p; e.classList.add('is-sel'); return; }
+        busy = true; swap(a, p);
+        if (!matches().cells.length) { later(function () { swap(a, p); Sound.shrug(); busy = false; }, 260); } else later(resolve, 260);
+      }
+      for (var r = 0; r < N; r++) { grid.push([]); for (var c = 0; c < N; c++) { var v; do { v = Math.floor(Math.random() * ICONS.length); } while ((c > 1 && grid[r][c - 1].v === v && grid[r][c - 2].v === v) || (r > 1 && grid[r - 1][c].v === v && grid[r - 2][c].v === v)); grid[r].push(tile(r, c, v, false)); } }
+      if (!hasMove()) shuffleBoard(); else busy = false;
+      paint();
+      var clock = setInterval(function () { if (busy && false) return; left--; paint(); if (left <= 0) { over = true; stopGame(); results('match', score, matchGame, ['The board won. Boards do.', 'Three in a row was right there.']); } }, 1000);
+      cleanup = function () { over = true; clearInterval(clock); timers.forEach(clearTimeout); };
+    }
+
+    /* Chilli Invaders: hold the line. Rows of chillies march down; Dot shoots up. Catch the sparkles for better seeds. */
+    function invadeGame() {
+      canvasGame({
+        id: 'invade', label: 'Chilli Invaders', again: invadeGame, W: 360, H: 460, lives: 3,
+        intro: 'They march. I shoot. You steer. We have done this before.',
+        how: 'Drag to move Dot (or use the arrow keys). It fires by itself. Catch the sparkles.',
+        notes: ['They reached the kitchen. We lost the kitchen.', 'One more wave. Always one more wave.'],
+        hudText: function (st) { return 'Wave ' + st.wave + ' · ' + st.score; },
+        setup: function (st) {
+          st.x = st.W / 2; st.wave = 0; st.en = []; st.sh = []; st.bomb = []; st.drops = []; st.dir = 1; st.fire = 0; st.rate = 0.34; st.triple = 0; st.inv = 0; st.keys = {};
+          st.next = function () { st.wave++; st.en = []; var rows = Math.min(5, 3 + Math.floor(st.wave / 2)); for (var r = 0; r < rows; r++) for (var c = 0; c < 8; c++) st.en.push({ x: 40 + c * 40, y: 50 + r * 34, icon: ['\u{1F336}\u{FE0F}', '\u{1F9C5}', '\u{1F346}', '\u{1F345}', '\u{1F955}'][r % 5], hp: r === 0 && st.wave > 2 ? 2 : 1, pts: 10 + (rows - r) * 5 }); st.dir = 1; st.pause = 1.2; st.hud(); };
+          st.next();
+          st.on(document, 'keydown', function (e) { st.keys[e.key] = true; }); st.on(document, 'keyup', function (e) { st.keys[e.key] = false; });
+        },
+        update: function (st, dt) {
+          var tx = st.ptr.down ? st.ptr.x : st.x; if (st.keys.ArrowLeft) tx = st.x - 60; if (st.keys.ArrowRight) tx = st.x + 60;
+          st.x += Math.max(-300 * dt, Math.min(300 * dt, tx - st.x)); st.x = Math.max(20, Math.min(st.W - 20, st.x)); st.inv -= dt; st.triple -= dt;
+          st.fire -= dt; if (st.fire <= 0) { st.fire = st.triple > 0 ? st.rate * 0.7 : st.rate; var spread = st.triple > 0 ? [-0.18, 0, 0.18] : [0]; spread.forEach(function (a) { st.sh.push({ x: st.x, y: st.H - 52, vx: Math.sin(a) * 420, vy: -Math.cos(a) * 420 }); }); }
+          st.sh.forEach(function (b) { b.x += b.vx * dt; b.y += b.vy * dt; });
+          if ((st.pause -= dt) > 0) { st.sh = st.sh.filter(function (b) { return b.y > -10; }); return; }
+          var speed = (36 + st.wave * 9 + (40 - st.en.length) * 1.5) * st.dir, edge = false;
+          st.en.forEach(function (e) { e.x += speed * dt; if (e.x < 20 || e.x > st.W - 20) edge = true; });
+          if (edge) { st.dir *= -1; st.en.forEach(function (e) { e.y += 16; e.x += st.dir * 3; }); }
+          if (st.en.length && Math.random() < dt * (0.7 + st.wave * 0.15)) { var sh = st.en[Math.floor(Math.random() * st.en.length)]; st.bomb.push({ x: sh.x, y: sh.y + 12, v: 130 + st.wave * 10 }); }
+          st.bomb.forEach(function (b) { b.y += b.v * dt; if (st.inv <= 0 && Math.abs(b.x - st.x) < 15 && Math.abs(b.y - (st.H - 40)) < 17) { b.y = 9999; st.inv = 1.3; st.hurt(); st.burst(st.x, st.H - 40, '#ff5252', 14); } });
+          st.sh.forEach(function (b) { st.en.forEach(function (e) { if (b.y > -10 && !e.dead && Math.abs(b.x - e.x) < 16 && Math.abs(b.y - e.y) < 15) { b.y = -99; e.hp--; st.burst(e.x, e.y, '#ffb74d', 5); if (e.hp <= 0) { e.dead = true; st.score += e.pts; st.pop(e.x, e.y - 12, '+' + e.pts); st.burst(e.x, e.y, '#ff7043', 9); Sound.climb(Math.min(14, Math.floor(st.score / 40))); if (Math.random() < 0.07) st.drops.push({ x: e.x, y: e.y }); st.hud(); } } }); });
+          st.en = st.en.filter(function (e) { return !e.dead; });
+          st.sh = st.sh.filter(function (b) { return b.y > -10 && b.x > -10 && b.x < st.W + 10; }); st.bomb = st.bomb.filter(function (b) { return b.y < st.H + 10; });
+          st.drops.forEach(function (d) { d.y += 90 * dt; if (Math.abs(d.x - st.x) < 20 && Math.abs(d.y - (st.H - 40)) < 20) { d.y = 9999; st.triple = 8; st.pop(st.x, st.H - 70, 'Triple shot!', '#8be9fd'); Sound.climb(12); } });
+          st.drops = st.drops.filter(function (d) { return d.y < st.H + 10; });
+          if (st.en.some(function (e) { return e.y > st.H - 80; })) { st.lives = 0; st.hurt(); st.over = true; }
+          if (!st.en.length) { st.score += 50 * st.wave; st.pop(st.W / 2, st.H / 2, 'Wave clear! +' + 50 * st.wave, '#ffd54f'); Sound.climb(14); st.next(); }
+        },
+        draw: function (st) {
+          var g = st.g; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '26px serif'; g.fillStyle = '#fff';
+          st.en.forEach(function (e) { g.fillText(e.icon, e.x, e.y + Math.sin(st.t * 5 + e.x) * 1.5); });
+          st.bomb.forEach(function (b) { g.fillText('\u{1F525}', b.x, b.y); }); g.fillStyle = '#8be9fd'; st.drops.forEach(function (d) { g.font = '20px serif'; g.fillText('✨', d.x, d.y); });
+          g.fillStyle = '#fff'; st.sh.forEach(function (b) { g.beginPath(); g.arc(b.x, b.y, 3.2, 0, 6.3); g.fill(); });
+          if (st.inv > 0 && Math.floor(st.inv * 12) % 2) g.globalAlpha = 0.4; drawDot(g, st.x, st.H - 40, 19, st.mouth); g.globalAlpha = 1;
+        }
+      });
+    }
+
+    /* Kitchen Crossing: hop across the kitchen. Fire, knives and trolleys run along the lanes. Time your hops. */
+    function crossGame() {
+      var C = 40;
+      canvasGame({
+        id: 'cross', label: 'Kitchen Crossing', again: crossGame, W: 360, H: 440, lives: 3,
+        intro: 'Get Dot across the kitchen. The floor is lava. Also the trolleys.',
+        how: 'Tap above, below, left or right of Dot to hop (or use the arrow keys). Reach the top for points.',
+        notes: ['Splat. Educational.', 'The trolley had right of way.'],
+        hudText: function (st) { return 'Crossed ' + st.crossed + ' · ' + st.score; },
+        setup: function (st) {
+          st.crossed = 0; st.gx = 4; st.gy = 10; st.px = 4 * C + 20; st.py = 10 * C + 20; st.lanes = []; st.hop = 0; st.inv = 0; st.food = [];
+          st.build = function () {
+            st.lanes = []; st.food = [];
+            for (var r = 1; r <= 9; r++) { if (r === 5) continue; var dir = r % 2 ? 1 : -1, sp = (36 + Math.random() * 40 + st.crossed * 6) * dir, gap = 120 + Math.random() * 70 - st.crossed * 4, items = [], n = Math.ceil(st.W / gap) + 2, off = Math.random() * gap; var icon = ['\u{1F525}', '\u{1F52A}', '\u{1F6D2}'][r % 3]; for (var i = 0; i < n; i++) items.push(i * Math.max(95, gap) + off); st.lanes.push({ r: r, sp: sp, items: items, span: n * Math.max(95, gap), icon: icon }); }
+            for (var k = 0; k < 3; k++) st.food.push({ c: Math.floor(Math.random() * 9), r: pickOne([5, 10, 5]), icon: DISH() });
+          };
+          st.build();
+          function go(dx, dy) { if (st.hop > 0.05 || st.over) return; var nx = Math.max(0, Math.min(8, st.gx + dx)), ny = Math.max(0, Math.min(10, st.gy + dy)); if (nx === st.gx && ny === st.gy) return; st.gx = nx; st.gy = ny; st.hop = 0.14; Sound.tick(); if (st.gy === 0) { st.crossed++; st.score += 10 + st.crossed * 2; st.pop(st.px, 30, '+' + (10 + st.crossed * 2), '#ffd54f'); st.burst(st.px, 30, '#ffd54f', 14); Sound.climb(Math.min(14, st.crossed * 2)); st.gy = 10; st.px = st.gx * C + 20; st.py = 10 * C + 20; st.build(); st.hud(); } }
+          st.go = go;
+          var sx = 0, sy = 0;
+          st.cv.addEventListener('pointerdown', function (e) { sx = e.clientX; sy = e.clientY; });
+          st.cv.addEventListener('pointerup', function (e) { var dx = e.clientX - sx, dy = e.clientY - sy; if (Math.abs(dx) > 18 || Math.abs(dy) > 18) { if (Math.abs(dx) > Math.abs(dy)) go(dx > 0 ? 1 : -1, 0); else go(0, dy > 0 ? 1 : -1); } else { var ex = st.ptr.x - st.px, ey = st.ptr.y - st.py; if (Math.abs(ex) > Math.abs(ey)) go(ex > 0 ? 1 : -1, 0); else go(0, ey > 0 ? 1 : -1); } });
+          st.on(document, 'keydown', function (e) { var m = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key]; if (m) { e.preventDefault(); go(m[0], m[1]); } });
+        },
+        update: function (st, dt) {
+          st.hop -= dt; st.inv -= dt;
+          st.px += (st.gx * C + 20 - st.px) * Math.min(1, dt * 22); st.py += (st.gy * C + 20 - st.py) * Math.min(1, dt * 22);
+          st.lanes.forEach(function (l) { for (var i = 0; i < l.items.length; i++) { l.items[i] += l.sp * dt; if (l.sp > 0 && l.items[i] > st.W + 40) l.items[i] -= l.span; if (l.sp < 0 && l.items[i] < -40) l.items[i] += l.span; } if (st.inv <= 0 && Math.abs(st.py - (l.r * C + 20)) < 14) l.items.forEach(function (x) { if (Math.abs(x - st.px) < 22 && st.inv <= 0) { st.inv = 1.2; st.hurt(); st.burst(st.px, st.py, '#ff5252', 14); st.gx = 4; st.gy = 10; st.px = 4 * C + 20; st.py = 10 * C + 20; } }); });
+          st.food = st.food.filter(function (f) { if (f.c === st.gx && f.r === st.gy) { st.score += 5; st.pop(st.px, st.py - 22, '+5', '#e0a340'); Sound.climb(8); st.hud(); return false; } return true; });
+        },
+        draw: function (st) {
+          var g = st.g;
+          for (var r = 0; r <= 10; r++) { var lane = r >= 1 && r <= 9 && r !== 5; g.fillStyle = lane ? 'rgba(255,255,255,.05)' : 'rgba(120,200,120,.13)'; if (r % 2 === 0 || !lane) g.fillRect(0, r * C, st.W, C); else g.fillRect(0, r * C, st.W, C); if (lane) { g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(0, r * C, st.W, 1); } }
+          g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '26px serif'; g.fillStyle = '#fff';
+          st.food.forEach(function (f) { g.fillText(f.icon, f.c * C + 20, f.r * C + 20); });
+          st.lanes.forEach(function (l) { l.items.forEach(function (x) { g.fillText(l.icon, x, l.r * C + 20); }); });
+          if (st.inv > 0 && Math.floor(st.inv * 12) % 2) g.globalAlpha = 0.4; drawDot(g, st.px, st.py - (st.hop > 0 ? 5 : 0), 15, st.hop > 0 ? 'open' : st.mouth); g.globalAlpha = 1;
+          g.fillStyle = 'rgba(255,255,255,.5)'; g.font = '11px sans-serif'; g.fillText('▲ goal', st.W / 2, 8);
+        }
+      });
+    }
+
+    /* Dot Says: watch the pads light up, then play them back. */
+    function simonGame() {
+      var s = screen();
+      words('Watch the pads. Then copy me. I will not make it easy.', 'happy');
+      var PADS = [{ icon: '\u{1F355}', c: '#d9534f' }, { icon: '\u{1F35C}', c: '#e0a340' }, { icon: '\u{1F336}\u{FE0F}', c: '#5cb85c' }, { icon: '\u{1F366}', c: '#5bc0de' }];
+      var seq = [], at = 0, accepting = false, over = false, timers = [];
+      var hud = h('p', 'dg-score', 'Round 0');
+      var grid = h('div', 'dg-pads');
+      var pads = PADS.map(function (p, i) {
+        var b = h('button', 'dg-pad', p.icon);
+        b.type = 'button';
+        b.style.setProperty('--pad', p.c);
+        b.addEventListener('pointerdown', function (e) { e.preventDefault(); press(i); });
+        grid.appendChild(b);
+        return b;
+      });
+      s.appendChild(hud); s.appendChild(grid);
+      function flash(i, ms) { pads[i].classList.add('is-lit'); Sound.climb(i * 3 + 2); timers.push(setTimeout(function () { pads[i].classList.remove('is-lit'); }, ms || 380)); }
+      function round() {
+        seq.push(Math.floor(Math.random() * 4)); at = 0; accepting = false;
+        hud.textContent = 'Round ' + seq.length;
+        Dot.mood(dotEl, 'thinking', 1200);
+        var gap = Math.max(260, 520 - seq.length * 14);
+        seq.forEach(function (p, k) { timers.push(setTimeout(function () { flash(p, gap * 0.7); }, 700 + k * gap)); });
+        timers.push(setTimeout(function () { accepting = true; words('Your turn.', 'wink'); }, 700 + seq.length * gap));
+      }
+      function press(i) {
+        if (!accepting || over) return;
+        flash(i, 200);
+        if (i !== seq[at]) {
+          over = true; accepting = false; Sound.bust();
+          timers.push(setTimeout(function () { stopGame(); results('says', seq.length - 1, simonGame, ['I made it too hard. Sorry. Not sorry.', 'Memory is overrated.']); }, 500));
+          return;
+        }
+        at++;
+        if (at === seq.length) { accepting = false; words(pickOne(['Good. Again, longer.', 'Yes. Keep up.', 'Correct. Smug about it.']), 'happy'); timers.push(setTimeout(round, 800)); }
+      }
+      timers.push(setTimeout(round, 600));
+      cleanup = function () { over = true; timers.forEach(clearTimeout); };
+    }
+
+    function build() {
+      root = h('div', 'dg');
+      root.setAttribute('role', 'dialog');
+      root.setAttribute('aria-modal', 'true');
+      root.setAttribute('aria-labelledby', 'dg-title');
+      root.hidden = true;
+      var card = h('div', 'dg-panel');
+      var head = h('header', 'dg-head');
+      dotEl = h('span', 'mascot dg-dot');
+      Dot.mount(dotEl);
+      var txt = h('div', 'dg-headtext');
+      var title = h('h2', '', 'Play with Dot');
+      title.id = 'dg-title';
+      say = h('p', 'dg-say');
+      say.setAttribute('aria-live', 'polite');
+      txt.appendChild(title); txt.appendChild(say);
+      var x = h('button', 'dg-x', '×');
+      x.type = 'button';
+      x.setAttribute('aria-label', 'Close');
+      x.addEventListener('click', close);
+      head.appendChild(dotEl); head.appendChild(txt); head.appendChild(x);
+      body = h('div', 'dg-body');
+      card.appendChild(head); card.appendChild(body);
+      root.appendChild(card);
+      root.addEventListener('click', function (e) { if (e.target === root) close(); });
+      document.addEventListener('keydown', function (e) { if (open && e.key === 'Escape') close(); });
+      document.body.appendChild(root);
+    }
+
+    function openGames(which) {
+      if (open) return;
+      if (!root) build();
+      open = true;
+      back = document.activeElement;
+      if (typeof Buddy !== 'undefined') Buddy.sync();
+      root.hidden = false;
+      root.classList.remove('is-in'); void root.offsetWidth; root.classList.add('is-in');
+      if ('inert' in shell) shell.inert = true;
+      RUN()[which] ? RUN()[which]() : menu();
+      var first = body.querySelector('button');
+      if (first) first.focus();
+    }
+    function close() {
+      if (!open) return;
+      open = false;
+      stopGame();
+      root.hidden = true;
+      if ('inert' in shell && !document.body.classList.contains('is-landing')) shell.inert = false;
+      if (typeof Buddy !== 'undefined') Buddy.sync();
+      if (back && back.focus) try { back.focus(); } catch (err) { /* fine */ }
+    }
+    return { open: openGames, close: close, isOpen: function () { return open; }, stats: function () { return stats; } };
+  })();
+
+  /* ------------------------------------------------------------------ Tour */
+  /*
+   * Dot shows you round, the way Duolingo shows you how to use Duolingo: one
+   * thing at a time, a character talking, a bar that fills, and the real piece
+   * of the app lit up while it is explained. It walks through the app for you,
+   * so there is nothing to find and nothing to get wrong; Continue, Back, or
+   * Skip at any point, and Escape skips.
+   *
+   * It is offered once, by Dot, a few seconds after the first hello, and never
+   * forced. It can be taken again from Dot's menu (hold Dot) or from the
+   * profile. Finishing it, or skipping it, is remembered so Dot does not offer
+   * it twice.
+   *
+   * The page behind is inert while it runs, the highlighted element is only
+   * lit, never moved or made clickable, and under reduced motion the light
+   * jumps instead of sliding.
+   */
+  var Tour = (function () {
+    var KEY = 'morsels-tour';
+    var STEPS = [
+      { text: 'Hi! I am Dot. I will show you round morsels45. It takes about a minute.', mood: 'happy' },
+      { sel: ['.rail'], text: 'This is the menu. Everything in the app lives here.', mood: 'happy' },
+      { sel: ['.rail-link[data-view="decide"]'], text: 'Decide is home. Answer a few yes or no questions and I will land on dinner. There are other ways to decide too: swiping, duels, Endless and action games.', mood: 'celebrate' },
+      { view: 'dishes', sel: ['#view-dishes .head'], text: 'Every dish in one place. Search, filter, and tap one for its recipe.', mood: 'happy' },
+      { view: 'planner', sel: ['#view-planner .head', '#view-planner'], text: 'Plan your week. You can copy one day across the whole week with a single tap.', mood: 'wink' },
+      { view: 'kitchen', sel: ['#view-kitchen .head', '#view-kitchen'], text: 'Recipes, timers and a converter, for when you are actually cooking.', mood: 'happy' },
+      { view: 'scan', sel: ['#view-scan .head', '#view-scan'], text: 'Scan a barcode to see how healthy something is. Premium can even turn a photo of your fridge into dinner.', mood: 'surprised' },
+      { view: 'menu', sel: ['#view-menu .head'], text: 'A special evening? Tell me the occasion and I will write you five courses that belong together.', mood: 'happy' },
+      { view: 'nearby', sel: ['#view-nearby .head'], text: 'Find places near you that serve the dish you landed on.', mood: 'happy' },
+      { view: 'chat', sel: ['#chat-mode', '#view-chat .head'], text: 'Ask a question. Standard is free, three a day. Advanced is Premium, and it knows your taste.', mood: 'thinking' },
+      { sel: ['.rail-link[data-view="radio"]'], text: 'Free TV and radio to cook and eat to.', mood: 'happy' },
+      { view: 'daily', sel: ['#view-daily .head'], text: 'Five little things a day, and a streak that grows when you show up.', mood: 'celebrate' },
+      { view: 'profile', sel: ['#view-profile .head'], text: 'Your taste, your level, your language, and how much I talk. It is all here.', mood: 'happy' },
+      { sel: ['#buddy'], text: 'That is me in the corner. Tap me and I say something. Pick me up and drop me anywhere, and I stay put until you move me again.', mood: 'love' },
+      { sel: ['#buddy'], text: 'Hold me for a menu: ask me about morsels45, play a game, take this tour again, or give me a pat.', mood: 'happy' },
+      { sel: ['.rail-link[data-view="decide"]'], text: 'While you decide I ride the progress bar and react to your answers. Tap me there for a hint: how many dishes each answer would leave.', mood: 'thinking' },
+      { text: 'That is everything. Go on, decide something. I will be right here.', mood: 'celebrate', last: true }
+    ];
+    var open = false, n = 0, root = null, ui = {}, back = null, timer = 0;
+
+    function done() { try { return localStorage.getItem(KEY) === 'done'; } catch (err) { return false; } }
+    function mark() { try { localStorage.setItem(KEY, 'done'); } catch (err) { /* fine */ } }
+    function mk(tag, cls, text) { var x = document.createElement(tag); if (cls) x.className = cls; if (text !== undefined) x.textContent = text; return x; }
+
+    function build() {
+      root = mk('div', 'tour');
+      root.hidden = true;
+      root.setAttribute('role', 'dialog');
+      root.setAttribute('aria-modal', 'true');
+      root.setAttribute('aria-label', 'Tour');
+      var top = mk('div', 'tour-top');
+      ui.bar = mk('div', 'tour-bar');
+      STEPS.forEach(function () { ui.bar.appendChild(document.createElement('i')); });
+      ui.skip = mk('button', 'tour-skip', 'Skip tour');
+      ui.skip.type = 'button';
+      ui.skip.addEventListener('click', function () { finish(false); });
+      top.appendChild(ui.bar); top.appendChild(ui.skip);
+      ui.spot = mk('div', 'tour-spot');
+      ui.card = mk('div', 'tour-card');
+      ui.dot = mk('span', 'mascot tour-dot');
+      Dot.mount(ui.dot);
+      ui.dot.addEventListener('click', function () { Dot.mood(ui.dot, 'wiggle', 800); Sound.tick(); });
+      ui.say = mk('p', 'tour-say');
+      ui.say.setAttribute('aria-live', 'polite');
+      var row = mk('div', 'tour-row');
+      ui.back = mk('button', 'tour-btn', 'Back');
+      ui.back.type = 'button';
+      ui.back.addEventListener('click', function () { Sound.tick(); show(n - 1); });
+      ui.next = mk('button', 'tour-btn is-main', 'Continue');
+      ui.next.type = 'button';
+      ui.next.addEventListener('click', function () { Sound.tick(); if (STEPS[n].last) finish(true); else show(n + 1); });
+      row.appendChild(ui.back); row.appendChild(ui.next);
+      var body = mk('div', 'tour-body');
+      body.appendChild(ui.dot); body.appendChild(ui.say);
+      ui.card.appendChild(body); ui.card.appendChild(row);
+      root.appendChild(top); root.appendChild(ui.spot); root.appendChild(ui.card);
+      document.body.appendChild(root);
+      document.addEventListener('keydown', function (e) {
+        if (!open) return;
+        if (e.key === 'Escape') finish(false);
+        else if (e.key === 'ArrowRight' || e.key === 'Enter') { if (document.activeElement !== ui.skip && document.activeElement !== ui.back) { e.preventDefault(); ui.next.click(); } }
+        else if (e.key === 'ArrowLeft' && n > 0) show(n - 1);
+      });
+      window.addEventListener('resize', function () { if (open) place(); });
+    }
+
+    function target() {
+      var st = STEPS[n];
+      for (var k = 0; st.sel && k < st.sel.length; k++) {
+        var node = document.querySelector(st.sel[k]);
+        if (node) { var r = node.getBoundingClientRect(); if (r.width > 4 && r.height > 4) return r; }
+      }
+      return null;
+    }
+
+    // Light the target, and put the card on whichever half of the screen it is not.
+    function place() {
+      var r = target(), vw = window.innerWidth, vh = window.innerHeight;
+      var spot = ui.spot;
+      if (r) {
+        var pad = 8, top = Math.max(4, r.top - pad), left = Math.max(4, r.left - pad);
+        var w = Math.min(vw - left - 4, r.width + pad * 2), h = Math.min(vh - top - 4, r.height + pad * 2);
+        spot.style.cssText = 'left:' + left + 'px;top:' + top + 'px;width:' + w + 'px;height:' + h + 'px;opacity:1';
+        ui.card.classList.toggle('is-top', top + h / 2 > vh * 0.5);
+      } else {
+        spot.style.cssText = 'left:' + vw / 2 + 'px;top:' + vh / 2 + 'px;width:0;height:0;opacity:1';
+        ui.card.classList.remove('is-top');
+      }
+    }
+
+    function show(i) {
+      n = Math.max(0, Math.min(STEPS.length - 1, i));
+      var st = STEPS[n];
+      Array.prototype.forEach.call(ui.bar.children, function (b, k) { b.className = k < n ? 'is-done' : k === n ? 'is-now' : ''; });
+      ui.back.hidden = n === 0;
+      ui.next.textContent = st.last ? 'Let’s go' : n === 0 ? 'Show me' : 'Continue';
+      ui.skip.hidden = !!st.last;
+      if (st.view && view !== st.view) setView(st.view);
+      ui.say.textContent = st.text;
+      ui.say.classList.remove('is-in'); void ui.say.offsetWidth; ui.say.classList.add('is-in');
+      ui.card.setAttribute('aria-label', 'Step ' + (n + 1) + ' of ' + STEPS.length);
+      Dot.mood(ui.dot, st.mood || 'happy', 1500);
+      if (st.last && !reduceMotion) { setTimeout(function () { Confetti.burst({ y: window.innerHeight * 0.4 }); }, 250); }
+      clearTimeout(timer);
+      // A page that has just changed needs a moment before its header has a place.
+      place();
+      timer = setTimeout(place, st.view ? 520 : 60);
+      if (st.view) setTimeout(place, 900);
+      ui.next.focus({ preventScroll: true });
+    }
+
+    function start() {
+      if (open) return;
+      if (!root) build();
+      open = true;
+      back = document.activeElement;
+      if (typeof Buddy !== 'undefined' && Buddy) Buddy.closeMenu();
+      if (document.body.classList.contains('is-landing')) { try { hideLanding(); } catch (err) { /* fine */ } }
+      root.hidden = false;
+      root.classList.remove('is-in'); void root.offsetWidth; root.classList.add('is-in');
+      if ('inert' in shell) shell.inert = true;
+      show(0);
+    }
+
+    function finish(completed) {
+      if (!open) return;
+      open = false;
+      clearTimeout(timer);
+      root.hidden = true;
+      mark();
+      if ('inert' in shell && !document.body.classList.contains('is-landing')) shell.inert = false;
+      if (completed) {
+        if (typeof showLanding === 'function') try { showLanding(); } catch (err) { /* fine */ }
+        if (typeof Buddy !== 'undefined' && Buddy) { Buddy.react('celebrate', 1600); }
+      } else if (typeof Buddy !== 'undefined' && Buddy) Buddy.remark('tourSkip', 'happy', 3200, true);
+      if (back && back.focus) try { back.focus({ preventScroll: true }); } catch (err) { /* fine */ }
+    }
+
+    return { start: start, finish: finish, isOpen: function () { return open; }, done: done, mark: mark };
+  })();
+
+  // Eyes that follow the pointer, a pixel or two.
+  (function glance() {
+    if (reduceMotion) return;
+    var frame = 0;
+    document.addEventListener('pointermove', function (event) {
+      if (frame) return;
+      frame = requestAnimationFrame(function () {
+        frame = 0;
+        var node = $('mascot-b');
+        if (!node || $('buddy').hidden || node.dataset.watch) return;
+        var r = node.getBoundingClientRect();
+        var dx = event.clientX - (r.left + r.width / 2), dy = event.clientY - (r.top + r.height / 2);
+        var d = Math.max(1, Math.sqrt(dx * dx + dy * dy)), k = Math.min(1.8, d / 90);
+        node.style.setProperty('--ex', (dx / d * k).toFixed(2) + 'px');
+        node.style.setProperty('--ey', (dy / d * k).toFixed(2) + 'px');
+      });
+    }, { passive: true });
+  })();
+
+  ['result-icon', 'done-icon'].forEach(function (id) { var n = $(id); if (n) { n.style.cursor = 'pointer'; n.addEventListener('click', function () { Buddy.nom(n); }); } });
+  $('mascot-b').addEventListener('click', function () { if (!this._justDragged) Buddy.boop(); });
+  function buddyEl() { return $('mascot-b'); }
+  (function profileControls() {
+    var tog = $('buddy-toggle'), play = $('buddy-play'), back = $('buddy-home');
+    if ($('buddy-games')) $('buddy-games').addEventListener('click', function () { Play.open(); });
+    if ($('buddy-tour')) $('buddy-tour').addEventListener('click', function () { Tour.start(); });
+    if (tog) {
+      var paintTog = function () { tog.textContent = Buddy.enabled() ? 'Dot is here' : 'Dot is off'; tog.setAttribute('aria-pressed', String(Buddy.enabled())); };
+      tog.addEventListener('click', function () { Buddy.set(!Buddy.enabled()); paintTog(); });
+      paintTog();
+    }
+    if (play) {
+      var paintPlay = function () { play.textContent = Buddy.playful() ? 'Follows your taps' : 'Stays put'; play.setAttribute('aria-pressed', String(Buddy.playful())); };
+      play.addEventListener('click', function () { Buddy.setPlayful(!Buddy.playful()); paintPlay(); });
+      paintPlay();
+    }
+    var chat = $('buddy-quiet');
+    if (chat) {
+      var TALKS = ['quiet', 'normal', 'chatty'];
+      var NAMES = { quiet: 'Quiet: only when tapped', normal: 'Balanced: now and then', chatty: 'Chatty: the odd remark' };
+      var paintChat = function () { chat.textContent = NAMES[Buddy.talk()]; chat.setAttribute('aria-pressed', String(Buddy.talk() !== 'quiet')); };
+      chat.addEventListener('click', function () {
+        Buddy.setTalk(TALKS[(TALKS.indexOf(Buddy.talk()) + 1) % TALKS.length]);
+        paintChat();
+        Buddy.say(Buddy.talk() === 'quiet' ? 'Okay. Not a word.' : Buddy.talk() === 'chatty' ? 'Oh, you want the commentary. Good.' : 'Just the odd remark. Got it.', 'happy', 2800, 'asked');
+      });
+      paintChat();
+    }
+    Buddy.paintBond();
+    if (back) back.addEventListener('click', function () { Buddy.putBack(); });
+  })();
+
+  // Page-specific moments. Every one is short, once-in-a-while, and silent in
+  // quiet mode; none of them moves anything on the page.
+  window.M45Dot = Buddy;
+  // Music on: Dot sways, quietly, until it stops. Any audio or video counts.
+  ['play', 'playing'].forEach(function (ev) { document.addEventListener(ev, function (e) { if (e.target && /^(AUDIO|VIDEO)$/.test(e.target.tagName)) Buddy.dance(true); }, true); });
+  ['pause', 'ended'].forEach(function (ev) { document.addEventListener(ev, function (e) { if (e.target && /^(AUDIO|VIDEO)$/.test(e.target.tagName)) Buddy.dance(false); }, true); });
+  // Searching the dishes: a word when nothing matches.
+  (function () {
+    var f = $('dish-search'), t = 0;
+    if (!f) return;
+    f.addEventListener('input', function () {
+      clearTimeout(t);
+      t = setTimeout(function () {
+        if (f.value.trim().length > 2 && !document.querySelector('#view-dishes .dish')) { var l = Buddy.line('search'); if (l) Buddy.say(l, 'sad', 3200); }
+      }, 900);
+    });
+  })();
+  Buddy.sync();
+
+  // A light tick under the thumb on the controls you press most. Phones only,
+  // and only where the browser offers it.
+  document.addEventListener('pointerdown', function (event) {
+    if (event.pointerType !== 'touch' || !navigator.vibrate) return;
+    if (event.target.closest && event.target.closest('.go, .pick, .mode-card, .choice, .dv-card, .arc-tile')) {
+      try { navigator.vibrate(6); } catch (err) { /* fine */ }
+    }
+  }, { passive: true });
+
+  // The first thing anybody does on the front door, Dot is glad of it.
+  document.addEventListener('pointerdown', function () {
+    if (!wistful) return;
+    wistful = false;
+    dotMood('mascot-l', 'celebrate', 2200);
+    var hello = $('landing-hello');
+    if (hello) hello.textContent = 'There you are. Better already.';
+    Sound.tick();
+  }, { passive: true });
+
   /* ------------------------------------------------------------- lifecycle */
   function resetGame() {
     /*
@@ -10532,6 +13359,7 @@
     swipe.live = false;
     swipe.choosing = false;
     swipe.drag = null;
+    stopArcade();
     leaveEndless();
   }
 
@@ -10585,7 +13413,7 @@
     Sound.tick();
     paintPlan();
   });
-  $('reject-btn').addEventListener('click', rejectCurrent);
+  $('reject-btn').addEventListener('click', function () { Buddy.react('sad', 1300); Buddy.onReject(); rejectCurrent(); });
   $('again-btn').addEventListener('click', goHome);
   $('done-again-btn').addEventListener('click', restart);
   // Sharing the dish they just accepted, not the one they were offered.
@@ -10600,7 +13428,7 @@
 
   function undo() {
     if (busy || shortcut) return;
-    if (game.undo()) { Sound.back(); step(); $('reaction').textContent = ''; return; }
+    if (game.undo()) { Sound.back(); qDir = -1; qLeave(1); step(); $('reaction').textContent = ''; return; }
     // Nothing behind question one — back means home, not a dead button.
     goHome();
   }
@@ -11011,8 +13839,8 @@
     return pool[hashDay(key) % pool.length];
   }
 
-  function showTonight() {
-    var dish = tonightDish();
+  function showTonight(chosen) {
+    var dish = chosen && chosen.name ? chosen : tonightDish();
     if (!dish) return;
     hideLanding();
     resetGame();
@@ -11031,13 +13859,13 @@
     setPanel('result');
     $('result-icon').classList.add('is-landed');
     showResult(dish, { animate: false });
-    $('result-eyebrow').textContent = 'Tonight\u2019s pick';
+    $('result-eyebrow').textContent = chosen && chosen.name ? 'Off the reel' : 'Tonight\u2019s pick';
     $('accept-btn').disabled = false;
     $('reject-btn').disabled = false;
     Sound.reveal();
   }
 
-  $('tonight-btn').addEventListener('click', showTonight);
+  $('tonight-btn').addEventListener('click', function () { showTonight(); });
 
   /* ------------------------------------------------- five to try today */
   /*
@@ -11300,7 +14128,7 @@
     if (!swapped) {
       Sound.reject();
       return toast('\u{1F37D}\u{FE0F}', 'That is the whole catalogue',
-        'Every dish has been on the table this go. Put them all back to start over.');
+        'Every dish has been on the table this go. You have seen all of it. Put them all back to start over.');
     }
 
     spin.out = [];
@@ -11572,10 +14400,27 @@
       THIN_SWIPE);
     var ranked = favouredDishes();
     if (ranked.length < 4) {
-      ranked = shuffled(Data.ITEMS, Math.random).slice(0, SWIPE_DECK)
+      ranked = shuffled(Data.ITEMS, Math.random)
         .map(function (item) { return { item: item }; });
     }
-    var pool = ranked.slice(0, SWIPE_DECK);
+    /*
+     * A deck of the profile's top 24, in order, is the same deck every time —
+     * which is what this was, and what "always the same deck" means. The
+     * profile still decides what is likely to be in it, but each dish's place
+     * in line gets a good deal of noise first, so the cut is drawn from the
+     * whole ranking and not only its head. Anything dealt in the last deck
+     * goes to the back, so "deal another deck" is another deck.
+     */
+    var seen = swipe.dealt || {};
+    var last = Math.max(1, ranked.length - 1);
+    var noisy = ranked.map(function (entry, i) {
+      var key = i / last + Math.random() * 0.7 + (seen[entry.item.name] ? 1 : 0);
+      return { item: entry.item, key: key };
+    });
+    noisy.sort(function (a, b) { return a.key - b.key; });
+    var pool = noisy.slice(0, SWIPE_DECK);
+    swipe.dealt = {};
+    pool.forEach(function (entry) { swipe.dealt[entry.item.name] = 1; });
     return pool.map(function (entry, i) {
       return { item: entry.item, base: pool.length > 1 ? i / (pool.length - 1) : 0, cool: 0 };
     });
@@ -11725,7 +14570,7 @@
       blurb.textContent = dish.blurb;
 
       [face, name, blurb].forEach(function (el) { button.appendChild(el); });
-      button.addEventListener('click', function () { landSwipe(dish); });
+      button.addEventListener('click', function () { carry(face); landSwipe(dish); });
       li.appendChild(button);
       list.appendChild(li);
     });
@@ -11963,6 +14808,1120 @@
     renderSwipe();
   });
   $('swipe-ask').addEventListener('click', function () { swipe.live = false; restart(); });
+
+  /* ----------------------------------------------------------------- arcade */
+  /*
+   * FOUR GAMES THAT ARE NOT A QUESTION.
+   *
+   * The rest of this app asks "this or that" in some costume. These are for the
+   * moment you cannot face another one: you play, and dinner falls out of it.
+   *
+   *   Dish Derby   eight dishes race. Cheer your favourite, sabotage the rest
+   *   Smash        a wall of dishes and a ball: smash what you do NOT want
+   *   Drop Zone    drop balls down a pegboard into dishes, nudge them as they fall
+   *   Slice        dishes are thrown across the screen, slice what you want
+   *
+   * Two rules every one of them follows.
+   *
+   * ONE: there is always a way out of the options. What if nothing on the table
+   * appeals? Derby lets you reroll the field, Smash a fresh wall, Drop Zone a new
+   * set of bins, and every end screen has "None of these — go again". A game
+   * that forces a pick from options you do not want is a quiz with sound effects.
+   *
+   * TWO: saying no teaches the game. Whatever you reject — a field you rerolled,
+   * the dishes you smashed, the three you turned down at the end, the ones you
+   * let fly past in Slice — is remembered for this visit, and the next round is
+   * dealt away from it, the same way a no in Swipe cools its lookalikes. Reject
+   * the ramen and the next table has fewer noodle soups on it.
+   *
+   * Like Swipe, none of this is written to the profile. A frantic minute is not a
+   * statement about what somebody likes to eat.
+   */
+  var ARCADE = {
+    derby: { name: 'Dish Derby', icon: '\u{1F3C7}', time: 60, lives: 0, kl: ['Cheers', 'Place', 'Items'], pool: 8, aux: null,
+             how: 'Eight dishes line up for a race. Pick a champion to cheer for — or none, and just enjoy it. Tap a lane to cheer that dish on, or arm a spicy boost or a butter slick and use it on whoever you like. Don’t fancy the field? Reroll it. The podium is dinner.' },
+    smash: { name: 'Smash', icon: '\u{1F9F1}', time: 90, lives: 3, kl: ['Score', 'Combo', 'Balls'], pool: 24, aux: 'Fresh wall',
+             how: 'A wall of dishes. Bounce the ball off your paddle and smash the ones you do NOT want. Tap a dish to lock it so the ball bounces off — you have three locks. Keep going until only a few are left standing: those are your dinner. Don’t like the wall? Deal a fresh one.' },
+    drop:  { name: 'Drop Zone', icon: '\u{1F3B1}', time: 120, lives: 6, life: 'ball', kl: ['Score', 'Nudge', 'Balls'], pool: 7, aux: 'Reshuffle bins',
+             how: 'Six balls and a pegboard, with a dish in every bin. Tap the top to drop a ball, then hold anywhere to nudge it toward your finger while it falls. Where it lands is a vote. Don’t like the bins? Reshuffle them and they come back different.' },
+    slice: { name: 'Slice', icon: '⚔️', time: 40, lives: 3, kl: ['Score', 'Combo', 'Lives'], pool: 20, aux: null,
+             how: 'Dishes are thrown across the screen. Drag through the ones you want and let the rest fly past. Bombs cost a heart. Golden ones count double. The dishes you keep slicing are the ones that win, and the pace keeps changing.' }
+  };
+  var arcade = {
+    mode: '', live: false, raf: 0, last: 0, elapsed: 0, left: 0, lives: 0, max: 3, dying: 0,
+    score: 0, combo: 0, bestCombo: 0, tally: {}, pool: [], bag: [], things: [], spawnIn: 0,
+    w: 0, h: 0, sl: null, ev: null, evIn: 0, lastEv: '', banner: null,
+    rejected: [], lastPicks: [], auxN: 0, auxFn: null, cv: null, note: ''
+  };
+  // For tests only: nothing in the app reads this.
+  if (/arcade-debug/.test(location.search)) window.__arcade = arcade;
+
+  // The dishes this visit has said no to. Kept for the visit, not the profile.
+  function arcReject(dish) {
+    if (!dish || arcade.rejected.some(function (d) { return d.name === dish.name; })) return;
+    arcade.rejected.push(dish);
+    if (arcade.rejected.length > 60) arcade.rejected.shift();
+  }
+
+  /*
+   * What this round is dealt from: the profile decides what is likely, noise
+   * decides what is on the table, and anything resembling what was rejected is
+   * pushed to the back of the line. Rejected dishes themselves go furthest back.
+   */
+  function arcadeFresh(n, exclude) {
+    var ranked = favouredDishes();
+    if (ranked.length < n) ranked = shuffled(Data.ITEMS, Math.random).map(function (item) { return { item: item }; });
+    var last = Math.max(1, ranked.length - 1);
+    var no = arcade.rejected.slice(-24);
+    var skip = {};
+    (exclude || []).forEach(function (d) { skip[d.name] = 1; });
+    var scored = ranked.map(function (entry, i) {
+      var cool = 0;
+      no.forEach(function (r) {
+        if (r.name === entry.item.name) cool = Math.max(cool, 3);
+        else cool = Math.max(cool, Taste.similarity(entry.item, r));
+      });
+      return { item: entry.item, key: i / last + Math.random() * 0.9 + cool * 1.4 + (skip[entry.item.name] ? 9 : 0) };
+    }).sort(function (a, b) { return a.key - b.key; });
+    // Then spread: take the best, and each next one is the best that is not a
+    // lookalike of what is already on the table. Without this a table is eight
+    // breakfasts at breakfast time, which is a profile talking, not a game.
+    var cands = scored.slice(0, Math.max(n * 3, n + 6)), out = [];
+    while (out.length < n && cands.length) {
+      var bi = 0, bv = 1e9;
+      for (var c = 0; c < cands.length; c++) {
+        var sim = 0;
+        out.forEach(function (o) { sim = Math.max(sim, Taste.similarity(cands[c].item, o)); });
+        var v = cands[c].key + sim * 1.3;
+        if (v < bv) { bv = v; bi = c; }
+      }
+      out.push(cands.splice(bi, 1)[0].item);
+    }
+    return out;
+  }
+
+  // A shuffled bag: nothing comes round twice until everything has come once.
+  function arcadeNext() {
+    if (!arcade.bag.length) arcade.bag = shuffled(arcade.pool, Math.random);
+    return arcade.bag.pop();
+  }
+
+  function arcadeBest(mode, set) {
+    var all = {};
+    try { all = JSON.parse(localStorage.getItem('morsels-arcade-best') || '{}') || {}; } catch (err) { all = {}; }
+    if (set === undefined) return all[mode] || 0;
+    if (set > (all[mode] || 0)) {
+      all[mode] = set;
+      try { localStorage.setItem('morsels-arcade-best', JSON.stringify(all)); } catch (err) { /* fine */ }
+      return true;
+    }
+    return false;
+  }
+
+  function startArcade(mode) {
+    if (!premium(ARCADE[mode].name)) return;
+    hideLanding();
+    resetGame();
+    setView('decide');
+    stopArcade();
+    arcade.mode = mode;
+    arcade.pool = arcadeFresh(mode === 'slice' ? 20 : 40);
+    arcade.bag = [];
+    setPanel('arcade');
+    var spec = ARCADE[mode];
+    $('arc-name').textContent = spec.name;
+    $('arc-title').textContent = spec.name;
+    $('arc-icon').textContent = spec.icon;
+    $('arc-how').textContent = spec.how;
+    var best = arcadeBest(mode);
+    $('arc-best').hidden = !best;
+    $('arc-best').textContent = 'Your best: ' + best;
+    $('arc-intro').hidden = false;
+    $('arc-stage').hidden = true;
+    $('arc-hud').hidden = true;
+    $('arc-end').hidden = true;
+    $('arc-lock').hidden = true;
+    $('arc-cancel').hidden = false;
+  }
+
+  function stopArcade() {
+    arcade.live = false;
+    if (arcade.raf) cancelAnimationFrame(arcade.raf);
+    arcade.raf = 0;
+    arcade.sl = null;
+    arcade.steer = null;
+    $('arc-lock').hidden = true;
+  }
+
+  function beginArcade() {
+    var spec = ARCADE[arcade.mode];
+    var stage = $('arc-stage');
+    $('arc-intro').hidden = true;
+    $('arc-end').hidden = true;
+    $('arc-hud').hidden = false;
+    $('arc-cancel').hidden = true;
+    stage.hidden = false;
+    stage.innerHTML = '';
+    stage.className = 'arc-stage arc-' + arcade.mode;
+    ['score', 'combo', 'lives'].forEach(function (k, i) { $('arc-k-' + k).textContent = spec.kl[i]; });
+    arcade.elapsed = 0;
+    arcade.left = spec.time;
+    arcade.lives = arcade.max = spec.lives;
+    arcade.dying = 0;
+    arcade.score = 0; arcade.combo = 0; arcade.bestCombo = 0;
+    arcade.tally = {}; arcade.things = []; arcade.spawnIn = 0.5;
+    arcade.sl = null; arcade.steer = null; arcade.ev = null; arcade.evIn = 6; arcade.lastEv = '';
+    arcade.banner = document.createElement('div');
+    arcade.banner.className = 'arc-banner';
+    arcade.banner.hidden = true;
+    stage.appendChild(arcade.banner);
+    measureArcade();
+    // The one button under the stage: whatever "none of these" is called here.
+    arcade.auxN = 2; arcade.auxFn = null;
+    $('arc-lock').hidden = !spec.aux;
+    if (spec.aux) $('arc-lock-label').textContent = spec.aux;
+    ARC_MODES[arcade.mode].setup(stage);
+    arcadeHud();
+    window.scrollTo(0, 0);
+    arcade.live = true;
+    arcade.last = performance.now();
+    arcade.raf = requestAnimationFrame(arcadeLoop);
+  }
+
+  function measureArcade() {
+    var r = $('arc-stage').getBoundingClientRect();
+    arcade.w = r.width; arcade.h = r.height;
+  }
+
+  function arcadeFinish(delay) { if (!arcade.dying) arcade.dying = delay || 0.7; }
+
+  function arcadeLoop(ts) {
+    if (!arcade.live) return;
+    // Walked away to another tab or screen mid-run: put it down, rather than
+    // playing on (and eating the arrow keys) behind something else.
+    if (panel !== 'arcade' || view !== 'decide') return stopArcade();
+    // Capped, so a backgrounded tab pauses the game rather than fast-forwarding it.
+    var dt = Math.max(0, Math.min(0.05, (ts - arcade.last) / 1000));
+    arcade.last = ts;
+    arcade.elapsed += dt;
+    arcade.left -= dt;
+    arcadeEvents(dt);
+    ARC_MODES[arcade.mode].step(dt);
+    arcadeHud();
+    var spec = ARCADE[arcade.mode];
+    // Out of hearts: a beat to see the last thing happen, then over. (The modes
+    // that count balls say for themselves when they are finished.)
+    if (arcade.mode === 'slice' && arcade.lives <= 0) arcadeFinish(0.7);
+    if (arcade.dying) { arcade.dying -= dt; if (arcade.dying <= 0) return endArcade(); }
+    if (arcade.left <= 0) return endArcade();
+    arcade.raf = requestAnimationFrame(arcadeLoop);
+  }
+
+  // Slice's events: the rules lurch every few seconds, but none of them says
+  // which dish is right. They change the pace, the odds and the view.
+  var ARC_EVENTS = {
+    slice: [
+      { id: 'frenzy', name: 'Frenzy!', len: 5, tone: 'bad' },
+      { id: 'slow', name: 'Slow-mo!', len: 5, tone: 'good' },
+      { id: 'field', name: 'Bomb field!', len: 4.5, tone: 'bad' },
+      { id: 'gold', name: 'Golden rain!', len: 4.5, tone: 'good' }
+    ]
+  };
+
+  function arcadeEvents(dt) {
+    var list = ARC_EVENTS[arcade.mode];
+    if (!list) return;
+    if (arcade.ev) {
+      arcade.ev.left -= dt;
+      if (arcade.ev.left <= 0) {
+        arcade.ev = null;
+        arcade.banner.hidden = true;
+        arcade.evIn = 4 + Math.random() * 4;
+      }
+      return;
+    }
+    arcade.evIn -= dt;
+    if (arcade.evIn > 0 || arcade.left < 5) return;
+    var choices = list.filter(function (e) { return e.id !== arcade.lastEv; });
+    var pick = choices[Math.floor(Math.random() * choices.length)];
+    arcade.ev = { id: pick.id, left: pick.len };
+    arcade.lastEv = pick.id;
+    arcade.banner.textContent = pick.name;
+    arcade.banner.className = 'arc-banner is-' + pick.tone;
+    arcade.banner.hidden = false;
+    Sound.next();
+  }
+
+  function arcEv(id) { return !!(arcade.ev && arcade.ev.id === id); }
+
+  var arcLastTime = -1;
+  function arcadeHud() {
+    var spec = ARCADE[arcade.mode];
+    var m = arcade.mode;
+    $('arc-score').textContent = arcade.score;
+    $('arc-lives').classList.remove('is-low', 'is-cash');
+    if (m === 'derby') {
+      $('arc-combo').textContent = arcade.placeText || '–';
+      $('arc-lives').textContent = '\u{1F336}️' + (arcade.tools ? arcade.tools.spice : 0) + ' \u{1F9C8}' + (arcade.tools ? arcade.tools.butter : 0);
+    } else if (m === 'drop') {
+      $('arc-combo').textContent = Math.round(arcade.nudge) + '%';
+      $('arc-lives').textContent = '● ×' + arcade.lives;
+    } else {
+      var mult = 1 + Math.min(4, Math.floor(arcade.combo / 5));
+      $('arc-combo').textContent = 'x' + mult + (arcade.combo > 1 ? ' · ' + arcade.combo : '');
+      var icons = '';
+      for (var i = 0; i < arcade.max; i++) icons += i < arcade.lives ? '♥' : '♡';
+      $('arc-lives').textContent = icons;
+    }
+    var t = Math.max(0, Math.ceil(arcade.left));
+    $('arc-time').textContent = t;
+    $('arc-time').classList.toggle('is-low', t <= 5);
+    if (t <= 5 && t !== arcLastTime && arcade.live) Sound.warn();
+    arcLastTime = t;
+  }
+
+  // A thing on the stage: an emoji (and a name for dishes, so what you are
+  // going for is what you read). Positioned by transform from its own x/y.
+  function arcThing(emoji, label, cls) {
+    var node = document.createElement('div');
+    node.className = 'arc-thing ' + (cls || '');
+    var face = document.createElement('b');
+    face.textContent = emoji;
+    node.appendChild(face);
+    if (label) {
+      var name = document.createElement('span');
+      name.textContent = label;
+      node.appendChild(name);
+    }
+    $('arc-stage').appendChild(node);
+    return node;
+  }
+
+  function arcPlace(t) { t.el.style.transform = 'translate3d(' + Math.round(t.x) + 'px,' + Math.round(t.y) + 'px,0)'; }
+
+  function arcPopup(x, y, text, cls) {
+    var node = document.createElement('div');
+    node.className = 'arc-pop ' + (cls || '');
+    node.textContent = text;
+    node.style.left = Math.round(x) + 'px';
+    node.style.top = Math.round(y) + 'px';
+    $('arc-stage').appendChild(node);
+    setTimeout(function () { if (node.parentNode) node.parentNode.removeChild(node); }, 700);
+  }
+
+  function arcVote(dish, weight) {
+    var row = arcade.tally[dish.name] || (arcade.tally[dish.name] = { dish: dish, n: 0, at: arcade.pool.indexOf(dish) });
+    row.n += weight;
+  }
+
+  function arcadeCatch(dish, base, weight, x, y) {
+    arcade.combo++;
+    if (arcade.combo > arcade.bestCombo) arcade.bestCombo = arcade.combo;
+    var mult = 1 + Math.min(4, Math.floor(arcade.combo / 5));
+    var gain = base * mult;
+    arcade.score += gain;
+    arcVote(dish, weight);
+    Sound.climb(arcade.combo);
+    arcPopup(x, y, '+' + gain, weight > 1 ? 'is-gold' : '');
+    if (arcade.combo > 0 && arcade.combo % 10 === 0) Buddy.cheer(arcade.combo + ' in a row!');
+  }
+
+  function arcadeHurt(x, y) {
+    if (typeof Buddy !== 'undefined' && Buddy) Buddy.wince();
+    arcade.lives = Math.max(0, arcade.lives - 1);
+    arcade.combo = 0;
+    Sound.bust();
+    arcPopup(x, y, '♥−', 'is-bad');
+    var stage = $('arc-stage');
+    stage.classList.remove('is-hit');
+    void stage.offsetWidth;
+    stage.classList.add('is-hit');
+    try { if (navigator.vibrate) navigator.vibrate(60); } catch (err) { /* fine */ }
+  }
+
+  // A dish from the bag, now and then golden, with `bad` as the share that is a bomb.
+  function arcadeKind(bad, goldOdds) {
+    if (Math.random() < bad) return { bad: true };
+    return { dish: arcadeNext(), gold: Math.random() < (goldOdds === undefined ? 0.08 : goldOdds) };
+  }
+
+  function dishThing(kind) {
+    return kind.bad ? arcThing('\u{1F4A3}', '', 'is-bomb')
+      : arcThing(kind.dish.icon, kind.dish.name, kind.gold ? 'is-gold' : '');
+  }
+
+  function nameHash(text) {
+    var h = 2166136261;
+    for (var i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return ((h >>> 0) % 1000) / 1000;
+  }
+
+  // A canvas that fills the stage, sharp on a phone.
+  function arcCanvas(stage) {
+    var cv = document.createElement('canvas');
+    var dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(arcade.w * dpr);
+    cv.height = Math.round(arcade.h * dpr);
+    cv.style.width = '100%';
+    cv.style.height = '100%';
+    cv.className = 'arc-canvas';
+    stage.appendChild(cv);
+    var ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    arcade.cv = ctx;
+    return ctx;
+  }
+
+  function fitText(ctx, text, max) {
+    if (ctx.measureText(text).width <= max) return text;
+    while (text.length > 1 && ctx.measureText(text + '…').width > max) text = text.slice(0, -1);
+    return text + '…';
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  var INK = '#f2ece1', AMBER = '#e0a340', DIM = '#8a857a', LINE = '#3a3a40', PANEL = '#1f1f23', RED = '#e28e8e';
+
+  function arcEl(tag, props, kids) {
+    var node = document.createElement(tag);
+    Object.keys(props || {}).forEach(function (k) {
+      if (k === 'class') node.className = props[k];
+      else if (k === 'text') node.textContent = props[k];
+      else node.setAttribute(k, props[k]);
+    });
+    (kids || []).forEach(function (kid) { node.appendChild(typeof kid === 'string' ? document.createTextNode(kid) : kid); });
+    return node;
+  }
+  function arcClear(node) { while (node.firstChild) node.removeChild(node.firstChild); return node; }
+  function ordinal(n) { return n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th', 'st', 'nd', 'rd'][n % 10 > 3 ? 0 : n % 10]); }
+
+  var ARC_MODES = {
+    /* ----------------------------------------------------------- drop zone */
+    drop: {
+      setup: function () {
+        var a = arcade, w = a.w, h = a.h;
+        a.bins = 7; a.bw = w / a.bins; a.binTop = h - 84;
+        a.mults = [3, 2, 1, 1, 1, 2, 3];
+        a.cv = null; arcCanvas($('arc-stage'));
+        a.balls = []; a.nudge = 100; a.aimX = w / 2; a.aiming = false; a.steer = null; a.flash = {};
+        a.binDishes = arcadeFresh(7, arcade.pool.slice(0, 0));
+        a.auxN = 3; $('arc-lock-n').textContent = a.auxN;
+        a.auxFn = ARC_MODES.drop.reshuffle;
+        a.pegs = [];
+        var rows = 8, top = 78, gap = (a.binTop - 36 - top) / (rows - 1);
+        for (var r = 0; r < rows; r++) {
+          if (r % 2 === 0) for (var i = 0; i < 7; i++) a.pegs.push({ x: (i + 0.5) * a.bw, y: top + r * gap });
+          else for (var j = 1; j < 7; j++) a.pegs.push({ x: j * a.bw, y: top + r * gap });
+        }
+      },
+      reshuffle: function () {
+        var a = arcade;
+        if (a.auxN <= 0) { Sound.reject(); return; }
+        a.auxN--; $('arc-lock-n').textContent = a.auxN;
+        a.binDishes.forEach(arcReject);
+        a.binDishes = arcadeFresh(7, a.binDishes);
+        Sound.roll();
+        a.reshuffleFx = 0.5;
+      },
+      drop: function () {
+        var a = arcade;
+        if (!a.live || a.lives <= 0 || a.balls.length >= 3) return;
+        a.lives--;
+        a.balls.push({ x: a.aimX, y: 20, vx: (Math.random() - 0.5) * 30, vy: 0, trail: [] });
+        Sound.tick();
+      },
+      step: function (dt) {
+        var a = arcade, w = a.w, h = a.h, rb = 9, rp = 5, g = 1050;
+        a.nudge = Math.min(100, a.nudge + 7 * dt);
+        a.reshuffleFx = Math.max(0, (a.reshuffleFx || 0) - dt);
+        for (var k in a.flash) a.flash[k] = Math.max(0, a.flash[k] - dt);
+        for (var bi = a.balls.length - 1; bi >= 0; bi--) {
+          var b = a.balls[bi];
+          for (var s = 0; s < 3; s++) {
+            var d = dt / 3;
+            b.vy += g * d;
+            if (a.steer !== null && a.nudge > 0 && b.y > 30) {
+              var dir = a.steer > b.x + 6 ? 1 : a.steer < b.x - 6 ? -1 : 0;
+              b.vx += dir * 1500 * d;
+              a.nudge = Math.max(0, a.nudge - 22 * d);
+            }
+            b.vx *= 1 - 0.35 * d;
+            b.x += b.vx * d; b.y += b.vy * d;
+            for (var p = 0; p < a.pegs.length; p++) {
+              var peg = a.pegs[p];
+              var dx = b.x - peg.x, dy = b.y - peg.y, dd = dx * dx + dy * dy, min = rb + rp;
+              if (dd < min * min && dd > 0.01) {
+                var dist = Math.sqrt(dd), nx = dx / dist, ny = dy / dist;
+                b.x = peg.x + nx * min; b.y = peg.y + ny * min;
+                var vn = b.vx * nx + b.vy * ny;
+                if (vn < 0) { b.vx -= 1.55 * vn * nx; b.vy -= 1.55 * vn * ny; b.vx += (Math.random() - 0.5) * 22; }
+                peg.hit = 0.18;
+                if (Math.abs(vn) > 160) Sound.roll();
+              }
+            }
+            if (b.x < rb) { b.x = rb; b.vx = Math.abs(b.vx) * 0.6; }
+            if (b.x > w - rb) { b.x = w - rb; b.vx = -Math.abs(b.vx) * 0.6; }
+            if (b.y > a.binTop) {
+              var bin = Math.max(0, Math.min(a.bins - 1, Math.floor(b.x / a.bw)));
+              var lo = bin * a.bw + rb + 2, hi = (bin + 1) * a.bw - rb - 2;
+              if (b.x < lo) { b.x = lo; b.vx = Math.abs(b.vx) * 0.3; }
+              if (b.x > hi) { b.x = hi; b.vx = -Math.abs(b.vx) * 0.3; }
+            }
+          }
+          b.trail.push({ x: b.x, y: b.y }); if (b.trail.length > 9) b.trail.shift();
+          if (b.y >= h - 30) {
+            var idx = Math.max(0, Math.min(a.bins - 1, Math.floor(b.x / a.bw)));
+            var dish = a.binDishes[idx], mult = a.mults[idx];
+            arcVote(dish, 1);
+            a.score += 10 * mult;
+            a.flash[idx] = 0.9;
+            Sound.climb(mult * 3);
+            arcPopup(idx * a.bw + a.bw / 2, a.binTop - 10, '+' + 10 * mult, mult > 1 ? 'is-gold' : '');
+            a.balls.splice(bi, 1);
+            if (!a.balls.length && a.lives <= 0) arcadeFinish(0.9);
+          }
+        }
+        ARC_MODES.drop.draw();
+      },
+      draw: function () {
+        var a = arcade, c = a.cv, w = a.w, h = a.h;
+        c.clearRect(0, 0, w, h);
+        // the board
+        var grad = c.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#26262c'); grad.addColorStop(1, '#17171a');
+        c.fillStyle = grad; c.fillRect(0, 0, w, h);
+        // aim marker
+        if (a.lives > 0 && a.balls.length < 3) {
+          c.strokeStyle = 'rgba(224,163,64,.35)'; c.setLineDash([4, 6]);
+          c.beginPath(); c.moveTo(a.aimX, 30); c.lineTo(a.aimX, a.binTop); c.stroke(); c.setLineDash([]);
+          c.fillStyle = AMBER; c.beginPath(); c.arc(a.aimX, 20, 9, 0, 7); c.fill();
+        }
+        // pegs
+        a.pegs.forEach(function (p) {
+          if (p.hit > 0) p.hit -= 0.016;
+          c.fillStyle = p.hit > 0 ? INK : '#6f6a5f';
+          c.beginPath(); c.arc(p.x, p.y, p.hit > 0 ? 6.5 : 5, 0, 7); c.fill();
+        });
+        // bins
+        c.textAlign = 'center';
+        for (var i = 0; i < a.bins; i++) {
+          var x = i * a.bw, d = a.binDishes[i], on = a.flash[i] > 0;
+          c.fillStyle = on ? 'rgba(224,163,64,.55)' : (a.mults[i] > 1 ? 'rgba(224,163,64,.14)' : 'rgba(255,255,255,.05)');
+          c.fillRect(x + 2, a.binTop, a.bw - 4, h - a.binTop);
+          c.fillStyle = LINE; c.fillRect(x - 1, a.binTop, 3, h - a.binTop);
+          c.font = '24px system-ui'; c.fillText(d.icon, x + a.bw / 2, a.binTop + 30);
+          c.font = '9px system-ui'; c.fillStyle = on ? '#fff' : INK;
+          c.fillText(fitText(c, d.name, a.bw - 6), x + a.bw / 2, a.binTop + 46);
+          c.fillStyle = AMBER; c.font = 'bold 10px system-ui';
+          c.fillText('×' + a.mults[i], x + a.bw / 2, a.binTop + 62);
+        }
+        c.fillStyle = LINE; c.fillRect(a.w - 1, a.binTop, 2, h - a.binTop);
+        // balls
+        a.balls.forEach(function (b) {
+          b.trail.forEach(function (t, i) { c.fillStyle = 'rgba(242,236,225,' + (i / 22) + ')'; c.beginPath(); c.arc(t.x, t.y, 4 + i * 0.4, 0, 7); c.fill(); });
+          c.fillStyle = INK; c.beginPath(); c.arc(b.x, b.y, 9, 0, 7); c.fill();
+          c.fillStyle = AMBER; c.beginPath(); c.arc(b.x - 2, b.y - 2, 3, 0, 7); c.fill();
+        });
+        if (a.reshuffleFx > 0) { c.fillStyle = 'rgba(255,255,255,' + a.reshuffleFx * 0.4 + ')'; c.fillRect(0, a.binTop, w, h - a.binTop); }
+        c.fillStyle = DIM; c.font = '10px system-ui';
+        if (a.lives === a.max && !a.balls.length) c.fillText('Tap the top to drop · hold to nudge', w / 2, 52);
+      },
+      pointer: function (type, x, y) {
+        var a = arcade;
+        if (type === 'down') {
+          if (y < 56) { a.aiming = true; a.aimX = x; }
+          else a.steer = x;
+        } else if (type === 'move') {
+          if (a.aiming || a.steer === null) { if (a.aiming || y < 56) a.aimX = x; }
+          if (a.steer !== null) a.steer = x;
+        } else {
+          if (a.aiming) { a.aimX = x; ARC_MODES.drop.drop(); }
+          a.aiming = false; a.steer = null;
+        }
+      },
+      key: function (k) {
+        var a = arcade;
+        if (k === 'ArrowLeft') a.aimX = Math.max(10, a.aimX - 22);
+        else if (k === 'ArrowRight') a.aimX = Math.min(a.w - 10, a.aimX + 22);
+        else if (k === ' ' || k === 'Enter' || k === 'ArrowDown') ARC_MODES.drop.drop();
+        else return false;
+        return true;
+      }
+    },
+
+    /* --------------------------------------------------------------- smash */
+    smash: {
+      setup: function () {
+        var a = arcade, w = a.w, h = a.h;
+        arcCanvas($('arc-stage'));
+        a.paddle = { x: w / 2, w: 84, h: 10, y: h - 30, wide: 0 };
+        a.ball = { x: w / 2, y: a.paddle.y - 9, vx: 0, vy: 0, r: 7, stuck: true, slow: 0 };
+        a.speed = 300; a.caps = []; a.parts = []; a.locks = 0; a.smashed = 0; a.sdone = '';
+        a.target = w / 2;
+        a.auxN = 2; $('arc-lock-n').textContent = a.auxN;
+        a.auxFn = ARC_MODES.smash.fresh;
+        ARC_MODES.smash.wall();
+      },
+      wall: function () {
+        var a = arcade, w = a.w, cols = 6, rows = 4, pad = 10, gap = 5;
+        var bw = (w - pad * 2 - gap * (cols - 1)) / cols, bh = 46;
+        var dishes = arcadeFresh(cols * rows, arcade.bricks ? arcade.bricks.map(function (b) { return b.dish; }) : []);
+        a.bricks = [];
+        dishes.forEach(function (d, i) {
+          var cx = i % cols, ry = Math.floor(i / cols);
+          a.bricks.push({ x: pad + cx * (bw + gap), y: 54 + ry * (bh + gap), w: bw, h: bh, dish: d, locked: false, alive: true, at: i });
+        });
+        a.locks = 0;
+        a.pool = dishes.slice();
+      },
+      fresh: function () {
+        var a = arcade;
+        if (a.auxN <= 0) { Sound.reject(); return; }
+        a.auxN--; $('arc-lock-n').textContent = a.auxN;
+        a.bricks.forEach(function (b) { if (b.alive && !b.locked) arcReject(b.dish); });
+        ARC_MODES.smash.wall();
+        a.ball.stuck = true; a.ball.vx = a.ball.vy = 0;
+        Sound.roll();
+      },
+      alive: function () { return arcade.bricks.filter(function (b) { return b.alive; }); },
+      launch: function () {
+        var a = arcade;
+        if (!a.ball.stuck) return;
+        a.ball.stuck = false;
+        var ang = (Math.random() - 0.5) * 0.7;
+        a.ball.vx = a.speed * Math.sin(ang); a.ball.vy = -a.speed * Math.cos(ang);
+        Sound.tick();
+      },
+      step: function (dt) {
+        var a = arcade, w = a.w, h = a.h, b = a.ball, p = a.paddle;
+        p.wide = Math.max(0, p.wide - dt); b.slow = Math.max(0, b.slow - dt);
+        var pw = p.w * (p.wide > 0 ? 1.6 : 1);
+        p.x += (a.target - p.x) * Math.min(1, dt * 18);
+        p.x = Math.max(pw / 2, Math.min(w - pw / 2, p.x));
+        if (b.stuck) { b.x = p.x; b.y = p.y - b.r - 1; }
+        else {
+          var sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy) || 1;
+          var want = a.speed * (b.slow > 0 ? 0.7 : 1);
+          b.vx *= want / sp; b.vy *= want / sp;
+          for (var s = 0; s < 3; s++) {
+            var d = dt / 3;
+            b.x += b.vx * d; b.y += b.vy * d;
+            if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx); }
+            if (b.x > w - b.r) { b.x = w - b.r; b.vx = -Math.abs(b.vx); }
+            if (b.y < b.r) { b.y = b.r; b.vy = Math.abs(b.vy); }
+            if (b.vy > 0 && b.y + b.r >= p.y && b.y - b.r <= p.y + p.h && b.x > p.x - pw / 2 - b.r && b.x < p.x + pw / 2 + b.r) {
+              var off = Math.max(-1, Math.min(1, (b.x - p.x) / (pw / 2)));
+              var ang = off * 1.05;
+              a.speed = Math.min(540, a.speed + 6);
+              b.vx = a.speed * Math.sin(ang); b.vy = -a.speed * Math.cos(ang);
+              b.y = p.y - b.r - 1; a.combo = 0;
+              Sound.back();
+            }
+            for (var i = 0; i < a.bricks.length; i++) {
+              var br = a.bricks[i];
+              if (!br.alive) continue;
+              var cx = Math.max(br.x, Math.min(b.x, br.x + br.w)), cy = Math.max(br.y, Math.min(b.y, br.y + br.h));
+              var dx = b.x - cx, dy = b.y - cy;
+              if (dx * dx + dy * dy < b.r * b.r) {
+                if (Math.abs(dx) > Math.abs(dy)) { b.vx = dx > 0 ? Math.abs(b.vx) : -Math.abs(b.vx); b.x += dx > 0 ? 1 : -1; }
+                else { b.vy = dy >= 0 ? Math.abs(b.vy) : -Math.abs(b.vy); b.y += dy >= 0 ? 1 : -1; }
+                if (br.locked) { Sound.shrug(); }
+                else ARC_MODES.smash.destroy(br);
+                break;
+              }
+            }
+          }
+          if (b.y > h + 14) {
+            a.lives--; a.combo = 0;
+            Sound.bust();
+            if (a.lives <= 0) { a.sdone = 'out'; arcadeFinish(0.6); }
+            else { b.stuck = true; b.vx = b.vy = 0; a.speed = Math.max(300, a.speed - 40); }
+          }
+        }
+        a.caps.forEach(function (c) { c.y += 130 * dt; });
+        a.caps = a.caps.filter(function (c) {
+          if (c.y > p.y - 6 && c.y < p.y + 16 && c.x > p.x - pw / 2 - 8 && c.x < p.x + pw / 2 + 8) {
+            if (c.type === 'wide') { p.wide = 10; arcPopup(c.x, p.y - 20, 'Wide paddle!', 'is-gold'); }
+            else { b.slow = 8; arcPopup(c.x, p.y - 20, 'Slow ball!', 'is-gold'); }
+            Sound.win();
+            return false;
+          }
+          return c.y < h + 10;
+        });
+        a.parts.forEach(function (q) { q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 520 * dt; q.t -= dt; });
+        a.parts = a.parts.filter(function (q) { return q.t > 0; });
+        if (!a.sdone && ARC_MODES.smash.alive().length <= 3) { a.sdone = 'few'; arcadeFinish(1.0); }
+        ARC_MODES.smash.draw();
+      },
+      destroy: function (br) {
+        var a = arcade;
+        br.alive = false; a.smashed++; a.combo++;
+        if (a.combo > a.bestCombo) a.bestCombo = a.combo;
+        a.score += 10 * Math.min(5, a.combo);
+        arcReject(br.dish);
+        Sound.climb(a.smashed);
+        for (var i = 0; i < 9; i++) a.parts.push({ x: br.x + br.w / 2, y: br.y + br.h / 2, vx: (Math.random() - 0.5) * 240, vy: -Math.random() * 200, t: 0.5 + Math.random() * 0.3, c: i % 2 ? AMBER : INK });
+        if (Math.random() < 0.14) a.caps.push({ x: br.x + br.w / 2, y: br.y + br.h, type: Math.random() < 0.5 ? 'wide' : 'slow' });
+      },
+      draw: function () {
+        var a = arcade, c = a.cv, w = a.w, h = a.h, b = a.ball, p = a.paddle;
+        c.clearRect(0, 0, w, h);
+        var grad = c.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#26262c'); grad.addColorStop(1, '#17171a');
+        c.fillStyle = grad; c.fillRect(0, 0, w, h);
+        c.textAlign = 'center';
+        a.bricks.forEach(function (br) {
+          if (!br.alive) return;
+          roundRect(c, br.x, br.y, br.w, br.h, 6);
+          c.fillStyle = br.locked ? 'rgba(224,163,64,.18)' : PANEL; c.fill();
+          c.lineWidth = br.locked ? 2 : 1; c.strokeStyle = br.locked ? AMBER : LINE; c.stroke();
+          c.font = '20px system-ui'; c.fillStyle = INK; c.fillText(br.dish.icon, br.x + br.w / 2, br.y + 24);
+          c.font = '8.5px system-ui'; c.fillStyle = br.locked ? AMBER : '#c9c3b6';
+          c.fillText(fitText(c, br.dish.name, br.w - 4), br.x + br.w / 2, br.y + br.h - 6);
+          if (br.locked) { c.font = '11px system-ui'; c.fillText('\u{1F512}', br.x + br.w - 9, br.y + 12); }
+        });
+        a.caps.forEach(function (cap) {
+          c.fillStyle = cap.type === 'wide' ? '#6fb36f' : '#6f9bd1';
+          roundRect(c, cap.x - 14, cap.y - 7, 28, 14, 7); c.fill();
+          c.fillStyle = '#10141a'; c.font = 'bold 9px system-ui'; c.fillText(cap.type === 'wide' ? 'WIDE' : 'SLOW', cap.x, cap.y + 3);
+        });
+        a.parts.forEach(function (q) { c.globalAlpha = Math.max(0, q.t * 2); c.fillStyle = q.c; c.fillRect(q.x, q.y, 4, 4); });
+        c.globalAlpha = 1;
+        var pw = p.w * (p.wide > 0 ? 1.6 : 1);
+        roundRect(c, p.x - pw / 2, p.y, pw, p.h, 5); c.fillStyle = p.wide > 0 ? '#6fb36f' : INK; c.fill();
+        c.fillStyle = b.slow > 0 ? '#6f9bd1' : AMBER; c.beginPath(); c.arc(b.x, b.y, b.r, 0, 7); c.fill();
+        c.fillStyle = DIM; c.font = '10px system-ui';
+        if (b.stuck) c.fillText(a.smashed ? 'Tap to launch' : 'Tap to launch · tap a dish to lock it', w / 2, h - 52);
+      },
+      pointer: function (type, x, y) {
+        var a = arcade;
+        if (type !== 'up') a.target = x;
+        if (type !== 'down') return;
+        var hit = null;
+        a.bricks.forEach(function (b) { if (b.alive && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) hit = b; });
+        if (hit) {
+          if (hit.locked) { hit.locked = false; a.locks--; Sound.back(); }
+          else if (a.locks < 3) { hit.locked = true; a.locks++; Sound.tick(); }
+          else { Sound.reject(); arcPopup(x, y, 'Three locks max', 'is-bad'); }
+        } else ARC_MODES.smash.launch();
+      },
+      key: function (k) {
+        var a = arcade;
+        if (k === 'ArrowLeft') a.target = Math.max(0, a.target - 36);
+        else if (k === 'ArrowRight') a.target = Math.min(a.w, a.target + 36);
+        else if (k === ' ' || k === 'Enter') ARC_MODES.smash.launch();
+        else return false;
+        return true;
+      }
+    },
+
+    /* ------------------------------------------------------------- slice */
+    slice: {
+      setup: function () {},
+      step: function (dt) {
+        var a = arcade, w = a.w, h = a.h, e = a.elapsed;
+        var speed = 1 + e * 0.012;
+        var gm = arcEv('slow') ? 0.5 : 1;
+        a.spawnIn -= dt;
+        if (a.spawnIn <= 0) {
+          a.spawnIn = Math.max(0.4, 1.05 - e * 0.014) * (arcEv('frenzy') ? 0.45 : 1);
+          var n = 1 + (Math.random() < Math.min(0.75, 0.3 + e * 0.012) ? 1 : 0) + (e > 14 && Math.random() < 0.5 ? 1 : 0) + (e > 28 && Math.random() < 0.4 ? 1 : 0);
+          for (var k = 0; k < n; k++) {
+            var bad = arcEv('field') ? 0.45 : arcEv('gold') ? 0 : Math.min(0.3, 0.14 + e * 0.006);
+            var kind = arcadeKind(bad, arcEv('gold') ? 0.5 : 0.07);
+            var t = { kind: kind, g: h * (1.35 + Math.random() * 0.4) * speed };
+            var side = Math.random();
+            if (side < 0.62) {                       // up from the bottom
+              t.x = w * (0.12 + Math.random() * 0.76); t.y = h + 30;
+              t.vy = -Math.sqrt(2 * t.g * h * (0.6 + Math.random() * 0.2));
+              t.vx = (w / 2 - t.x) * (0.25 + Math.random() * 0.4);
+            } else {                                   // across from a side
+              var left = side < 0.81;
+              t.x = left ? -30 : w + 30; t.y = h * (0.5 + Math.random() * 0.35);
+              t.vx = (left ? 1 : -1) * w * (0.45 + Math.random() * 0.35) * speed;
+              t.vy = -h * (0.55 + Math.random() * 0.5);
+            }
+            t.el = dishThing(kind);
+            a.things.push(t);
+          }
+        }
+        for (var i = a.things.length - 1; i >= 0; i--) {
+          var thing = a.things[i];
+          thing.vy += thing.g * gm * dt;
+          thing.x += thing.vx * gm * dt;
+          thing.y += thing.vy * gm * dt;
+          arcPlace(thing);
+          var gone = (thing.vy > 0 && thing.y > h + 50) || thing.x < -90 || thing.x > w + 90;
+          if (gone) {
+            // Letting a dish go is how you say no, and it is remembered.
+            if (!thing.kind.bad && thing.kind.dish) arcReject(thing.kind.dish);
+            thing.el.remove(); a.things.splice(i, 1);
+          }
+        }
+      },
+      cut: function (x0, y0, x1, y1) {
+        var a = arcade;
+        for (var i = a.things.length - 1; i >= 0; i--) {
+          var t = a.things[i];
+          if (segDist(t.x, t.y, x0, y0, x1, y1) > 32) continue;
+          if (t.kind.bad) arcadeHurt(t.x, t.y);
+          else arcadeCatch(t.kind.dish, t.kind.gold ? 30 : 10, t.kind.gold ? 2 : 1, t.x, t.y - 20);
+          t.el.classList.add('is-cut');
+          (function (node) { setTimeout(function () { node.remove(); }, 260); })(t.el);
+          a.things.splice(i, 1);
+        }
+      }
+    },
+
+    /* --------------------------------------------------------------- derby */
+    derby: {
+      setup: function (stage) {
+        var a = arcade;
+        stage.className = 'arc-stage arc-derby';
+        a.phase = 'paddock'; a.champ = null; a.rerolls = 3; a.tools = { spice: 2, butter: 2 }; a.tool = 'cheer';
+        a.cheers = 0; a.placeText = '–'; a.runners = []; a.field = [];
+        a.box = document.createElement('div');
+        a.box.className = 'dv';
+        stage.appendChild(a.box);
+        ARC_MODES.derby.deal(false);
+        ARC_MODES.derby.paddock();
+        $('arc-hud').hidden = true;
+      },
+      stats: function (d) {
+        var t = d.tags;
+        var clamp = function (v) { return Math.max(18, Math.min(99, Math.round(v))); };
+        return {
+          dish: d,
+          sp: clamp(40 + (t.quick === 1 ? 18 : 0) + (t.hot === 1 ? 12 : 0) + (t.crunchy === 1 ? 10 : 0) - (t.soupy === 1 ? 14 : 0) - (t.filling === 1 ? 8 : 0) + nameHash(d.name + 's') * 22),
+          st: clamp(38 + (t.filling === 1 ? 24 : 0) + (t.carby === 1 ? 14 : 0) + (t.meat === 1 ? 10 : 0) + nameHash(d.name + 't') * 22),
+          lu: clamp(20 + nameHash(d.name + 'l') * 75)
+        };
+      },
+      deal: function (reroll) {
+        var a = arcade;
+        if (reroll) a.field.forEach(function (f) { arcReject(f.dish); });
+        var dishes = arcadeFresh(8, a.field.map(function (f) { return f.dish; }));
+        a.pool = dishes.slice();
+        a.field = dishes.map(ARC_MODES.derby.stats);
+        a.champ = null;
+      },
+      paddock: function () {
+        var a = arcade, box = arcClear(a.box);
+        box.appendChild(arcEl('p', { class: 'dv-title', text: 'Pick a champion to cheer for' }));
+        var grid = arcEl('div', { class: 'dv-field' });
+        a.field.forEach(function (f, i) {
+          var bar = function (label, v) { return arcEl('span', { class: 'dv-stat' }, [arcEl('i', { text: label }), arcEl('em', { style: 'width:' + v + '%' })]); };
+          var card = arcEl('button', { type: 'button', class: 'dv-card' + (a.champ === i ? ' is-champ' : '') }, [
+            arcEl('b', { text: f.dish.icon }),
+            arcEl('span', { class: 'dv-name', text: f.dish.name }),
+            bar('Speed', f.sp), bar('Stamina', f.st), bar('Luck', f.lu)
+          ]);
+          card.addEventListener('click', function () { a.champ = a.champ === i ? null : i; Sound.tick(); ARC_MODES.derby.paddock(); });
+          grid.appendChild(card);
+        });
+        box.appendChild(grid);
+        var reroll = arcEl('button', { type: 'button', class: 'quiet' }, [arcEl('span', { text: 'None of these — reroll the field' }), ' ', arcEl('b', { text: String(a.rerolls) })]);
+        reroll.addEventListener('click', function () {
+          if (a.rerolls <= 0) { Sound.reject(); return; }
+          a.rerolls--; Sound.roll(); ARC_MODES.derby.deal(true); ARC_MODES.derby.paddock();
+        });
+        var go = arcEl('button', { type: 'button', class: 'go go-sm' }, [arcEl('span', { class: 'go-label', text: 'Start the race' })]);
+        go.addEventListener('click', function () { ARC_MODES.derby.race(); });
+        box.appendChild(arcEl('p', { class: 'fine dv-hint', text: a.champ === null ? 'No favourite? Fine — you can still cheer for whoever you like once they are off.' : 'Your champion is picked. Tap them again to unpick.' }));
+        box.appendChild(arcEl('div', { class: 'dv-actions' }, [reroll, go]));
+      },
+      race: function () {
+        var a = arcade, box = arcClear(a.box);
+        a.phase = 'race';
+        $('arc-hud').hidden = false;
+        a.startIn = 2.6; a.over = false; a.finishOrder = []; a.elapsedRace = 0;
+        a.runners = a.field.map(function (f, i) {
+          var r = { f: f, lane: i, pos: 0, mod: 1, modT: 0, boost: 0, slow: 0, finished: false, time: 0, cheers: 0, obst: [] };
+          var n = 2 + (Math.random() < 0.5 ? 1 : 0), at = 18 + Math.random() * 12;
+          for (var k = 0; k < n; k++) { r.obst.push({ at: at, type: Math.random() < 0.5 ? 'spice' : 'butter', hit: false }); at += 18 + Math.random() * 14; }
+          return r;
+        });
+        var track = arcEl('div', { class: 'dv-track' });
+        a.runners.forEach(function (r, i) {
+          var lane = arcEl('div', { class: 'dv-lane' + (a.champ === i ? ' is-champ' : '') });
+          r.obst.forEach(function (o) { o.el = arcEl('i', { class: 'dv-obst', text: o.type === 'spice' ? '\u{1F336}️' : '\u{1F9C8}', style: 'left:' + o.at + '%' }); lane.appendChild(o.el); });
+          r.el = arcEl('div', { class: 'dv-runner' }, [arcEl('b', { text: r.f.dish.icon }), arcEl('span', { text: r.f.dish.name })]);
+          lane.appendChild(r.el);
+          lane.appendChild(arcEl('i', { class: 'dv-finish' }));
+          lane.addEventListener('pointerdown', function (event) { event.preventDefault(); ARC_MODES.derby.tap(r); });
+          r.laneEl = lane;
+          track.appendChild(lane);
+        });
+        box.appendChild(track);
+        a.count = arcEl('div', { class: 'dv-count', text: '3' });
+        box.appendChild(a.count);
+        var tools = arcEl('div', { class: 'dv-tools' });
+        [['cheer', '\u{1F4E3} Cheer'], ['spice', '\u{1F336}️ Spice'], ['butter', '\u{1F9C8} Butter']].forEach(function (t) {
+          var b = arcEl('button', { type: 'button', class: 'dv-tool' + (a.tool === t[0] ? ' is-on' : '') }, [arcEl('span', { text: t[1].slice(t[1].indexOf(' ') + 1) }), arcEl('b', { text: t[1].slice(0, t[1].indexOf(' ')) })]);
+          b.addEventListener('click', function () {
+            if (t[0] !== 'cheer' && !a.tools[t[0]]) { Sound.reject(); return; }
+            a.tool = t[0]; Sound.tick();
+            Array.prototype.forEach.call(tools.children, function (c, i) { c.classList.toggle('is-on', ['cheer', 'spice', 'butter'][i] === a.tool); });
+          });
+          tools.appendChild(b);
+        });
+        box.appendChild(tools);
+        box.appendChild(arcEl('p', { class: 'fine dv-hint', text: 'Tap a lane to use the selected move on that dish.' }));
+        a.toolsEl = tools;
+      },
+      tap: function (r) {
+        var a = arcade;
+        if (a.phase !== 'race' || a.startIn > 0 || a.over || r.finished) return;
+        if (a.tool === 'cheer') {
+          var now = performance.now();
+          if (now - (r.lastCheer || 0) < 90) return;
+          r.lastCheer = now; r.pos += 0.28; r.cheers++; a.cheers++; Sound.climb(a.cheers % 14);
+          ARC_MODES.derby.puff(r, '✨');
+        } else if (a.tools[a.tool] > 0) {
+          a.tools[a.tool]--;
+          if (a.tool === 'spice') { r.boost = 1.6; ARC_MODES.derby.puff(r, '\u{1F336}️'); Sound.win(); }
+          else { r.slow = 1.5; ARC_MODES.derby.puff(r, '\u{1F9C8}'); Sound.bust(); }
+          if (!a.tools[a.tool]) {
+            a.tool = 'cheer';
+            Array.prototype.forEach.call(a.toolsEl.children, function (c, i) { c.classList.toggle('is-on', i === 0); });
+          }
+        }
+      },
+      puff: function (r, text) {
+        var node = arcEl('i', { class: 'dv-puff', text: text, style: 'left:' + Math.min(92, r.pos) + '%' });
+        r.laneEl.appendChild(node);
+        setTimeout(function () { if (node.parentNode) node.parentNode.removeChild(node); }, 600);
+      },
+      step: function (dt) {
+        var a = arcade;
+        if (a.phase !== 'race') { a.left += dt; return; }
+        if (a.startIn > 0) {
+          a.left += dt;
+          var prev = Math.ceil(a.startIn);
+          a.startIn -= dt;
+          var now = Math.ceil(a.startIn);
+          a.count.textContent = a.startIn > 0 ? String(now) : 'Go!';
+          if (now !== prev && a.startIn > 0) Sound.tick();
+          if (a.startIn <= 0) { Sound.reveal(); setTimeout(function () { if (a.count) a.count.style.display = 'none'; }, 500); }
+          return;
+        }
+        a.elapsedRace += dt;
+        var avg = a.runners.reduce(function (s, r) { return s + r.pos; }, 0) / a.runners.length;
+        a.runners.forEach(function (r) {
+          if (r.finished) return;
+          r.modT -= dt;
+          if (r.modT <= 0) { r.modT = 0.7 + Math.random() * 0.5; r.mod = 1 + (Math.random() - 0.5) * 0.9 * (r.f.lu / 75); }
+          r.boost = Math.max(0, r.boost - dt); r.slow = Math.max(0, r.slow - dt);
+          var v = 6.2 + r.f.sp * 0.045;
+          v *= r.mod;
+          var fade = r.pos > 50 ? 1 - (1 - r.f.st / 100) * 0.4 * ((r.pos - 50) / 50) : 1;
+          v *= fade;
+          v *= 1 - 0.12 * Math.max(-1, Math.min(1, (r.pos - avg) / 25));
+          if (r.boost > 0) v *= 1.7;
+          if (r.slow > 0) v *= 0.4;
+          r.pos += v * dt;
+          r.obst.forEach(function (o) {
+            if (!o.hit && r.pos >= o.at) {
+              o.hit = true; o.el.style.opacity = 0.25;
+              if (o.type === 'spice') { r.boost = Math.max(r.boost, 1.0); } else { r.slow = Math.max(r.slow, 0.9); }
+            }
+          });
+          if (r.pos >= 100) { r.pos = 100; r.finished = true; r.time = a.elapsedRace; a.finishOrder.push(r); Sound.tick(); }
+        });
+        a.runners.forEach(function (r) {
+          r.el.style.left = 'calc(' + r.pos + '% - ' + (r.pos * 0.46) + 'px)';
+          r.el.classList.toggle('is-boost', r.boost > 0);
+          r.el.classList.toggle('is-slow', r.slow > 0);
+        });
+        var order = ARC_MODES.derby.order();
+        if (a.champ !== null) a.placeText = ordinal(order.indexOf(a.runners[a.champ]) + 1);
+        else a.placeText = '\u2013';
+        a.score = a.cheers;
+        a.runners.forEach(function (r) { r.laneEl.classList.toggle('is-lead', r === order[0]); });
+        if (a.finishOrder.length >= 3 && !a.over) { a.over = true; Sound.win(); if (!reduceMotion) Confetti.burst({ y: window.innerHeight * 0.35 }); arcadeFinish(1.6); }
+      },
+      order: function () {
+        return arcade.runners.slice().sort(function (x, y) {
+          if (x.finished !== y.finished) return x.finished ? -1 : 1;
+          if (x.finished) return x.time - y.time;
+          return y.pos - x.pos;
+        });
+      }
+    }
+  };
+
+  // Distance from a point to a line segment: did the swipe pass through it.
+  function segDist(px, py, x0, y0, x1, y1) {
+    var dx = x1 - x0, dy = y1 - y0;
+    var len = dx * dx + dy * dy;
+    var u = len ? Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / len)) : 0;
+    var cx = x0 + u * dx, cy = y0 + u * dy;
+    return Math.sqrt((px - cx) * (px - cx) + (py - cy) * (py - cy));
+  }
+
+  function stagePoint(event) {
+    var r = $('arc-stage').getBoundingClientRect();
+    return { x: event.clientX - r.left, y: event.clientY - r.top };
+  }
+
+  (function wireArcade() {
+    var stage = $('arc-stage');
+    var CANVAS = { drop: 1, smash: 1 };
+    stage.addEventListener('pointerdown', function (event) {
+      if (!arcade.live) return;
+      var p = stagePoint(event);
+      if (CANVAS[arcade.mode]) {
+        ARC_MODES[arcade.mode].pointer('down', p.x, p.y);
+        try { stage.setPointerCapture(event.pointerId); } catch (err) { /* fine */ }
+      } else if (arcade.mode === 'slice') {
+        arcade.sl = { x: p.x, y: p.y, id: event.pointerId };
+        try { stage.setPointerCapture(event.pointerId); } catch (err) { /* fine */ }
+      }
+    });
+    stage.addEventListener('pointermove', function (event) {
+      if (!arcade.live) return;
+      var p = stagePoint(event);
+      if (CANVAS[arcade.mode]) ARC_MODES[arcade.mode].pointer('move', p.x, p.y);
+      else if (arcade.mode === 'slice' && arcade.sl) {
+        ARC_MODES.slice.cut(arcade.sl.x, arcade.sl.y, p.x, p.y);
+        var dot = document.createElement('i');
+        dot.className = 'arc-trail';
+        dot.style.left = Math.round(p.x) + 'px';
+        dot.style.top = Math.round(p.y) + 'px';
+        stage.appendChild(dot);
+        setTimeout(function () { if (dot.parentNode) dot.parentNode.removeChild(dot); }, 280);
+        arcade.sl.x = p.x; arcade.sl.y = p.y;
+      }
+    });
+    var lift = function (event) {
+      if (arcade.live && CANVAS[arcade.mode]) { var p = stagePoint(event); ARC_MODES[arcade.mode].pointer('up', p.x, p.y); }
+      arcade.sl = null;
+    };
+    stage.addEventListener('pointerup', lift);
+    stage.addEventListener('pointercancel', lift);
+    window.addEventListener('resize', function () { if (arcade.live && arcade.mode === 'slice') measureArcade(); });
+
+    document.addEventListener('keydown', function (event) {
+      if (!arcade.live || panel !== 'arcade' || !CANVAS[arcade.mode]) return;
+      if (ARC_MODES[arcade.mode].key(event.key)) event.preventDefault();
+    });
+    $('arc-lock').addEventListener('click', function () { if (arcade.live && arcade.auxFn) arcade.auxFn(); });
+  })();
+
+  function endArcade() {
+    var mode = arcade.mode;
+    var a = arcade;
+    var picks, stats, title;
+    if (mode === 'derby') {
+      var order = ARC_MODES.derby.order();
+      a.tally = {};
+      order.slice(0, 3).forEach(function (r, i) { a.tally[r.f.dish.name] = { dish: r.f.dish, n: 3 - i + r.cheers * 0.001, at: i }; });
+      var champ = a.champ !== null ? order.indexOf(a.runners[a.champ]) : -1;
+      a.score = a.cheers + (champ === 0 ? 100 : champ === 1 ? 60 : champ === 2 ? 30 : 0);
+      var margin = order[1] && order[0].finished && order[1].finished ? order[1].time - order[0].time : 9;
+      stats = (margin < 0.4 ? 'Photo finish! ' : 'Race over. ') + 'Score ' + a.score;
+      title = 'On the podium. Pick one.';
+    }
+    if (mode === 'smash') {
+      var alive = ARC_MODES.smash.alive();
+      a.tally = {};
+      alive.slice().sort(function (x, y) { return (y.locked ? 1 : 0) - (x.locked ? 1 : 0) || x.at - y.at; }).slice(0, 3)
+        .forEach(function (b, i) { a.tally[b.dish.name] = { dish: b.dish, n: 10 - i + (b.locked ? 5 : 0), at: i }; });
+      stats = (a.sdone === 'out' ? 'Out of balls. ' : a.sdone === 'few' ? 'Down to the last few. ' : 'Time. ') + 'Score ' + a.score;
+      title = 'These survived. Pick one.';
+    }
+    if (mode === 'drop') {
+      stats = (a.lives <= 0 ? 'Balls gone. ' : 'Time. ') + 'Score ' + a.score;
+      title = 'You went for these. Pick one.';
+    }
+    if (mode === 'slice') {
+      stats = (a.lives <= 0 ? 'Out of hearts. ' : 'Time. ') + 'Score ' + a.score + ' · best combo ' + a.bestCombo;
+      title = 'You went for these. Pick one.';
+    }
+    stopArcade();
+    Sound.reveal();
+    var beat = arcadeBest(mode, a.score);
+    Buddy.onGame(beat);
+    picks = Object.keys(a.tally).map(function (k) { return a.tally[k]; })
+      .sort(function (x, y) { return y.n - x.n || x.at - y.at; })
+      .slice(0, 3);
+    a.lastPicks = picks;
+
+    $('arc-hud').hidden = true;
+    $('arc-stage').hidden = true;
+    $('arc-stage').innerHTML = '';
+    $('arc-end').hidden = false;
+    $('arc-cancel').hidden = false;
+
+    $('arc-end-title').textContent = !picks.length
+      ? 'Nothing caught. Bold strategy.'
+      : picks.length === 1 ? 'You went for this one.' : title;
+    $('arc-end-line').textContent = picks.length
+      ? 'Whichever you pick is the answer. Not feeling any of them? Go again and the game deals away from these.'
+      : 'Go again, or let the questions decide.';
+    $('arc-end-stats').textContent = stats;
+    $('arc-end-new').hidden = beat !== true;
+
+    var list = $('arc-picked');
+    list.innerHTML = '';
+    picks.forEach(function (row) {
+      var dish = row.dish;
+      var li = document.createElement('li');
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'swipe-pick';
+      var face = document.createElement('span');
+      face.className = 'swipe-pick-face';
+      face.setAttribute('aria-hidden', 'true');
+      face.textContent = dish.icon;
+      var name = document.createElement('span');
+      name.className = 'swipe-pick-name';
+      name.textContent = dish.name;
+      var blurb = document.createElement('span');
+      blurb.className = 'swipe-pick-blurb';
+      blurb.textContent = dish.blurb;
+      [face, name, blurb].forEach(function (e) { button.appendChild(e); });
+      button.addEventListener('click', function () { carry(face); landArcade(dish, picks); });
+      li.appendChild(button);
+      list.appendChild(li);
+    });
+    if (beat === true && !reduceMotion) Confetti.burst({ y: window.innerHeight * 0.3 });
+  }
+
+  // Same landing as Swipe: the one you pick is the answer, the others and the
+  // rest of this run's pool are the "check again" list behind it.
+  function landArcade(dish, picks) {
+    var mode = arcade.mode;
+    resetGame();
+    shortcut = true;
+    rankedItems = [dish]
+      .concat(picks.map(function (r) { return r.dish; }).filter(function (d) { return d !== dish; }))
+      .concat(arcade.pool.filter(function (d) { return d !== dish; }).slice(0, 5));
+    setPanel('result');
+    $('result-icon').classList.add('is-landed');
+    showResult(dish, { animate: false });
+    $('result-eyebrow').textContent = 'From ' + ARCADE[mode].name + ', you went for';
+    $('accept-btn').disabled = false;
+    $('reject-btn').disabled = false;
+    Sound.reveal();
+    Confetti.burst({ y: window.innerHeight * 0.3 });
+  }
+
+  [['derby-btn', 'derby'], ['smash-btn', 'smash'], ['drop-btn', 'drop'], ['slice-btn', 'slice']].forEach(function (pair) {
+    $(pair[0]).addEventListener('click', function () { startArcade(pair[1]); });
+  });
+  $('arc-start').addEventListener('click', beginArcade);
+  // "None of these": the three just offered are turned down, and the next round
+  // is dealt away from them.
+  $('arc-again').addEventListener('click', function () {
+    (arcade.lastPicks || []).forEach(function (r) { arcReject(r.dish); });
+    arcade.lastPicks = [];
+    startArcade(arcade.mode);
+  });
+  $('arc-ask').addEventListener('click', function () { stopArcade(); restart(); });
+  $('arc-cancel').addEventListener('click', function () { stopArcade(); goHome(); });
 
   /* --------------------------------------------------------------- endless */
   /*
@@ -13523,6 +17482,88 @@
     if (endless.champ) landEndless(endless.champ);
   });
 
+  /* ------------------------------------------------------------- language */
+  /*
+   * The app's language, set in two places that share one list: the first card
+   * of the welcome, and the Language strip under You.
+   *
+   * I18n.apply() swaps the words; everything here is about when it runs and who
+   * asked. Picking a row applies at once and is saved at once, so there is no
+   * half-chosen state and the way back is always one tap in the same list.
+   */
+  function applyLang() {
+    var code = I18n.set(progress.state.lang || 'en');
+    // Said only when there is a translation to warn about; over the English
+    // original it would be a warning about nothing.
+    ['lang-warn-view', 'lang-warn-welcome'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.hidden = code === 'en';
+    });
+    paintLangLists();
+    // Words written by JS, not sitting in the markup, are not reached by
+    // I18n.apply, so they are written again.
+    if ($('landing-start')) renderIntro();
+    if (lastTopStatus) paintTopbar(lastTopStatus);
+    if (welcomeOpen) paintWelcome();
+  }
+
+  function langRow(entry, chosen, suggested, onPick) {
+    var li = document.createElement('li');
+    li.className = 'lang-row' + (chosen ? ' is-on' : '') + (suggested ? ' is-suggested' : '');
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'lang-btn';
+    btn.setAttribute('aria-pressed', chosen ? 'true' : 'false');
+
+    var flag = document.createElement('span');
+    flag.className = 'lang-flag';
+    flag.setAttribute('aria-hidden', 'true');
+    flag.textContent = entry.flag;
+
+    var name = document.createElement('span');
+    name.className = 'lang-name';
+    name.textContent = entry.native;
+
+    btn.appendChild(flag);
+    btn.appendChild(name);
+
+    // The English name underneath, for somebody who landed in a language they
+    // did not choose and is looking for the way out. Skipped where it would
+    // only repeat the line above.
+    if (entry.english !== entry.native) {
+      var sub = document.createElement('span');
+      sub.className = 'lang-sub';
+      sub.textContent = entry.english;
+      btn.appendChild(sub);
+    }
+    btn.addEventListener('click', function () { onPick(entry.id); });
+    li.appendChild(btn);
+    return li;
+  }
+
+  function paintLangLists() {
+    var now = I18n.get();
+    // The browser's own preference is offered (outlined), never applied.
+    var guess = progress.state.langAsked ? '' : I18n.guess();
+    ['lang-list', 'lang-welcome-list'].forEach(function (id) {
+      var list = $(id);
+      if (!list) return;
+      list.innerHTML = '';
+      I18n.LANGS.forEach(function (entry) {
+        list.appendChild(langRow(entry, entry.id === now, entry.id === guess && guess !== now, pickLang));
+      });
+    });
+  }
+
+  function pickLang(id) {
+    if (id === I18n.get()) return;
+    Sound.tick();
+    progress.state.lang = id;
+    progress.save();
+    applyLang();
+  }
+
   /* --------------------------------------------------------------- welcome */
   /*
    * The first-run walkthrough. Four cards, once, then never again.
@@ -13548,7 +17589,11 @@
 
   // Heading and subtitle live outside the panes, so the heading can be the
   // dialog's label for all four rather than four labels that go stale.
-  var WELCOME = [
+  var WELCOME_ALL = [
+    { id: 'lang',
+      title: 'Choose your language',
+      sub: 'The app changes straight away. You can change it again whenever you like, from your profile.',
+      next: 'Continue', tkTitle: 'lang.title', tkSub: 'lang.sub', tkNext: 'lang.choose' },
     { id: 'what',
       title: 'You’re hungry. You don’t know what you want.',
       sub: 'That is the whole problem this solves, and it takes about twenty seconds.',
@@ -13570,21 +17615,25 @@
       next: 'Start deciding' }
   ];
 
+  // First run shows only the language card; the full tour (from the profile's
+  // "Run the welcome again") starts with it and carries on.
+  var WELCOME = WELCOME_ALL;
   var welcomeAt = 0;
   var welcomeOpen = false;
 
   function paintWelcome() {
     var step = WELCOME[welcomeAt];
 
-    $('welcome-step').textContent = 'Step ' + (welcomeAt + 1) + ' of ' + WELCOME.length;
-    $('welcome-heading').textContent = step.title;
-    $('welcome-sub').textContent = step.sub;
-    label('welcome-next', step.next);
+    $('welcome-step').textContent = WELCOME.length > 1 ? 'Step ' + (welcomeAt + 1) + ' of ' + WELCOME.length : '';
+    $('welcome-heading').textContent = step.tkTitle ? I18n.t(step.tkTitle, step.title) : step.title;
+    $('welcome-sub').textContent = step.tkSub ? I18n.t(step.tkSub, step.sub) : step.sub;
+    label('welcome-next', step.tkNext ? I18n.t(step.tkNext, step.next) : step.next);
     $('welcome-back').hidden = welcomeAt === 0;
 
-    WELCOME.forEach(function (other) {
+    WELCOME_ALL.forEach(function (other) {
       $('welcome-pane-' + other.id).hidden = other.id !== step.id;
     });
+    $('welcome-skip').hidden = WELCOME.length === 1;
 
     var dots = $('welcome-dots');
     dots.innerHTML = '';
@@ -13603,12 +17652,14 @@
     focusQuietly($('welcome-heading'));
   }
 
-  function openWelcome() {
+  function openWelcome(languageOnly) {
+    WELCOME = languageOnly === true ? WELCOME_ALL.slice(0, 1) : WELCOME_ALL;
     welcomeAt = 0;
     welcomeOpen = true;
     welcomeEl.hidden = false;
     document.body.classList.add('is-welcoming');
     paintWelcome();
+    Dot.mood($('mascot-w'), 'happy', 1800);
   }
 
   /*
@@ -13623,6 +17674,8 @@
     welcomeEl.hidden = true;
     document.body.classList.remove('is-welcoming');
     progress.state.onboarded = true;
+    // Answered, or skipped: either way it is not asked again.
+    progress.state.langAsked = true;
     progress.save();
     applyRules();
     applyTaste();
@@ -13709,7 +17762,7 @@
   // second look at what they skipped.
   $('replay-welcome').addEventListener('click', function () {
     Sound.tick();
-    openWelcome();
+    openWelcome(false);
   });
 
   /*
@@ -13741,47 +17794,223 @@
   var shell = document.querySelector('.content');
   var landed = false;
 
-  // The reel is decoration, and it is here on purpose: the catalogue as a
-  // number does not land the way the dishes themselves going past does.
-  var reelTimer = null;
+  /*
+   * THE HOOK, FIRST TEN SECONDS.
+   *
+   * The front door used to describe what the app does. This one does it: a reel
+   * spins as the page arrives, slows, and lands on a dish that already respects
+   * the profile — one tap from being the answer, no questions asked. The first
+   * thing a visitor sees move is the thing they came for, and "not that" costs
+   * one tap and teaches the next spin (a rejected dish and its lookalikes sink).
+   * Under reduced motion it simply arrives, already landed.
+   */
+  var hook = { dish: null, seen: [], timer: 0 };
+  var HOOK_LEADS = ['How about', 'Hear me out:', 'Radical idea:', 'Possibly:'];
 
+  function hookPick() {
+    var ranked = favouredDishes().filter(function (r) {
+      return !hook.seen.some(function (d) { return d.name === r.item.name; });
+    });
+    if (ranked.length < 6) { hook.seen = []; ranked = favouredDishes(); }
+    var no = hook.seen.slice(-4);
+    var scored = ranked.slice(0, 60).map(function (r) {
+      var sim = 0;
+      no.forEach(function (d) { sim = Math.max(sim, Taste.similarity(r.item, d)); });
+      return { item: r.item, score: Math.max(0.001, r.score * (1 - 0.7 * sim)) };
+    }).sort(function (x, y) { return y.score - x.score; });
+    return pickFavoured(scored, 10);
+  }
+
+  var REEL_H = 96;   // px, one window; matches .hook-window in the stylesheet
+
+  function hookLand(dish) {
+    $('hook-lead').textContent = HOOK_LEADS[Math.floor(Math.random() * HOOK_LEADS.length)];
+    $('hook-name').textContent = dish.name;
+    $('hook-blurb').textContent = dish.blurb;
+    ['hook-lead', 'hook-name', 'hook-blurb'].forEach(function (id, i) {
+      var node = $(id);
+      node.classList.remove('is-in');
+      void node.offsetWidth;
+      node.style.animationDelay = (i * 70) + 'ms';
+      node.classList.add('is-in');
+    });
+    // Why it landed there: the dish's own strong tags, popping in one by one.
+    var tags = Object.keys(dish.tags).filter(function (t) { return dish.tags[t] === 1; }).slice(0, 3);
+    var row = clear2($('hook-tags'));
+    tags.forEach(function (t, i) {
+      var chip = document.createElement('span');
+      chip.className = 'hook-tag';
+      chip.textContent = t;
+      chip.style.animationDelay = (240 + i * 90) + 'ms';
+      row.appendChild(chip);
+    });
+    var stage = $('hook');
+    stage.classList.remove('is-hit');
+    void stage.offsetWidth;
+    stage.classList.add('is-hit');
+    sparkle($('hook-window'), 10);
+    $('hook-go').disabled = false;
+    $('hook-spin').disabled = false;
+  }
+
+  function hookSpin(first) {
+    clearTimeout(hook.timer);
+    var dish = hookPick();
+    if (!dish) return;
+    hook.dish = dish;
+    $('hook-go').disabled = true;
+    $('hook-spin').disabled = true;
+    var strip = $('hook-strip');
+    clear2($('hook-tags'));
+    $('hook').classList.remove('is-hit');
+    var count = 14;
+    strip.innerHTML = '';
+    // The strip: a column of dishes, the answer last. The first one is whatever
+    // the reel last showed, so a respin starts from where it stopped.
+    var faces = [hook.shown || Data.ITEMS[Math.floor(Math.random() * Data.ITEMS.length)].icon];
+    for (var i = 1; i < count; i++) faces.push(Data.ITEMS[Math.floor(Math.random() * Data.ITEMS.length)].icon);
+    faces.push(dish.icon);
+    faces.forEach(function (icon) {
+      var cell = document.createElement('span');
+      cell.textContent = icon;
+      strip.appendChild(cell);
+    });
+    hook.shown = dish.icon;
+    $('hook-lead').textContent = first ? 'Spinning for you\u2026' : 'Fine. Again\u2026';
+    $('hook-name').textContent = '\u00a0';
+    $('hook-blurb').textContent = '';
+    ['hook-lead', 'hook-name', 'hook-blurb'].forEach(function (id) { $(id).classList.remove('is-in'); });
+    var end = -(faces.length - 1) * REEL_H;
+    if (reduceMotion || !strip.animate) {
+      strip.style.transform = 'translateY(' + end + 'px)';
+      return hookLand(dish);
+    }
+    strip.classList.add('is-blur');
+    var run = strip.animate([
+      { transform: 'translateY(0)' },
+      { transform: 'translateY(' + (end - 14) + 'px)', offset: 0.88 },
+      { transform: 'translateY(' + end + 'px)' }
+    ], { duration: 1700, easing: 'cubic-bezier(.22,.75,.25,1)', fill: 'forwards' });
+    // Motion blur only while it is fast.
+    setTimeout(function () { strip.classList.remove('is-blur'); }, 1100);
+    var ticks = 0;
+    (function tick() {
+      if (!first && ticks++ < 8) { Sound.roll(); hook.timer = setTimeout(tick, 70 + ticks * 24); }
+    })();
+    run.onfinish = function () { strip.style.transform = 'translateY(' + end + 'px)'; hookLand(dish); };
+  }
+
+  $('hook-go').addEventListener('click', function () { if (hook.dish) showTonight(hook.dish); });
+  $('hook-spin').addEventListener('click', function () {
+    if (hook.dish) hook.seen.push(hook.dish);
+    hookSpin(false);
+  });
+
+  var reelTimer = null;
   function startReel() {
-    if (reduceMotion || reelTimer) return;
-    var reel = $('reel');
-    var pool = Data.ITEMS.slice();
-    var at = Math.floor(Math.random() * pool.length);
-    reelTimer = setInterval(function () {
-      at = (at + 1 + Math.floor(Math.random() * 5)) % pool.length;
-      var span = document.createElement('span');
-      span.className = 'reel-item';
-      span.textContent = pool[at].icon;
-      reel.appendChild(span);
-      // Two frames, so the class change is a transition rather than a jump.
-      requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-          span.classList.add('is-on');
-          var old = reel.querySelector('.reel-item:not(:last-child)');
-          if (old) {
-            old.classList.add('is-gone');
-            setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 420);
-          }
-        });
-      });
-    }, 1400);
+    if (reelTimer) return;
+    reelTimer = true;
+    hookSpin(true);
   }
 
   function stopReel() {
-    if (!reelTimer) return;
-    clearInterval(reelTimer);
     reelTimer = null;
+    clearTimeout(hook.timer);
   }
 
+  /*
+   * The front door's ambient layer: a handful of dishes drifting up the page,
+   * slowly, behind everything. Pure atmosphere (aria-hidden, no pointer events,
+   * paused under reduced motion) so the page is never still while you decide.
+   */
+  function fillDrift() {
+    var box = $('landing-drift');
+    if (!box || box.firstChild) return;
+    for (var i = 0; i < 10; i++) {
+      var item = document.createElement('span');
+      item.textContent = Data.ITEMS[Math.floor(Math.random() * Data.ITEMS.length)].icon;
+      item.style.left = (4 + i * 9.5 + Math.random() * 4) + '%';
+      item.style.animationDelay = (-Math.random() * 26) + 's';
+      item.style.animationDuration = (22 + Math.random() * 16) + 's';
+      item.style.fontSize = (1.2 + Math.random() * 1.6) + 'rem';
+      box.appendChild(item);
+    }
+  }
+
+  // The headline arrives a word at a time.
+  function wordsIn(node) {
+    var n = 0;
+    (function walk(parent) {
+      Array.prototype.slice.call(parent.childNodes).forEach(function (child) {
+        if (child.nodeType === 3) {
+          var frag = document.createDocumentFragment();
+          child.textContent.split(/(\s+)/).forEach(function (part) {
+            if (!part) return;
+            if (/^\s+$/.test(part)) { frag.appendChild(document.createTextNode(part)); return; }
+            var w = document.createElement('span');
+            w.className = 'w';
+            w.style.animationDelay = (n++ * 55) + 'ms';
+            w.textContent = part;
+            frag.appendChild(w);
+          });
+          parent.replaceChild(frag, child);
+        } else if (child.nodeType === 1 && child.tagName !== 'BR') walk(child);
+      });
+    })(node);
+  }
+  if (!reduceMotion) wordsIn(document.querySelector('.landing-ask'));
+
+  /*
+   * WHAT PREMIUM IS, SHOWN RIGHT AFTER THE FREE PART WORKED.
+   *
+   * Seven real features, each with the line that sells it, in a strip you can
+   * drag. Tapping one explains it and offers the trial; the button under the
+   * strip does the same for the lot. Said once, at the moment of an answer, and
+   * never to somebody who already has it.
+   */
+  var PEEK = [
+    ['\u{1F3C7}', 'Dish Derby', 'Eight dishes race. Cheer your favourite.'],
+    ['\u{1F9F1}', 'Smash', 'Smash what you do not want. What is left is dinner.'],
+    ['\u{1F498}', 'Swipe', 'Swipe a deck of dishes until three say yes.'],
+    ['\u{1F4C5}', 'Meal planner', 'A week of dinners, planned in one tap.'],
+    ['\u{1F6D2}', 'Shopping list', 'The week\u2019s recipes, merged, by aisle.'],
+    ['\u{1F9E0}', 'A profile that learns', 'Picks that follow what you actually liked.'],
+    ['\u{1F373}', 'Recipes from anywhere', 'Paste a link or a photo. Cook it step by step.']
+  ];
+
+  function paintPeek() {
+    var box = $('peek');
+    if (!box) return;
+    box.hidden = isPlus();
+    if (isPlus()) return;
+    var rail = clear2($('peek-rail'));
+    PEEK.forEach(function (p, i) {
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'peek-card';
+      card.setAttribute('role', 'listitem');
+      card.style.animationDelay = (i * 60) + 'ms';
+      var face = document.createElement('b'); face.textContent = p[0]; face.setAttribute('aria-hidden', 'true');
+      var name = document.createElement('span'); name.className = 'peek-name'; name.textContent = p[1];
+      var line = document.createElement('span'); line.className = 'peek-line'; line.textContent = p[2];
+      [face, name, line].forEach(function (n) { card.appendChild(n); });
+      card.addEventListener('click', function () { sparkle(card, 6); goPremium(p[1]); });
+      rail.appendChild(card);
+    });
+  }
+  function clear2(node) { while (node.firstChild) node.removeChild(node.firstChild); return node; }
+  if ($('peek-go')) $('peek-go').addEventListener('click', function () { sparkle($('peek-go'), 9); goPremium('All of this'); });
+
   function showLanding() {
+    fillDrift();
     landed = false;
-    $('landing').hidden = false;
-    document.body.classList.add('is-landing');
-    if ('inert' in shell) shell.inert = true;
-    shell.setAttribute('aria-hidden', 'true');
+    vt(function () {
+      $('landing').hidden = false;
+      document.body.classList.add('is-landing');
+      if ('inert' in shell) shell.inert = true;
+      shell.setAttribute('aria-hidden', 'true');
+      if (typeof Buddy !== 'undefined' && Buddy) Buddy.sync();
+    }, -1);
 
     var state = progress.state;
     var played = state.decisions > 0;
@@ -13806,10 +18035,13 @@
   function hideLanding() {
     landed = true;
     stopReel();
-    $('landing').hidden = true;
-    document.body.classList.remove('is-landing');
-    if ('inert' in shell) shell.inert = false;
-    shell.removeAttribute('aria-hidden');
+    vt(function () {
+      $('landing').hidden = true;
+      document.body.classList.remove('is-landing');
+      if ('inert' in shell) shell.inert = false;
+      shell.removeAttribute('aria-hidden');
+      if (typeof Buddy !== 'undefined' && Buddy) Buddy.sync();
+    }, 1);
   }
 
   /*
@@ -14017,6 +18249,7 @@
   applyMute();
   applyRules();
   applyTaste();
+  applyLang();
   goHome();
   renderProfile();
   showLanding();
@@ -14036,9 +18269,12 @@
   // They get the walkthrough next time, if they come back without deciding.
   var deepLinked = /[?&](go|dish|with)=/.test(window.location.search || '');
   if (!deepLinked && !progress.state.onboarded && !(progress.state.decisions > 0)) {
-    // Auto-skip welcome for faster onboarding
+    // The full tour stays skipped, for faster onboarding. Only the language
+    // card is shown, once, because everything after it is written in a language
+    // the reader may not have.
     progress.state.onboarded = true;
     progress.save();
+    if (!progress.state.langAsked) openWelcome(true);
   }
 
   // The home-screen shortcuts in the manifest promise to land somewhere
@@ -14084,12 +18320,8 @@
     else if (go === 'dishes') { hideLanding(); setView('dishes'); }
     else if (go === 'news') { hideLanding(); setView('news'); }
     else if (go === 'ask') { hideLanding(); setView('chat'); }
-    // Where the sign-in redirect sends somebody back to: straight onto the
-    // Profile view, with the invite card drawing the eye to itself rather
-    // than left for them to go find — see highlightInvite(). The only two
-    // links that ever point here are #invite-signin and the comeback
-    // dialog's signed-out "Sign in for my link", both below.
-    else if (go === 'profile') { hideLanding(); setView('profile'); highlightInvite(); }
+    // Where a sign-in redirect lands somebody on the Profile view.
+    else if (go === 'profile') { hideLanding(); setView('profile'); }
     // Where #daily-signin sends somebody back to, for the same reason.
     else if (go === 'daily') { hideLanding(); setView('daily'); }
     // The hub's two sections, and where their sign-in links send people back to.
@@ -14114,15 +18346,15 @@
      * and you have not said you like it", which is not something anybody
      * should have to take on trust.
      *
-     * So: ?prompt=enjoy, ?prompt=share, ?prompt=comeback, or ?prompt=all to
-     * walk through all three. It spends nothing — no showing is counted and
+     * So: ?prompt=enjoy, ?prompt=share, or ?prompt=all to
+     * walk through both. It spends nothing — no showing is counted and
      * nothing is saved — so previewing one does not use up a real one, and it
      * cannot be stumbled into, because nobody types a query string by
      * accident.
      */
     var wanted = (here.searchParams.get('prompt') || '').toLowerCase();
     if (wanted) {
-      previewPrompts(wanted === 'all' ? ['enjoy', 'share', 'comeback'] : [wanted]);
+      previewPrompts(wanted === 'all' ? ['enjoy', 'share'] : [wanted]);
     }
   })();
 
@@ -14132,7 +18364,7 @@
    * timer, so a slow read does not stack two sheets on top of each other.
    */
   function previewPrompts(names) {
-    var openers = { enjoy: openEnjoy, share: openShare, comeback: openComeback };
+    var openers = { enjoy: openEnjoy, share: openShare };
     var queue = names.filter(function (n) { return openers[n]; });
     if (!queue.length) return;
 
@@ -14161,7 +18393,5 @@
   // account that owns Premium. No key to paste, no purchase to "claim" — the
   // checkout at /premium already attached access to the account directly, so
   // this is the same check every later load makes, just running once early.
-  syncPremium(true).then(function (status) {
-    referralHeartbeat();
-  });
+  syncPremium(true);
 })();
