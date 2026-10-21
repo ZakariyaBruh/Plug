@@ -231,6 +231,21 @@ two-person subscription; it never had a buyer, and the reason is probably that
 the thing people wanted was the feature — Together, and the shared browser —
 rather than a second seat on a bill. Both are in the one Premium plan.
 
+### Salience — the Premium pill, said twice
+The one thing on the top bar meant to be noticed rather than merely available is
+the Premium pill, so it moves: a scale and a glow, twice, a moment after the page
+has settled, and then it rests. It used to repeat for as long as the tab was open,
+which put something moving at the edge of a reader's vision on every screen, and
+that is attention taken rather than offered.
+
+Against the three properties: it is *salient* (it is exactly what it looks like, a
+button that says Premium), it leaves *autonomy* untouched (nothing is blocked or
+reworded and it is one tap from anywhere), and it is *aligned* only as far as
+somebody wants to know what Premium is. The last is why it stops. The call to
+action on the reward screen follows the same rule: its glow runs three times.
+Both are asserted in `scripts/shell-test.mjs`.
+→ `public/decide/styles.css` (`.topbar-premium`, `.peek-cta .go`)
+
 ### Cognitive fluency
 Easily processed claims are judged more likely to be true. Short sentences,
 concrete nouns, no jargon. This is also just good writing.
