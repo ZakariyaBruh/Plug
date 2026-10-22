@@ -7149,6 +7149,8 @@
         if (body && typeof body.left === 'number') {
           chat.left = body.left;
           chat.account = body.account === true;
+          if (typeof body.limit === 'number') chat.limit = body.limit;
+          if (body.bonus) chat.bonus = body.bonus;
           paintChatLeft();
         }
       })
@@ -7162,11 +7164,97 @@
     if (isPlus() || left === null) { el.hidden = true; $('chat-account').hidden = true; return; }
     el.hidden = false;
     $('chat-account').hidden = !(chat.account === false && left > 0);
+    var limit = chat.limit || CHAT_FREE;
     el.textContent = left > 0
-      ? left + (left === 1 ? ' free question left today' : ' of ' + CHAT_FREE + ' free questions left today') +
+      ? left + (left === 1 ? ' free question left today' : ' of ' + limit + ' free questions left today') +
         '. Premium asks as many as you like.'
-      : 'That is today\u2019s three free questions used \u2014 three more tomorrow. Premium asks as many as you like.';
+      : 'That is today\u2019s free questions used \u2014 more tomorrow. Premium asks as many as you like.';
+    paintBonus();
   }
+
+  /*
+   * MORE STANDARD QUESTIONS, FOR OPENING A SPONSOR PAGE.
+   *
+   * Offered only to somebody who has used today's free questions, never to
+   * Premium, and only while there are claims left today. Two taps, because the
+   * server can only know how long ago the page was asked for (see the note over
+   * BONUS_PER_CLAIM in lib/allowance.ts): the first opens the sponsor page in a
+   * new tab, from the tap itself so a pop-up blocker does not stop it, and asks
+   * the server to start the clock; the second, a few seconds on, asks it to
+   * add the questions. It says what it is on the button and in the line under
+   * it, and it is never opened for you.
+   */
+  var BONUS_WAIT = 10;
+  chat.bonus = null;
+  chat.limit = null;
+  var bonusFlow = { token: null, timer: 0, busy: false };
+
+  function bonusOffered() {
+    return !isPlus() && chat.left === 0 && !!chat.bonus && chat.bonus.claimsLeft > 0 &&
+      !!(window.FoodConfig && window.FoodConfig.smartlink);
+  }
+
+  function paintBonus(text, disabled) {
+    var box = $('chat-bonus-wrap');
+    var btn = $('chat-bonus');
+    if (!box || !btn) return;
+    var show = bonusOffered();
+    box.hidden = !show;
+    if (!show) return;
+    btn.disabled = !!disabled;
+    btn.textContent = text || ('Get ' + chat.bonus.per + ' more questions');
+    $('chat-bonus-note').textContent = bonusFlow.token
+      ? 'Have a look at the page that opened, then come back and claim them.'
+      : 'Opens a sponsor page in a new tab. ' + chat.bonus.claimsLeft + (chat.bonus.claimsLeft === 1 ? ' time' : ' times') + ' left today, and Premium never needs it.';
+  }
+
+  function bonusPost(body) {
+    return fetch('/api/chat-bonus', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(body)
+    }).then(function (res) { return res.json().catch(function () { return {}; }).then(function (b) { return { ok: res.ok, body: b }; }); })
+      .catch(function () { return { ok: false, body: {} }; });
+  }
+
+  function startBonusFlow() {
+    if (bonusFlow.busy) return;
+    if (!bonusFlow.token) {
+      // Opened from the tap itself, and with noopener so the sponsor page gets no handle on this one.
+      try { window.open(window.FoodConfig.smartlink, '_blank', 'noopener,noreferrer'); } catch (err) { /* fine */ }
+      bonusFlow.busy = true;
+      bonusPost({ step: 'start' }).then(function (r) {
+        bonusFlow.busy = false;
+        if (!r.ok || !r.body.token) { paintBonus(); return; }
+        bonusFlow.token = r.body.token;
+        var left = BONUS_WAIT;
+        paintBonus('Have a look\u2026 ' + left, true);
+        clearInterval(bonusFlow.timer);
+        bonusFlow.timer = setInterval(function () {
+          left -= 1;
+          if (left > 0) return paintBonus('Have a look\u2026 ' + left, true);
+          clearInterval(bonusFlow.timer);
+          paintBonus('Add my ' + chat.bonus.per + ' questions', false);
+        }, 1000);
+      });
+      return;
+    }
+    bonusFlow.busy = true;
+    paintBonus('Adding\u2026', true);
+    bonusPost({ step: 'claim', token: bonusFlow.token }).then(function (r) {
+      bonusFlow.busy = false;
+      bonusFlow.token = null;
+      if (r.ok && typeof r.body.left === 'number') {
+        chat.left = r.body.left;
+        if (typeof r.body.limit === 'number') chat.limit = r.body.limit;
+        chat.bonus.claimsLeft = typeof r.body.claimsLeft === 'number' ? r.body.claimsLeft : 0;
+        Sound.tick();
+        toast('\u2728', r.body.left + ' more to ask', 'Thanks for having a look.');
+      }
+      paintChatLeft();
+    });
+  }
+
+  if ($('chat-bonus')) $('chat-bonus').addEventListener('click', startBonusFlow);
 
   /*
    * TWO ASSISTANTS, ONE BOX.
@@ -7511,6 +7599,8 @@
 
       if (answer.body && typeof answer.body.left === 'number') {
         chat.left = answer.body.left;
+        if (typeof answer.body.limit === 'number') chat.limit = answer.body.limit;
+        if (answer.body.bonus) chat.bonus = answer.body.bonus;
         paintChatLeft();
       }
 
@@ -7549,9 +7639,18 @@
         return goPremium('The advanced assistant');
       }
       if (why === 'limit') {
-        waiting.replaceWith(chatRow('bot',
-          'That is today’s three free questions. Three more tomorrow — or Premium asks as many as you like.', false));
-        return goPremium('Asking anything');
+        // The number it gave back is the true one; the offer to earn more (if there is
+        // one left today) shows under the box, so the answer here stays short.
+        if (answer.body && answer.body.bonus) chat.bonus = answer.body.bonus;
+        if (answer.body && typeof answer.body.limit === 'number') chat.limit = answer.body.limit;
+        chat.left = 0;
+        paintChatLeft();
+        var canEarn = bonusOffered();
+        waiting.replaceWith(chatRow('bot', canEarn
+          ? 'That is today’s free questions. You can open a sponsor page below for ' + chat.bonus.per + ' more, or Premium asks as many as you like.'
+          : 'That is today’s free questions. More tomorrow — or Premium asks as many as you like.', false));
+        // The Premium sheet only when there is no other way on; with one on offer it would bury it.
+        return canEarn ? undefined : goPremium('Asking anything');
       }
       var said = why === 'too_fast'
         ? 'That was a lot of questions at once'

@@ -121,19 +121,23 @@ export const GA4_ID = 'G-M5PMRS475E'
  * components, the game's ads.js and the privacy page all read, so none of
  * them can say something the product is not doing.
  *
- * WHAT STAYS OUT, on purpose: the Social Bar and Smartlink (built to look like
- * a chat bubble or a notification, or to open a page, rather than to read as
- * an ad), the native unit (it sizes itself, which a sandbox cannot measure),
- * and the two tall skyscrapers (they do not fit a phone). Three sizes are
- * used: 728x90 where there is width, 320x50 where there is not, and 300x250
- * at the end of a page that has been read.
+ * WHAT STAYS OUT, on purpose: the Social Bar (built to look like a chat bubble
+ * or a notification rather than an ad, and it cannot run in a sandbox), the
+ * native unit (it sizes itself, which a sandbox cannot measure) and the 160x600
+ * skyscraper (it does not fit a phone). Five fixed sizes are used, and which
+ * ones depend on the width and on where the cluster sits: see adCluster below.
+ * The Smartlink is not an ad slot at all; it is an opt-in, see SMARTLINK_URL.
  *
  * HOW GENTLE IT IS, as numbers rather than adjectives:
  *   - never in the decide flow, a game, the answer or the reward (the two
  *     moments the persuasion notes say get the care), and never on /premium,
  *     /checkout or /account
- *   - one slot per screen, lazy-loaded when it is about to scroll into view,
- *     so it costs nothing to somebody who never reaches it
+ *   - one cluster per screen, of two or three banners together (two in the
+ *     middle of a list and on a phone, three at the end of a page on a wide
+ *     screen), lazy-loaded when it is about to scroll into view, so it costs
+ *     nothing to somebody who never reaches it. Together rather than scattered:
+ *     a screen with one gap in it where the ads are is calmer than a screen
+ *     with ads between every few lines
  *   - none for a Premium member, and none until somebody has finished
  *     ADS_AFTER_DECISIONS decisions: the first thing a stranger gets from this
  *     app is an answer, not an advertisement
@@ -148,9 +152,9 @@ export const GA4_ID = 'G-M5PMRS475E'
  * this site has no consent banner, and a unit should not be switched on for
  * those visitors until it does.
  */
-export type AdSize = 'leaderboard' | 'banner' | 'rectangle'
+export type AdSize = 'leaderboard' | 'wide' | 'mobile' | 'rectangle' | 'tower'
 
-/** `src` is the full invoke.js URL from the unit's snippet; `key` is its atOptions key. */
+/** `src` is the script URL from the unit's snippet; `key` is its atOptions key. */
 export interface AdUnit {
   src: string
   key: string
@@ -158,13 +162,46 @@ export interface AdUnit {
   height: number
 }
 
+/*
+ * Pasted from the snippets as handed over. The network serves these from
+ * bauval.org/22/<key>, with no invoke.js. The 160x600 skyscraper, the native
+ * unit and the Social Bar script were handed over too and are not used: the
+ * skyscraper does not fit a phone, the native unit sizes itself (which a
+ * sandbox cannot measure), and the Social Bar is built to look like a
+ * notification and would have to run outside the sandbox, on the page itself.
+ */
 export const AD_UNITS: Record<AdSize, AdUnit> = {
-  // 728x90 — Banner 728x90 in the dashboard
-  leaderboard: { src: '', key: '', width: 728, height: 90 },
-  // 320x50 — Banner 320x50
-  banner: { src: '', key: '', width: 320, height: 50 },
-  // 300x250 — Banner 300x250
-  rectangle: { src: '', key: '', width: 300, height: 250 },
+  leaderboard: { src: 'https://bauval.org/22/79c3a17f491d7757c1a53e16f2e54e4b', key: '79c3a17f491d7757c1a53e16f2e54e4b', width: 728, height: 90 },
+  wide: { src: 'https://bauval.org/22/08a0aa1467566733b34557c293a41586', key: '08a0aa1467566733b34557c293a41586', width: 468, height: 60 },
+  mobile: { src: 'https://bauval.org/22/5854b8b6f2fdd21988e40b9eb9be56c6', key: '5854b8b6f2fdd21988e40b9eb9be56c6', width: 320, height: 50 },
+  rectangle: { src: 'https://bauval.org/22/df667c7b76c1f15de99aa40aed5384d6', key: 'df667c7b76c1f15de99aa40aed5384d6', width: 300, height: 250 },
+  tower: { src: 'https://bauval.org/22/31d2d6666f860531539ff1e9d29c51f6', key: '31d2d6666f860531539ff1e9d29c51f6', width: 160, height: 300 },
+}
+
+/*
+ * THE SMART LINK. Not an ad slot: it is what a visitor who has used up the free
+ * Standard questions can choose to open, in a new tab, for two more (see
+ * lib/allowance.ts). It is only ever opened by a tap on a button that says what
+ * it is, never automatically and never as a redirect.
+ */
+export const SMARTLINK_URL = 'https://araplhn.org/4/c3b5fbe91c3b67d3648196f1c2b7711d'
+
+/**
+ * The units a placement shows together, in order, for a slot this wide: two or
+ * three that fit and are live. `inline` is a break in a list; `end` is after
+ * something has been read.
+ */
+export function adCluster(placement: 'inline' | 'end', width: number): AdUnit[] {
+  const wide = width >= 600
+  const order: AdSize[] =
+    placement === 'end'
+      ? wide ? ['rectangle', 'tower', 'wide'] : ['rectangle', 'mobile', 'tower']
+      : width >= 760 ? ['leaderboard', 'wide', 'mobile'] : wide ? ['wide', 'mobile', 'rectangle'] : ['mobile', 'rectangle', 'tower']
+  const count = placement === 'inline' || !wide ? 2 : 3
+  return order
+    .map((size) => AD_UNITS[size])
+    .filter((unit) => adLive(unit) && unit.width <= Math.max(width, 320))
+    .slice(0, count)
 }
 
 /** Decisions somebody has finished before the first ad is shown to them. */

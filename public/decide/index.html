@@ -2037,6 +2037,14 @@
       <p class="fine chat-left" id="chat-left" hidden></p>
       <p class="fine" id="chat-account" hidden>Sign in with a free account and your free questions follow you to every device.</p>
 
+      <!-- Only after the free questions are used, never for Premium, and only while there
+           are claims left today. Two taps: open the sponsor page, then claim. See
+           startBonusFlow in app.js and BONUS_PER_CLAIM in lib/allowance.ts. -->
+      <div class="chat-bonus" id="chat-bonus-wrap" hidden>
+        <button class="quiet" id="chat-bonus" type="button">Get 2 more questions</button>
+        <p class="fine" id="chat-bonus-note"></p>
+      </div>
+
       <p class="fine chat-foot">Answers come from a model and can be wrong &mdash; worth checking
       anything that matters. It cannot see your kitchen or your location, and it is not a doctor,
       a lawyer or an accountant. Standard questions are answered by a free public model and

@@ -39,7 +39,7 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
 }
 
-let configured = true // flipped per scenario: are the units filled in?
+let configured = true // flipped per scenario: are the units live, or stripped out as if none were pasted?
 const adRequests = []
 const reports = []
 
@@ -68,12 +68,12 @@ const server = createServer((req, res) => {
   if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html')
   if (!file.startsWith(ROOT) || !existsSync(file)) { res.writeHead(404); return res.end('not found') }
   let body = readFileSync(file)
-  if (path.endsWith('/decide/js/config.js') && configured) {
-    // The shipped file has every unit empty. Fill three in, pointing at the fake network.
-    body = Buffer.from(String(body)
-      .replace(/leaderboard: \{ src: '', key: ''/, `leaderboard: { src: 'http://127.0.0.1:${PORT}/fake-ad/leaderboard.js', key: 'LEADERKEY'`)
-      .replace(/banner: \{ src: '', key: ''/, `banner: { src: 'http://127.0.0.1:${PORT}/fake-ad/banner.js', key: 'BANNERKEY'`)
-      .replace(/rectangle: \{ src: '', key: ''/, `rectangle: { src: 'http://127.0.0.1:${PORT}/fake-ad/rectangle.js', key: 'RECTKEY'`))
+  if (path.endsWith('/decide/js/config.js')) {
+    // The shipped file carries the real keys and the real network. Either take them out (as if
+    // nothing had been pasted) or keep the keys and point the network at the fake one here.
+    body = Buffer.from(configured
+      ? String(body).replaceAll('https://bauval.org/22/', `http://127.0.0.1:${PORT}/fake-ad/`)
+      : String(body).replace(/src: '[^']*', key: '[^']*'/g, "src: '', key: ''"))
   }
   res.writeHead(200, { 'Content-Type': TYPES[extname(file)] || 'application/octet-stream' })
   res.end(body)
@@ -178,8 +178,9 @@ configured = true
   await page.evaluate(() => document.querySelectorAll('#dish-grid .dish')[8].scrollIntoView({ block: 'center' }))
   await page.waitForTimeout(900)
   const f = await frames(page)
-  ok('scrolling to it draws exactly one', f.length === 1, JSON.stringify(f))
-  ok('desktop width gets the 728x90 leaderboard', f[0] && f[0].w === '728' && f[0].h === '90', JSON.stringify(f))
+  ok('scrolling to it draws a cluster of two, not one and not a wall', f.length === 2, JSON.stringify(f))
+  ok('under one label, not one each', await page.evaluate(() => document.querySelectorAll('#dish-ad .ad-label').length === 1))
+  ok('desktop width gets the 728x90 and the 468x60 together', f.length === 2 && f[0].w === '728' && f[0].h === '90' && f[1].w === '468' && f[1].h === '60', JSON.stringify(f))
   ok('it is the ninth thing in the list, after eight dishes', await page.evaluate(() => {
     const kids = [...document.getElementById('dish-grid').children].filter((e) => !e.hidden)
     return kids.findIndex((e) => e.id === 'dish-ad') === 8
@@ -204,7 +205,7 @@ configured = true
     await page.locator('.filter', { hasText: new RegExp('^' + t) }).first().click().catch(() => {})
     await page.waitForTimeout(300)
   }
-  ok('filtering the list does not reload the ad', await page.evaluate(() => window.__adNode === document.querySelector('#dish-ad iframe') && window.__ad.length === 1), `reports ${await page.evaluate(() => window.__ad.length)}`)
+  ok('filtering the list does not reload the ad', await page.evaluate(() => window.__adNode === document.querySelector('#dish-ad iframe') && window.__ad.length === 2), `reports ${await page.evaluate(() => window.__ad.length)}`)
   ok('or ask the network for another', adRequests.length === requestsBefore, `${adRequests.length} vs ${requestsBefore}`)
   await page.fill('.find input, #dish-search', 'pizza').catch(() => {}); await page.waitForTimeout(300)
   ok('a short result list has no ad in it', await page.evaluate(() => document.getElementById('dish-ad').hidden === true))
@@ -216,7 +217,7 @@ configured = true
   await page.evaluate(() => document.querySelectorAll('#dish-grid .dish')[8].scrollIntoView({ block: 'center' }))
   await page.waitForTimeout(900)
   const f = await frames(page)
-  ok('a phone gets the slim 320x50 banner', f.length === 1 && f[0].w === '320' && f[0].h === '50', JSON.stringify(f))
+  ok('a phone gets the slim 320x50 and a 300x250, two together', f.length === 2 && f[0].w === '320' && f[0].h === '50' && f[1].w === '300' && f[1].h === '250', JSON.stringify(f))
   ok('and never sideways overflow', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
   await go(page, 'profile')
   await page.waitForTimeout(500)
@@ -224,9 +225,67 @@ configured = true
   await page.evaluate(() => document.getElementById('profile-ad').scrollIntoView())
   await page.waitForTimeout(900)
   const p = (await frames(page)).filter((x) => x.where === 'profile-ad')
-  ok('the end of the profile gets the 300x250', p.length === 1 && p[0].w === '300' && p[0].h === '250', JSON.stringify(p))
+  ok('the end of the profile on a phone gets two: 300x250 and 320x50', p.length === 2 && p[0].w === '300' && p[1].w === '320', JSON.stringify(p))
   await page.context().close()
 }
+{
+  const page = await open({ decisions: 5 })
+  await go(page, 'profile')
+  await page.evaluate(() => document.getElementById('profile-ad').scrollIntoView())
+  await page.waitForTimeout(900)
+  const p = (await frames(page)).filter((x) => x.where === 'profile-ad')
+  ok('the end of the profile on a wide screen gets three: 300x250, 160x300, 468x60', p.length === 3 && p.map((x) => x.w).join() === '300,160,468', JSON.stringify(p))
+  await page.context().close()
+}
+
+/* ------------------------------------------------ the sponsor page, for more questions */
+async function chatScenario({ left, premium = false, claimsLeft = 3 }) {
+  const page = await open({ decisions: 5, premium })
+  const calls = []
+  await page.context().route(/araplhn\.org/, (r) => { calls.push('sponsor:' + r.request().url()); return r.fulfill({ status: 200, contentType: 'text/html', body: '<p>sponsor</p>' }) })
+  await page.route(/\/api\/chat$/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ left, limit: 3, account: false, bonus: { per: 2, claimsLeft } }) }))
+  await page.route(/\/api\/chat-bonus/, async (r) => {
+    const sent = JSON.parse(r.request().postData() || '{}')
+    calls.push('bonus:' + sent.step)
+    if (sent.step === 'start') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ token: '1800000000000.' + 'a'.repeat(32), per: 2 }) })
+    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ left: 2, limit: 5, claimsLeft: claimsLeft - 1 }) })
+  })
+  await go(page, 'chat'); await page.waitForTimeout(700)
+  return { page, calls }
+}
+{
+  const { page } = await chatScenario({ left: 2 })
+  ok('with questions left there is no offer', await page.evaluate(() => document.getElementById('chat-bonus-wrap').hidden))
+  await page.context().close()
+}
+{
+  const { page } = await chatScenario({ left: 0, premium: true })
+  ok('a Premium member is never offered it', await page.evaluate(() => document.getElementById('chat-bonus-wrap').hidden))
+  await page.context().close()
+}
+{
+  const { page } = await chatScenario({ left: 0, claimsLeft: 0 })
+  ok('with no claims left today there is no offer', await page.evaluate(() => document.getElementById('chat-bonus-wrap').hidden))
+  await page.context().close()
+}
+{
+  const { page, calls } = await chatScenario({ left: 0 })
+  ok('out of questions: the offer is there, says what it is, and nothing has opened', await page.evaluate(() => !document.getElementById('chat-bonus-wrap').hidden && /sponsor page/i.test(document.getElementById('chat-bonus-note').textContent)) && calls.length === 0, calls.join(', '))
+  const popup = page.waitForEvent('popup', { timeout: 4000 }).catch(() => null)
+  await page.click('#chat-bonus')
+  const opened = await popup
+  ok('one tap opens the sponsor page in a new tab, and only then', !!opened && /araplhn\.org\/4\/c3b5fbe9/.test(opened.url() || ''), opened ? opened.url() : 'no popup')
+  await page.waitForTimeout(500)
+  ok('and asks the server to start the clock', calls.includes('bonus:start'), calls.join(', '))
+  ok('the claim cannot be pressed straight away', await page.evaluate(() => document.getElementById('chat-bonus').disabled))
+  await page.waitForTimeout(11000)
+  ok('after the wait it can', await page.evaluate(() => !document.getElementById('chat-bonus').disabled && /Add my 2 questions/.test(document.getElementById('chat-bonus').textContent)), await page.evaluate(() => document.getElementById('chat-bonus').textContent))
+  await page.click('#chat-bonus'); await page.waitForTimeout(700)
+  ok('claiming asks the server, and the number shown is the server’s', calls.includes('bonus:claim') && await page.evaluate(() => /2 of 5 free questions left/.test(document.getElementById('chat-left').textContent)), await page.evaluate(() => document.getElementById('chat-left').textContent))
+  ok('then the offer goes, because there are questions again', await page.evaluate(() => document.getElementById('chat-bonus-wrap').hidden))
+  await page.context().close()
+}
+
 {
   // The sections that must never carry one.
   const page = await open({ decisions: 5 })

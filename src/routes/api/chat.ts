@@ -4,7 +4,10 @@ import { ALL_DISHES } from '#/lib/dishes'
 import { askGemini } from '#/lib/gemini'
 import { askFree } from '#/lib/free-ai'
 import { langLine } from '#/lib/lang'
-import { CHAT_PER_DAY, premiumFor, spendOnStanding, standing } from '#/lib/allowance'
+import { BONUS_CLAIMS_PER_DAY, BONUS_PER_CLAIM, premiumFor, spendOnStanding, standing, type Standing } from '#/lib/allowance'
+
+// What the page needs to offer a sponsor page, and to say how many are left of it.
+const bonusOffer = (s: Standing) => ({ per: BONUS_PER_CLAIM, claimsLeft: Math.max(0, BONUS_CLAIMS_PER_DAY - s.claims) })
 
 /*
  * /api/chat — the food assistant, in two tiers.
@@ -256,7 +259,7 @@ export const Route = createFileRoute('/api/chat')({
       // the server's and not a guess kept in the browser.
       GET: async ({ request }) => {
         const mine = await standing(request)
-        return json({ left: mine.left, limit: CHAT_PER_DAY, account: mine.who === 'account' })
+        return json({ left: mine.left, limit: mine.limit, account: mine.who === 'account', bonus: bonusOffer(mine) })
       },
 
       POST: async ({ request }) => {
@@ -334,14 +337,14 @@ export const Route = createFileRoute('/api/chat')({
             console.error('chat: advanced answer had no text')
             return json({ error: 'no_answer' }, 502)
           }
-          return json({ ...out, mode: 'advanced', left: null, limit: CHAT_PER_DAY })
+          return json({ ...out, mode: 'advanced', left: null, limit: mine.limit })
         }
 
         // STANDARD: three a day for a free account, nothing to count for Premium.
-        const outOfFree = mine.used !== null && mine.used >= CHAT_PER_DAY
+        const outOfFree = mine.used !== null && mine.used >= mine.limit
         const prem = outOfFree ? await premiumFor(request, mine) : false
         const metered = !(outOfFree && prem)
-        if (metered && mine.left === 0) return json({ error: 'limit', left: 0, limit: CHAT_PER_DAY }, 402)
+        if (metered && mine.left === 0) return json({ error: 'limit', left: 0, limit: mine.limit, bonus: bonusOffer(mine) }, 402)
 
         const system = instruction() + langLine(want)
         // Pollinations, then LLM7. If neither answers, the question is not counted and
@@ -356,9 +359,9 @@ export const Route = createFileRoute('/api/chat')({
         let left: number | null = null
         if (metered) {
           const used = await spendOnStanding(mine)
-          if (used !== null) left = Math.max(0, CHAT_PER_DAY - used)
+          if (used !== null) left = Math.max(0, mine.limit - used)
         }
-        return json({ reply, left, limit: CHAT_PER_DAY, mode: 'standard' })
+        return json({ reply, left, limit: mine.limit, mode: 'standard' })
       },
     },
   },

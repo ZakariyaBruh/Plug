@@ -1,23 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
-import { ADS_AFTER_DECISIONS, ADS_ON, AD_UNITS, adLive, type AdSize, type AdUnit } from '#/lib/site'
+import { ADS_AFTER_DECISIONS, ADS_ON, adCluster, type AdUnit } from '#/lib/site'
 
 /*
- * ONE AD, WHERE IT CANNOT HURT ANYTHING, AND ONLY WHEN IT CAN BE EARNED.
+ * A SMALL CLUSTER OF ADS, WHERE IT CANNOT HURT ANYTHING, AND ONLY WHEN IT HAS
+ * BEEN EARNED.
  *
- * See ADS_ON in lib/site.ts for the decision, the three sizes, what stays out
- * and the rules this follows. In short it shows nothing at all until a unit
- * is configured, nothing to a Premium member, nothing to somebody who has not
- * yet finished a couple of decisions, and nothing until it is nearly on
- * screen — so a visitor who never scrolls to it never loads it.
+ * See ADS_ON in lib/site.ts for the decision, what stays out and the rules this
+ * follows. In short it shows nothing at all until a unit is configured, nothing
+ * to a Premium member, nothing to somebody who has not yet finished a couple of
+ * decisions, and nothing until it is nearly on screen — so a visitor who never
+ * scrolls to it never loads it.
  *
- * `placement` is where it sits, not which size it is:
- *   inline — in the middle of something. A 728x90 where there is width for it,
- *            a 320x50 where there is not.
- *   end    — after something has been read. A 300x250.
- * If the unit a placement prefers is not configured it uses the other one
- * that fits rather than showing nothing; if none is, nothing renders.
+ * `placement` is where it sits, and adCluster() decides which two or three
+ * banners that means at this width:
+ *   inline — in the middle of something: two.
+ *   end    — after something has been read: three on a wide screen, two on a phone.
+ * Units that are not configured are skipped; with none, nothing renders.
  *
  * SANDBOX. allow-scripts (the network's loader has to run) and
  * allow-popups / allow-popups-to-escape-sandbox (a real click still opens a
@@ -40,17 +40,6 @@ export function adHtml(unit: AdUnit): string {
     `<script src="${unit.src}"></script>` +
     '</body></html>'
   )
-}
-
-/** Choose the unit for a placement, given how wide the slot is. */
-export function pickUnit(placement: 'inline' | 'end', width: number): AdUnit | null {
-  const order: AdSize[] =
-    placement === 'end' ? ['rectangle', 'banner', 'leaderboard'] : width >= 760 ? ['leaderboard', 'banner', 'rectangle'] : ['banner', 'rectangle', 'leaderboard']
-  for (const size of order) {
-    const unit = AD_UNITS[size]
-    if (adLive(unit) && unit.width <= Math.max(width, 320)) return unit
-  }
-  return null
 }
 
 // The game and this site share an origin, so its own counter says how many
@@ -76,13 +65,13 @@ export function AdSlot({
   className?: string
 }) {
   const box = useRef<HTMLDivElement>(null)
-  const [unit, setUnit] = useState<AdUnit | null>(null)
+  const [units, setUnits] = useState<AdUnit[]>([])
 
   useEffect(() => {
     if (!ADS_ON || premium || decisionsDone() < ADS_AFTER_DECISIONS) return
     const el = box.current
     if (!el) return
-    const choose = () => setUnit(pickUnit(placement, el.clientWidth))
+    const choose = () => setUnits(adCluster(placement, el.clientWidth))
     // Not until it is about to be seen. No observer (very old browsers) means
     // not at all, which is the safe way for that to fail.
     if (typeof IntersectionObserver === 'undefined') return
@@ -105,27 +94,33 @@ export function AdSlot({
     <div
       ref={box}
       className={`ad-slot text-center ${className ?? ''}`}
-      {...(unit ? { role: 'complementary', 'aria-label': 'Advertisement' } : {})}
+      {...(units.length ? { role: 'complementary', 'aria-label': 'Advertisement' } : {})}
     >
-      {unit ? (
+      {units.length ? (
         <>
-          <p className="mb-1 text-xs text-[var(--text-dim)]">
+          {/* One label over the whole cluster: a label on each reads like the page is mostly ads. */}
+          <p className="mb-2 text-xs text-[var(--text-dim)]">
             Advertisement ·{' '}
             <Link to="/premium" className="underline underline-offset-2 hover:text-[var(--amber)]">
               Remove ads with Premium
             </Link>
           </p>
-          {/* It is chosen 400px before it can be seen, so whatever it does to the page's height happens off-screen. */}
-          <iframe
-            title="Advertisement"
-            width={unit.width}
-            height={unit.height}
-            scrolling="no"
-            sandbox={AD_SANDBOX}
-            srcDoc={adHtml(unit)}
-            loading="lazy"
-            className="mx-auto max-w-full border-0"
-          />
+          {/* Chosen 400px before it can be seen, so whatever it does to the page's height happens off-screen. */}
+          <div className="flex flex-wrap items-start justify-center gap-4">
+            {units.map((unit) => (
+              <iframe
+                key={unit.key}
+                title="Advertisement"
+                width={unit.width}
+                height={unit.height}
+                scrolling="no"
+                sandbox={AD_SANDBOX}
+                srcDoc={adHtml(unit)}
+                loading="lazy"
+                className="max-w-full border-0"
+              />
+            ))}
+          </div>
         </>
       ) : null}
     </div>

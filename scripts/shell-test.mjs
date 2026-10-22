@@ -142,13 +142,17 @@ const siteTs = readFileSync(join(root, '..', '..', 'src/lib/site.ts'), 'utf8')
 const configJs = read('js/config.js')
 const adsJs = read('js/ads.js')
 const adSlot = readFileSync(join(root, '..', '..', 'src/components/AdSlot.tsx'), 'utf8')
-const SIZES = ['leaderboard', 'banner', 'rectangle']
+const SIZES = ['leaderboard', 'wide', 'mobile', 'rectangle', 'tower']
 const liveInSite = (n) => new RegExp(`${n}: \\{ src: '[^']+', key: '[^']+'`).test(siteTs)
 const liveInGame = (n) => new RegExp(`${n}: \\{ src: '[^']+', key: '[^']+'`).test(configJs)
 for (const n of SIZES) {
   check(`the ${n} unit is ${liveInSite(n) ? 'live' : 'off'} in both the site and the game`, liveInSite(n) === liveInGame(n),
     `site.ts says ${liveInSite(n) ? 'live' : 'off'}, config.js says ${liveInGame(n) ? 'live' : 'off'}`)
 }
+for (const [name, key] of [['the 160x600 skyscraper', 'c34df66c2852fa155381e97d401a1a4a'], ['the native unit', 'd3500e59199e09eee4a23799c098b4e5'], ['the Social Bar', '081a53853ee78e59ce72a9333b3d4700']]) {
+  check(`${name} stays out of both tables`, !siteTs.includes(key) && !configJs.includes(key))
+}
+check('the smart link is the same in the site and the game', (siteTs.match(/SMARTLINK_URL = '([^']+)'/) || [])[1] === (configJs.match(/smartlink: '([^']+)'/) || [])[1] && !!(siteTs.match(/SMARTLINK_URL = '([^']+)'/) || [])[1])
 check('the decisions threshold is the same in both', (siteTs.match(/ADS_AFTER_DECISIONS = (\d+)/) || [])[1] === (configJs.match(/adsAfterDecisions: (\d+)/) || [])[1])
 
 // The sandbox is the whole safety argument; the two files that build a frame must not widen it.

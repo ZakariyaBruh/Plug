@@ -1,23 +1,23 @@
 /*
- * ads.js — one ad at a time, where it cannot hurt anything, and only once it
- * has been earned.
+ * ads.js — a small cluster of ads at a time, where it cannot hurt anything, and
+ * only once it has been earned.
  *
- * The decision, the sizes, what stays out and the numbers behind "gentle" are
- * in the long note over ADS_ON in src/lib/site.ts, and the units live in
- * config.js. This file is only the rules, applied. In short it draws nothing
- * unless a unit is configured, nothing for a Premium member, nothing until
- * somebody has finished a couple of decisions, and nothing until the slot is
- * about to scroll into view — so a visitor who never reaches it never loads it.
+ * The decision, what stays out and the numbers behind "gentle" are in the long
+ * note over ADS_ON in src/lib/site.ts, and the units live in config.js. This
+ * file is only the rules, applied. In short it draws nothing unless a unit is
+ * configured, nothing for a Premium member, nothing until somebody has finished
+ * a couple of decisions, and nothing until the slot is about to scroll into
+ * view — so a visitor who never reaches it never loads it.
  *
  * It is NEVER mounted in the decide flow, a game, the answer or the reward
  * (those are the two moments the persuasion notes say get the care), and
  * app.js only ever calls it from the Dishes list and the Profile screen.
  *
- * `placement` is where the slot sits, not which size it is:
- *   inline — in the middle of something: 728x90 with room for it, else 320x50
- *   end    — after something has been read: 300x250
- * A placement whose preferred unit is not configured uses the other that fits
- * rather than show nothing; with none configured, nothing is drawn at all.
+ * `placement` is where the slot sits; cluster() decides which two or three
+ * banners that means at this width (the same table as adCluster in site.ts):
+ *   inline — in the middle of something: two
+ *   end    — after something has been read: three on a wide screen, two on a phone
+ * Units that are not configured are skipped; with none, nothing is drawn.
  *
  * SANDBOX. allow-scripts (the network's loader has to run) and allow-popups /
  * allow-popups-to-escape-sandbox (a real click still opens a normal tab), and
@@ -36,18 +36,20 @@ var Ads = (function () {
   function live(unit) { return !!(unit && unit.src && unit.key); }
 
   function anyLive() {
-    return live(cfg.leaderboard) || live(cfg.banner) || live(cfg.rectangle);
+    return Object.keys(cfg).some(function (k) { return live(cfg[k]); });
   }
 
-  function pick(placement, width) {
+  function cluster(placement, width) {
+    var wide = width >= 600;
     var order = placement === 'end'
-      ? ['rectangle', 'banner', 'leaderboard']
-      : width >= 760 ? ['leaderboard', 'banner', 'rectangle'] : ['banner', 'rectangle', 'leaderboard'];
-    for (var i = 0; i < order.length; i++) {
-      var unit = cfg[order[i]];
-      if (live(unit) && unit.width <= Math.max(width, 320)) return unit;
-    }
-    return null;
+      ? (wide ? ['rectangle', 'tower', 'wide'] : ['rectangle', 'mobile', 'tower'])
+      : width >= 760 ? ['leaderboard', 'wide', 'mobile']
+        : wide ? ['wide', 'mobile', 'rectangle'] : ['mobile', 'rectangle', 'tower'];
+    var count = placement === 'inline' || !wide ? 2 : 3;
+    return order
+      .map(function (size) { return cfg[size]; })
+      .filter(function (unit) { return live(unit) && unit.width <= Math.max(width, 320); })
+      .slice(0, count);
   }
 
   function html(unit) {
@@ -60,9 +62,10 @@ var Ads = (function () {
   }
 
   function draw(container, placement) {
-    var unit = pick(placement, container.clientWidth || window.innerWidth);
-    if (!unit) return;
+    var units = cluster(placement, container.clientWidth || window.innerWidth);
+    if (!units.length) return;
 
+    // One label over the whole cluster: a label on each reads like the screen is mostly ads.
     var label = document.createElement('p');
     label.className = 'ad-label';
     label.appendChild(document.createTextNode('Advertisement · '));
@@ -73,17 +76,22 @@ var Ads = (function () {
     link.textContent = 'Remove ads with Premium';
     label.appendChild(link);
 
-    var frame = document.createElement('iframe');
-    frame.title = 'Advertisement';
-    frame.width = unit.width;
-    frame.height = unit.height;
-    frame.setAttribute('scrolling', 'no');
-    frame.setAttribute('sandbox', SANDBOX);
-    frame.setAttribute('loading', 'lazy');
-    frame.srcdoc = html(unit);
+    var row = document.createElement('div');
+    row.className = 'ad-row';
+    units.forEach(function (unit) {
+      var frame = document.createElement('iframe');
+      frame.title = 'Advertisement';
+      frame.width = unit.width;
+      frame.height = unit.height;
+      frame.setAttribute('scrolling', 'no');
+      frame.setAttribute('sandbox', SANDBOX);
+      frame.setAttribute('loading', 'lazy');
+      frame.srcdoc = html(unit);
+      row.appendChild(frame);
+    });
 
     container.appendChild(label);
-    container.appendChild(frame);
+    container.appendChild(row);
     container.setAttribute('role', 'complementary');
     container.setAttribute('aria-label', 'Advertisement');
     container.classList.add('is-filled');
@@ -93,7 +101,7 @@ var Ads = (function () {
    * Arm a slot. `ctx` is what the game knows and this file does not:
    * { premium: bool, decisions: number }. Calling it again on the same element
    * — which happens whenever the view holding it re-renders — does nothing, so
-   * switching tabs and back does not reload (and so re-count) the ad.
+   * switching tabs and back does not reload (and so re-count) the ads.
    */
   function mount(container, placement, ctx) {
     if (!container || container.dataset.adArmed) return;

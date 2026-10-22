@@ -7818,7 +7818,9 @@ html.vt-active .tabbar { view-transition-name: tabbar; }
 /* Rendered but flat, not display:none: a hidden element cannot be observed, so a
    slot that was hidden until it was needed could never find out it was needed. */
 .ad-wrap:not(.is-filled) { height: 0; margin: 0; padding: 0; border: 0; overflow: hidden; }
-.ad-wrap iframe { display: block; margin: 0 auto; max-width: 100%; border: 0; }
+.ad-wrap iframe { display: block; max-width: 100%; border: 0; }
+/* Two or three together, centred, wrapping to rows when they do not fit side by side. */
+.ad-row { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: center; gap: var(--s4); }
 .ad-label {
   margin: 0 0 var(--s2);
   font-size: var(--t-xs);
@@ -7830,3 +7832,8 @@ html.vt-active .tabbar { view-transition-name: tabbar; }
 .ad-feed { list-style: none; }
 .ad-feed.is-filled { margin: 0; padding: var(--s4) 0; border-bottom: 1px solid var(--line); }
 body.is-premium .ad-wrap { display: none; }
+
+/* More Standard questions for opening a sponsor page: quiet, labelled, under the box. */
+.chat-bonus { display: grid; justify-items: start; gap: var(--s1); margin-top: var(--s2); }
+.chat-bonus .quiet { margin-left: -.8rem; border-color: var(--line-2); }
+.chat-bonus .quiet:disabled { opacity: .6; cursor: default; }

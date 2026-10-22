@@ -24,6 +24,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ApiBriefingRouteImport } from './routes/api/briefing'
 import { Route as ApiBudgetRouteImport } from './routes/api/budget'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as ApiChatBonusRouteImport } from './routes/api/chat-bonus'
 import { Route as ApiCheckinRouteImport } from './routes/api/checkin'
 import { Route as ApiCookbookRouteImport } from './routes/api/cookbook'
 import { Route as ApiDailyRouteImport } from './routes/api/daily'
@@ -134,6 +135,11 @@ const ApiBudgetRoute = ApiBudgetRouteImport.update({
 const ApiChatRoute = ApiChatRouteImport.update({
   id: '/api/chat',
   path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatBonusRoute = ApiChatBonusRouteImport.update({
+  id: '/api/chat-bonus',
+  path: '/api/chat-bonus',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiCheckinRoute = ApiCheckinRouteImport.update({
@@ -333,6 +339,7 @@ export interface FileRoutesByFullPath {
   '/api/briefing': typeof ApiBriefingRoute
   '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/chat-bonus': typeof ApiChatBonusRoute
   '/api/checkin': typeof ApiCheckinRoute
   '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
@@ -386,6 +393,7 @@ export interface FileRoutesByTo {
   '/api/briefing': typeof ApiBriefingRoute
   '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/chat-bonus': typeof ApiChatBonusRoute
   '/api/checkin': typeof ApiCheckinRoute
   '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
@@ -440,6 +448,7 @@ export interface FileRoutesById {
   '/api/briefing': typeof ApiBriefingRoute
   '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
+  '/api/chat-bonus': typeof ApiChatBonusRoute
   '/api/checkin': typeof ApiCheckinRoute
   '/api/cookbook': typeof ApiCookbookRoute
   '/api/daily': typeof ApiDailyRoute
@@ -495,6 +504,7 @@ export interface FileRouteTypes {
     | '/api/briefing'
     | '/api/budget'
     | '/api/chat'
+    | '/api/chat-bonus'
     | '/api/checkin'
     | '/api/cookbook'
     | '/api/daily'
@@ -548,6 +558,7 @@ export interface FileRouteTypes {
     | '/api/briefing'
     | '/api/budget'
     | '/api/chat'
+    | '/api/chat-bonus'
     | '/api/checkin'
     | '/api/cookbook'
     | '/api/daily'
@@ -601,6 +612,7 @@ export interface FileRouteTypes {
     | '/api/briefing'
     | '/api/budget'
     | '/api/chat'
+    | '/api/chat-bonus'
     | '/api/checkin'
     | '/api/cookbook'
     | '/api/daily'
@@ -655,6 +667,7 @@ export interface RootRouteChildren {
   ApiBriefingRoute: typeof ApiBriefingRoute
   ApiBudgetRoute: typeof ApiBudgetRoute
   ApiChatRoute: typeof ApiChatRoute
+  ApiChatBonusRoute: typeof ApiChatBonusRoute
   ApiCheckinRoute: typeof ApiCheckinRoute
   ApiCookbookRoute: typeof ApiCookbookRoute
   ApiDailyRoute: typeof ApiDailyRoute
@@ -797,6 +810,13 @@ declare module '@tanstack/react-router' {
       path: '/api/chat'
       fullPath: '/api/chat'
       preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat-bonus': {
+      id: '/api/chat-bonus'
+      path: '/api/chat-bonus'
+      fullPath: '/api/chat-bonus'
+      preLoaderRoute: typeof ApiChatBonusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/checkin': {
@@ -1081,6 +1101,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiBriefingRoute: ApiBriefingRoute,
   ApiBudgetRoute: ApiBudgetRoute,
   ApiChatRoute: ApiChatRoute,
+  ApiChatBonusRoute: ApiChatBonusRoute,
   ApiCheckinRoute: ApiCheckinRoute,
   ApiCookbookRoute: ApiCookbookRoute,
   ApiDailyRoute: ApiDailyRoute,
@@ -1120,12 +1141,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

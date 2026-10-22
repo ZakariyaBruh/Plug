@@ -1,11 +1,13 @@
 /*
- * The marketing site's ad component, without a browser: which unit a placement
- * gets at which width, what goes into the frame, and that the sandbox is what
- * it says. The browser half (and the fake hostile creative) is
- * scripts/ads-drive.mjs; the files-agree half is scripts/shell-test.mjs.
+ * The marketing site's ad logic, without a browser: which two or three banners
+ * a placement gets at which width, what goes into the frame, that the sandbox
+ * is what it says, and that the units left out stayed out. The browser half
+ * (and the fake hostile creative) is scripts/ads-drive.mjs; the files-agree
+ * half is scripts/shell-test.mjs.
  */
-import { AD_SANDBOX, adHtml, pickUnit } from '../src/components/AdSlot.tsx'
-import { AD_UNITS, ADS_ON, adLive } from '../src/lib/site.ts'
+import { readFileSync } from 'node:fs'
+import { AD_SANDBOX, adHtml } from '../src/components/AdSlot.tsx'
+import { ADS_ON, AD_UNITS, SMARTLINK_URL, adCluster, adLive } from '../src/lib/site.ts'
 
 let pass = 0
 let fail = 0
@@ -13,33 +15,51 @@ function check(name, ok, detail) {
   ok ? (pass += 1) : (fail += 1)
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${ok || !detail ? '' : `\n        ${detail}`}`)
 }
+const widths = (cluster) => cluster.map((u) => u.width).join('+')
 
-// As shipped: nothing configured, so nothing can be picked and the page may say there is no advertising.
-const shipped = Object.values(AD_UNITS).every((u) => !adLive(u))
-check('as committed, no unit is live and ads are off', shipped && ADS_ON === false, JSON.stringify(AD_UNITS))
-check('so nothing can be picked at any width', [320, 760, 1200].every((w) => pickUnit('inline', w) === null && pickUnit('end', w) === null))
+check('all five fixed-size units are live as committed, so ads are on', Object.values(AD_UNITS).every(adLive) && ADS_ON === true)
+check('every unit is served from the network’s own /22/<key> path', Object.values(AD_UNITS).every((u) => u.src === `https://bauval.org/22/${u.key}`))
 
-// Fill the table the way a pasted snippet would.
-AD_UNITS.leaderboard.src = 'https://ads.example/l/invoke.js'; AD_UNITS.leaderboard.key = 'LKEY'
-AD_UNITS.banner.src = 'https://ads.example/b/invoke.js'; AD_UNITS.banner.key = 'BKEY'
-AD_UNITS.rectangle.src = 'https://ads.example/r/invoke.js'; AD_UNITS.rectangle.key = 'RKEY'
+// How many at a time: the brief was two or three, never one and never a wall.
+for (const w of [320, 390, 599, 600, 760, 1000, 1280]) {
+  for (const placement of ['inline', 'end']) {
+    const n = adCluster(placement, w).length
+    check(`${placement} at ${w}px shows 2 or 3 (${widths(adCluster(placement, w))})`, n === 2 || n === 3)
+  }
+}
+check('in the middle of a list: two, even on a wide screen', adCluster('inline', 1280).length === 2)
+check('inline, wide: the 728x90 then the 468x60', widths(adCluster('inline', 1280)) === '728+468')
+check('inline, a phone: the 320x50 then the 300x250', widths(adCluster('inline', 390)) === '320+300')
+check('at the end of a page, wide: the 300x250, the 160x300 and the 468x60', widths(adCluster('end', 1280)) === '300+160+468')
+check('at the end of a page, a phone: two, never three', widths(adCluster('end', 390)) === '300+320')
 
-check('inline, wide: the 728x90', pickUnit('inline', 1000)?.key === 'LKEY')
-check('inline, a phone: the 320x50', pickUnit('inline', 390)?.key === 'BKEY')
-check('end of a page: the 300x250', pickUnit('end', 1000)?.key === 'RKEY' && pickUnit('end', 390)?.key === 'RKEY')
-check('a slot narrower than 320 is never given anything wider than 320', pickUnit('inline', 300)?.width <= 320)
-check('a 728 unit is never put in a 700px slot', pickUnit('inline', 700)?.width !== 728)
+// Nothing may be wider than the slot (or than the narrowest phone).
+for (const w of [320, 390, 500, 700]) {
+  for (const placement of ['inline', 'end']) {
+    check(`nothing in ${placement} at ${w}px is wider than the slot`, adCluster(placement, w).every((u) => u.width <= Math.max(w, 320)))
+  }
+}
 
-// Half a snippet is no snippet.
-AD_UNITS.banner.key = ''
-check('a unit with no key is not live, and the placement falls back to one that is', pickUnit('inline', 390)?.key === 'RKEY')
-AD_UNITS.banner.key = 'BKEY'
+// A unit missing either half of its snippet is not live, and the cluster shrinks around it.
+const saved = { ...AD_UNITS.leaderboard }
+AD_UNITS.leaderboard.key = ''
+check('a unit with no key is skipped and the next fits in', widths(adCluster('inline', 1280)) === '468+320')
+Object.assign(AD_UNITS.leaderboard, saved)
 
-const html = adHtml(AD_UNITS.banner)
-check('the frame loads the unit’s own script', html.includes('src="https://ads.example/b/invoke.js"'))
-check('and sets atOptions from the unit', /atOptions=\{"key":"BKEY","format":"iframe","height":50,"width":320/.test(html))
+const html = adHtml(AD_UNITS.mobile)
+check('the frame loads the unit’s own script', html.includes('src="https://bauval.org/22/5854b8b6f2fdd21988e40b9eb9be56c6"'))
+check('and sets atOptions from the unit', /atOptions=\{"key":"5854b8b6f2fdd21988e40b9eb9be56c6","format":"iframe","height":50,"width":320/.test(html))
 check('the sandbox grants scripts and real-click popups only', AD_SANDBOX === 'allow-scripts allow-popups allow-popups-to-escape-sandbox', AD_SANDBOX)
 check('and neither same-origin nor top navigation', !/same-origin|top-navigation/.test(AD_SANDBOX))
+
+// Handed over but deliberately not used: the skyscraper, the native unit and the Social Bar.
+const files = ['src/lib/site.ts', 'src/components/AdSlot.tsx', 'public/decide/js/config.js', 'public/decide/js/ads.js']
+  .map((f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8'))
+  .join('\n')
+for (const [name, key] of [['the 160x600 skyscraper', 'c34df66c2852fa155381e97d401a1a4a'], ['the native unit', 'd3500e59199e09eee4a23799c098b4e5'], ['the Social Bar', '081a53853ee78e59ce72a9333b3d4700']]) {
+  check(`${name} is not used`, !files.includes(key))
+}
+check('the smart link is an opt-in constant, not a unit', SMARTLINK_URL === 'https://araplhn.org/4/c3b5fbe91c3b67d3648196f1c2b7711d' && !Object.values(AD_UNITS).some((u) => u.src === SMARTLINK_URL))
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
