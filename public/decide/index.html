@@ -417,25 +417,38 @@
       <button class="plain landing-plain landing-second" id="tonight-btn">Tonight&rsquo;s pick &mdash; no questions</button>
     </div>
 
-    <!-- ===================================================================
-         EVERYTHING ELSE, GIVEN A PLACE.
+    <div class="knob-block" id="party-wrap">
+      <p class="mechanic">How many plates</p>
+      <div class="knobs" id="party-knobs" role="group" aria-label="How many plates"></div>
+    </div>
 
-         This used to be eleven small outlined chips wrapped into a cloud
-         directly under the two big buttons: the planner, the recipe book,
-         the scanner, Nearby, Ask, the news and TV and radio were all
-         footnotes, while the ten game cards further down each got a tile of
-         their own. The front door was telling people the product was a game
-         with some links on the side.
+    <!-- Only for somebody who has been here before, and only then. -->
+    <div class="landing-back" id="landing-back" hidden>
+      <p class="mechanic">Welcome back</p>
+      <p class="landing-back-line" id="landing-back-line">Level 1 &middot; Snacker</p>
+      <div class="landing-back-stats">
+        <span><b id="landing-back-streak">0</b> day streak</span>
+        <span><b id="landing-back-decisions">0</b> decisions</span>
+        <span><b id="landing-back-dishes">0</b> dishes tried</span>
+      </div>
+    </div>
 
-         Same destinations, same handlers (ids and data-landing-view are
-         untouched — app.js wires them), and the same line icons as the
-         navigation, so a card here and its place in the sidebar are
-         recognisably the same thing. Nothing is badged: what each one
-         costs is said on the page it leads to, in one place, not
-         smeared across the front door as a row of sales tags.
-         =================================================================== -->
+    <!-- Both of these used to live on a second home screen that nothing could
+         reach any more (see the commit that removed it). They are the two
+         things that screen had and this one did not. -->
+    <section class="strip" id="intro-recent-wrap" hidden>
+      <h2 class="strip-title" id="intro-recent-title">Lately</h2>
+      <ul class="chips" id="intro-recent"></ul>
+    </section>
+
+    <section class="strip" id="intro-fav-wrap" hidden>
+      <h2 class="strip-title">Saved <span class="tag-premium">Premium</span></h2>
+      <ul class="chips" id="intro-favs"></ul>
+      <button class="plain" id="fav-decide-btn">Pick one of these for me</button>
+    </section>
+
     <section class="explore" aria-labelledby="explore-title">
-      <h2 class="strip-title" id="explore-title">Everything else in here</h2>
+      <h2 class="strip-title" id="explore-title">Around the kitchen</h2>
       <ul class="explore-grid">
         <li><button class="explore-card" type="button" id="landing-browse">
           <span class="explore-ico ico i-dishes" aria-hidden="true"></span>
@@ -467,74 +480,8 @@
           <span class="explore-name">Your recipes</span>
           <span class="explore-line">Keep your own, or from any website.</span>
         </button></li>
-        <li><button class="explore-card" type="button" data-landing-view="scan">
-          <span class="explore-ico ico i-scan" aria-hidden="true"></span>
-          <span class="explore-name">Scan food</span>
-          <span class="explore-line">Is it healthy? Scan the barcode.</span>
-        </button></li>
-        <li><button class="explore-card" type="button" data-landing-view="radio">
-          <span class="explore-ico ico i-radio" aria-hidden="true"></span>
-          <span class="explore-name">TV &amp; radio</span>
-          <span class="explore-line">Free, to cook and eat to.</span>
-        </button></li>
-        <li><button class="explore-card" type="button" data-landing-view="menu">
-          <span class="explore-ico ico i-menu" aria-hidden="true"></span>
-          <span class="explore-name">Tonight&rsquo;s menu</span>
-          <span class="explore-line">Five courses that belong together.</span>
-        </button></li>
-        <li><button class="explore-card" type="button" id="landing-invite">
-          <span class="explore-ico ico i-together" aria-hidden="true"></span>
-          <span class="explore-name">Decide with a friend</span>
-          <span class="explore-line">Send a link, land on one dish.</span>
-        </button></li>
-        <li><button class="explore-card" type="button" data-landing-view="daily">
-          <span class="explore-ico ico i-daily" aria-hidden="true"></span>
-          <span class="explore-name">Your day</span>
-          <span class="explore-line">A streak and a dish of the day.</span>
-        </button></li>
-        <li><button class="explore-card" type="button" data-landing-view="help">
-          <span class="explore-ico ico i-help" aria-hidden="true"></span>
-          <span class="explore-name">How it works</span>
-          <span class="explore-line">Every part, in plain words.</span>
-        </button></li>
       </ul>
     </section>
-
-    <div class="knob-block" id="party-wrap">
-      <p class="mechanic">How many plates</p>
-      <div class="knobs" id="party-knobs" role="group" aria-label="How many plates"></div>
-    </div>
-
-    <p class="landing-install" id="install-wrap" hidden>
-      <button class="link-btn" id="install-btn">Add it to your home screen</button>
-      <span class="fine">Opens straight into the game, without a browser bar in the way.
-      Needs a connection &mdash; the AI, the news and what is nearby all come from somewhere.</span>
-    </p>
-
-    <!-- Android or iOS only, revealed by app.js. A real app rather than a
-         pinned tab, which is a different offer from the one above and worth
-         both. -->
-    <p class="landing-install" id="apk-wrap" hidden>
-      <a class="link-btn" id="apk-link" href="/morsels45.apk" download="morsels45.apk">Install the Android app</a>
-      <span class="fine">Version 1.0.0 &middot; 6.0&nbsp;MB. Android will ask whether to allow
-      installing from your browser &mdash; say yes once.</span>
-    </p>
-
-    <p class="landing-install" id="clip-wrap" hidden>
-      <b class="clip-title">Put it on your Home Screen</b>
-      <span class="fine" id="clip-note">Tap Share at the bottom of the screen, scroll down to
-      <b>Add to Home Screen</b>, then tap <b>Add</b>. It opens full screen with no address bar.</span>
-    </p>
-
-    <p class="landing-free">No account needed to decide. A free account adds the planner, TV and radio.</p>
-
-    <!-- Real numbers, read out of the catalogue at load rather than written
-         here, so they cannot drift into being a claim nobody checks. -->
-    <ul class="landing-stats">
-      <li><b id="landing-dishes">450</b><span>dishes</span></li>
-      <li><b id="landing-questions">8</b><span>questions, usually</span></li>
-      <li><b id="landing-recipes">780</b><span>recipes inside</span></li>
-    </ul>
 
     <!-- ===================================================================
          FIVE TO TRY TODAY.
@@ -563,6 +510,7 @@
       &mdash; especially if you are cooking for someone with an allergy.</p>
     </section>
 
+    <section class="play" aria-label="Games">
     <!-- ===================================================================
          ENDLESS, and why it is out here on its own rather than in the grid
          below it.
@@ -582,10 +530,7 @@
           <span class="endless-card-name">Endless</span>
           <span class="endless-card-tag" id="endless-tag">Free</span>
         </span>
-        <span class="endless-card-hook">Two dishes, and five seconds on the clock. Answer fast and it goes hot &mdash; worth more,
-        and burning quicker. Every pick buys a little time back, and a little less each time. Part-way
-        through, things start happening to the rules: the clock doubles, refills dry up, or the cards
-        start meaning the opposite. See how far you get.</span>
+        <span class="endless-card-hook">Two dishes, five seconds on the clock. Answer fast and it goes hot &mdash; worth more, burning quicker. Part-way through the rules start to change. See how far you get.</span>
         <span class="endless-card-line" id="endless-card-line">No questions. No rounds. Just don&rsquo;t stop.</span>
       </button>
       <!--
@@ -600,8 +545,7 @@
         <div class="knobs" id="endless-theme-knobs" role="group" aria-label="What Endless draws from"></div>
       </div>
     </section>
-
-    <p class="mode-grid-label">Or play it as a game <span class="tag-premium">Premium</span></p>
+    <h3 class="mode-grid-label">Or play it as a game <span class="tag-premium">Premium</span></h3>
     <div class="mode-grid">
       <button class="mode-card" id="duel-btn">
         <span class="mode-lock">&#128274; Premium</span>
@@ -665,7 +609,42 @@
         <span class="mode-hook">Eight dishes line up for a race. Back your favourite, cheer it on, and slip a pat of butter under the one you don&rsquo;t fancy. Don&rsquo;t like the field? Reroll it. The podium is dinner.</span>
       </button>
     </div>
+    </section>
 
+    <details class="more-ways" id="more-ways">
+      <summary class="more-ways-sum"><span>More ways in</span><span class="more-ways-hint">TV &amp; radio, food news, menus, moods, and more</span></summary>
+      <ul class="explore-grid explore-grid-more">
+        <li><button class="explore-card" type="button" data-landing-view="scan">
+          <span class="explore-ico ico i-scan" aria-hidden="true"></span>
+          <span class="explore-name">Scan food</span>
+          <span class="explore-line">Is it healthy? Scan the barcode.</span>
+        </button></li>
+        <li><button class="explore-card" type="button" data-landing-view="radio">
+          <span class="explore-ico ico i-radio" aria-hidden="true"></span>
+          <span class="explore-name">TV &amp; radio</span>
+          <span class="explore-line">Free, to cook and eat to.</span>
+        </button></li>
+        <li><button class="explore-card" type="button" data-landing-view="menu">
+          <span class="explore-ico ico i-menu" aria-hidden="true"></span>
+          <span class="explore-name">Tonight&rsquo;s menu</span>
+          <span class="explore-line">Five courses that belong together.</span>
+        </button></li>
+        <li><button class="explore-card" type="button" id="landing-invite">
+          <span class="explore-ico ico i-together" aria-hidden="true"></span>
+          <span class="explore-name">Decide with a friend</span>
+          <span class="explore-line">Send a link, land on one dish.</span>
+        </button></li>
+        <li><button class="explore-card" type="button" data-landing-view="daily">
+          <span class="explore-ico ico i-daily" aria-hidden="true"></span>
+          <span class="explore-name">Your day</span>
+          <span class="explore-line">A streak and a dish of the day.</span>
+        </button></li>
+        <li><button class="explore-card" type="button" data-landing-view="help">
+          <span class="explore-ico ico i-help" aria-hidden="true"></span>
+          <span class="explore-name">How it works</span>
+          <span class="explore-line">Every part, in plain words.</span>
+        </button></li>
+      </ul>
     <section class="strip" id="mood-wrap" hidden>
       <h2 class="strip-title">Or just tell me the mood <span class="tag-premium">Premium</span></h2>
       <div class="moods" id="moods"></div>
@@ -699,31 +678,38 @@
       <ul class="chips" id="week-chips"></ul>
       <button class="plain" id="week-btn">Plan my week</button>
     </section>
+    </details>
 
-    <!-- Only for somebody who has been here before, and only then. -->
-    <div class="landing-back" id="landing-back" hidden>
-      <p class="mechanic">Welcome back</p>
-      <p class="landing-back-line" id="landing-back-line">Level 1 &middot; Snacker</p>
-      <div class="landing-back-stats">
-        <span><b id="landing-back-streak">0</b> day streak</span>
-        <span><b id="landing-back-decisions">0</b> decisions</span>
-        <span><b id="landing-back-dishes">0</b> dishes tried</span>
-      </div>
-    </div>
+    <p class="landing-install" id="install-wrap" hidden>
+      <button class="link-btn" id="install-btn">Add it to your home screen</button>
+      <span class="fine">Opens straight into the game, without a browser bar in the way.
+      Needs a connection &mdash; the AI, the news and what is nearby all come from somewhere.</span>
+    </p>
 
-    <!-- Both of these used to live on a second home screen that nothing could
-         reach any more (see the commit that removed it). They are the two
-         things that screen had and this one did not. -->
-    <section class="strip" id="intro-recent-wrap" hidden>
-      <h2 class="strip-title" id="intro-recent-title">Lately</h2>
-      <ul class="chips" id="intro-recent"></ul>
-    </section>
+    <!-- Android or iOS only, revealed by app.js. A real app rather than a
+         pinned tab, which is a different offer from the one above and worth
+         both. -->
+    <p class="landing-install" id="apk-wrap" hidden>
+      <a class="link-btn" id="apk-link" href="/morsels45.apk" download="morsels45.apk">Install the Android app</a>
+      <span class="fine">Version 1.0.0 &middot; 6.0&nbsp;MB. Android will ask whether to allow
+      installing from your browser &mdash; say yes once.</span>
+    </p>
 
-    <section class="strip" id="intro-fav-wrap" hidden>
-      <h2 class="strip-title">Saved <span class="tag-premium">Premium</span></h2>
-      <ul class="chips" id="intro-favs"></ul>
-      <button class="plain" id="fav-decide-btn">Pick one of these for me</button>
-    </section>
+    <p class="landing-install" id="clip-wrap" hidden>
+      <b class="clip-title">Put it on your Home Screen</b>
+      <span class="fine" id="clip-note">Tap Share at the bottom of the screen, scroll down to
+      <b>Add to Home Screen</b>, then tap <b>Add</b>. It opens full screen with no address bar.</span>
+    </p>
+
+    <p class="landing-free">No account needed to decide. A free account adds the planner, TV and radio.</p>
+
+    <!-- Real numbers, read out of the catalogue at load rather than written
+         here, so they cannot drift into being a claim nobody checks. -->
+    <ul class="landing-stats">
+      <li><b id="landing-dishes">450</b><span>dishes</span></li>
+      <li><b id="landing-questions">8</b><span>questions, usually</span></li>
+      <li><b id="landing-recipes">780</b><span>recipes inside</span></li>
+    </ul>
 
     <p class="landing-foot">Free to play. Premium is extra.
       <button class="link-btn" id="landing-premium">See what Premium adds</button>

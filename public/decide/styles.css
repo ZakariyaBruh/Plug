@@ -7837,3 +7837,127 @@ body.is-premium .ad-wrap { display: none; }
 .chat-bonus { display: grid; justify-items: start; gap: var(--s1); margin-top: var(--s2); }
 .chat-bonus .quiet { margin-left: -.8rem; border-color: var(--line-2); }
 .chat-bonus .quiet:disabled { opacity: .6; cursor: default; }
+
+
+/* ------------------------------------------------- the front door, shorter ---
+   It ran to 5.6 screens on a desktop and 7.6 on a phone: a twelve-card grid that
+   repeated the navigation, ten tall locked game tiles, and five more strips. Now
+   the pitch, the buttons, six doors, the games as a compact rail, and everything
+   else folded away under one line. Nothing was removed; it was given a size. */
+.landing .knob-block { margin: calc(var(--s2) * -1) 0 0; padding: 0; border: 0; }
+.landing .explore { margin-top: 0; padding-top: var(--s5); border-top: 1px solid var(--hair); }
+.landing .explore-grid { margin-top: var(--s3); }
+.landing .explore-line { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Games: a snapping rail on a phone, five across on a desktop. The tall hook is
+   two lines; the whole of it is on the screen the card opens. */
+.play { display: grid; gap: var(--s3); padding-top: var(--s5); border-top: 1px solid var(--hair); }
+.play .endless-cta { margin: 0; padding: 0; border: 0; gap: var(--s2); }
+.play .endless-cta .strip-title { margin-bottom: var(--s2); }
+.play .endless-card { padding: var(--s4); gap: var(--s2); }
+.play .endless-card-hook { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.play .mode-grid-label { margin: var(--s3) 0 0; font-weight: 400; }
+.play .mode-grid {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  margin: 0 calc(var(--s4) * -1);
+  padding: var(--s1) var(--s4) var(--s2);
+  scroll-padding-inline: var(--s4);
+}
+.play .mode-grid::-webkit-scrollbar { display: none; }
+.play .mode-card,
+.play .mode-card-wide,
+.play #slice-btn {
+  flex: 0 0 min(10.5rem, 62%);
+  scroll-snap-align: start;
+  grid-column: auto;
+  padding: var(--s3) var(--s4) var(--s4);
+  gap: var(--s1);
+  animation: none;
+}
+.play .mode-card .mode-icon { width: 2.25rem; height: 2.25rem; font-size: 1.25rem; margin-bottom: var(--s1); }
+.play .mode-name { font-size: var(--t-base); }
+.play .mode-hook {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.4;
+}
+.play .mode-card-wide .mode-name { font-size: var(--t-base); }
+@media (min-width: 46rem) {
+  .play .mode-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); overflow: visible; margin: 0; padding: 0; }
+  .play .mode-card, .play .mode-card-wide, .play #slice-btn { flex: none; }
+}
+
+/* Everything else. A closed disclosure that says what is in it. */
+.more-ways { display: grid; gap: var(--s4); padding-top: var(--s5); border-top: 1px solid var(--hair); }
+.more-ways[open] { padding-bottom: var(--s2); }
+.more-ways-sum {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s1) var(--s3);
+  min-height: var(--tap);
+  align-content: center;
+  list-style: none;
+  cursor: pointer;
+  font-family: var(--display);
+  font-size: var(--t-md);
+  font-weight: 600;
+}
+.more-ways-sum::-webkit-details-marker { display: none; }
+.more-ways-sum::after { content: '+'; margin-left: auto; color: var(--amber); font-size: 1.25rem; line-height: 1; }
+.more-ways[open] .more-ways-sum::after { content: '\2212'; }
+.more-ways-hint { font-family: var(--body); font-size: var(--t-xs); font-weight: 400; color: var(--ink-3); }
+.more-ways > .strip { margin: 0; padding-top: var(--s4); }
+.more-ways > .opening-more:not(:has(*:not([hidden]))) { display: none; }
+
+/* The numbers, as a line rather than a block. */
+.landing-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1) var(--s4);
+  margin: 0;
+  padding: var(--s3) 0 0;
+  border-top: 1px solid var(--hair);
+}
+.landing-stats li { display: flex; align-items: baseline; gap: var(--s2); }
+.landing-stats b { font-size: var(--t-md); }
+.landing-stats span { text-transform: none; letter-spacing: 0; font-size: var(--t-sm); }
+
+.landing-inner { gap: var(--s4); }
+.landing-free { margin-top: 0; }
+
+/* The phone's first screen is the pitch and the one button; the picked dish is
+   the demonstration, so it comes after the buttons rather than in front of them. */
+@media (max-width: 40rem) {
+  .landing-inner > * { order: 5; }
+  .landing-inner > .landing-hello-row, .landing-inner > .landing-ask, .landing-inner > .landing-sub,
+  .landing-inner > .landing-resume { order: 0; }
+  .landing-inner > .landing-actions { order: 1; }
+  .landing-inner > .knob-block { order: 2; }
+  .landing-inner > .hook { order: 3; }
+  .landing-ask { font-size: clamp(1.875rem, 9vw, 2.5rem); }
+}
+
+/* Lately / Saved / On the menu: one row that scrolls, not a wall of chips. */
+#intro-recent, #intro-favs {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-inline: calc(var(--s4) * -1);
+  padding-inline: var(--s4);
+}
+#intro-recent::-webkit-scrollbar, #intro-favs::-webkit-scrollbar { display: none; }
+#intro-recent > *, #intro-favs > * { flex: 0 0 auto; }
+@media (min-width: 46rem) { #intro-recent, #intro-favs { margin-inline: 0; padding-inline: 0; flex-wrap: wrap; } }
+
+.more-ways-sum { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.more-ways-hint { grid-column: 1; }
+.more-ways-sum::after { grid-column: 2; grid-row: 1 / span 2; margin-left: 0; }
+.landing-stats li { white-space: nowrap; }
