@@ -2,6 +2,7 @@ import { createFileRoute, Link, notFound } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { useEffect } from 'react'
 
+import { AdSlot } from '#/components/AdSlot'
 import { JsonLd } from '#/components/JsonLd'
 import { PageShell } from '#/components/PageShell'
 import { dishBySlug, relatedTo } from '#/lib/dishes'
@@ -367,6 +368,7 @@ function EatPage() {
             </p>
           </nav>
         ) : null}
+        <AdSlot placement="end" premium={viewer.hasPremium} className="mx-auto max-w-3xl px-6 pb-12" />
       </main>
     </PageShell>
   )

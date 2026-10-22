@@ -29,11 +29,12 @@ of a list and on a phone, three at the end of a page on a wide screen.
 
 | | |
 |---|---|
-| Game | in the Dishes list (after the 8th dish) and at the end of Profile |
-| Site | the end of /faq, /how-it-works, /info and /eat |
-| Never | the decide flow, any game, the answer, the reward, /premium, /checkout, /account |
-| Who | not Premium members, and not anybody with fewer than two finished decisions |
-| How | loaded only within 400px of view; not at all with Save-Data on |
+| Game | under every section but the questions (one slot, `#view-ad`, `adForView()` in app.js; a fresh cluster when the section changes, at most one per 20 seconds), plus the Dishes list (after the 8th dish), the end of Profile, and two on the front page |
+| Site | the end of /, /faq, /how-it-works, /info, /eat and each /eat/<dish> |
+| Never | the decide questions, any game, the answer, the reward, /premium, /checkout, /account |
+| Who | everybody except Premium members, **from the first visit** |
+| How | loaded only within 400px of view. Save-Data is ignored (the owner's call) |
+| Consent | where the law asks first (EU, EEA, UK, Switzerland, or a country that cannot be told) only after **Accept all**, and taken off the page again on **Essential only** |
 
 ## The sponsor page: more Standard questions
 
@@ -57,8 +58,13 @@ redirect the tab. `adsdrive` checks that with a creative that tries all of it.
 
 Not handled, and worth deciding:
 
-- **Consent.** Third-party ad cookies in the EEA and UK need it; this site has no
-  consent banner. The sponsor page is the network's own page and sets whatever it sets.
+- **Consent is a banner now** (`js/consent.js` in the app, `ConsentBar.tsx` on the
+  site, one answer under `m45-consent`, region from `/api/region`). Ads and the
+  Google Analytics and Clarity tags wait for it where it is required. Ads are **not**
+  filed under "essential" and a test fails if they ever are: the banner, the privacy
+  page and the law all treat ad-network cookies as needing a choice. Whop itself adds
+  page-view analytics to every page it serves, outside this app. The sponsor page is
+  the network's own page and sets whatever it sets.
 - **Creatives are not reviewed.** For an app with halal and kosher rules built in,
   that matters more than usual. Adsterra lets you block categories in the dashboard.
 

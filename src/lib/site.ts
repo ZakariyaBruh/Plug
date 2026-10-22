@@ -128,19 +128,21 @@ export const GA4_ID = 'G-M5PMRS475E'
  * ones depend on the width and on where the cluster sits: see adCluster below.
  * The Smartlink is not an ad slot at all; it is an opt-in, see SMARTLINK_URL.
  *
- * HOW GENTLE IT IS, as numbers rather than adjectives:
- *   - never in the decide flow, a game, the answer or the reward (the two
- *     moments the persuasion notes say get the care), and never on /premium,
- *     /checkout or /account
+ * HOW MUCH THERE IS, as numbers rather than adjectives. The owner asked for ads
+ * on every screen, from the first visit, and for Save-Data to be ignored; this
+ * is that, with the lines that were kept:
+ *   - never in the decide questions, a game, the answer or the reward, and never
+ *     on /premium, /checkout or /account
  *   - one cluster per screen, of two or three banners together (two in the
  *     middle of a list and on a phone, three at the end of a page on a wide
  *     screen), lazy-loaded when it is about to scroll into view, so it costs
- *     nothing to somebody who never reaches it. Together rather than scattered:
- *     a screen with one gap in it where the ads are is calmer than a screen
- *     with ads between every few lines
- *   - none for a Premium member, and none until somebody has finished
- *     ADS_AFTER_DECISIONS decisions: the first thing a stranger gets from this
- *     app is an answer, not an advertisement
+ *     nothing to somebody who never reaches it. Every section of the app has
+ *     one under it, as do the front page and the site's reading pages
+ *   - none for a Premium member, ever
+ *   - from the first visit (ADS_AFTER_DECISIONS is 0), and Save-Data is no longer
+ *     a reason to skip them
+ *   - where the law says to ask first (see lib/consent.ts), only after the
+ *     visitor presses "Accept all"; and they come off the page again if it is taken back
  *
  * WHAT IS NOT MITIGATED. The creatives are not reviewed here, cannot be, and
  * will sometimes be for things nobody here would choose to advertise —
@@ -148,9 +150,9 @@ export const GA4_ID = 'G-M5PMRS475E'
  * into it. What the sandbox does limit is what a creative can do, not what
  * it can say: no allow-same-origin (it cannot read this page's cookies,
  * storage or DOM) and no allow-top-navigation (it cannot redirect the tab).
- * Also not handled: consent. Third-party ad cookies in the EEA and UK need it,
- * this site has no consent banner, and a unit should not be switched on for
- * those visitors until it does.
+ * Consent is handled by the banner (components/ConsentBar.tsx here, js/consent.js in
+ * the app). Ads are never listed as "essential": see the note over ASK_FIRST in
+ * lib/consent.ts.
  */
 export type AdSize = 'leaderboard' | 'wide' | 'mobile' | 'rectangle' | 'tower'
 
@@ -204,8 +206,8 @@ export function adCluster(placement: 'inline' | 'end', width: number): AdUnit[] 
     .slice(0, count)
 }
 
-/** Decisions somebody has finished before the first ad is shown to them. */
-export const ADS_AFTER_DECISIONS = 2
+/** Decisions somebody has finished before the first ad is shown to them. 0: from the first visit. */
+export const ADS_AFTER_DECISIONS = 0
 
 /** A unit is live only when both halves of its snippet are here. */
 export const adLive = (unit: AdUnit): boolean => unit.src.length > 0 && unit.key.length > 0

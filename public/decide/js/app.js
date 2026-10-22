@@ -679,6 +679,27 @@
     // keeps scrolling it into view from somewhere else in the app.
     else stopTyping();
     window.scrollTo(0, 0);
+    adForView(name);
+  }
+
+  /*
+   * ADS ON EVERY SCREEN THAT IS READ. One slot sits under the current section, so
+   * the cluster is the same size and place everywhere and there is never more than
+   * one of them from this (Dishes also has its own in the middle of the list, and
+   * Profile its own at the bottom, so those two are left to them). A fresh cluster
+   * is asked for when the section changes, but not more than once in 20 seconds,
+   * so flipping between tabs is not a way of making the network count a page 40 times.
+   * Not under the questions, the answer, a game or the reward: that is `decide`.
+   */
+  var adStamp = 0;
+  function adForView(name) {
+    var slot = $('view-ad');
+    if (!slot || typeof Ads === 'undefined') return;
+    var skip = name === 'decide' || name === 'profile';
+    slot.hidden = skip;
+    if (skip) return;
+    var now = Date.now();
+    if (!slot.dataset.adArmed || now - adStamp > 20000) { adStamp = now; Ads.refresh(slot, 'end', { premium: isPlus() }); }
   }
 
   function setPanel(name) {
@@ -8634,7 +8655,7 @@
       // The first eight rows go above the ad, the rest below it.
       if (at < 8) grid.insertBefore(li, adItem); else grid.appendChild(li);
     });
-    if (typeof Ads !== 'undefined') Ads.mount(adItem, 'inline', { premium: isPlus(), decisions: progress.state.decisions });
+    if (typeof Ads !== 'undefined') Ads.mount(adItem, 'inline', { premium: isPlus() });
 
     $('dish-empty').hidden = matches.length > 0;
     $('dish-count-label').textContent = matches.length === Data.ITEMS.length
@@ -8946,7 +8967,7 @@
 
     // The end of the screen that is read to the bottom. A no-op until a unit is
     // configured, and every time after the first.
-    if (typeof Ads !== 'undefined') Ads.mount($('profile-ad'), 'end', { premium: isPlus(), decisions: progress.state.decisions });
+    if (typeof Ads !== 'undefined') Ads.mount($('profile-ad'), 'end', { premium: isPlus() });
 
     $('profile-name').textContent = level.name;
     $('profile-xp').textContent = state.xp;
@@ -13615,6 +13636,7 @@
   (function profileControls() {
     var tog = $('buddy-toggle'), play = $('buddy-play'), back = $('buddy-home');
     if ($('buddy-games')) $('buddy-games').addEventListener('click', function () { Play.open(); });
+  if ($('cookie-settings')) $('cookie-settings').addEventListener('click', function () { if (typeof Consent !== 'undefined') Consent.show(); });
     if ($('buddy-tour')) $('buddy-tour').addEventListener('click', function () { Tour.start(); });
     if (tog) {
       var paintTog = function () { tog.textContent = Buddy.enabled() ? 'Dot is here' : 'Dot is off'; tog.setAttribute('aria-pressed', String(Buddy.enabled())); };
@@ -18434,6 +18456,10 @@
     renderIntro();
     startReel();
     loadDaily();
+    if (typeof Ads !== 'undefined') {
+      Ads.mount($('landing-ad-a'), 'inline', { premium: isPlus() });
+      Ads.mount($('landing-ad-b'), 'end', { premium: isPlus() });
+    }
     focusQuietly($('landing-start'));
   }
 

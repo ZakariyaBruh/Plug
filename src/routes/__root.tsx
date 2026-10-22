@@ -3,6 +3,9 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { useEffect } from 'react'
 
+import { ConsentBar } from '#/components/ConsentBar'
+import { useConsentAllowed } from '#/lib/consent-client'
+
 import { CLARITY_ID, GA4_ID, GA4_ON, REPLAY_ON, SITE_META_DESCRIPTION, SITE_TITLE } from '#/lib/site'
 import appCss from '../styles.css?url'
 
@@ -114,6 +117,46 @@ function NotFound() {
   )
 }
 
+/*
+ * SESSION REPLAY AND GOOGLE ANALYTICS, ONLY WHILE SWITCHED ON, AND ONLY WITH THE
+ * VISITOR'S OK WHERE THE LAW ASKS FOR IT.
+ * One constant each in lib/site.ts decides whether the script exists, whether it is
+ * named on the privacy page and what that page says it does (empty id, no script,
+ * no claim; see the notes over CLARITY_ID and GA4_ID). Consent is the second key:
+ * where a visitor has to opt in, neither tag is added to the page until they do,
+ * and neither is added again after they say no. `send_page_view` stays on, which is
+ * the whole of what GA gets for free; everything else is an event this app sends.
+ */
+function Analytics() {
+  const allowed = useConsentAllowed()
+  useEffect(() => {
+    if (allowed !== true) return
+    if (REPLAY_ON && !document.getElementById('m45-clarity')) {
+      const w = window as unknown as Record<string, unknown>
+      w.clarity = w.clarity || function (...args: unknown[]) { ((w.clarity as { q?: unknown[] }).q = (w.clarity as { q?: unknown[] }).q || []).push(args) }
+      const t = document.createElement('script')
+      t.id = 'm45-clarity'
+      t.async = true
+      t.src = `https://www.clarity.ms/tag/${CLARITY_ID}`
+      document.head.appendChild(t)
+    }
+    if (GA4_ON && !document.getElementById('m45-ga4')) {
+      const w = window as unknown as { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void }
+      w.dataLayer = w.dataLayer || []
+      // On window, because track() in lib/site.ts looks for it there.
+      const gtag = (w.gtag = (...args: unknown[]) => { w.dataLayer!.push(args) })
+      gtag('js', new Date())
+      gtag('config', GA4_ID, { anonymize_ip: true })
+      const t = document.createElement('script')
+      t.id = 'm45-ga4'
+      t.async = true
+      t.src = `https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`
+      document.head.appendChild(t)
+    }
+  }, [allowed])
+  return null
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeAdvisor = async () => {
@@ -137,55 +180,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           the note in public/decide/index.html. */}
       <head>
         <HeadContent />
-        {/*
-          SESSION REPLAY, ONLY WHILE IT IS SWITCHED ON.
-          One constant in lib/site.ts decides whether this script exists,
-          whether Clarity is listed on the privacy page, and whether that page
-          says replay is running. Empty id, no script, no claim. See the long
-          note over CLARITY_ID for why they are tied together.
-        */}
-        {REPLAY_ON ? (
-          <script
-            // eslint-disable-next-line react/no-danger
-            dangerouslySetInnerHTML={{
-              __html:
-                `(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};` +
-                `t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;` +
-                `y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);` +
-                `})(window,document,"clarity","script",${JSON.stringify(CLARITY_ID)});`,
-            }}
-          />
-        ) : null}
-        {/*
-          GOOGLE ANALYTICS 4, ONLY WHILE IT IS SWITCHED ON.
-          Same arrangement as the replay tag above and for the same reason:
-          one constant in lib/site.ts decides whether this exists, whether
-          the funnel events are mirrored to it, whether Google Analytics is
-          named on the privacy page, and what that page's tracking card says.
-          Empty id, no script, no claim. See the long note over GA4_ID.
-
-          `send_page_view` is left on, which is the whole of what GA gets for
-          free here; everything else it learns is an event this app decided
-          to send. See track() in lib/site.ts.
-        */}
-        {GA4_ON ? (
-          <>
-            <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`} />
-            <script
-              // eslint-disable-next-line react/no-danger
-              dangerouslySetInnerHTML={{
-                __html:
-                  `window.dataLayer=window.dataLayer||[];` +
-                  `function gtag(){dataLayer.push(arguments);}` +
-                  `gtag('js',new Date());` +
-                  `gtag('config',${JSON.stringify(GA4_ID)},{anonymize_ip:true});`,
-              }}
-            />
-          </>
-        ) : null}
       </head>
       <body>
         {children}
+        <Analytics />
+        <ConsentBar />
         <TanStackDevtools
           config={{
             position: 'bottom-right',

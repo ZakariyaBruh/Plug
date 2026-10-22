@@ -8020,3 +8020,36 @@ body.is-premium .ad-wrap { display: none; }
   background: color-mix(in srgb, var(--ink) 7%, transparent); border: 1px solid var(--line);
   font-family: var(--display); font-size: var(--t-base); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ink);
 }
+
+
+/* ------------------------------------------------------------ cookie notice ---
+   One bar, two buttons of the same weight: refusing is exactly as easy as
+   accepting. Above the phone's tab bar, so it never sits under it. */
+.consent {
+  position: fixed; z-index: 90; left: var(--s3); right: var(--s3);
+  bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+  display: grid; gap: var(--s3); padding: var(--s4); max-width: 46rem; margin-inline: auto;
+  border: 1px solid var(--line-2); border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--raise, #1b1b1d) 96%, transparent);
+  box-shadow: 0 24px 60px -20px rgb(0 0 0 / .8);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  font-size: var(--t-sm); line-height: 1.5; color: var(--ink-2);
+}
+.consent[hidden] { display: none; }
+.consent-text { margin: 0; }
+.consent-text b { color: var(--ink); }
+.consent-text a { color: var(--amber); text-underline-offset: .2em; }
+.consent-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.consent-btn {
+  flex: 1 1 8rem; min-height: var(--tap); padding: .55rem 1rem; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line-2); background: transparent; color: var(--ink); font: inherit; font-weight: 600;
+}
+.consent-btn.is-main { background: var(--ink); color: var(--void, #111); border-color: var(--ink); }
+.consent-btn:hover { border-color: var(--amber); }
+@media (max-width: 60rem) { .consent { bottom: calc(var(--tabbar-h, 4.25rem) + var(--s3) + env(safe-area-inset-bottom, 0px)); } }
+
+/* The landing's empty ad slots must not leave a gap in the grid. */
+.landing-inner > .ad-wrap:not(.is-filled) { margin-top: calc(var(--s4) * -1); }
+#view-ad[hidden] { display: none; }
+#view-ad { margin: var(--s6) auto var(--s5); max-width: 60rem; padding-inline: var(--s4); }
+#view-ad:not(.is-filled) { margin: 0; padding: 0; }

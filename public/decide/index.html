@@ -501,6 +501,8 @@
          Hidden until it has something. A shelf that says "nothing today" is
          worse than no shelf.
          =================================================================== -->
+    <div class="ad-wrap" id="landing-ad-a"></div>
+
     <section class="strip" id="daily-wrap" hidden>
       <h2 class="strip-title" id="daily-title">Five to try today</h2>
       <p class="fine" id="daily-note">Dishes the app does not already know,
@@ -711,8 +713,11 @@
       <li><b id="landing-recipes">780</b><span>recipes inside</span></li>
     </ul>
 
+    <div class="ad-wrap" id="landing-ad-b"></div>
+
     <p class="landing-foot">Free to play. Premium is extra.
       <button class="link-btn" id="landing-premium">See what Premium adds</button>
+      <button class="link-btn" id="cookie-settings" type="button">Cookie settings</button>
     </p>
   </div>
 </div>
@@ -2827,6 +2832,10 @@
       <div class="ad-wrap" id="profile-ad"></div>
     </section>
 
+    <!-- Under whichever section is current, except the questions and Profile (which
+         has its own). Armed by adForView() in app.js. -->
+    <div class="ad-wrap" id="view-ad" hidden></div>
+
   </main>
 </div>
 
@@ -3168,6 +3177,7 @@
      it is committed rather than treated as a secret. -->
 <script src="js/config.js"></script>
 <!-- Does nothing until a unit is filled in in config.js; see js/ads.js. -->
+<script src="js/consent.js"></script>
 <script src="js/ads.js"></script>
 <!-- Premium is the site's own Whop session, asked through /api/premium-status —
      no licence key, no per-browser account. -->

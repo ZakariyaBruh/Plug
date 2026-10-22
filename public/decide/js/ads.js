@@ -1,17 +1,19 @@
 /*
- * ads.js — a small cluster of ads at a time, where it cannot hurt anything, and
- * only once it has been earned.
+ * ads.js — a small cluster of ads at a time, on every screen that is read,
+ * from the first visit, and never for a Premium member.
  *
- * The decision, what stays out and the numbers behind "gentle" are in the long
- * note over ADS_ON in src/lib/site.ts, and the units live in config.js. This
- * file is only the rules, applied. In short it draws nothing unless a unit is
- * configured, nothing for a Premium member, nothing until somebody has finished
- * a couple of decisions, and nothing until the slot is about to scroll into
- * view — so a visitor who never reaches it never loads it.
+ * The decision, what stays out and the numbers are in the long note over ADS_ON
+ * in src/lib/site.ts, and the units live in config.js. This file is only the
+ * rules, applied. It draws nothing unless a unit is configured, nothing for a
+ * Premium member, nothing where the visitor has to opt in first and has not
+ * (see consent.js), and nothing until the slot is about to scroll into view, so
+ * a visitor who never reaches it never loads it. It no longer waits for a few
+ * decisions to be finished, and it no longer steps aside for Save-Data: both
+ * were choices, and the owner made the opposite one.
  *
- * It is NEVER mounted in the decide flow, a game, the answer or the reward
- * (those are the two moments the persuasion notes say get the care), and
- * app.js only ever calls it from the Dishes list and the Profile screen.
+ * It is NEVER mounted in a game being played, in the decide questions, the
+ * answer or the reward, or on the checkout and account pages. Everywhere else
+ * app.js gives each screen a slot.
  *
  * `placement` is where the slot sits; cluster() decides which two or three
  * banners that means at this width (the same table as adCluster in site.ts):
@@ -31,7 +33,6 @@
 var Ads = (function () {
   var SANDBOX = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
   var cfg = (window.FoodConfig && window.FoodConfig.ads) || {};
-  var AFTER = (window.FoodConfig && window.FoodConfig.adsAfterDecisions) || 2;
 
   function live(unit) { return !!(unit && unit.src && unit.key); }
 
@@ -99,30 +100,65 @@ var Ads = (function () {
 
   /*
    * Arm a slot. `ctx` is what the game knows and this file does not:
-   * { premium: bool, decisions: number }. Calling it again on the same element
-   * — which happens whenever the view holding it re-renders — does nothing, so
-   * switching tabs and back does not reload (and so re-count) the ads.
+   * { premium: bool }. Calling it again on the same element does nothing, so a
+   * re-render does not reload (and so re-count) the ads; refresh() is the way to
+   * ask for a fresh cluster on purpose, which app.js does when the screen changes.
+   *
+   * Consent is waited for, not assumed: where the visitor has to opt in, the slot
+   * is kept and drawn the moment they do, and taken down again if they take it back.
    */
-  function mount(container, placement, ctx) {
-    if (!container || container.dataset.adArmed) return;
-    if (!anyLive() || !ctx || ctx.premium || (ctx.decisions || 0) < AFTER) return;
-    // Somebody who has asked their browser to save data has not asked for this.
-    var conn = navigator.connection;
-    if (conn && conn.saveData) return;
+  var waiting = [];
+  function allowedNow(cb) {
+    if (typeof Consent === 'undefined') return cb(false);
+    Consent.ready(cb);
+  }
+  function arm(container) {
     if (typeof IntersectionObserver === 'undefined') return;
-
-    container.dataset.adArmed = '1';
     var seen = new IntersectionObserver(function (entries) {
       for (var i = 0; i < entries.length; i++) {
         if (entries[i].isIntersecting) {
           seen.disconnect();
-          draw(container, placement);
+          container._adSeen = null;
+          draw(container, container._adPlacement);
           return;
         }
       }
     }, { rootMargin: '400px 0px' });
+    container._adSeen = seen;
     seen.observe(container);
   }
+  function mount(container, placement, ctx) {
+    if (!container || container.dataset.adArmed) return;
+    if (!anyLive() || !ctx || ctx.premium) return;
+    container.dataset.adArmed = '1';
+    container._adPlacement = placement;
+    allowedNow(function (ok) {
+      if (!container.dataset.adArmed) return;
+      if (ok) arm(container); else waiting.push(container);
+    });
+  }
+  function clear(container) {
+    if (container._adSeen) { container._adSeen.disconnect(); container._adSeen = null; }
+    container.textContent = '';
+    container.classList.remove('is-filled');
+    container.removeAttribute('role');
+    container.removeAttribute('aria-label');
+  }
+  function refresh(container, placement, ctx) {
+    if (!container) return;
+    clear(container);
+    delete container.dataset.adArmed;
+    mount(container, placement, ctx);
+  }
 
-  return { mount: mount, enabled: anyLive };
+  if (typeof Consent !== 'undefined') {
+    Consent.onChange(function (ok) {
+      if (ok) { waiting.splice(0).forEach(function (c) { if (c.dataset.adArmed) arm(c); }); return; }
+      // Taken back: no ad stays on the screen, and none is drawn later.
+      var slots = document.querySelectorAll('.ad-wrap[data-ad-armed]');
+      for (var i = 0; i < slots.length; i++) { clear(slots[i]); waiting.push(slots[i]); }
+    });
+  }
+
+  return { mount: mount, refresh: refresh, enabled: anyLive };
 })();

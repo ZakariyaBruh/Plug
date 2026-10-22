@@ -14,6 +14,7 @@ import stylesCss from '../../../public/decide/styles.css?raw'
 import appJs from '../../../public/decide/js/app.js?raw'
 import confettiJs from '../../../public/decide/js/confetti.js?raw'
 import adsJs from '../../../public/decide/js/ads.js?raw'
+import consentJs from '../../../public/decide/js/consent.js?raw'
 import configJs from '../../../public/decide/js/config.js?raw'
 import dataJs from '../../../public/decide/js/data.js?raw'
 import engineJs from '../../../public/decide/js/engine.js?raw'
@@ -64,7 +65,7 @@ import { BUILD } from 'virtual:build-id'
 import { CLARITY_ID, GA4_ID, GA4_ON, REPLAY_ON } from '#/lib/site'
 
 const VERSIONED = [
-  'styles.css', 'js/ads.js', 'js/app.js', 'js/confetti.js', 'js/config.js', 'js/data.js',
+  'styles.css', 'js/ads.js', 'js/consent.js', 'js/app.js', 'js/confetti.js', 'js/config.js', 'js/data.js',
   'js/engine.js', 'js/flavor.js', 'js/i18n.js', 'js/mapview.js', 'js/places.js', 'js/premium.js',
   'js/progress.js', 'js/recipes.js', 'js/sound.js',
   'js/taste.js', 'js/hub.js',
@@ -136,6 +137,7 @@ const FILES: Record<string, { body: string; type: string }> = {
   'js/app.js': { body: appJs, type: 'text/javascript; charset=utf-8' },
   'js/confetti.js': { body: confettiJs, type: 'text/javascript; charset=utf-8' },
   'js/ads.js': { body: adsJs, type: 'text/javascript; charset=utf-8' },
+  'js/consent.js': { body: consentJs, type: 'text/javascript; charset=utf-8' },
   'js/config.js': { body: configJs, type: 'text/javascript; charset=utf-8' },
   'js/data.js': { body: dataJs, type: 'text/javascript; charset=utf-8' },
   'js/engine.js': { body: engineJs, type: 'text/javascript; charset=utf-8' },

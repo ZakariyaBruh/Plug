@@ -12,7 +12,10 @@
  *
  * What it asserts is the list of promises made on the privacy page:
  *   - nothing is drawn, and nothing is requested, until a unit is configured
- *   - nothing for somebody with fewer than two decisions, or for Premium
+ *   - an ad from the first visit (no decisions needed), and Save-Data does not stop it
+ *   - nothing for Premium
+ *   - where the visitor has to opt in first: nothing until Accept all, and gone again after Essential only
+ *   - one slot under every section but the questions and Profile (which has its own)
  *   - none in the decide flow, a game, the answer or the reward
  *   - one slot per screen, drawn only once it is near the viewport
  *   - the right size for the width, and a label that offers the way out
@@ -93,22 +96,25 @@ if (!pw) { console.error('Playwright is not available on this machine; nothing d
 const { chromium } = pw.default || pw
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
 
-async function open({ width = 1280, height = 800, decisions = 0, premium = false } = {}) {
+async function open({ width = 1280, height = 800, decisions = 0, premium = false, askFirst = false, consent = null, saveData = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce', hasTouch: width < 700, isMobile: width < 700 })
   const page = await ctx.newPage()
   page.on('pageerror', (e) => { console.log('PAGEERROR ' + e.message); fails += 1 })
   // Playwright tries the most recently added route first, so the specific one goes last.
   await page.route(/\/api\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }))
+  await page.route(/\/api\/region/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ askFirst }) }))
   await page.route(/\/api\/premium-status/, (r) => r.fulfill({
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ signedIn: premium, hasPremium: premium, username: premium ? 'tester' : '', userId: premium ? 'u1' : null }),
   }))
-  await page.addInitScript(([k, n]) => {
+  await page.addInitScript(([k, n, c, sd]) => {
     if (window.top !== window) return // the ad's own frame: no storage there, by design
+    if (c && !localStorage.getItem('m45-consent')) localStorage.setItem('m45-consent', c)
+    if (sd) Object.defineProperty(navigator, 'connection', { value: { saveData: true }, configurable: true })
     if (n && !localStorage.getItem(k)) localStorage.setItem(k, JSON.stringify({ decisions: n, onboarded: true, langAsked: true }))
     window.__ad = []
     window.addEventListener('message', (e) => { if (e.data && e.data.fakeAd) window.__ad.push(e.data.fakeAd) })
-  }, [KEY, decisions])
+  }, [KEY, decisions, consent, saveData])
   await page.goto(APP, { waitUntil: 'load' })
   await page.waitForTimeout(800)
   for (let i = 0; i < 6 && (await page.locator('#welcome').isVisible()); i++) {
@@ -138,11 +144,37 @@ configured = false
 /* ------------------------------------------------ configured */
 configured = true
 {
-  const page = await open({ decisions: 1 })
-  await go(page, 'dishes')
-  ok('before two decisions: no ad in the list', (await frames(page)).length === 0)
-  await go(page, 'profile')
-  ok('before two decisions: none on the profile either', (await frames(page)).length === 0)
+  // From the first visit: no decisions finished at all, and the browser asks to save data.
+  const page = await open({ decisions: 0, saveData: true })
+  await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
+  ok('with no decisions finished and Save-Data on, an ad is still drawn', (await frames(page)).length >= 2, JSON.stringify(await frames(page)))
+  ok('and the cookie notice is there to change that', await page.locator('.consent:not([hidden])').count() === 1)
+  await page.context().close()
+}
+{
+  // Where the law says to ask first.
+  adRequests.length = 0
+  const page = await open({ decisions: 0, askFirst: true })
+  await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
+  ok('opt-in region: nothing is drawn before the visitor has said yes', (await frames(page)).length === 0)
+  ok('and nothing is requested from the network', adRequests.length === 0, adRequests.join(', '))
+  ok('the two buttons are equally easy to reach', await page.locator('.consent [data-c="all"]').isVisible() && await page.locator('.consent [data-c="essential"]').isVisible())
+  adRequests.length = 0
+  await page.locator('.consent [data-c="all"]').click(); await page.waitForTimeout(1200)
+  ok('Accept all draws the ads, with no reload', (await frames(page)).length >= 2, JSON.stringify(await frames(page)))
+  ok('and the notice goes away', await page.locator('.consent:not([hidden])').count() === 0)
+  await page.evaluate(() => Consent.show()); await page.waitForTimeout(200)
+  await page.locator('.consent [data-c="essential"]').click(); await page.waitForTimeout(500)
+  ok('taking it back removes the ads from the page at once', (await frames(page)).length === 0, JSON.stringify(await frames(page)))
+  ok('and the choice is kept for next time', await page.evaluate(() => localStorage.getItem('m45-consent') === 'essential'))
+  await page.context().close()
+}
+{
+  // A region that cannot be told is treated as opt-in, and so is a failed answer.
+  const page = await open({ decisions: 0, askFirst: true, consent: 'essential' })
+  await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(700)
+  ok('an earlier "Essential only" is respected on the next visit', (await frames(page)).length === 0)
+  ok('and the notice does not nag', await page.locator('.consent:not([hidden])').count() === 0)
   await page.context().close()
 }
 {
@@ -287,13 +319,36 @@ async function chatScenario({ left, premium = false, claimsLeft = 3 }) {
 }
 
 {
-  // The sections that must never carry one.
-  const page = await open({ decisions: 5 })
-  for (const v of ['decide', 'menu', 'nearby', 'planner', 'kitchen', 'scan', 'chat', 'news', 'radio', 'daily', 'help']) {
+  // Every section but the questions and Profile has one under it; the questions have none.
+  const page = await open({ decisions: 0 })
+  for (const v of ['nearby', 'menu', 'planner', 'kitchen', 'scan', 'chat', 'news', 'radio', 'daily', 'help', 'dishes']) {
     await go(page, v)
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(250)
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(500)
+    const shown = await page.evaluate(() => { const s = document.getElementById('view-ad'); return { hidden: s.hidden, frames: s.querySelectorAll('iframe').length } })
+    ok(`${v}: a cluster of two or three sits under the section`, !shown.hidden && shown.frames >= 2 && shown.frames <= 3, JSON.stringify(shown))
   }
-  ok('no other section draws an ad', (await frames(page)).length === 0, JSON.stringify(await frames(page)))
+  await go(page, 'decide')
+  ok('decide: the slot is gone', await page.evaluate(() => document.getElementById('view-ad').hidden))
+  await go(page, 'profile'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
+  ok('profile: only its own cluster, not a second one', await page.evaluate(() => document.getElementById('view-ad').hidden && document.querySelectorAll('#profile-ad iframe').length >= 2))
+  await page.context().close()
+}
+{
+  // The front page.
+  const page = await open({ decisions: 0 })
+  // Scrolled the way a person does, so each slot is passed on the way down.
+  for (let y = 0; y < 6000; y += 500) { await page.evaluate((y) => { document.getElementById('landing').scrollTop = y }, y); await page.waitForTimeout(120) }
+  await page.waitForTimeout(900)
+  const n = await page.evaluate(() => ({ a: document.querySelectorAll('#landing-ad-a iframe').length, b: document.querySelectorAll('#landing-ad-b iframe').length }))
+  ok('the front page has a cluster in the middle and one at the end', n.a >= 2 && n.b >= 2, JSON.stringify(n))
+  await page.context().close()
+}
+{
+  // Premium: none anywhere, on any of them.
+  const page = await open({ decisions: 0, premium: true })
+  await page.waitForTimeout(500)
+  for (const v of ['nearby', 'chat', 'dishes', 'profile']) { await go(page, v); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(300) }
+  ok('Premium: no frame on any section', (await frames(page)).length === 0 && await page.evaluate(() => [...document.querySelectorAll('.ad-wrap')].every((e) => e.offsetHeight === 0)))
   await page.context().close()
 }
 

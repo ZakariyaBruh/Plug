@@ -61,6 +61,7 @@ async function session(width, height) {
   const errors = []
   page.on('pageerror', (e) => { errors.push(e.message); console.log('PAGEERROR ' + e.message) })
   await page.route(/\/api\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }))
+  await page.addInitScript(() => { if (window.top === window) localStorage.setItem('m45-consent', 'essential') })
   await page.addInitScript(() => { if (window.top === window) localStorage.setItem('whatShouldIEat.v1', JSON.stringify({ decisions: 3, onboarded: true, langAsked: true })) })
   await page.goto(APP, { waitUntil: 'load' })
   await page.waitForTimeout(900)

@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
-import { ADS_AFTER_DECISIONS, ADS_ON, adCluster, type AdUnit } from '#/lib/site'
+import { useConsentAllowed } from '#/lib/consent-client'
+import { ADS_ON, adCluster, type AdUnit } from '#/lib/site'
 
 /*
- * A SMALL CLUSTER OF ADS, WHERE IT CANNOT HURT ANYTHING, AND ONLY WHEN IT HAS
- * BEEN EARNED.
+ * A SMALL CLUSTER OF ADS, FROM THE FIRST VISIT, NEVER FOR A PREMIUM MEMBER.
  *
  * See ADS_ON in lib/site.ts for the decision, what stays out and the rules this
  * follows. In short it shows nothing at all until a unit is configured, nothing
- * to a Premium member, nothing to somebody who has not yet finished a couple of
- * decisions, and nothing until it is nearly on screen — so a visitor who never
- * scrolls to it never loads it.
+ * to a Premium member, nothing where the visitor has to opt in first and has not
+ * (lib/consent.ts), and nothing until it is nearly on screen — so a visitor who
+ * never scrolls to it never loads it. It used to wait for a couple of finished
+ * decisions and to step aside for Save-Data; the owner chose neither.
  *
  * `placement` is where it sits, and adCluster() decides which two or three
  * banners that means at this width:
@@ -42,18 +43,6 @@ export function adHtml(unit: AdUnit): string {
   )
 }
 
-// The game and this site share an origin, so its own counter says how many
-// decisions this browser has finished.
-function decisionsDone(): number {
-  try {
-    const raw = window.localStorage.getItem('whatShouldIEat.v1')
-    const n = raw ? Number((JSON.parse(raw) as { decisions?: number }).decisions) : 0
-    return Number.isFinite(n) ? n : 0
-  } catch {
-    return 0
-  }
-}
-
 export function AdSlot({
   placement,
   premium = false,
@@ -66,9 +55,11 @@ export function AdSlot({
 }) {
   const box = useRef<HTMLDivElement>(null)
   const [units, setUnits] = useState<AdUnit[]>([])
+  const allowed = useConsentAllowed()
 
   useEffect(() => {
-    if (!ADS_ON || premium || decisionsDone() < ADS_AFTER_DECISIONS) return
+    // Taken back (or never given): nothing stays on the page.
+    if (!ADS_ON || premium || allowed !== true) { setUnits([]); return }
     const el = box.current
     if (!el) return
     const choose = () => setUnits(adCluster(placement, el.clientWidth))
@@ -86,7 +77,7 @@ export function AdSlot({
     )
     seen.observe(el)
     return () => seen.disconnect()
-  }, [placement, premium])
+  }, [placement, premium, allowed])
 
   if (!ADS_ON || premium) return null
 

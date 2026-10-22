@@ -44,6 +44,7 @@ import { Route as ApiPlannerAiRouteImport } from './routes/api/planner-ai'
 import { Route as ApiPremiumStatusRouteImport } from './routes/api/premium-status'
 import { Route as ApiRadioRouteImport } from './routes/api/radio'
 import { Route as ApiRecipeImportRouteImport } from './routes/api/recipe-import'
+import { Route as ApiRegionRouteImport } from './routes/api/region'
 import { Route as ApiScanRouteImport } from './routes/api/scan'
 import { Route as ApiSuggestRouteImport } from './routes/api/suggest'
 import { Route as ApiTriviaRouteImport } from './routes/api/trivia'
@@ -237,6 +238,11 @@ const ApiRecipeImportRoute = ApiRecipeImportRouteImport.update({
   path: '/api/recipe-import',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiRegionRoute = ApiRegionRouteImport.update({
+  id: '/api/region',
+  path: '/api/region',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiScanRoute = ApiScanRouteImport.update({
   id: '/api/scan',
   path: '/api/scan',
@@ -359,6 +365,7 @@ export interface FileRoutesByFullPath {
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/radio': typeof ApiRadioRoute
   '/api/recipe-import': typeof ApiRecipeImportRoute
+  '/api/region': typeof ApiRegionRoute
   '/api/scan': typeof ApiScanRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/trivia': typeof ApiTriviaRoute
@@ -413,6 +420,7 @@ export interface FileRoutesByTo {
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/radio': typeof ApiRadioRoute
   '/api/recipe-import': typeof ApiRecipeImportRoute
+  '/api/region': typeof ApiRegionRoute
   '/api/scan': typeof ApiScanRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/trivia': typeof ApiTriviaRoute
@@ -468,6 +476,7 @@ export interface FileRoutesById {
   '/api/premium-status': typeof ApiPremiumStatusRoute
   '/api/radio': typeof ApiRadioRoute
   '/api/recipe-import': typeof ApiRecipeImportRoute
+  '/api/region': typeof ApiRegionRoute
   '/api/scan': typeof ApiScanRoute
   '/api/suggest': typeof ApiSuggestRoute
   '/api/trivia': typeof ApiTriviaRoute
@@ -524,6 +533,7 @@ export interface FileRouteTypes {
     | '/api/premium-status'
     | '/api/radio'
     | '/api/recipe-import'
+    | '/api/region'
     | '/api/scan'
     | '/api/suggest'
     | '/api/trivia'
@@ -578,6 +588,7 @@ export interface FileRouteTypes {
     | '/api/premium-status'
     | '/api/radio'
     | '/api/recipe-import'
+    | '/api/region'
     | '/api/scan'
     | '/api/suggest'
     | '/api/trivia'
@@ -632,6 +643,7 @@ export interface FileRouteTypes {
     | '/api/premium-status'
     | '/api/radio'
     | '/api/recipe-import'
+    | '/api/region'
     | '/api/scan'
     | '/api/suggest'
     | '/api/trivia'
@@ -687,6 +699,7 @@ export interface RootRouteChildren {
   ApiPremiumStatusRoute: typeof ApiPremiumStatusRoute
   ApiRadioRoute: typeof ApiRadioRoute
   ApiRecipeImportRoute: typeof ApiRecipeImportRoute
+  ApiRegionRoute: typeof ApiRegionRoute
   ApiScanRoute: typeof ApiScanRoute
   ApiSuggestRoute: typeof ApiSuggestRoute
   ApiTriviaRoute: typeof ApiTriviaRoute
@@ -952,6 +965,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRecipeImportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/region': {
+      id: '/api/region'
+      path: '/api/region'
+      fullPath: '/api/region'
+      preLoaderRoute: typeof ApiRegionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/scan': {
       id: '/api/scan'
       path: '/api/scan'
@@ -1121,6 +1141,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPremiumStatusRoute: ApiPremiumStatusRoute,
   ApiRadioRoute: ApiRadioRoute,
   ApiRecipeImportRoute: ApiRecipeImportRoute,
+  ApiRegionRoute: ApiRegionRoute,
   ApiScanRoute: ApiScanRoute,
   ApiSuggestRoute: ApiSuggestRoute,
   ApiTriviaRoute: ApiTriviaRoute,

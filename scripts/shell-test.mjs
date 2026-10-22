@@ -153,7 +153,8 @@ for (const [name, key] of [['the 160x600 skyscraper', 'c34df66c2852fa155381e97d4
   check(`${name} stays out of both tables`, !siteTs.includes(key) && !configJs.includes(key))
 }
 check('the smart link is the same in the site and the game', (siteTs.match(/SMARTLINK_URL = '([^']+)'/) || [])[1] === (configJs.match(/smartlink: '([^']+)'/) || [])[1] && !!(siteTs.match(/SMARTLINK_URL = '([^']+)'/) || [])[1])
-check('the decisions threshold is the same in both', (siteTs.match(/ADS_AFTER_DECISIONS = (\d+)/) || [])[1] === (configJs.match(/adsAfterDecisions: (\d+)/) || [])[1])
+check('the decisions threshold is the same in both, and it is zero: ads from the first visit', (siteTs.match(/ADS_AFTER_DECISIONS = (\d+)/) || [])[1] === (configJs.match(/adsAfterDecisions: (\d+)/) || [])[1] && (configJs.match(/adsAfterDecisions: (\d+)/) || [])[1] === '0')
+check('nothing in the ads code steps aside for Save-Data', !/saveData|save-data/i.test((adsJs + adSlot).replace(/\/\*[\s\S]*?\*\//g, '')))
 
 // The sandbox is the whole safety argument; the two files that build a frame must not widen it.
 for (const [name, src] of [['js/ads.js', adsJs], ['AdSlot.tsx', adSlot]]) {
@@ -168,14 +169,18 @@ check('no Social Bar or Smartlink is implemented anywhere', !/social.?bar|smartl
 // Where a slot may be armed. Anything else (a question, a game, the answer, the
 // reward) is a moment the persuasion notes say gets care, so it is a failure.
 const mounts = [...app.matchAll(/Ads\.mount\(([^,]+),\s*'(\w+)'/g)].map((m) => m[1].trim())
-check('the game arms exactly two slots, the dish list and the profile', mounts.length === 2 && mounts.some((m) => m === 'adItem') && mounts.some((m) => m.includes('profile-ad')), mounts.join(' | '))
-const pages = ['faq', 'how-it-works', 'info', 'eat.index']
+const SLOTS = ['adItem', "$('profile-ad')", "$('landing-ad-a')", "$('landing-ad-b')"]
+check('the game arms the dish list, the profile and the front page, and nothing else', mounts.length === SLOTS.length && SLOTS.every((m) => mounts.includes(m)), mounts.join(' | '))
+check('and every other section gets its slot from one place, which skips the questions and Profile',
+  /function adForView\(name\)[\s\S]*?name === 'decide' \|\| name === 'profile'[\s\S]*?Ads\.refresh\(slot, 'end', \{ premium: isPlus\(\) \}\)/.test(app))
+check('every ad call in the game passes Premium', [...app.matchAll(/Ads\.(?:mount|refresh)\([^\n]*/g)].every((m) => /premium: isPlus\(\)/.test(m[0])))
+const pages = ['faq', 'how-it-works', 'info', 'eat.index', 'index', 'eat.$dish']
 for (const f of readdirSyncSafe(join(root, '..', '..', 'src/routes'))) {
   const src = readFileSync(join(root, '..', '..', 'src/routes', f), 'utf8')
   const has = /<AdSlot\b/.test(src)
   const name = f.replace(/\.tsx?$/, '')
   if (pages.includes(name)) check(`/${name} has its one slot, with the viewer's Premium status`, (src.match(/<AdSlot\b/g) || []).length === 1 && /premium=\{viewer\.hasPremium\}/.test(src))
-  else if (/\.(tsx)$/.test(f)) check(`${name} carries no ad`, !has, 'ads belong only on the four reading pages')
+  else if (/\.(tsx)$/.test(f)) check(`${name} carries no ad`, !has, 'ads belong only on the reading pages: never the checkout, premium, account or order pages')
 }
 
 // The privacy page and the unit table are driven by the same switch.
@@ -183,10 +188,29 @@ const privacy = readFileSync(join(root, '..', '..', 'src/routes/privacy.tsx'), '
 check('the privacy page’s answer, section and third-party row all read ADS_ON',
   (privacy.match(/ADS_ON/g) || []).length >= 5 && /a: ADS_ON \? 'Yes' : 'No'/.test(privacy))
 
+// Consent. Ads wait for it where it is required, and ads are never called essential.
+const consentJs = read('js/consent.js')
+const consentBar = readFileSync(join(root, '..', '..', 'src/components/ConsentBar.tsx'), 'utf8')
+const consentLib = readFileSync(join(root, '..', '..', 'src/lib/consent.ts'), 'utf8')
+const consentClient = readFileSync(join(root, '..', '..', 'src/lib/consent-client.ts'), 'utf8')
+check('the app and the site store the choice under the same key', (consentJs.match(/KEY = '([^']+)'/) || [])[1] === (consentClient.match(/CONSENT_KEY = '([^']+)'/) || [])[1])
+check('ads.js waits for consent before drawing', /Consent\.ready/.test(adsJs) && /Consent\.onChange/.test(adsJs))
+check('AdSlot waits for consent before drawing', /useConsentAllowed\(\)/.test(adSlot) && /allowed !== true/.test(adSlot))
+check('a country that cannot be told is asked, not assumed', /c === 'XX' \|\| c === 'T1'/.test(consentLib) && /settle\(true\)/.test(consentJs))
+for (const [name, text] of [['js/consent.js', consentJs], ['ConsentBar', consentBar]]) {
+  const body = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<[^>]+>/g, ' ')
+  const says = body.split(/[.;]/).filter((x) => /essential/i.test(x) && !/essential only/i.test(x))
+  check(`${name}: no sentence puts advertising or analytics under "essential"`,
+    says.length > 0 && says.every((x) => !/advertis|adsterra|\bads\b|analytics|clarity/i.test(x)), says.join(' || '))
+  check(`${name}: refusing is as easy as accepting (Accept all and Essential only both there)`, /Accept all/.test(text) && /Essential only/.test(text))
+}
+check('GA4 and replay are added only after consent', /allowed !== true\) return/.test(readFileSync(join(root, '..', '..', 'src/routes/__root.tsx'), 'utf8')) && !/googletagmanager[^`]*<\/script>/.test(readFileSync(join(root, '..', '..', 'src/routes/__root.tsx'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').split('Analytics')[0]))
+
 // A new game file has to be listed in every place the build tracks them.
 for (const [label, file] of [['vite.config.ts', 'vite.config.ts'], ['routes/decide/$.ts', 'src/routes/decide/$.ts'], ['sw.js', 'public/decide/sw.js']]) {
-  check(`js/ads.js is tracked in ${label}`, readFileSync(join(root, '..', '..', file), 'utf8').includes('js/ads.js'))
+  for (const js of ['js/ads.js', 'js/consent.js']) check(`${js} is tracked in ${label}`, readFileSync(join(root, '..', '..', file), 'utf8').includes(js))
 }
+check('index.html loads js/consent.js before js/ads.js', html.indexOf('<script src="js/consent.js">') > 0 && html.indexOf('<script src="js/consent.js">') < html.indexOf('<script src="js/ads.js">'))
 check('index.html loads js/ads.js after config.js', html.indexOf('<script src="js/config.js">') > 0 && html.indexOf('<script src="js/ads.js">') > html.indexOf('<script src="js/config.js">'))
 
 console.log(`\n${pass} passed, ${fail} failed`)

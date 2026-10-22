@@ -83,6 +83,8 @@ async function open(width, height, { xl = false, hash = '', motion = false } = {
   page.on('pageerror', (e) => { errors.push(e.message); console.log('PAGEERROR ' + e.message) })
   // The app's /api calls have nothing to talk to here; an empty answer is enough.
   await page.route(/\/api\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }))
+  // The cookie notice is its own test (ads-drive); here it would only sit over the buttons.
+  await page.addInitScript(() => { if (window.top === window) localStorage.setItem('m45-consent', 'essential') })
   if (xl) await page.addInitScript(() => localStorage.setItem('m45-text', 'xl'))
   await page.goto(APP + hash, { waitUntil: 'load' })
   await page.waitForTimeout(700)

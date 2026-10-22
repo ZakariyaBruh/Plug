@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { ADS_AFTER_DECISIONS, ADS_ON, GA4_ON, REPLAY_ON, SITE_URL, WHOP_PAGE_URL, pageHead } from '#/lib/site'
+import { openConsent } from '#/lib/consent-client'
+import { ADS_ON, GA4_ON, REPLAY_ON, SITE_URL, WHOP_PAGE_URL, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
@@ -199,6 +200,17 @@ const SECTIONS: Section[] = [
         : []),
     ],
   },
+  {
+    id: 'cookies',
+    heading: 'Cookies and your choice',
+    lede: 'Essential ones are always on and are not a choice. Advertising and analytics are your choice, and they are never called essential.',
+    body: [
+      'Essential: this site and the app keep your settings, your progress and your saved dishes in your browser, and, if you sign in, the two Whop cookies described above. The app cannot do what you asked without them, so they are not offered as a choice. Your cookie choice itself is stored the same way.',
+      'Not essential, and yours to decide: the advertising network (Adsterra) and the analytics tags (Google Analytics and Microsoft Clarity) set their own cookies. We do not file them under “essential”, because they are not.',
+      'Where you have to opt in first (the EU, the EEA, the UK, Switzerland, and anywhere we cannot tell where you are), none of those load until you press “Accept all”. Elsewhere they run from your first visit and you can turn them off with “Essential only”. The banner is the same either way and refusing is exactly as easy as accepting.',
+      'You can change it at any time with the button at the top of this page, or “Cookie settings” at the foot of the app’s front page. Choosing “Essential only” after accepting takes the ads off the page straight away. What it cannot change: Whop, which hosts this site, adds its own page-view analytics to every page it serves, outside this app’s control; it is listed under everybody this app talks to, below.',
+    ],
+  },
   /*
    * Present only while an ad unit is actually configured. ADS_ON in lib/site.ts
    * is the one switch this section, the "is there advertising" card below and
@@ -212,9 +224,9 @@ const SECTIONS: Section[] = [
         {
           id: 'advertising',
           heading: 'The ads on this site',
-          lede: 'A few boxed, labelled banner ads from one ad network (Adsterra), two or three together. None for Premium members, none while you decide, and none until you have finished a couple of decisions.',
+          lede: 'Boxed, labelled banner ads from one ad network (Adsterra), two or three together, from your first visit. None for Premium members, none while you decide or play, and where the law says to ask first, none until you say yes.',
           body: [
-            `Where they are: the end of a few reading pages (the FAQ, how it works, the info page and the dish index), in the Dishes list, and at the bottom of your Profile in the app. Never while you are deciding, never on an answer or after you accept one, never in a game, and never on the Premium, checkout or account pages. There is one group on a screen, of two or three banners together, it loads only when you scroll close to it, and you will not see one until you have finished ${ADS_AFTER_DECISIONS} decisions. It does not load at all if your browser is set to save data. Premium removes them, and every group has a link saying so.`,
+            'Where they are: the end of nearly every screen in the app (Dishes, Nearby, Ask, News, the planner, recipes, scanner, TV and radio, the menu, Daily, and Profile), the front page, and the end of the site’s reading pages (the home page, the FAQ, how it works, the info page, the dish index and each dish). Never while you are deciding, never on an answer or after you accept one, never in a game, and never on the Premium, checkout or account pages. There is one group on a screen, of two or three banners together, and it loads only when you scroll close to it. Premium removes them, and every group has a link saying so.',
             'We do not choose or review individual ads. Like any ad network, Adsterra runs an auction and shows whatever wins it, so we cannot promise that every ad will be for something we would put in front of you — and for an app with halal and kosher rules built in, that is worth saying plainly. If one is unsuitable, tell us on the FAQ page and we will take it to the network.',
             'What is limited is what an ad is allowed to do, not what it is allowed to say. Every ad renders inside a sandboxed frame with no access to this page: it cannot read this site’s cookies or local storage, cannot read or change anything else on the page, and cannot redirect your tab by itself. Only a real click on the ad can open a new tab, as with any link.',
             'What the sandbox cannot stop: the ad network itself sees your IP address and browser when an ad loads, and may set its own cookies and use them to choose and measure ads. That is between you and Adsterra and covered by its privacy policy; it is the one place on this site where something can follow you off it, and it is why the answer to “is there cross-site tracking” below is no longer a plain no.',
@@ -366,6 +378,15 @@ function PrivacyPage() {
         <p className="mt-4 text-lg text-[var(--text-dim)]">
           The four answers first, then how each one works, then everybody this app talks to.
           Written from what the code actually does and checked against it on {REVIEWED}.
+        </p>
+        <p className="mt-4">
+          <button
+            type="button"
+            onClick={() => openConsent()}
+            className="rounded-full border border-[var(--border)] px-5 py-2 text-sm font-semibold hover:border-[var(--amber)]"
+          >
+            Change my cookie choice
+          </button>
         </p>
 
         {/* The answers, before anything that has to be read. */}
