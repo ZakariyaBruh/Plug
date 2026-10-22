@@ -7961,3 +7961,62 @@ body.is-premium .ad-wrap { display: none; }
 .more-ways-hint { grid-column: 1; }
 .more-ways-sum::after { grid-column: 2; grid-row: 1 / span 2; margin-left: 0; }
 .landing-stats li { white-space: nowrap; }
+
+
+/* ------------------------------------------------------- Play with Dot, again ---
+   The games were fine to play and looked like prototypes: a line of grey text
+   for a scoreboard, a plain list for a picker, a 340px stage on any screen. */
+.dg-hud {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s3);
+  width: min(100%, 460px); padding: .35rem .9rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 7%, transparent); border: 1px solid var(--line);
+}
+.dg-hud-main { font-family: var(--display); font-size: var(--t-md); font-weight: 600; letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.dg-hud-lives { color: #ff6b6b; letter-spacing: .12em; font-size: var(--t-base); }
+.dg-hud.is-bump .dg-hud-main { animation: dg-bump .28s var(--spring); }
+@keyframes dg-bump { 40% { transform: scale(1.14); color: var(--amber); } }
+@media (prefers-reduced-motion: reduce) { .dg-hud.is-bump .dg-hud-main { animation: none; } }
+
+/* Fill the screen the game has, not 340px of it. */
+.dg-canvas {
+  width: min(100%, 460px, calc((100dvh - 17rem) * var(--ar, .85)));
+  min-width: min(100%, 15rem);
+  border-color: color-mix(in srgb, var(--accent, var(--amber)) 45%, var(--hair-lit));
+  box-shadow: 0 18px 44px -22px var(--accent, var(--amber));
+}
+@media (max-width: 30rem) {
+  .dg { padding: 0; }
+  .dg-panel { width: 100%; height: 100dvh; max-height: 100dvh; border-radius: 0; border-width: 0; }
+  .dg-head { padding-top: max(var(--s3), env(safe-area-inset-top)); }
+  .dg-body { padding-bottom: max(var(--s4), env(safe-area-inset-bottom)); }
+}
+.dg-pause { min-width: 7rem; }
+
+/* The picker: each tile wears its own game's colours. */
+.dg-surprise { width: 100%; justify-content: center; padding: .8rem 1rem; font-size: var(--t-base); }
+.dg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); }
+.dg-card-btn {
+  --tile: #222; --tile-ink: var(--amber);
+  display: grid; align-content: start; justify-items: start; gap: .3rem; text-align: left; min-height: 9.5rem; padding: .85rem .9rem .8rem;
+  border: 1px solid color-mix(in srgb, var(--tile-ink) 35%, transparent); border-radius: var(--r-lg);
+  background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--tile-ink) 26%, transparent), transparent 62%),
+    linear-gradient(160deg, var(--tile), color-mix(in srgb, var(--tile) 55%, #000));
+  color: var(--ink); overflow: hidden;
+}
+.dg-card-btn:hover { border-color: var(--tile-ink); background:
+    radial-gradient(120% 90% at 100% 0%, color-mix(in srgb, var(--tile-ink) 38%, transparent), transparent 62%),
+    linear-gradient(160deg, var(--tile), color-mix(in srgb, var(--tile) 55%, #000)); }
+.dg-card-icon { font-size: 2.1rem; line-height: 1; filter: drop-shadow(0 4px 8px rgb(0 0 0 / .45)); transition: transform .3s var(--spring); }
+.dg-card-btn:hover .dg-card-icon { transform: scale(1.12) rotate(-6deg); }
+.dg-card-btn strong { font-family: var(--display); font-size: var(--t-base); letter-spacing: -.01em; }
+.dg-card-blurb { font-size: var(--t-xs); line-height: 1.4; color: rgb(255 255 255 / .72); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.dg-card-foot { align-self: end; margin-top: auto; padding-top: .35rem; font-size: var(--t-xs); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--tile-ink); display: flex; gap: .45rem; align-items: baseline; }
+.dg-card-stars { letter-spacing: .06em; }
+.dg-tag { display: none; }
+@media (min-width: 30.01rem) { .dg-panel { width: min(40rem, 100%); max-height: min(92dvh, 52rem); } .dg-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.dg-hud-solo {
+  width: min(100%, 460px); padding: .4rem .9rem; border-radius: 999px; text-align: center;
+  background: color-mix(in srgb, var(--ink) 7%, transparent); border: 1px solid var(--line);
+  font-family: var(--display); font-size: var(--t-base); font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--ink);
+}

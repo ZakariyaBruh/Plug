@@ -12641,19 +12641,34 @@
       { id: 'says', icon: '\u{1F9E0}', name: 'Dot Says', blurb: 'Watch the pads. Copy the pattern.' }
     ];
     var RUN = function () { return { arena: arenaGame, jump: jumpGame, merge: mergeGame, pop: popBubbles, match: matchGame, invade: invadeGame, cross: crossGame, stack: stackGame, spit: spitGame, says: simonGame }; };
+    // Each game's own colours, the same ones its stage is painted in, so a tile
+    // is a small picture of the game and not a line of text about it.
+    var TILE = {
+      arena: ['#4a1f17', '#ff6a4d'], jump: ['#17406b', '#4da3ff'], merge: ['#4b3a14', '#ffc94d'], pop: ['#2c1a52', '#b58cff'],
+      match: ['#4d1738', '#ff6fb1'], invade: ['#1d3a2a', '#5fd38d'], cross: ['#183b3f', '#4dd6d0'], stack: ['#2f2552', '#b48cff'],
+      spit: ['#1e3a29', '#8ae06a'], says: ['#43264d', '#ff8fe0']
+    };
     function menu() {
       stopGame();
       var s = screen();
       words(pickOne(['Pick a game. I will lose gracefully. Probably.', 'Games. My favourite thing after dishes.', 'Go on. Choose. I have all day.']), 'happy');
+      var bestAll = {}; try { bestAll = JSON.parse(localStorage.getItem('morsels-dot-best') || '{}') || {}; } catch (err) { /* fine */ }
+      var surprise = btn('Pick one for me', 'dg-btn is-main dg-surprise', function () { var g = pickOne(GAMES); RUN()[g.id](); });
+      s.appendChild(surprise);
       var grid = h('div', 'dg-grid');
       GAMES.forEach(function (g) {
         var card = h('button', 'dg-card-btn');
         card.type = 'button';
+        var c = TILE[g.id] || ['#222', '#e0a340'];
+        card.style.setProperty('--tile', c[0]); card.style.setProperty('--tile-ink', c[1]);
         card.appendChild(h('span', 'dg-card-icon', g.icon));
         card.appendChild(h('strong', '', g.name));
-        var bestAll = {}; try { bestAll = JSON.parse(localStorage.getItem('morsels-dot-best') || '{}') || {}; } catch (err) { /* fine */ }
-        if (bestAll[g.id]) card.appendChild(h('span', 'dg-tag', '\u2605 ' + bestAll[g.id]));
-        card.appendChild(h('span', 'fine', g.blurb));
+        card.appendChild(h('span', 'dg-card-blurb', g.blurb));
+        var best = bestAll[g.id];
+        var stars = best ? starsFor(g.id, best) : 0;
+        var foot = h('span', 'dg-card-foot', best ? 'Best ' + best : 'New');
+        if (best) foot.insertBefore(h('span', 'dg-card-stars', '\u2605\u2605\u2605'.slice(0, stars) + '\u2606\u2606\u2606'.slice(0, 3 - stars)), foot.firstChild).setAttribute('aria-hidden', 'true');
+        card.appendChild(foot);
         card.addEventListener('click', function () { Sound.tick(); RUN()[g.id](); });
         grid.appendChild(card);
       });
@@ -12730,10 +12745,14 @@
       cv.setAttribute('aria-label', opts.label);
       var g = cv.getContext('2d');
       g.scale(dpr, dpr);
-      var hud = h('p', 'dg-score', '');
+      var hudBar = h('div', 'dg-hud'), hud = h('span', 'dg-hud-main', ''), lifeEl = h('span', 'dg-hud-lives', '');
+      hudBar.appendChild(hud); hudBar.appendChild(lifeEl);
       var pauseBtn = h('button', 'dg-btn dg-pause', 'Pause');
       pauseBtn.type = 'button';
-      s.appendChild(hud); s.appendChild(cv);
+      var ACCENT = { arena: '#ff6a4d', jump: '#4da3ff', flap: '#8b9cff', stack: '#b48cff', run: '#ffb347', chop: '#9f8cff', spit: '#5fd38d' }[opts.id] || '#e0a340';
+      cv.style.setProperty('--ar', W / H);
+      cv.style.setProperty('--accent', ACCENT);
+      s.appendChild(hudBar); s.appendChild(cv);
       s.appendChild(h('p', 'fine', opts.how));
       s.appendChild(pauseBtn);
       var st = { W: W, H: H, g: g, cv: cv, score: 0, lives: opts.lives === undefined ? 3 : opts.lives, t: 0, over: false, paused: false, mouth: 'smile', mouthT: 0, fx: [], pops: [], shake: 0, count: opts.count === 0 ? 0 : 3, ptr: { x: W / 2, y: H / 2, down: false } };
@@ -12743,10 +12762,18 @@
       function togglePause() { if (st.over || st.count > 0) return; st.paused = !st.paused; pauseBtn.textContent = st.paused ? 'Resume' : 'Pause'; }
       pauseBtn.addEventListener('click', function () { togglePause(); });
       function hearts() { return st.lives > 0 ? new Array(st.lives + 1).join('♥ ').trim() : '—'; }
-      st.hud = function () { hud.textContent = (opts.hudText ? opts.hudText(st) : 'Score ' + st.score) + (opts.lives === 0 ? '' : ' · ' + hearts()); };
-      st.hurt = function () { if (st.over) return; try { if (navigator.vibrate) navigator.vibrate(40); } catch (err) { /* fine */ } st.lives--; st.mouth = 'sad'; st.mouthT = .5; st.shake = 9; Sound.bust(); Dot.mood(dotEl, 'sad', 700); if (st.lives <= 0) st.over = true; st.hud(); };
+      var hudWas = '';
+      st.hud = function () {
+        var text = opts.hudText ? opts.hudText(st) : 'Score ' + st.score;
+        hud.textContent = text;
+        lifeEl.textContent = opts.lives === 0 ? '' : hearts();
+        lifeEl.setAttribute('aria-label', st.lives + (st.lives === 1 ? ' life left' : ' lives left'));
+        if (text !== hudWas && hudWas && !reduceMotion) { hudBar.classList.remove('is-bump'); void hudBar.offsetWidth; hudBar.classList.add('is-bump'); }
+        hudWas = text;
+      };
+      st.hurt = function () { if (st.over) return; try { if (navigator.vibrate) navigator.vibrate(40); } catch (err) { /* fine */ } st.lives--; st.mouth = 'sad'; st.mouthT = .5; st.shake = 9; st.flash = 1; Sound.bust(); Dot.mood(dotEl, 'sad', 700); if (st.lives <= 0) st.over = true; st.hud(); };
       st.gain = function (n) { st.score += n; st.mouth = 'open'; st.mouthT = .25; Sound.climb(Math.min(14, st.score)); st.hud(); };
-      st.burst = function (x, y, color, n) { for (var i = 0; i < (n || 10); i++) { var a = Math.random() * 6.3, v = 40 + Math.random() * 160; st.fx.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: 0.5 + Math.random() * 0.4, c: color || '#e0a340' }); } };
+      st.burst = function (x, y, color, n) { for (var i = 0; i < (n || 10); i++) { var a = Math.random() * 6.3, v = 40 + Math.random() * 160; st.fx.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: 0.5 + Math.random() * 0.4, c: color || '#e0a340', r: 1.6 + Math.random() * 2.6 }); } };
       st.pop = function (x, y, text, color) { st.pops.push({ x: x, y: y, text: text, life: 0.9, c: color || '#fff' }); };
       st.on = function (target, ev, fn, o) { target.addEventListener(ev, fn, o); hooks.push([target, ev, fn, o]); };
       function point(e) { var r = cv.getBoundingClientRect(); st.ptr.x = (e.clientX - r.left) / r.width * W; st.ptr.y = (e.clientY - r.top) / r.height * H; }
@@ -12764,26 +12791,45 @@
         st.pops.forEach(function (p) { p.y -= 34 * dt; p.life -= dt; });
         st.pops = st.pops.filter(function (p) { return p.life > 0; });
         st.shake = Math.max(0, st.shake - dt * 30);
+        st.flash = Math.max(0, (st.flash || 0) - dt * 3.2);
+        if (st.goT > 0) st.goT -= dt;
         g.clearRect(0, 0, W, H);
         var grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, BG[0]); grad.addColorStop(1, BG[1]); g.fillStyle = grad; g.fillRect(0, 0, W, H);
+        // A soft light from above, so the stage has a direction rather than a flat fill.
+        var lite = g.createRadialGradient(W / 2, -H * .1, 0, W / 2, -H * .1, H * .9); lite.addColorStop(0, 'rgba(255,255,255,.10)'); lite.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = lite; g.fillRect(0, 0, W, H);
         g.fillStyle = 'rgba(255,255,255,.035)';
         bokeh.forEach(function (b) { if (!reduceMotion && !st.paused) { b.y -= b.v * dt; if (b.y < -30) { b.y = H + 30; b.x = Math.random() * W; } } g.beginPath(); g.arc(b.x, b.y, b.r, 0, 6.3); g.fill(); });
         g.save();
         g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 5; g.shadowOffsetY = 2;
         if (st.shake > 0.3 && !reduceMotion) g.translate((Math.random() - 0.5) * st.shake, (Math.random() - 0.5) * st.shake);
         opts.draw(st);
-        st.fx.forEach(function (p) { g.globalAlpha = Math.max(0, p.life * 1.6); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, 2.6, 0, 6.3); g.fill(); });
+        g.globalCompositeOperation = 'lighter';
+        st.fx.forEach(function (p) { g.globalAlpha = Math.max(0, p.life * 1.4); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, (p.r || 2.6) * (0.6 + p.life), 0, 6.3); g.fill(); });
+        g.globalCompositeOperation = 'source-over';
         g.globalAlpha = 1;
-        g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 15px sans-serif';
-        st.pops.forEach(function (p) { g.globalAlpha = Math.min(1, p.life * 2); g.fillStyle = p.c; g.fillText(p.text, p.x, p.y); });
+        g.textAlign = 'center'; g.textBaseline = 'middle';
+        st.pops.forEach(function (p) {
+          var k = Math.min(1, (0.9 - p.life) * 8); // springs in, then drifts up
+          g.save(); g.translate(p.x, p.y); g.scale(0.6 + 0.5 * Math.sin(Math.min(1, k) * 1.9), 0.6 + 0.5 * Math.sin(Math.min(1, k) * 1.9));
+          g.globalAlpha = Math.min(1, p.life * 2); g.font = 'bold 18px sans-serif'; g.lineWidth = 4; g.lineJoin = 'round'; g.strokeStyle = 'rgba(0,0,0,.55)'; g.strokeText(p.text, 0, 0); g.fillStyle = p.c; g.fillText(p.text, 0, 0); g.restore();
+        });
         g.globalAlpha = 1;
         g.restore();
+        if (st.flash > 0 && !reduceMotion) { g.fillStyle = 'rgba(255,60,50,' + (st.flash * 0.28) + ')'; g.fillRect(0, 0, W, H); }
         if (opts.lives > 1 && st.lives === 1 && !st.over) { var pulse = 0.12 + 0.08 * Math.sin(st.t * 6), vg = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.75); vg.addColorStop(0, 'rgba(255,0,0,0)'); vg.addColorStop(1, 'rgba(255,40,40,' + pulse + ')'); g.fillStyle = vg; g.fillRect(0, 0, W, H); }
         if (st.paused && !st.over) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 28px sans-serif'; g.fillText('Paused', W / 2, H / 2); }
         if (st.count > 0) {
-          g.fillStyle = 'rgba(0,0,0,.45)'; g.fillRect(0, 0, W, H);
-          g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 64px sans-serif'; g.fillText(String(Math.ceil(st.count)), W / 2, H / 2);
-          g.font = '14px sans-serif'; g.fillText('Get ready', W / 2, H / 2 + 52);
+          var frac = st.count - Math.floor(st.count);   // 1 -> 0 inside each second
+          g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(0, 0, W, H);
+          g.lineWidth = 5; g.strokeStyle = 'rgba(255,255,255,.14)'; g.beginPath(); g.arc(W / 2, H / 2, 54, 0, 6.3); g.stroke();
+          g.strokeStyle = ACCENT; g.lineCap = 'round'; g.beginPath(); g.arc(W / 2, H / 2, 54, -Math.PI / 2, -Math.PI / 2 + 6.2832 * (frac || 1)); g.stroke();
+          g.save(); g.translate(W / 2, H / 2); var pop = 1 + 0.25 * Math.pow(frac, 3); g.scale(pop, pop);
+          g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 60px sans-serif'; g.fillText(String(Math.ceil(st.count)), 0, 3); g.restore();
+          g.fillStyle = 'rgba(255,255,255,.8)'; g.textAlign = 'center'; g.font = '600 14px sans-serif'; g.fillText('Get ready', W / 2, H / 2 + 86);
+          st.goT = 0.55;
+        } else if (st.goT > 0 && !st.over) {
+          g.save(); g.translate(W / 2, H / 2); var gs = 1 + (0.55 - st.goT) * 1.6; g.scale(gs, gs); g.globalAlpha = Math.min(1, st.goT * 2.4);
+          g.fillStyle = ACCENT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '800 54px sans-serif'; g.fillText('GO!', 0, 0); g.restore(); g.globalAlpha = 1;
         }
         if (st.over) { cancelAnimationFrame(raf); setTimeout(function () { if (open) results(opts.id, st.score, opts.again, opts.notes); }, 1100); return; }
         raf = requestAnimationFrame(frame);
@@ -13156,7 +13202,7 @@
       words('Swap neighbours. Line up three. Chain reactions are encouraged.', 'happy');
       var N = 7, ICONS = shuffle(Data.ITEMS.map(function (d) { return d.icon; }).filter(function (v, i, a) { return a.indexOf(v) === i; })).slice(0, 6);
       var grid = [], els = [], score = 0, left = 60, busy = true, over = false, sel = null, combo = 0, timers = [];
-      var hud = h('p', 'dg-score', ''), board = h('div', 'dg-match');
+      var hud = h('p', 'dg-score dg-hud-solo', ''), board = h('div', 'dg-match');
       s.appendChild(hud); s.appendChild(board); s.appendChild(h('p', 'fine', 'Tap a dish, then a neighbour to swap. Four or more in a row add time.'));
       function later(f, ms) { timers.push(setTimeout(f, ms)); }
       function paint() { hud.textContent = 'Score ' + score + (combo > 1 ? ' · ×' + combo : '') + ' · ' + left + 's'; }
@@ -13288,7 +13334,7 @@
       words('Watch the pads. Then copy me. I will not make it easy.', 'happy');
       var PADS = [{ icon: '\u{1F355}', c: '#d9534f' }, { icon: '\u{1F35C}', c: '#e0a340' }, { icon: '\u{1F336}\u{FE0F}', c: '#5cb85c' }, { icon: '\u{1F366}', c: '#5bc0de' }];
       var seq = [], at = 0, accepting = false, over = false, timers = [];
-      var hud = h('p', 'dg-score', 'Round 0');
+      var hud = h('p', 'dg-score dg-hud-solo', 'Round 0');
       var grid = h('div', 'dg-pads');
       var pads = PADS.map(function (p, i) {
         var b = h('button', 'dg-pad', p.icon);

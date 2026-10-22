@@ -17,6 +17,7 @@
     "drive": "node scripts/play-drive.mjs",
     "navdrive": "node scripts/nav-drive.mjs",
     "adsdrive": "node scripts/ads-drive.mjs",
+    "dotsdrive": "node scripts/dots-drive.mjs",
     "retention": "node scripts/retention-drive.mjs"
   },
   "dependencies": {
