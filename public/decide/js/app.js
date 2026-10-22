@@ -11331,8 +11331,10 @@
       if (!node) return;
       mount(node);
       clearTimeout(node._t);
-      node.setAttribute('data-mood', 'idle');
-      void node.offsetWidth;
+      // Only the same mood twice in a row needs the restart (and the reflow it
+      // costs, which on a page this size is real); a different one starts itself. Before
+      // the page has finished loading there is nothing on screen to restart.
+      if (name !== 'idle' && document.readyState === 'complete' && node.getAttribute('data-mood') === name) { node.setAttribute('data-mood', 'idle'); void node.offsetWidth; }
       node.setAttribute('data-mood', name);
       if (hold !== 0) node._t = setTimeout(function () { node.setAttribute('data-mood', 'idle'); }, hold || 1400);
     }

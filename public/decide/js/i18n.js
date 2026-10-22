@@ -292,6 +292,12 @@ window.I18n = (function () {
   var seen = new WeakMap();      // text node -> { en, out }
   var seenAttr = new WeakMap();  // element -> { attr: { en, out } }
   var observer = null;
+  // English with nothing ever translated has nothing to do: every line would be
+  // looked up, found to need no change, and left alone. That walk (and the one the
+  // observer ran after every render) was most of this file's cost for the people
+  // who never leave English, which is most of them.
+  var everTranslated = false;
+  function idle() { return lang === 'en' && !everTranslated; }
   var ATTRS = ['placeholder', 'aria-label', 'title', 'alt'];
 
   var here = document.currentScript;
@@ -358,6 +364,7 @@ window.I18n = (function () {
     var trail = en.match(/\s*$/)[0];
     out = lead + out + trail;
     seen.set(node, { en: en, out: out });
+    everTranslated = true;
     if (node.nodeValue !== out) node.nodeValue = out;
   }
 
@@ -373,11 +380,13 @@ window.I18n = (function () {
       return;
     }
     rec[attr] = { en: en, out: out };
+    everTranslated = true;
     seenAttr.set(el, rec);
     if (cur !== out) el.setAttribute(attr, out);
   }
 
   function walk(root) {
+    if (idle()) return;
     if (root.nodeType === 3) return syncText(root);
     if (root.nodeType !== 1) return;
     var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
@@ -394,6 +403,7 @@ window.I18n = (function () {
   function watch() {
     if (observer || !window.MutationObserver) return;
     observer = new MutationObserver(function (records) {
+      if (idle()) return;
       records.forEach(function (r) {
         if (r.type === 'characterData') syncText(r.target);
         else if (r.type === 'attributes') syncAttr(r.target, r.attributeName);
