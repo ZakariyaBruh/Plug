@@ -544,6 +544,7 @@
       lives: 3, stars: [500, 1400, 3000], overText: 'Eaten.',
       notes: ['Chillies everywhere. I did warn you.', 'It was the onions. It is always the onions.', 'You were doing so well, and then you were not.'],
       hud: function (st) { return 'Wave ' + st.wave + '  ·  ' + st.score; },
+      __levelUp: function (st) { levelUp(st); },   // for the driver
       setup: function (st) {
         st.x = st.W / 2; st.y = st.H * 0.58; st.vx = 0; st.vy = 0; st.en = []; st.sh = []; st.gems = []; st.fl = []; st.fire = 0.4; st.wave = 1; st.waveT = 0; st.spawnT = 0.5;
         st.xp = 0; st.need = 5; st.lvl = 1; st.rate = 0.62; st.dmg = 1; st.multi = 1; st.pierce = 0; st.mag = 56; st.spd = 124; st.orbit = 0; st.oa = 0; st.choice = null; st.kills = 0; st.stick = null; st.banner = 1.6; st.sfx = 0; st.face = 'smile';
@@ -666,7 +667,7 @@
             sprite(g, 'knife', e.x, e.y, 38, (e.ang || 0) - 2.4 + 0.8 + 0.8);
           } else {
             g.save(); g.translate(e.x, e.y); g.scale(sq, 2 - sq);
-            sprite(g, K.spr, 0, 0, e.r * 2.5, e.hit > 0 ? Math.sin(st.t * 60) * 0.12 : 0);
+            sprite(g, K.spr, 0, 0, e.r * 3, e.hit > 0 ? Math.sin(st.t * 60) * 0.12 : 0);
             if (e.hit > 0) { g.globalCompositeOperation = 'source-atop'; }
             g.restore();
             if (e.max > 3 && e.hp < e.max) { var bw = e.r * 1.8; g.fillStyle = INK; g.fillRect(e.x - bw / 2 - 1, e.y - e.r - 12, bw + 2, 7); g.fillStyle = '#e4572e'; g.fillRect(e.x - bw / 2, e.y - e.r - 11, bw * Math.max(0, e.hp / e.max), 5); }

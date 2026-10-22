@@ -2085,7 +2085,7 @@
    * message does, and works with the app offline.
    *
    * One character for the question, one for the answer. The question is its
-   * index in the catalogue's own list, in base 36 — there are 28 questions, so
+   * index in the catalogue's own list, in base 36 — there are 33 questions (36 is the most one character can hold; shell-test fails past it), so
    * one character covers it with room to spare.
    */
   var ANSWER_CHARS = { yes: 'y', no: 'n', either: 'e', neither: 'x' };
@@ -11413,7 +11413,7 @@
    *   answering  it commits: yes to a drink and Dot melts into a puddle; no to
    *              sweet and it gets salted; yes to quick and it dashes off.
    *
-   * One spec per question per reply, in the table below (28 questions, and the
+   * One spec per question per reply, in the table below (all 33 questions, and the
    * middle reply where a question has one). It is decoration: aria-hidden, and
    * under reduced motion it keeps the colour change and nothing else.
    * Animations are Web Animations on the body, so they stack over the mood
@@ -11477,7 +11477,13 @@
       carby:     { y: { a: 'puff', t: C.bread, f: 'crumbs', m: 'love' }, n: { a: 'shrink', t: C.leaf, f: 'leaf', m: 'happy' } },
       cheap:     { y: { a: 'shrink', t: C.mint, f: 'coins', m: 'happy' }, n: { a: 'hop', t: C.gold, f: 'coins spark', m: 'celebrate' } },
       indulgent: { y: { a: 'puff', t: C.gold, f: 'spark hearts coins', m: 'celebrate' }, n: { a: 'sway', t: C.mint, f: '', m: 'happy' } },
-      veg:       { y: { a: 'grow', t: C.leaf, f: 'leaf spark', m: 'happy' }, n: { a: 'chomp', t: C.meat, f: '', m: 'open' } }
+      veg:       { y: { a: 'grow', t: C.leaf, f: 'leaf spark', m: 'happy' }, n: { a: 'chomp', t: C.meat, f: '', m: 'open' } },
+      // the five asked last
+      beef:      { y: { a: 'chomp', t: C.meat, f: 'cutlery', m: 'open' }, n: { a: 'shake', t: C.grey, f: '', m: 'shrug' } },
+      pork:      { y: { a: 'puff', t: C.pink, f: 'steam', m: 'happy' }, n: { a: 'shake', t: C.cream, f: '', m: 'shrug' } },
+      egg:       { y: { a: 'hop', t: C.sun, f: 'spark', m: 'happy' }, n: { a: 'stand', t: C.cream, f: '', m: 'happy' } },
+      dairy:     { y: { a: 'wobble', t: C.cream, f: 'drip hearts', m: 'love' }, n: { a: 'shrink', t: C.grey, f: '', m: 'shrug' } },
+      root:      { y: { a: 'grow', t: C.choc, f: 'crumbs', m: 'happy' }, n: { a: 'hop', t: C.leaf, f: 'leaf', m: 'happy' } }
     };
     var SHRUG = { a: 'tilt', t: '', f: '', m: 'shrug' };
 

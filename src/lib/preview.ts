@@ -10,7 +10,7 @@
  * public/decide (see routes/decide/$.ts), deliberately: plain scripts, its own
  * stylesheet, no build step, and a service worker in front of it. Importing it
  * here is not possible and reimplementing it would be worse than pointless —
- * the real one has twenty-eight questions, a taste model, dietary rules,
+ * the real one has thirty-three questions, a taste model, dietary rules,
  * snoozes, a bias prior and an explanation of what it let go and why. This is a
  * fifth of the questions over a fifth of the catalogue, with contradictions
  * counted the way the real one counts them and nothing else. It is a trailer.
@@ -33,7 +33,7 @@
  * build, for the same reason DISH_COUNT is. The last number on this site that
  * was written down and not checked said 112 for three intakes running.
  */
-export const REAL_QUESTIONS = 28
+export const REAL_QUESTIONS = 33
 
 /** The five the preview asks about. Real tags, real questions, real wording. */
 export type PreviewTag = 'sweet' | 'hot' | 'quick' | 'handheld' | 'crunchy'
@@ -63,7 +63,7 @@ export type Reply = 'yes' | 'no' | 'either'
 export type Answers = Partial<Record<PreviewTag, Reply>>
 
 /*
- * THE QUESTIONS, and why these five out of twenty-eight.
+ * THE QUESTIONS, and why these five out of thirty-three.
  *
  * Chosen by measurement rather than by taste. Every five-question subset of
  * the plausible tags was scored on two things: how many of the thirty-two

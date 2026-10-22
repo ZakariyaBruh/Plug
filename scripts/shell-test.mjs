@@ -194,6 +194,8 @@ const consentBar = readFileSync(join(root, '..', '..', 'src/components/ConsentBa
 const consentLib = readFileSync(join(root, '..', '..', 'src/lib/consent.ts'), 'utf8')
 const consentClient = readFileSync(join(root, '..', '..', 'src/lib/consent-client.ts'), 'utf8')
 check('the app and the site store the choice under the same key', (consentJs.match(/KEY = '([^']+)'/) || [])[1] === (consentClient.match(/CONSENT_KEY = '([^']+)'/) || [])[1])
+const zOf = (sel) => { const m = css.match(new RegExp('(?:^|\\n)' + sel.replace(/[.]/g, '\\.') + ' \\{[^}]*?z-index: (\\d+)')); return m ? Number(m[1]) : null }
+check('the cookie bar sits under the welcome screen, not over its Next button', zOf('.consent') !== null && zOf('.welcome') !== null && zOf('.consent') < zOf('.welcome'), `consent ${zOf('.consent')}, welcome ${zOf('.welcome')}`)
 check('ads.js waits for consent before drawing', /Consent\.ready/.test(adsJs) && /Consent\.onChange/.test(adsJs))
 check('AdSlot waits for consent before drawing', /useConsentAllowed\(\)/.test(adSlot) && /allowed !== true/.test(adSlot))
 check('a country that cannot be told is asked, not assumed', /c === 'XX' \|\| c === 'T1'/.test(consentLib) && /settle\(true\)/.test(consentJs))
@@ -205,6 +207,39 @@ for (const [name, text] of [['js/consent.js', consentJs], ['ConsentBar', consent
   check(`${name}: refusing is as easy as accepting (Accept all and Essential only both there)`, /Accept all/.test(text) && /Essential only/.test(text))
 }
 check('GA4 and replay are added only after consent', /allowed !== true\) return/.test(readFileSync(join(root, '..', '..', 'src/routes/__root.tsx'), 'utf8')) && !/googletagmanager[^`]*<\/script>/.test(readFileSync(join(root, '..', '..', 'src/routes/__root.tsx'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').split('Analytics')[0]))
+
+// Dot acts out every question: a spec for each question's tag, for both replies, and for
+// the middle one wherever the question has a middle. A question added without one is a
+// question where Dot just stands there, which is the thing this exists to prevent.
+const dataJs = read('js/data.js')
+const qStart = dataJs.indexOf('var QUESTIONS = ['), qBlock = dataJs.slice(qStart, dataJs.indexOf('\n  ];', qStart))
+const qLines = qBlock.split('\n').filter((l) => /^\s*\{[^}]*\btag: '[a-z]+'/.test(l))
+const stageBlock = app.slice(app.indexOf('var DotStage = (function'), app.indexOf('window.M45.stage = DotStage'))
+check('the questions are found', qLines.length >= 30, `found ${qLines.length}`)
+check('a shared result can still name each question in one base-36 character', qLines.length <= 36, `${qLines.length} questions`)
+for (const line of qLines) {
+  const tag = (line.match(/\btag: '([a-z]+)'/) || [])[1]
+  const spec = (stageBlock.match(new RegExp(`\\b${tag}:\\s+\\{ y: \\{[^\\n]*`)) || [''])[0]
+  const needsMiddle = /\bneither:/.test(line)
+  check(`Dot has a move for "${tag}", both ways${needsMiddle ? ' and in the middle' : ''}`, /\by: \{/.test(spec) && /\bn: \{/.test(spec) && (!needsMiddle || /\bm: \{ a:/.test(spec)), spec.slice(0, 80))
+}
+check('the stage is on the question screen, hidden from assistive tech', /id="q-stage"[^>]*aria-hidden="true"/.test(html))
+check('and the question hands it each new question and each reply', /DotStage\.ask\(q\.tag/.test(app) && /DotStage\.answer\(answeredTag, value\)/.test(app))
+
+// The games: loaded on demand, drawn rather than typed, and every sprite they name exists.
+const playJs = read('js/play.js')
+const spritesJs = read('js/sprites.js')
+const spriteNames = new Set([...spritesJs.matchAll(/^\s{4}([a-z]+): function \(g\)/gm)].map((m) => m[1]).concat(['dot']))
+check('the games are not loaded by index.html', !/js\/play\.js|js\/sprites\.js/.test(html))
+check('app.js fetches them on first use', /script\('js\/sprites\.js'\)/.test(app) && /script\('js\/play\.js'\)/.test(app))
+check('the games draw no emoji', !/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(playJs), 'a picture belongs in sprites.js, drawn')
+check('and no gradients or glow', !/createLinearGradient|createRadialGradient|shadowBlur|shadowColor/.test(playJs))
+const named = new Set([...playJs.matchAll(/\b(?:sprite\(g, |sprite\(g2, )'([a-z]+)'/g)].map((m) => m[1]))
+;[...playJs.matchAll(/\[\s*'([a-z]+)',\s*-?\d/g)].forEach((m) => named.add(m[1]))
+;[...playJs.matchAll(/(?:s|icon): '([a-z]+)'/g)].forEach((m) => named.add(m[1]))
+const missing = [...named].filter((n) => !spriteNames.has(n) && !['hit', 'back'].includes(n))
+check('every sprite the games name is drawn in sprites.js', missing.length === 0, missing.join(', '))
+check('there are ten games on the shelf', (playJs.match(/\bregister\(\{/g) || []).length === 10)
 
 // A new game file has to be listed in every place the build tracks them.
 for (const [label, file] of [['vite.config.ts', 'vite.config.ts'], ['routes/decide/$.ts', 'src/routes/decide/$.ts'], ['sw.js', 'public/decide/sw.js']]) {

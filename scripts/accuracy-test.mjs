@@ -63,7 +63,7 @@ const ITEMS = Data.ITEMS
 const ASKABLE = Data.QUESTIONS.map((q) => q.tag)
 
 /*
- * No two dishes may answer all 28 questions identically.
+ * No two dishes may answer all 33 questions identically.
  *
  * This is the one that is worth failing a build over, because it is not a
  * matter of degree: a pair like this makes one of the two unreachable however

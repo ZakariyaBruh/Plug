@@ -107,6 +107,37 @@ Seven places, and `scripts/shell-test.mjs` fails until all of them agree:
   "your streak ends tonight". The game stars and bests on the picker are the
   addition that fits.
 
+## More questions, Dot acting them out, and the games rebuilt
+
+- **The engine asks more, on purpose, and it measurably helps.** `scripts/accuracy-sweep.mjs`
+  plays the whole catalogue with an answerer who gets one reply in twelve wrong. Before: the
+  intended dish came first 43-48% of the time and was in the six on screen 63%, at ~10.8
+  questions. Now: 52-66% and 74-82%, at ~13 (a perfect answerer still lands 100% first, in 11).
+  Raising the minimum or the confidence alone moved nothing, because the game stopped asking
+  when only one dish was *consistent*, which a wrong answer makes the wrong dish. What changed:
+  (1) from the seventh question, questions and the stop are chosen on a *tolerant* belief, in
+  which contradicting a reply costs a dish a factor of 0.12 instead of a million, so the game
+  keeps asking what separates the leader from the dishes one wrong reply away; (2) five more
+  questions (beef, pork, egg, dairy, potato or root), asked only after six answers, from tags
+  dishes already carried; (3) minimum 8, 95% confidence, at most 24. The *ranking* is untouched:
+  a dish that contradicts nothing still beats one that does, so every diet promise holds.
+  Somebody who shrugs at everything is still let go at six. `accuracy-test` now gates the noisy
+  player too; `mood-test` is why the tolerant belief waits until question seven (it reordered the
+  opening and stopped asking what people came in with).
+- **Dot acts out every question.** A big Dot above the question (`DotStage` in app.js) imagines
+  each reply faintly while the question is up, then commits to the one you pick: yes to a drink
+  and it melts to a puddle, no to sweet and it gets salted, yes to quick and it dashes off. All 33
+  questions, both replies, and the middle where there is one; `shell-test` fails if a question has
+  no move. Web Animations on the body, SVG extras, nothing that can move the question around.
+- **Play with Dot, rebuilt as `js/play.js` + `js/sprites.js`, loaded on first use.** Ten games
+  with rulebooks (survivor with perks, a springy climb, a real-physics merge jar, a bubble
+  shooter with falling clusters, match-3 with specials, invaders with shields and a pot, an
+  endless lane crosser, a burger stacker, a wind-and-catapult spitter, a memory game with
+  backwards rounds), one hand of art (paper, one ink outline, flat colour, a hard shadow; no
+  emoji, gradients or glow, and `shell-test` fails on all three), a start card, countdown, real
+  pause, hit-stop and shake. The old file's CSS and code are gone.
+
+
 ## Decisions to know about
 
 - **The Premium pill used to pulse forever.** It now pulses twice, a moment after the

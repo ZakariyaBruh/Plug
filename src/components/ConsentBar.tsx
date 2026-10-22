@@ -28,7 +28,7 @@ export function ConsentBar() {
     <div
       role="region"
       aria-label="Cookies"
-      className="fixed inset-x-3 bottom-3 z-50 mx-auto grid max-w-3xl gap-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-card,#1b1b1d)] p-4 text-sm leading-relaxed text-[var(--text-dim)] shadow-2xl"
+      className="fixed inset-x-3 bottom-3 z-40 mx-auto grid max-w-3xl gap-3 rounded-2xl border border-[var(--border)] bg-[var(--bg-card,#1b1b1d)] p-4 text-sm leading-relaxed text-[var(--text-dim)] shadow-2xl"
     >
       <p>
         <b className="text-[var(--text)]">Cookies.</b> Essential ones remember your settings and progress in this browser;

@@ -7748,7 +7748,7 @@ body.is-premium .ad-wrap { display: none; }
    One bar, two buttons of the same weight: refusing is exactly as easy as
    accepting. Above the phone's tab bar, so it never sits under it. */
 .consent {
-  position: fixed; z-index: 90; left: var(--s3); right: var(--s3);
+  position: fixed; z-index: 56; left: var(--s3); right: var(--s3);
   bottom: calc(var(--s3) + env(safe-area-inset-bottom, 0px));
   display: grid; gap: var(--s3); padding: var(--s4); max-width: 46rem; margin-inline: auto;
   border: 1px solid var(--line-2); border-radius: var(--r-lg);
