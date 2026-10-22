@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
+import { AdSlot } from '#/components/AdSlot'
 import { JsonLd } from '#/components/JsonLd'
 import { DIET_FREE, DIET_FREE_WHY, DISH_COUNT, OFFER, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
@@ -99,6 +100,7 @@ function FaqPage() {
             </Link>
           </div>
         </section>
+        <AdSlot placement="end" premium={viewer.hasPremium} className="mx-auto max-w-3xl px-6 pb-12" />
       </main>
     </PageShell>
   )

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 import { PageShell } from '#/components/PageShell'
+import { AdSlot } from '#/components/AdSlot'
 import { loadViewer } from '#/lib/viewer'
 import { GamePreview } from '#/components/GamePreview'
 import { PlanPicker } from '#/components/PlanPicker'
@@ -347,6 +348,7 @@ function InfoPage() {
             </a>
           </div>
         </section>
+        <AdSlot placement="end" premium={viewer.hasPremium} className="mx-auto max-w-3xl px-6 pb-12" />
       </main>
     </PageShell>
   )

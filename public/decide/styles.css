@@ -7808,3 +7808,25 @@ html.vt-active .tabbar { view-transition-name: tabbar; }
   ::view-transition-group(tabbar) { animation: none; }
   ::view-transition-old(tabbar), ::view-transition-new(tabbar) { animation: none; mix-blend-mode: normal; }
 }
+
+
+/* ---------------------------------------------------------------- ads ---
+   Quiet, labelled, and gone entirely for a Premium member. Empty until a unit
+   fills it, and an empty slot takes no room: nothing here reserves space for an
+   ad that may not arrive. See js/ads.js for who sees one and where. */
+.ad-wrap { margin-top: var(--s7); text-align: center; }
+/* Rendered but flat, not display:none: a hidden element cannot be observed, so a
+   slot that was hidden until it was needed could never find out it was needed. */
+.ad-wrap:not(.is-filled) { height: 0; margin: 0; padding: 0; border: 0; overflow: hidden; }
+.ad-wrap iframe { display: block; margin: 0 auto; max-width: 100%; border: 0; }
+.ad-label {
+  margin: 0 0 var(--s2);
+  font-size: var(--t-xs);
+  color: var(--ink-3);
+}
+.ad-label a { color: inherit; text-underline-offset: .2em; }
+.ad-label a:hover { color: var(--amber); }
+/* Inside the Dishes list it is one row among the rest, set off by hairlines. */
+.ad-feed { list-style: none; }
+.ad-feed.is-filled { margin: 0; padding: var(--s4) 0; border-bottom: 1px solid var(--line); }
+body.is-premium .ad-wrap { display: none; }

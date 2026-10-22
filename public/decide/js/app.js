@@ -8495,8 +8495,26 @@
     });
 
     var grid = $('dish-grid');
-    grid.innerHTML = '';
-    matches.forEach(function (dish) {
+    /*
+     * One ad, in the list, because the bottom of four hundred and fifty rows is
+     * not somewhere anybody gets to. It is a single node that is never removed
+     * and never moved: this function runs on every filter tap and keystroke,
+     * and rebuilding the list around it (rather than emptying the list) is what
+     * keeps the ad from reloading, and being counted again, each time.
+     */
+    var adItem = $('dish-ad');
+    if (!adItem) {
+      adItem = document.createElement('li');
+      adItem.id = 'dish-ad';
+      adItem.className = 'ad-wrap ad-feed';
+    }
+    Array.prototype.slice.call(grid.children).forEach(function (child) {
+      if (child !== adItem) grid.removeChild(child);
+    });
+    if (adItem.parentNode !== grid) grid.appendChild(adItem);
+    // Only worth a slot in a list long enough to have somewhere to put it.
+    adItem.hidden = matches.length < 12;
+    matches.forEach(function (dish, at) {
       var li = document.createElement('li');
       var row = document.createElement('button');
       row.type = 'button';
@@ -8514,8 +8532,10 @@
         ? 'Struck off' : dish.blurb;
       row.addEventListener('click', function () { openSheet(dish); });
       li.appendChild(row);
-      grid.appendChild(li);
+      // The first eight rows go above the ad, the rest below it.
+      if (at < 8) grid.insertBefore(li, adItem); else grid.appendChild(li);
     });
+    if (typeof Ads !== 'undefined') Ads.mount(adItem, 'inline', { premium: isPlus(), decisions: progress.state.decisions });
 
     $('dish-empty').hidden = matches.length > 0;
     $('dish-count-label').textContent = matches.length === Data.ITEMS.length
@@ -8825,6 +8845,9 @@
     var level = progress.level();
     var state = progress.state;
 
+    // The end of the screen that is read to the bottom. A no-op until a unit is
+    // configured, and every time after the first.
+    if (typeof Ads !== 'undefined') Ads.mount($('profile-ad'), 'end', { premium: isPlus(), decisions: progress.state.decisions });
 
     $('profile-name').textContent = level.name;
     $('profile-xp').textContent = state.xp;

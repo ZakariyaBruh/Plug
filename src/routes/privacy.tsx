@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 import { PageShell } from '#/components/PageShell'
-import { GA4_ON, REPLAY_ON, SITE_URL, WHOP_PAGE_URL, pageHead } from '#/lib/site'
+import { ADS_AFTER_DECISIONS, ADS_ON, GA4_ON, REPLAY_ON, SITE_URL, WHOP_PAGE_URL, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
 
 /*
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/privacy')({
 })
 
 /** Last time the wording was reviewed against the code. */
-const REVIEWED = '14 October 2026'
+const REVIEWED = '22 October 2026'
 
 /*
  * `lede` is the section's answer, in one sentence, at full brightness. `body`
@@ -179,7 +179,14 @@ const SECTIONS: Section[] = [
       'What this app tells them directly is a short list, and here is all of it: that a decision started, that it reached an answer, that an answer was accepted, that a Premium card was shown, that somebody tapped through to pay, and — if you answer the one-tap question that comes up after five decisions — which of the four options you tapped. Three more about coming back: that somebody returned on a later day and how many days it had been, that the home-screen offer was shown, and that it was taken. One more after an answer: which of the free things on the “while you’re here” row was tapped. The site’s own pages around the game add six: that a page was viewed, that a checkout button was pressed, that somebody tapped “pick for me” on the homepage, and — on the homepage’s five-question preview — that it reached an answer, that the answer was pointed somewhere, and that somebody went through to the app. Seventeen in total, and every one goes to both places or to neither. Along with those go the number of questions it took, how many dishes were turned down, which Premium card it was, and, on the accepted one only, the name of the dish.',
       'The question has four buttons and no text box, so what is recorded is which button — there is nothing else for it to carry.',
       'What does not go: your dietary rules, your saved dishes, your ratings, your taste profile, anything you type, and anything that identifies you. The reason those are safe is not a promise, it is where they live — see the section above.',
-      'There is no Google Analytics here, no advertising pixel of our own, and nothing that follows you to other sites.',
+      // Three switches decide what is true here, so the sentence is built from them
+      // rather than written once: it used to say there was no Google Analytics
+      // directly under the paragraph saying there was.
+      `${GA4_ON ? 'There is no advertising pixel of our own here' : 'There is no Google Analytics here and no advertising pixel of our own'}${
+        ADS_ON
+          ? ', and the one thing that can follow you off this site is the ad network that serves the banners — see “The ads on this site”.'
+          : ', and nothing that follows you to other sites.'
+      }`,
       /*
        * Appears only while session replay is actually switched on. The
        * sentence and the script are driven by the same constant, so this page
@@ -192,6 +199,30 @@ const SECTIONS: Section[] = [
         : []),
     ],
   },
+  /*
+   * Present only while an ad unit is actually configured. ADS_ON in lib/site.ts
+   * is the one switch this section, the "is there advertising" card below and
+   * the third-parties row all read, so this page cannot describe a product
+   * without ads while ads are showing, or the reverse. Nothing here is
+   * softened: the creatives are not reviewed, and that matters more than usual
+   * for an app with halal and kosher rules built in.
+   */
+  ...(ADS_ON
+    ? [
+        {
+          id: 'advertising',
+          heading: 'The ads on this site',
+          lede: 'A small number of boxed, labelled banner ads from one ad network (Adsterra). None for Premium members, none in the game itself, and none until you have finished a couple of decisions.',
+          body: [
+            `Where they are: the end of a few reading pages (the FAQ, how it works, the info page and the dish index), in the Dishes list, and at the bottom of your Profile in the app. Never while you are deciding, never on an answer or after you accept one, never in a game, and never on the Premium, checkout or account pages. There is one at most on any screen, it loads only when you scroll close to it, and you will not see one until you have finished ${ADS_AFTER_DECISIONS} decisions. Premium removes them, and every ad has a link saying so.`,
+            'We do not choose or review individual ads. Like any ad network, Adsterra runs an auction and shows whatever wins it, so we cannot promise that every ad will be for something we would put in front of you — and for an app with halal and kosher rules built in, that is worth saying plainly. If one is unsuitable, tell us on the FAQ page and we will take it to the network.',
+            'What is limited is what an ad is allowed to do, not what it is allowed to say. Every ad renders inside a sandboxed frame with no access to this page: it cannot read this site’s cookies or local storage, cannot read or change anything else on the page, and cannot redirect your tab by itself. Only a real click on the ad can open a new tab, as with any link.',
+            'What the sandbox cannot stop: the ad network itself sees your IP address and browser when an ad loads, and may set its own cookies and use them to choose and measure ads. That is between you and Adsterra and covered by its privacy policy; it is the one place on this site where something can follow you off it, and it is why the answer to “is there cross-site tracking” below is no longer a plain no.',
+            'Formats left out on purpose: the floating “Social Bar” and the pop-open “Smartlink”, both built to look like something other than an ad. Whatever is here is boxed and labelled so it always reads as one.',
+          ],
+        },
+      ]
+    : []),
   {
     id: 'logs',
     heading: 'Server logs',
@@ -260,7 +291,7 @@ const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
     : []),
   {
     q: 'Is there advertising or cross-site tracking?',
-    a: 'No',
+    a: ADS_ON ? 'Yes' : 'No',
     /*
      * There have been two third-party ad networks here, briefly, and both
      * were removed rather than fixed — HilltopAds for the reason given
@@ -274,7 +305,10 @@ const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
      * one is — no Signals, no advertising features, no user id — counts
      * what happens on this site and does not follow anybody off it.
      */
-    note: GA4_ON
+    note: ADS_ON
+      ? 'A small number of boxed, labelled banner ads from one network (Adsterra), none for Premium members and none in the game while you decide. The network can see your IP address and may set its own cookies — see “The ads on this site” for exactly what is and is not limited.' +
+        (GA4_ON ? ' Google Analytics is also here, with none of its own advertising features switched on.' : '')
+      : GA4_ON
       ? 'No advertising pixel, and nothing that follows you to other sites. Google Analytics is here, counting pages and the seventeen events listed below — with none of its advertising features switched on.'
       : 'No Google Analytics, no advertising pixel of our own, and nothing that follows you to other sites.',
   },
@@ -287,6 +321,10 @@ const ANSWERS: { q: string; a: string; note: string; loud?: boolean }[] = [
  */
 const THIRD_PARTIES: [string, string][] = [
   ['Whop', 'Sign-in, payments, subscription status, and the analytics on every page it serves.'],
+  // Driven by ADS_ON, like every conditional row here.
+  ...(ADS_ON
+    ? ([['Adsterra', 'Shows the boxed, labelled banner ads on a few screens, in a sandbox with no access to this site. It sees your IP address and browser when one loads. See “The ads on this site”.']] as [string, string][])
+    : []),
   // Driven by the same constant as the script and the paragraph above, so
   // this list cannot fall out of step with what is actually loaded.
   ...(REPLAY_ON

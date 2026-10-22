@@ -2825,6 +2825,12 @@
           </div>
         </div>
       </section>
+
+      <!-- The end of the one screen that is read to the bottom. Armed by
+           renderProfile() through js/ads.js, which draws nothing unless a unit is
+           configured, the visitor is not Premium and two decisions are done.
+           Never in the decide flow, a game, the answer or the reward. -->
+      <div class="ad-wrap" id="profile-ad"></div>
     </section>
 
   </main>
@@ -3167,6 +3173,8 @@
 <!-- Everything in here ships in the page and is public by design, which is why
      it is committed rather than treated as a secret. -->
 <script src="js/config.js"></script>
+<!-- Does nothing until a unit is filled in in config.js; see js/ads.js. -->
+<script src="js/ads.js"></script>
 <!-- Premium is the site's own Whop session, asked through /api/premium-status —
      no licence key, no per-browser account. -->
 <script src="js/premium.js"></script>

@@ -2,6 +2,7 @@ import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 
 import { PageShell } from '#/components/PageShell'
+import { AdSlot } from '#/components/AdSlot'
 import { ALL_DISHES } from '#/lib/dishes'
 import { DISH_COUNT, pageHead } from '#/lib/site'
 import { loadViewer } from '#/lib/viewer'
@@ -147,6 +148,7 @@ function EatIndex() {
             <DishGrid dishes={dishes} />
           </section>
         </div>
+        <AdSlot placement="end" premium={viewer.hasPremium} className="mx-auto max-w-3xl px-6 pb-12" />
       </main>
     </PageShell>
   )

@@ -101,26 +101,80 @@ export const CLARITY_ID = 'ymncebz070'
 export const GA4_ID = 'G-M5PMRS475E'
 
 /*
- * ADSTERRA IS GONE.
+ * ADSTERRA, BACK — AS ITS OWN DECISION, WITH THE REASONS IT WENT KEPT.
  *
- * There was a cluster of its banner ads here, on five site pages and two
- * screens in the game, sandboxed so a creative could not read a visitor's
- * cookies or this page's DOM and could not redirect the tab out from
- * under them. The sandboxing worked exactly as built and verified. What
- * never worked was the ads themselves: every placement rendered at the
- * right size and showed nothing — no fill, for as long as it ran, on a
- * brand-new site with no track record on that network. Removed rather
- * than debugged further, the same call this codebase already made once
- * about a different network (HilltopAds, see the privacy page's history
- * of that decision) — for the same reason that call still holds: an ad
- * exchange serves whatever wins its auction and that roster cannot be
- * vetted, and here it could not even be made to show anything in
- * exchange for accepting that risk.
+ * It was here once: eight banner placements, sandboxed, and none of them ever
+ * showed anything. Every one rendered at the right size with no fill for as
+ * long as it ran, on a brand-new site the network had not reviewed, and it
+ * was removed rather than debugged. The ad exchange reasoning behind that
+ * has not changed (it serves whatever wins its auction, and that roster
+ * cannot be vetted). What has changed is the decision to accept it anyway,
+ * made again deliberately, and the units: nine new ones, which show as
+ * Inactive in the publisher dashboard until each is resubmitted and
+ * approved. Nothing will fill before that, and that is the first thing to
+ * check if a slot is empty.
  *
- * If ads come back, they come back as their own decision again, not as
- * this flipped back on — the unit ids and keys here were specific to one
- * now-abandoned integration and are not preserved anywhere.
+ * NOTHING IS ON UNTIL A UNIT IS FILLED IN. The table below ships empty
+ * because the ids on the dashboard are not the keys the scripts use; paste
+ * each unit's own snippet (the key, and the script URL it loads) and that
+ * unit turns on. ADS_ON is true when any is, and it is the one switch the
+ * components, the game's ads.js and the privacy page all read, so none of
+ * them can say something the product is not doing.
+ *
+ * WHAT STAYS OUT, on purpose: the Social Bar and Smartlink (built to look like
+ * a chat bubble or a notification, or to open a page, rather than to read as
+ * an ad), the native unit (it sizes itself, which a sandbox cannot measure),
+ * and the two tall skyscrapers (they do not fit a phone). Three sizes are
+ * used: 728x90 where there is width, 320x50 where there is not, and 300x250
+ * at the end of a page that has been read.
+ *
+ * HOW GENTLE IT IS, as numbers rather than adjectives:
+ *   - never in the decide flow, a game, the answer or the reward (the two
+ *     moments the persuasion notes say get the care), and never on /premium,
+ *     /checkout or /account
+ *   - one slot per screen, lazy-loaded when it is about to scroll into view,
+ *     so it costs nothing to somebody who never reaches it
+ *   - none for a Premium member, and none until somebody has finished
+ *     ADS_AFTER_DECISIONS decisions: the first thing a stranger gets from this
+ *     app is an answer, not an advertisement
+ *
+ * WHAT IS NOT MITIGATED. The creatives are not reviewed here, cannot be, and
+ * will sometimes be for things nobody here would choose to advertise —
+ * which matters more than usual for an app with halal and kosher rules built
+ * into it. What the sandbox does limit is what a creative can do, not what
+ * it can say: no allow-same-origin (it cannot read this page's cookies,
+ * storage or DOM) and no allow-top-navigation (it cannot redirect the tab).
+ * Also not handled: consent. Third-party ad cookies in the EEA and UK need it,
+ * this site has no consent banner, and a unit should not be switched on for
+ * those visitors until it does.
  */
+export type AdSize = 'leaderboard' | 'banner' | 'rectangle'
+
+/** `src` is the full invoke.js URL from the unit's snippet; `key` is its atOptions key. */
+export interface AdUnit {
+  src: string
+  key: string
+  width: number
+  height: number
+}
+
+export const AD_UNITS: Record<AdSize, AdUnit> = {
+  // 728x90 — Banner 728x90 in the dashboard
+  leaderboard: { src: '', key: '', width: 728, height: 90 },
+  // 320x50 — Banner 320x50
+  banner: { src: '', key: '', width: 320, height: 50 },
+  // 300x250 — Banner 300x250
+  rectangle: { src: '', key: '', width: 300, height: 250 },
+}
+
+/** Decisions somebody has finished before the first ad is shown to them. */
+export const ADS_AFTER_DECISIONS = 2
+
+/** A unit is live only when both halves of its snippet are here. */
+export const adLive = (unit: AdUnit): boolean => unit.src.length > 0 && unit.key.length > 0
+
+/** Everything downstream reads this rather than testing a string itself. */
+export const ADS_ON = Object.values(AD_UNITS).some(adLive)
 
 /** Everything downstream reads this rather than testing the string itself. */
 export const GA4_ON = GA4_ID.length > 0
