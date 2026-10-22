@@ -77,6 +77,36 @@ Seven places, and `scripts/shell-test.mjs` fails until all of them agree:
   text, back/forward/reload, the sheet, the keyboard, and the page never growing
   sideways. It passes on this code and fails on the code it replaced.
 
+## The front door, shorter, and Play with Dot
+
+- **The landing is about 3.5 screens, not 5.6 (desktop) or 7.6 (phone).** Order:
+  the pitch, the two buttons and the plates knob, then (for a returning visitor) the
+  welcome-back card and *Lately*, then six doors, today's five, the games as a compact
+  rail (a snapping row on a phone, five across on a desktop), and one closed
+  *More ways in* disclosure holding the other six doors, moods, menus and the week.
+  Nothing was removed and every id the JS wires is unchanged. On a phone the buttons
+  come before the picked dish (CSS `order`), so they are on the first screen.
+- **Play with Dot.** The ten games share `canvasGame` in `app.js`; the upgrade is in
+  the shell, so it reaches all of them: a scoreboard bar (score left, hearts right,
+  bumps on change), a stage that fills the screen it has (was 340px), a countdown ring
+  and a GO, a red flash when you are hit, glowing particles and pop-in score numbers.
+  The picker is coloured tiles with each game's best and stars, plus *Pick one for me*.
+  On a phone the panel is full-screen. `scripts/dots-drive.mjs` starts all ten on a
+  phone and a desktop and fails on any page error or sideways scroll.
+- **A real bug found by that driver:** closing Play just as a game ended let the queued
+  results screen land on top of the picker next time it opened. A run token fixes it.
+- **Speed.** Measured at 4x CPU slowdown, the profile showed i18n walking every text
+  node (and every later render) even in English, and Dot forcing a layout while the
+  page loaded. English with nothing ever translated now skips the walk, and the forced
+  layout waits for `load`. i18n startup 95ms to 10ms; time to DOMContentLoaded
+  roughly 2.0s to 1.6s. `content-visibility` on the landing was tried and was not
+  faster, so it is not there. The rest is parse and layout of a 177KB page and ~1.7MB
+  of script; splitting `app.js` is the next real gain and is a larger job.
+- **Retention was left to what the product already refuses to do.** `persuasion.md`
+  rules out streak-loss warnings and `honesty-test` enforces it, so there is no
+  "your streak ends tonight". The game stars and bests on the picker are the
+  addition that fits.
+
 ## Decisions to know about
 
 - **The Premium pill used to pulse forever.** It now pulses twice, a moment after the
