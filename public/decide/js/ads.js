@@ -5,11 +5,21 @@
  * The decision, what stays out and the numbers are in the long note over ADS_ON
  * in src/lib/site.ts, and the units live in config.js. This file is only the
  * rules, applied. It draws nothing unless a unit is configured, nothing for a
- * Premium member, nothing where the visitor has to opt in first and has not
- * (see consent.js), and nothing until the slot is about to scroll into view, so
- * a visitor who never reaches it never loads it. It no longer waits for a few
- * decisions to be finished, and it no longer steps aside for Save-Data: both
- * were choices, and the owner made the opposite one.
+ * Premium member, and nothing until the slot is about to scroll into view, so a
+ * visitor who never reaches it never loads it. THERE IS NO OTHER OFF SWITCH, and
+ * nothing here may become one: not Save-Data, not the cookie choice, not a
+ * setting. (scripts/shell-test.mjs fails if one appears.)
+ *
+ * WHAT THE COOKIE CHOICE DOES INSTEAD. Cookie law is about what is stored on a
+ * device and who is tracked, not about whether an advert may be shown, and
+ * YouTube and Spotify do the same: say no to cookies and you still get ads, just
+ * not personalised ones. So the choice (consent.js) changes how the ad is loaded,
+ * not whether. With consent, a normal frame. Without it, or where the visitor has
+ * to be asked first and has not been, or where we cannot tell: the same ad in a
+ * frame that asks the browser to give it no cookies and a throwaway storage
+ * partition (`credentialless`, which Chromium browsers honour and others ignore),
+ * and no referrer. The network still sees an IP address and a browser either way,
+ * and the privacy page says so.
  *
  * It is NEVER mounted in a game being played, in the decide questions, the
  * answer or the reward, or on the checkout and account pages. Everywhere else
@@ -87,6 +97,7 @@ var Ads = (function () {
       frame.setAttribute('scrolling', 'no');
       frame.setAttribute('sandbox', SANDBOX);
       frame.setAttribute('loading', 'lazy');
+      if (restricted()) { frame.setAttribute('credentialless', ''); frame.setAttribute('referrerpolicy', 'no-referrer'); frame.setAttribute('data-mode', 'cookieless'); }
       frame.srcdoc = html(unit);
       row.appendChild(frame);
     });
@@ -107,13 +118,11 @@ var Ads = (function () {
    * Consent is waited for, not assumed: where the visitor has to opt in, the slot
    * is kept and drawn the moment they do, and taken down again if they take it back.
    */
-  var waiting = [];
-  function allowedNow(cb) {
-    if (typeof Consent === 'undefined') return cb(false);
-    Consent.ready(cb);
-  }
+  // Which way to load it. Consent known and given: normally. Anything else: without cookies.
+  function restricted() { return typeof Consent === 'undefined' || Consent.allowed() !== true; }
+  function known(cb) { if (typeof Consent === 'undefined') return cb(false); Consent.ready(cb); }
   function arm(container) {
-    if (typeof IntersectionObserver === 'undefined') return;
+    if (typeof IntersectionObserver === 'undefined') { draw(container, container._adPlacement); return; }
     var seen = new IntersectionObserver(function (entries) {
       for (var i = 0; i < entries.length; i++) {
         if (entries[i].isIntersecting) {
@@ -132,10 +141,8 @@ var Ads = (function () {
     if (!anyLive() || !ctx || ctx.premium) return;
     container.dataset.adArmed = '1';
     container._adPlacement = placement;
-    allowedNow(function (ok) {
-      if (!container.dataset.adArmed) return;
-      if (ok) arm(container); else waiting.push(container);
-    });
+    // Waits only until it is known whether to ask first, which is one small request.
+    known(function () { if (container.dataset.adArmed) arm(container); });
   }
   function clear(container) {
     if (container._adSeen) { container._adSeen.disconnect(); container._adSeen = null; }
@@ -151,12 +158,11 @@ var Ads = (function () {
     mount(container, placement, ctx);
   }
 
+  // A changed mind changes how the ads are loaded: the ones on screen are redrawn the other way.
   if (typeof Consent !== 'undefined') {
-    Consent.onChange(function (ok) {
-      if (ok) { waiting.splice(0).forEach(function (c) { if (c.dataset.adArmed) arm(c); }); return; }
-      // Taken back: no ad stays on the screen, and none is drawn later.
+    Consent.onChange(function () {
       var slots = document.querySelectorAll('.ad-wrap[data-ad-armed]');
-      for (var i = 0; i < slots.length; i++) { clear(slots[i]); waiting.push(slots[i]); }
+      for (var i = 0; i < slots.length; i++) { var c = slots[i]; clear(c); arm(c); }
     });
   }
 

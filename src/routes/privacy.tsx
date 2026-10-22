@@ -203,12 +203,12 @@ const SECTIONS: Section[] = [
   {
     id: 'cookies',
     heading: 'Cookies and your choice',
-    lede: 'Essential ones are always on and are not a choice. Advertising and analytics are your choice, and they are never called essential.',
+    lede: 'Essential ones are always on and are not a choice. Whether the ad network and the analytics tags may use cookies is your choice. Ads run either way.',
     body: [
       'Essential: this site and the app keep your settings, your progress and your saved dishes in your browser, and, if you sign in, the two Whop cookies described above. The app cannot do what you asked without them, so they are not offered as a choice. Your cookie choice itself is stored the same way.',
       'Not essential, and yours to decide: the advertising network (Adsterra) and the analytics tags (Google Analytics and Microsoft Clarity) set their own cookies. We do not file them under “essential”, because they are not.',
-      'Where you have to opt in first (the EU, the EEA, the UK, Switzerland, and anywhere we cannot tell where you are), none of those load until you press “Accept all”. Elsewhere they run from your first visit and you can turn them off with “Essential only”. The banner is the same either way and refusing is exactly as easy as accepting.',
-      'You can change it at any time with the button at the top of this page, or “Cookie settings” at the foot of the app’s front page. Choosing “Essential only” after accepting takes the ads off the page straight away. What it cannot change: Whop, which hosts this site, adds its own page-view analytics to every page it serves, outside this app’s control; it is listed under everybody this app talks to, below.',
+      'What the choice changes is how they load, not whether the ads are there. Ads are how the free app pays for itself and they are always shown to anyone who is not on Premium; declining cookies does not remove them, any more than it does on YouTube or Spotify. Where you have to be asked first (the EU, the EEA, the UK, Switzerland, and anywhere we cannot tell where you are) and you have not pressed “Accept all”, each ad is loaded without cookies: its frame asks your browser for no cookies and a throwaway storage area, which Chromium-based browsers honour and others ignore, and is sent no referrer; and Google Analytics and Microsoft Clarity do not load. Elsewhere all of it runs from your first visit, and “Essential only” puts you in the same cookie-free mode. The banner is the same everywhere and refusing is exactly as easy as accepting.',
+      'You can change it at any time with the button at the top of this page, or “Cookie settings” at the foot of the app’s front page. Choosing “Essential only” after accepting reloads the ads in cookie-free mode straight away. What it cannot change: the ad network still sees your IP address and browser each time an ad loads, because that is how a web page gets an ad; and Whop, which hosts this site, adds its own page-view analytics to every page it serves, outside this app’s control. Both are listed under everybody this app talks to, below.',
     ],
   },
   /*
@@ -224,7 +224,7 @@ const SECTIONS: Section[] = [
         {
           id: 'advertising',
           heading: 'The ads on this site',
-          lede: 'Boxed, labelled banner ads from one ad network (Adsterra), two or three together, from your first visit. None for Premium members, none while you decide or play, and where the law says to ask first, none until you say yes.',
+          lede: 'Boxed, labelled banner ads from one ad network (Adsterra), two or three together, from your first visit. None for Premium members and none while you decide or play. There is no setting that turns them off: Premium is how they go.',
           body: [
             'Where they are: the end of nearly every screen in the app (Dishes, Nearby, Ask, News, the planner, recipes, scanner, TV and radio, the menu, Daily, and Profile), the front page, and the end of the site’s reading pages (the home page, the FAQ, how it works, the info page, the dish index and each dish). Never while you are deciding, never on an answer or after you accept one, never in a game, and never on the Premium, checkout or account pages. There is one group on a screen, of two or three banners together, and it loads only when you scroll close to it. Premium removes them, and every group has a link saying so.',
             'We do not choose or review individual ads. Like any ad network, Adsterra runs an auction and shows whatever wins it, so we cannot promise that every ad will be for something we would put in front of you — and for an app with halal and kosher rules built in, that is worth saying plainly. If one is unsuitable, tell us on the FAQ page and we will take it to the network.',

@@ -7,10 +7,12 @@
  * cookies and the analytics tags. Those are the choice. Ads are never listed
  * as essential, here or on the privacy page (scripts/shell-test.mjs checks).
  *
- * Where the law says to ask first (the EU, the EEA, the UK, Switzerland, or a
- * country that cannot be told — see src/lib/consent.ts), ads and analytics wait
- * for "Accept all". Everywhere else they run from the first visit and the
- * banner is there to turn them off. The answer is kept in this browser under
+ * THE CHOICE IS ABOUT COOKIES, NOT ABOUT WHETHER THERE ARE ADS. There always are
+ * (see js/ads.js). Where the law says to ask first (the EU, the EEA, the UK,
+ * Switzerland, or a country that cannot be told — see src/lib/consent.ts), the
+ * analytics tags wait for "Accept all" and the ads load without cookies until it.
+ * Everywhere else both run from the first visit and the banner is there to
+ * restrict them. The answer is kept in this browser under
  * the same key the marketing pages use, so it is asked once for the whole site.
  *
  * Consent.ready(cb)    cb(allowed) once it is known whether ads may run.
@@ -56,8 +58,10 @@ var Consent = (function () {
     bar.setAttribute('aria-label', 'Cookies');
     bar.innerHTML =
       '<p class="consent-text"><b>Cookies.</b> Essential ones remember your settings and progress in this browser; ' +
-      'the app needs them. Advertising (Adsterra) and analytics (Google Analytics, Microsoft Clarity) set their own ' +
-      'cookies too, and that part is your choice. Ads pay for the free app, and Premium has none. ' +
+      'the app needs them. Ads pay for the free app and always run on it; Premium has none. Your choice is whether the ' +
+      'ad network (Adsterra) and analytics (Google Analytics, Microsoft Clarity) may use cookies to personalise and measure. ' +
+      'Say no and you still see ads, just loaded without cookies. Whop, which hosts this app, counts page views on every page ' +
+      'itself, and this choice cannot switch that off. ' +
       '<a href="/privacy" target="_blank" rel="noopener">Details</a></p>' +
       '<div class="consent-actions">' +
       '<button type="button" class="consent-btn is-main" data-c="all">Accept all</button>' +

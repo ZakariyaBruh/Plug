@@ -14,7 +14,7 @@
  *   - nothing is drawn, and nothing is requested, until a unit is configured
  *   - an ad from the first visit (no decisions needed), and Save-Data does not stop it
  *   - nothing for Premium
- *   - where the visitor has to opt in first: nothing until Accept all, and gone again after Essential only
+ *   - where the visitor has to opt in first: the same ads, loaded without cookies, until Accept all; and after Essential only the ads reload cookie-free, they do not go
  *   - one slot under every section but the questions and Profile (which has its own)
  *   - none in the decide flow, a game, the answer or the reward
  *   - one slot per screen, drawn only once it is near the viewport
@@ -152,29 +152,41 @@ configured = true
   await page.context().close()
 }
 {
-  // Where the law says to ask first.
+  // Where the law says to ask first. The ads are still there; they just load without cookies.
   adRequests.length = 0
   const page = await open({ decisions: 0, askFirst: true })
   await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
-  ok('opt-in region: nothing is drawn before the visitor has said yes', (await frames(page)).length === 0)
-  ok('and nothing is requested from the network', adRequests.length === 0, adRequests.join(', '))
+  const modes = () => page.evaluate(() => [...document.querySelectorAll('.ad-wrap iframe')].map((f) => ({ mode: f.getAttribute('data-mode'), cl: f.hasAttribute('credentialless'), ref: f.getAttribute('referrerpolicy') })))
+  let f1 = await modes()
+  ok('opt-in region, nothing chosen: the ads are still shown', f1.length >= 2, JSON.stringify(f1))
+  ok('and every one is loaded cookie-free: credentialless, no referrer', f1.length >= 2 && f1.every((f) => f.mode === 'cookieless' && f.cl && f.ref === 'no-referrer'), JSON.stringify(f1))
   ok('the two buttons are equally easy to reach', await page.locator('.consent [data-c="all"]').isVisible() && await page.locator('.consent [data-c="essential"]').isVisible())
-  adRequests.length = 0
   await page.locator('.consent [data-c="all"]').click(); await page.waitForTimeout(1200)
-  ok('Accept all draws the ads, with no reload', (await frames(page)).length >= 2, JSON.stringify(await frames(page)))
+  f1 = await modes()
+  ok('Accept all: the ads load the normal way', f1.length >= 2 && f1.every((f) => !f.mode && !f.cl), JSON.stringify(f1))
   ok('and the notice goes away', await page.locator('.consent:not([hidden])').count() === 0)
   await page.evaluate(() => Consent.show()); await page.waitForTimeout(200)
-  await page.locator('.consent [data-c="essential"]').click(); await page.waitForTimeout(500)
-  ok('taking it back removes the ads from the page at once', (await frames(page)).length === 0, JSON.stringify(await frames(page)))
+  await page.locator('.consent [data-c="essential"]').click(); await page.waitForTimeout(1200)
+  f1 = await modes()
+  ok('taking it back does NOT take the ads away: they reload cookie-free', f1.length >= 2 && f1.every((f) => f.mode === 'cookieless' && f.cl), JSON.stringify(f1))
   ok('and the choice is kept for next time', await page.evaluate(() => localStorage.getItem('m45-consent') === 'essential'))
   await page.context().close()
 }
 {
-  // A region that cannot be told is treated as opt-in, and so is a failed answer.
+  // Said no on an earlier visit: still ads, still cookie-free, and no nagging.
   const page = await open({ decisions: 0, askFirst: true, consent: 'essential' })
-  await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(700)
-  ok('an earlier "Essential only" is respected on the next visit', (await frames(page)).length === 0)
+  await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
+  const fr = await frames(page)
+  ok('an earlier "Essential only" still gets ads', fr.length >= 2, JSON.stringify(fr))
   ok('and the notice does not nag', await page.locator('.consent:not([hidden])').count() === 0)
+  await page.context().close()
+}
+{
+  // There is no other way to switch them off: Save-Data, Do Not Track and a stored "no ads" do nothing.
+  const page = await open({ decisions: 0, saveData: true })
+  await page.evaluate(() => { try { localStorage.setItem('ads', 'off'); localStorage.setItem('m45-ads', '0') } catch (e) {} })
+  await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
+  ok('Save-Data and a stored "ads off" change nothing', (await frames(page)).length >= 2)
   await page.context().close()
 }
 {

@@ -32,8 +32,10 @@ export function ConsentBar() {
     >
       <p>
         <b className="text-[var(--text)]">Cookies.</b> Essential ones remember your settings and progress in this browser;
-        the site needs them. Advertising (Adsterra) and analytics (Google Analytics, Microsoft Clarity) set their own cookies
-        too, and that part is your choice. Ads pay for the free app, and Premium has none.{' '}
+        the site needs them. Ads pay for the free app and always run on it; Premium has none. Your choice is whether the ad
+        network (Adsterra) and analytics (Google Analytics, Microsoft Clarity) may use cookies to personalise and measure. Say
+        no and you still see ads, just loaded without cookies. Whop, which hosts this site, counts page views on every page
+        itself, and this choice cannot switch that off.{' '}
         <Link to="/privacy" className="text-[var(--amber)] underline underline-offset-2">
           Details
         </Link>

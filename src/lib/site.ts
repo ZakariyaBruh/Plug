@@ -141,8 +141,12 @@ export const GA4_ID = 'G-M5PMRS475E'
  *   - none for a Premium member, ever
  *   - from the first visit (ADS_AFTER_DECISIONS is 0), and Save-Data is no longer
  *     a reason to skip them
- *   - where the law says to ask first (see lib/consent.ts), only after the
- *     visitor presses "Accept all"; and they come off the page again if it is taken back
+ *   - NO OTHER OFF SWITCH, and nothing may become one: not Save-Data, not the cookie
+ *     choice, not a setting. Cookie law is about what is stored and who is tracked,
+ *     not about whether an advert may be shown (YouTube and Spotify keep showing
+ *     ads to people who decline cookies, and Premium is how you remove them). So
+ *     where the law says to ask first (see lib/consent.ts) and the visitor has not
+ *     said yes, the same ads load without cookies instead of not at all
  *
  * WHAT IS NOT MITIGATED. The creatives are not reviewed here, cannot be, and
  * will sometimes be for things nobody here would choose to advertise —

@@ -5,14 +5,17 @@ import { useConsentAllowed } from '#/lib/consent-client'
 import { ADS_ON, adCluster, type AdUnit } from '#/lib/site'
 
 /*
- * A SMALL CLUSTER OF ADS, FROM THE FIRST VISIT, NEVER FOR A PREMIUM MEMBER.
+ * A SMALL CLUSTER OF ADS, FROM THE FIRST VISIT, NEVER FOR A PREMIUM MEMBER, AND NO
+ * OTHER OFF SWITCH. Not Save-Data, not the cookie choice, not a setting. (The cookie
+ * choice changes how an ad is loaded, not whether: see `restricted` below.)
  *
  * See ADS_ON in lib/site.ts for the decision, what stays out and the rules this
  * follows. In short it shows nothing at all until a unit is configured, nothing
- * to a Premium member, nothing where the visitor has to opt in first and has not
- * (lib/consent.ts), and nothing until it is nearly on screen — so a visitor who
+ * to a Premium member, and nothing until it is nearly on screen — so a visitor who
  * never scrolls to it never loads it. It used to wait for a couple of finished
- * decisions and to step aside for Save-Data; the owner chose neither.
+ * decisions, to step aside for Save-Data and to wait for the cookie choice; the
+ * owner chose none of those. Where the visitor has to be asked first and has not
+ * said yes (lib/consent.ts), the ad loads without cookies instead of not at all.
  *
  * `placement` is where it sits, and adCluster() decides which two or three
  * banners that means at this width:
@@ -58,14 +61,15 @@ export function AdSlot({
   const allowed = useConsentAllowed()
 
   useEffect(() => {
-    // Taken back (or never given): nothing stays on the page.
-    if (!ADS_ON || premium || allowed !== true) { setUnits([]); return }
+    // Waits only until it is known whether to ask first (one small request). The
+    // answer changes HOW the ad loads, never WHETHER: see the note over `restricted`.
+    if (!ADS_ON || premium || allowed === null) { setUnits([]); return }
     const el = box.current
     if (!el) return
+    setUnits([])
     const choose = () => setUnits(adCluster(placement, el.clientWidth))
-    // Not until it is about to be seen. No observer (very old browsers) means
-    // not at all, which is the safe way for that to fail.
-    if (typeof IntersectionObserver === 'undefined') return
+    // Not until it is about to be seen. No observer (very old browsers): at once.
+    if (typeof IntersectionObserver === 'undefined') { choose(); return }
     const seen = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
@@ -80,6 +84,13 @@ export function AdSlot({
   }, [placement, premium, allowed])
 
   if (!ADS_ON || premium) return null
+  // With consent, a normal frame. Without it, where we have to ask first and have not
+  // been told yes, or where we cannot tell: the same ad in a frame that asks the browser
+  // for no cookies and a throwaway storage partition, and no referrer. `credentialless`
+  // is honoured by Chromium browsers and ignored by the rest; the network still sees an
+  // IP address and a browser either way, and the privacy page says so.
+  const restricted = allowed !== true
+  const extra = restricted ? ({ credentialless: '', referrerPolicy: 'no-referrer', 'data-mode': 'cookieless' } as Record<string, string>) : {}
 
   return (
     <div
@@ -100,7 +111,8 @@ export function AdSlot({
           <div className="flex flex-wrap items-start justify-center gap-4">
             {units.map((unit) => (
               <iframe
-                key={unit.key}
+                key={unit.key + (restricted ? ':c' : '')}
+                {...extra}
                 title="Advertisement"
                 width={unit.width}
                 height={unit.height}

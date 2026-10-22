@@ -196,8 +196,15 @@ const consentClient = readFileSync(join(root, '..', '..', 'src/lib/consent-clien
 check('the app and the site store the choice under the same key', (consentJs.match(/KEY = '([^']+)'/) || [])[1] === (consentClient.match(/CONSENT_KEY = '([^']+)'/) || [])[1])
 const zOf = (sel) => { const m = css.match(new RegExp('(?:^|\\n)' + sel.replace(/[.]/g, '\\.') + ' \\{[^}]*?z-index: (\\d+)')); return m ? Number(m[1]) : null }
 check('the cookie bar sits under the welcome screen, not over its Next button', zOf('.consent') !== null && zOf('.welcome') !== null && zOf('.consent') < zOf('.welcome'), `consent ${zOf('.consent')}, welcome ${zOf('.welcome')}`)
-check('ads.js waits for consent before drawing', /Consent\.ready/.test(adsJs) && /Consent\.onChange/.test(adsJs))
-check('AdSlot waits for consent before drawing', /useConsentAllowed\(\)/.test(adSlot) && /allowed !== true/.test(adSlot))
+// The cookie choice changes HOW an ad is loaded, never WHETHER: no way to turn the ads off for free.
+const adCode = (adsJs + adSlot).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+check('without consent an ad is loaded without cookies, not withheld', /credentialless/.test(adsJs) && /credentialless/.test(adSlot) && /no-referrer/.test(adsJs) && /no-referrer/.test(adSlot))
+check('ads.js has no waiting list for consent', !/waiting/.test(adCode.split('function restricted')[1] || ''))
+check('AdSlot draws whatever the answer, once it is known', /allowed === null\) \{ setUnits/.test(adSlot) && !/allowed !== true\) \{ setUnits/.test(adSlot))
+check('nothing in the ad code reads a setting, Do Not Track, Save-Data or storage', !/localStorage|sessionStorage|doNotTrack|saveData|navigator\.connection|matchMedia/i.test(adCode))
+check('no control anywhere offers to hide ads', !/(hide|turn off|disable|block|remove)\s+(the\s+)?ads?\b/i.test(html.replace(/Remove ads with Premium/g, '')) && !/id="[^"]*(hide|no|block)[-_]?ads?[^"]*"/i.test(html))
+check('the banner says ads always run, and that saying no keeps them', /always run/.test(consentJs) && /still see ads/.test(consentJs) && /always run/.test(consentBar) && /still see ads/.test(consentBar))
+check('and that Whop counts page views whatever is chosen', /Whop[^']*counts page views/.test(consentJs) && /Whop, which hosts this site, counts page views/.test(consentBar))
 check('a country that cannot be told is asked, not assumed', /c === 'XX' \|\| c === 'T1'/.test(consentLib) && /settle\(true\)/.test(consentJs))
 for (const [name, text] of [['js/consent.js', consentJs], ['ConsentBar', consentBar]]) {
   const body = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/<[^>]+>/g, ' ')

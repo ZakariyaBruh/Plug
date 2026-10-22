@@ -34,7 +34,7 @@ of a list and on a phone, three at the end of a page on a wide screen.
 | Never | the decide questions, any game, the answer, the reward, /premium, /checkout, /account |
 | Who | everybody except Premium members, **from the first visit** |
 | How | loaded only within 400px of view. Save-Data is ignored (the owner's call) |
-| Consent | where the law asks first (EU, EEA, UK, Switzerland, or a country that cannot be told) only after **Accept all**, and taken off the page again on **Essential only** |
+| Consent | changes how an ad loads, **never whether**. Without consent where the law asks first (EU, EEA, UK, Switzerland, or a country that cannot be told), the same ad loads in a `credentialless` frame with no referrer; **Accept all** loads it normally; **Essential only** reloads it cookie-free. There is no free way to turn ads off: Save-Data, the cookie choice and stored settings do nothing, and `shell-test` and `adsdrive` fail if one appears |
 
 ## The sponsor page: more Standard questions
 
@@ -59,12 +59,19 @@ redirect the tab. `adsdrive` checks that with a creative that tries all of it.
 Not handled, and worth deciding:
 
 - **Consent is a banner now** (`js/consent.js` in the app, `ConsentBar.tsx` on the
-  site, one answer under `m45-consent`, region from `/api/region`). Ads and the
-  Google Analytics and Clarity tags wait for it where it is required. Ads are **not**
-  filed under "essential" and a test fails if they ever are: the banner, the privacy
-  page and the law all treat ad-network cookies as needing a choice. Whop itself adds
-  page-view analytics to every page it serves, outside this app. The sponsor page is
-  the network's own page and sets whatever it sets.
+  site, one answer under `m45-consent`, region from `/api/region`). It decides how the ads
+  load and whether Google Analytics and Clarity run; it never decides whether there are
+  ads. That is deliberate and it is the usual arrangement: cookie law is about what is
+  stored on a device and who is tracked, not about whether an advert may be shown, and
+  YouTube and Spotify show ads to people who decline cookies too (Premium is how you
+  remove them). Ads are **not** filed under "essential" and a test fails if they ever
+  are. **This is not legal advice**, and the cookie-free mode is a mitigation, not a
+  guarantee: `credentialless` is Chromium-only, and the network still sees an IP address
+  and a browser whatever we ask of the frame. Ask Adsterra whether it offers a
+  non-personalised / consent-aware mode for these units, and get a lawyer's view before
+  relying on any of this in the EU or UK. Whop itself adds page-view analytics to every
+  page it serves, outside this app and outside the banner (the banner says so). The
+  sponsor page is the network's own page and sets whatever it sets.
 - **Creatives are not reviewed.** For an app with halal and kosher rules built in,
   that matters more than usual. Adsterra lets you block categories in the dashboard.
 
