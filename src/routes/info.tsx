@@ -159,7 +159,7 @@ function InfoPage() {
             <ul className="mx-auto mt-14 grid max-w-2xl grid-cols-3 gap-4 text-center">
               {[
                 [String(DISH_COUNT), 'dishes'],
-                ['8', 'questions to an answer'],
+                ['12', 'questions to an answer'],
                 ['20s', 'from hungry to decided'],
               ].map(([n, label]) => (
                 <li key={label} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-raised)] px-3 py-5">

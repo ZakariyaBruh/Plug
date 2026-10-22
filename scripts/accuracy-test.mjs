@@ -137,6 +137,41 @@ check(
     .join('\n        '),
 )
 
+/*
+ * AND SOMEBODY WHO GETS ONE REPLY IN TWELVE WRONG, which is everybody.
+ *
+ * The perfect answerer above is the floor, not the product. People mistap, and
+ * answer about the dish they end up wanting rather than the one they started
+ * with. Before the game kept asking after one dish was the only consistent one,
+ * a player like this got their dish first 48% of the time and in the six on
+ * screen 63% (scripts/accuracy-sweep.mjs has the whole sweep). The gate is set
+ * below what it measures now, so noise in the sample cannot fail a build, and
+ * far above what it measured then, so losing the redundancy would.
+ */
+function noisyPlay(target, seed) {
+  let t = seed >>> 0
+  const rand = () => { t += 0x6d2b79f5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296 }
+  const game = new Engine.Game({ random: rand })
+  while (!game.shouldGuess()) {
+    const next = game.nextQuestion()
+    if (!next) break
+    const tag = next.question.tag
+    const where = game.axis(target, tag)
+    let reply = where > 0.5 ? 'yes' : where < 0.5 ? 'no' : next.question.neither ? 'neither' : 'either'
+    if (rand() < 0.08 && reply !== 'either') reply = reply === 'yes' ? 'no' : 'yes'
+    game.answer(tag, reply)
+  }
+  const ranked = game.ranking()
+  return { asked: game.answers.length, at: ranked.findIndex((r) => r.item.name === target.name) }
+}
+const noisy = ITEMS.filter((_, i) => i % 5 === 0).map((item, i) => noisyPlay(item, 9000 + i))
+const noisyFirst = (100 * noisy.filter((r) => r.at === 0).length) / noisy.length
+const noisySix = (100 * noisy.filter((r) => r.at >= 0 && r.at < 6).length) / noisy.length
+const noisyAsked = noisy.reduce((a, r) => a + r.asked, 0) / noisy.length
+check(`with one reply in twelve wrong it still finds the dish first at least 50% of the time (${noisyFirst.toFixed(1)}%)`, noisyFirst >= 50)
+check(`and has it in the six on screen at least 74% of the time (${noisySix.toFixed(1)}%)`, noisySix >= 74)
+check(`for no more than fifteen questions (${noisyAsked.toFixed(1)})`, noisyAsked <= 15)
+
 // Accuracy bought with twenty questions is not accuracy, it is an interrogation.
 check(`and it takes about a dozen questions, not twenty (${asked.toFixed(1)})`, asked <= 13)
 

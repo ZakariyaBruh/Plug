@@ -40,6 +40,8 @@ var SHELL = [
   'icon-maskable.svg',
   'js/ads.js',
   'js/consent.js',
+  'js/sprites.js',
+  'js/play.js',
   'js/app.js',
   'js/confetti.js',
   'js/config.js',

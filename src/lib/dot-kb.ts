@@ -28,7 +28,7 @@ export const FACTS: Fact[] = [
   {
     topic: 'decide',
     keys: ['decide', 'decision', 'how do i start', 'how to play', 'questions', 'yes no', 'pick a dish', 'find dinner', 'what to eat', 'how does it work', 'how do i use'],
-    text: 'Tap Decide, then answer yes, no or not sure to each question. About eight questions is usually enough, never more than twenty. Every answer narrows the dishes until one is left.',
+    text: 'Tap Decide, then answer yes, no or not sure to each question. About a dozen questions is usually enough, never more than twenty-four. It asks a few more than it strictly needs, so one wrong tap does not send you to the wrong dish. Every answer narrows the dishes until one is left.',
   },
   {
     topic: 'quick decide',

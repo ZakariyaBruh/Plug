@@ -4499,6 +4499,7 @@
       : Math.min(Engine.MAX_QUESTIONS, Data.QUESTIONS.length));
     paintProgress();
     $('q-text').textContent = q.text;
+    DotStage.ask(q.tag, !!q.neither);
     swapQuestion();
     $('yes-icon').textContent = q.yesIcon;
     $('yes-label').textContent = q.yes;
@@ -4594,6 +4595,7 @@
     qLeave(value === 'yes' ? -1 : value === 'no' ? 1 : 0);
 
     var answeredTag = current.tag;
+    DotStage.answer(answeredTag, value);
     game.answer(current.tag, value);
     step();
     saveResume();
@@ -11333,6 +11335,18 @@
       '<g class="fx-frost"><path d="M9 13l4 4m0-4l-4 4M35 11l4 4m0-4l-4 4M21 43v0"/><circle cx="37" cy="31" r="1.3"/><circle cx="11" cy="34" r="1.3"/></g>' +
       '<g class="fx-bubble"><circle cx="15" cy="34" r="2"/><circle cx="31" cy="30" r="1.6"/><circle cx="24" cy="38" r="2.2"/><circle cx="35" cy="37" r="1.3"/></g>' +
       '<g class="fx-flame"><path d="M17 8Q13 3 18 0Q17 4 21 6Q20 8 17 8Z"/><path d="M29 8Q26 4 30 1Q30 4 33 6Q32 8 29 8Z"/></g>' +
+      // The rest are for acting out a question (see DotStage): all hidden until a spec asks for them.
+      '<g class="fx-drip"><ellipse cx="9" cy="30" rx="1.6" ry="2.4"/><ellipse cx="39" cy="28" rx="1.4" ry="2.1"/><ellipse cx="24" cy="44" rx="1.5" ry="2.2"/></g>' +
+      '<g class="fx-crumbs"><path d="M8 18l2.4-1 .8 2.4z"/><path d="M38 14l2.2 1.2-1.6 1.8z"/><path d="M41 28l2.2-.6.2 2.4z"/><path d="M6 31l2.4.4-1.2 2z"/></g>' +
+      '<g class="fx-hearts"><path d="M10 12c-2.6-1.8-3-3.6-1.4-4.5.8-.4 1.4 0 1.4.8 0-.8.6-1.2 1.4-.8 1.6.9 1.2 2.7-1.4 4.5z"/><path d="M38 9c-2-1.4-2.3-2.8-1.1-3.5.6-.3 1.1 0 1.1.6 0-.6.5-.9 1.1-.6 1.2.7.9 2.1-1.1 3.5z"/></g>' +
+      '<g class="fx-spark"><path d="M8 10l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z"/><path d="M40 16l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/><path d="M36 4l.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6z"/></g>' +
+      '<g class="fx-coins"><circle cx="9" cy="14" r="3"/><circle cx="39" cy="11" r="2.6"/><circle cx="24" cy="2" r="2.4"/></g>' +
+      '<g class="fx-bolt"><path d="M2 20h8M0 27h9M3 34h7"/><path d="M40 4l-4 7h4l-3 6"/></g>' +
+      '<g class="fx-sweat"><path d="M8 17Q5.4 21 8 22.6Q10.6 21 8 17Z"/><path d="M41 13Q38.8 16.4 41 17.8Q43.2 16.4 41 13Z"/></g>' +
+      '<g class="fx-salt"><rect x="9" y="4" width="2" height="2"/><rect x="21" y="0" width="2" height="2"/><rect x="34" y="5" width="2" height="2"/><rect x="40" y="14" width="2" height="2"/><rect x="5" y="20" width="2" height="2"/></g>' +
+      '<g class="fx-leaf"><path d="M14 5Q9 3 7 8Q12 9 14 5Z"/><path d="M34 4Q39 2 41 7Q36 8 34 4Z"/></g>' +
+      '<g class="fx-zzz"><path d="M34 6h6l-6 6h6" /><path d="M40 0h4l-4 4h4"/></g>' +
+      '<g class="fx-cutlery"><path d="M3 12v10M1 12v4a2 2 0 0 0 4 0v-4M3 22v8"/><path d="M45 12c-2 1-3 4-3 8h3z M45 20v10"/></g>' +
       '</g>' +
       '<g class="dot-love"><path d="M18 26.5C14.3 24 13.8 21.4 15.9 20.2C17 19.6 18 20.2 18 21.2C18 20.2 19 19.6 20.1 20.2C22.2 21.4 21.7 24 18 26.5Z"/><path d="M30 26.5C26.3 24 25.8 21.4 27.9 20.2C29 19.6 30 20.2 30 21.2C30 20.2 31 19.6 32.1 20.2C34.2 21.4 33.7 24 30 26.5Z"/></g>' +
       '<g class="dot-wink"><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
@@ -11388,6 +11402,137 @@
   })();
   Array.prototype.forEach.call(document.querySelectorAll('.mascot'), Dot.mount);
 
+
+  /* ------------------------------------------------------------ Dot's stage */
+  /*
+   * DOT ACTS OUT EVERY QUESTION. A big Dot above the question does two things:
+   *
+   *   asking     it imagines both answers in turn, faintly: a drink melts, a hot
+   *              thing steams, then the other side. A preview of the choice that
+   *              is in the words.
+   *   answering  it commits: yes to a drink and Dot melts into a puddle; no to
+   *              sweet and it gets salted; yes to quick and it dashes off.
+   *
+   * One spec per question per reply, in the table below (28 questions, and the
+   * middle reply where a question has one). It is decoration: aria-hidden, and
+   * under reduced motion it keeps the colour change and nothing else.
+   * Animations are Web Animations on the body, so they stack over the mood
+   * ones instead of fighting the stylesheet.
+   */
+  var DotStage = (function () {
+    var C = { water: '#62b6ea', ice: '#8ccbf4', fire: '#e8573b', chili: '#d92d2d', cream: '#efe6d2', gold: '#e2a63a', cheese: '#f6d453', sea: '#6fd0c8', pink: '#f7a8c9', leaf: '#92d78d', choc: '#8a5a3c', fruit: '#ef6f6f', warm: '#e9b678', meat: '#c9735b', grey: '#b9b4ad', sun: '#ffd45e', lilac: '#c9b8e6', mint: '#9fe3c8', bread: '#e0b36a' };
+    var K = function (list) { return list.map(function (t, i) { return { transform: t, offset: i / (list.length - 1) }; }); };
+    // Body animations. Origin is the bottom centre, so squashes sit on the ground.
+    var A = {
+      melt: { d: 1900, k: [ 'scale(1,1)', 'scale(1.08,.9)', 'scale(1.55,.3) translateY(10%)', 'scale(1.5,.34) translateY(10%)', 'scale(.9,1.14)', 'scale(1,1)' ] },
+      stand: { d: 900, k: [ 'scale(1,1)', 'scale(.88,1.16)', 'scale(.9,1.12)', 'scale(1,1)' ] },
+      shiver: { d: 1100, k: [ 'translateX(0)', 'translateX(-2.5%)', 'translateX(2.5%)', 'translateX(-2.5%)', 'translateX(2.5%)', 'translateX(-2%)', 'translateX(2%)', 'translateX(0)' ] },
+      sizzle: { d: 1200, k: [ 'scale(1)', 'scale(1.06) translateX(-2%)', 'scale(.98) translateX(2%)', 'scale(1.08) translateX(-2%)', 'scale(.98) translateX(2%)', 'scale(1.06)', 'scale(1)' ] },
+      puff: { d: 1100, k: [ 'scale(1)', 'scale(1.32,1.24)', 'scale(1.26,1.2)', 'scale(1)' ] },
+      shrink: { d: 1000, k: [ 'scale(1)', 'scale(.74)', 'scale(.78)', 'scale(1)' ] },
+      hop: { d: 1100, k: [ 'translateY(0) scale(1,1)', 'translateY(0) scale(1.1,.86)', 'translateY(-26%) scale(.92,1.12)', 'translateY(0) scale(1.12,.84)', 'translateY(-12%)', 'translateY(0) scale(1,1)' ] },
+      dash: { d: 1100, k: [ 'translateX(0) scale(1)', 'translateX(-10%) scale(.9,1.1)', 'translateX(70%) scale(1.3,.8)', 'translateX(-60%) scale(1.3,.8)', 'translateX(0) scale(1)' ] },
+      slow: { d: 1800, k: [ 'rotate(0)', 'rotate(-9deg) translateX(-4%)', 'rotate(9deg) translateX(4%)', 'rotate(-4deg)', 'rotate(0)' ] },
+      chomp: { d: 1000, k: [ 'scale(1)', 'scale(1.12,.74)', 'scale(.96,1.08)', 'scale(1.12,.74)', 'scale(.96,1.08)', 'scale(1)' ] },
+      stretch: { d: 1300, k: [ 'scale(1)', 'scale(.78,1.42)', 'scale(.74,1.5)', 'scale(1.18,.78)', 'scale(.96,1.06)', 'scale(1)' ] },
+      wobble: { d: 1400, k: [ 'scale(1)', 'scale(1.14,.86)', 'scale(.9,1.12)', 'scale(1.08,.92)', 'scale(.96,1.05)', 'scale(1)' ] },
+      spin: { d: 1000, k: [ 'rotate(0) scale(1)', 'rotate(180deg) scale(.92)', 'rotate(360deg) scale(1)' ] },
+      squish: { d: 1000, k: [ 'scale(1)', 'scale(1.3,.62)', 'scale(1.2,.72)', 'scale(.94,1.08)', 'scale(1)' ] },
+      nod: { d: 1100, k: [ 'translateY(0) scale(1)', 'translateY(8%) scale(1.04,.94)', 'translateY(0)', 'translateY(8%) scale(1.04,.94)', 'translateY(0) scale(1)' ] },
+      sway: { d: 1500, k: [ 'rotate(0)', 'rotate(-7deg) translateX(-3%)', 'rotate(7deg) translateX(3%)', 'rotate(-5deg)', 'rotate(0)' ] },
+      tilt: { d: 900, k: [ 'rotate(0)', 'rotate(15deg)', 'rotate(13deg)', 'rotate(0)' ] },
+      shake: { d: 800, k: [ 'translateX(0)', 'translateX(-9%)', 'translateX(9%)', 'translateX(-7%)', 'translateX(7%)', 'translateX(0)' ] },
+      buzz: { d: 1200, k: [ 'translate(0,0)', 'translate(-1.5%,1%)', 'translate(1.5%,-1%)', 'translate(-1.5%,-1%)', 'translate(1.5%,1%)', 'translate(-1.5%,1%)', 'translate(1.5%,-1%)', 'translate(0,0)' ] },
+      grow: { d: 1100, k: [ 'scale(.55)', 'scale(1.18)', 'scale(.96)', 'scale(1)' ] },
+      two: { d: 1100, k: [ 'translateX(0) scale(1)', 'translateX(-16%) scale(.92)', 'translateX(16%) scale(.92)', 'translateX(0) scale(1)' ] },
+      hug: { d: 1100, k: [ 'scale(1)', 'scale(.84,.9)', 'scale(.86,.92)', 'scale(1)' ] }
+    };
+    // y = what Dot does on the first reply, n = the second, m = the middle one.
+    // a body animation, t the tint, f the extras shown, m the face.
+    var S = {
+      drink:     { y: { a: 'melt', t: C.water, f: 'drip bubble puddle', m: 'surprised' }, n: { a: 'stand', t: C.cream, f: 'cutlery', m: 'happy' } },
+      sweet:     { y: { a: 'spin', t: C.pink, f: 'spark', m: 'love' }, n: { a: 'shake', t: C.cream, f: 'salt', m: 'happy' } },
+      hot:       { y: { a: 'sizzle', t: C.fire, f: 'steam sweat', m: 'surprised' }, n: { a: 'shiver', t: C.ice, f: 'frost', m: 'sad' }, m: { a: 'wobble', t: C.lilac, f: '', m: 'thinking' } },
+      light:     { y: { a: 'shrink', t: C.mint, f: 'spark', m: 'happy' }, n: { a: 'puff', t: C.warm, f: 'cutlery', m: 'happy' } },
+      meat:      { y: { a: 'chomp', t: C.meat, f: 'cutlery', m: 'open' }, n: { a: 'grow', t: C.leaf, f: 'leaf', m: 'happy' } },
+      spicy:     { y: { a: 'sizzle', t: C.chili, f: 'flame sweat', m: 'surprised' }, n: { a: 'sway', t: C.mint, f: 'frost', m: 'happy' } },
+      crunchy:   { y: { a: 'chomp', t: C.bread, f: 'crumbs', m: 'open' }, n: { a: 'squish', t: C.cream, f: 'bubble', m: 'love' }, m: { a: 'tilt', t: C.grey, f: '', m: 'shrug' } },
+      cheesy:    { y: { a: 'stretch', t: C.cheese, f: 'drip', m: 'love' }, n: { a: 'shake', t: C.grey, f: '', m: 'shrug' } },
+      handheld:  { y: { a: 'hop', t: C.warm, f: 'crumbs', m: 'happy' }, n: { a: 'stand', t: C.cream, f: 'cutlery', m: 'happy' } },
+      soupy:     { y: { a: 'wobble', t: C.warm, f: 'steam drip', m: 'love' }, n: { a: 'stand', t: C.cream, f: '', m: 'happy' } },
+      fried:     { y: { a: 'sizzle', t: C.gold, f: 'bubble crumbs', m: 'surprised' }, n: { a: 'hop', t: C.leaf, f: 'leaf', m: 'happy' } },
+      seafood:   { y: { a: 'sway', t: C.sea, f: 'bubble', m: 'happy' }, n: { a: 'nod', t: C.warm, f: '', m: 'happy' } },
+      bready:    { y: { a: 'puff', t: C.bread, f: 'crumbs', m: 'love' }, n: { a: 'shrink', t: C.cream, f: '', m: 'happy' } },
+      chicken:   { y: { a: 'chomp', t: C.gold, f: 'crumbs', m: 'open' }, n: { a: 'shake', t: C.grey, f: '', m: 'shrug' } },
+      chocolate: { y: { a: 'melt', t: C.choc, f: 'drip hearts puddle', m: 'love' }, n: { a: 'shake', t: C.cream, f: '', m: 'shrug' } },
+      fruity:    { y: { a: 'hop', t: C.fruit, f: 'spark hearts', m: 'happy' }, n: { a: 'nod', t: C.cream, f: '', m: 'happy' } },
+      comfort:   { y: { a: 'sway', t: C.warm, f: 'hearts', m: 'love' }, n: { a: 'hop', t: C.mint, f: 'spark', m: 'happy' }, m: { a: 'tilt', t: C.grey, f: '', m: 'shrug' } },
+      quick:     { y: { a: 'dash', t: C.sun, f: 'bolt', m: 'surprised' }, n: { a: 'slow', t: C.lilac, f: 'zzz', m: 'sleepy' } },
+      healthy:   { y: { a: 'hop', t: C.leaf, f: 'spark leaf', m: 'happy' }, n: { a: 'spin', t: C.pink, f: 'hearts', m: 'love' } },
+      homemade:  { y: { a: 'nod', t: C.warm, f: 'hearts steam', m: 'happy' }, n: { a: 'dash', t: C.sun, f: 'bolt', m: 'happy' } },
+      shareable: { y: { a: 'two', t: C.pink, f: 'hearts', m: 'happy' }, n: { a: 'hug', t: C.cream, f: '', m: 'happy' } },
+      caffeine:  { y: { a: 'buzz', t: C.choc, f: 'bolt sweat', m: 'surprised' }, n: { a: 'slow', t: C.lilac, f: 'zzz', m: 'sleepy' } },
+      breakfast: { y: { a: 'hop', t: C.sun, f: 'spark', m: 'happy' }, n: { a: 'tilt', t: C.cream, f: '', m: 'shrug' } },
+      messy:     { y: { a: 'squish', t: C.choc, f: 'drip crumbs', m: 'celebrate' }, n: { a: 'stand', t: C.cream, f: 'spark', m: 'happy' } },
+      carby:     { y: { a: 'puff', t: C.bread, f: 'crumbs', m: 'love' }, n: { a: 'shrink', t: C.leaf, f: 'leaf', m: 'happy' } },
+      cheap:     { y: { a: 'shrink', t: C.mint, f: 'coins', m: 'happy' }, n: { a: 'hop', t: C.gold, f: 'coins spark', m: 'celebrate' } },
+      indulgent: { y: { a: 'puff', t: C.gold, f: 'spark hearts coins', m: 'celebrate' }, n: { a: 'sway', t: C.mint, f: '', m: 'happy' } },
+      veg:       { y: { a: 'grow', t: C.leaf, f: 'leaf spark', m: 'happy' }, n: { a: 'chomp', t: C.meat, f: '', m: 'open' } }
+    };
+    var SHRUG = { a: 'tilt', t: '', f: '', m: 'shrug' };
+
+    var node = null, timer = 0, holdUntil = 0, askTimers = [], playing = null;
+    function el() { return node || (node = document.getElementById('q-stage-dot')); }
+    function body() { var n = el(); return n && n.querySelector('.dot-body'); }
+    function clear() {
+      var n = el(); if (!n) return;
+      clearTimeout(timer); askTimers.forEach(clearTimeout); askTimers = [];
+      if (playing) { try { playing.cancel(); } catch (err) { /* gone */ } playing = null; }
+      n.removeAttribute('data-fx'); n.removeAttribute('data-tinted'); n.removeAttribute('data-ghost');
+    }
+    function play(spec, ghost) {
+      var n = el(); if (!n || !spec) return 0;
+      Dot.mount(n);
+      clear();
+      if (spec.t) { n.style.setProperty('--tint', spec.t); n.setAttribute('data-tinted', ''); }
+      n.setAttribute('data-fx', spec.f || '');
+      if (ghost) n.setAttribute('data-ghost', '');
+      if (spec.m) Dot.mood(n, spec.m, ghost ? 560 : 1500);
+      var def = A[spec.a], b = body(), ms = 0;
+      if (def && b && !reduceMotion && b.animate) {
+        ms = Math.round(def.d * (ghost ? 0.55 : 1));
+        playing = b.animate(K(def.k), { duration: ms, easing: 'cubic-bezier(.4,0,.2,1)' });
+      } else ms = ghost ? 520 : 1100;
+      timer = setTimeout(function () { clear(); }, ms + 120);
+      return ms + 120;
+    }
+    function rest() { clear(); holdUntil = 0; }
+    return {
+      // A new question: imagine each reply, faintly, one after the other.
+      ask: function (tag, hasMiddle) {
+        var n = el(); if (!n) return;
+        var row = S[tag]; if (!row) return;
+        var wait = Math.max(0, holdUntil - Date.now());
+        askTimers.forEach(clearTimeout); askTimers = [];
+        askTimers.push(setTimeout(function () {
+          var t1 = play(row.y, true);
+          askTimers.push(setTimeout(function () { var t2 = play(row.n, true); holdUntil = 0; }, t1));
+        }, wait + 250));
+      },
+      // A reply: commit to it.
+      answer: function (tag, value) {
+        var row = S[tag]; if (!row) return;
+        var spec = value === 'yes' ? row.y : value === 'no' ? row.n : value === 'neither' ? (row.m || SHRUG) : SHRUG;
+        var ms = play(spec, false);
+        holdUntil = Date.now() + ms;
+      },
+      rest: rest,
+      table: S,
+      bodies: A
+    };
+  })();
+
+  window.M45.stage = DotStage;
 
   /* ---------------------------------------------------------------- Buddy */
   /*
@@ -12602,853 +12747,41 @@
 
   /* ------------------------------------------------------- Play with Dot */
   /*
-   * Three small games with Dot as the other player, for when the questions are
-   * the monotonous part: Rock Paper Dish, Dot Reads You (pick one of two
-   * dishes while Dot tries to guess which) and Guess My Dish (Dot has one in
-   * mind; ask about it, then name it). None of them decides anything and none
-   * is a sales pitch: they are there to be a break, with a companion that
-   * remembers you played.
-   *
-   * Dot is not cheating at any of them. Rock Paper Dish leans on what you
-   * played last, which is exactly what a person would try; Dot Reads You
-   * guesses from the tastes of the dishes you picked before, which is exactly
-   * what the app does to find your dinner. It says so while it does it.
-   *
-   * It is its own screen over the app, not a page: Escape or the cross closes
-   * it, the page behind is inert while it is open, and Dot in the corner goes
-   * away because Dot is in here.
+   * The games are their own file (js/play.js, drawn with js/sprites.js) and are
+   * fetched the first time somebody opens them, so nobody who came to decide
+   * dinner pays for ten games they did not ask for. This is the doorway: the
+   * same four calls the rest of the app already makes, answered once it has loaded.
    */
   var Play = (function () {
-    var open = false, root = null, say = null, body = null, dotEl = null, back = null;
-    var TASTE = 'morsels-dot-taste', STATS = 'morsels-dot-games';
-    var stats = {};
-    var taste = {};
-    try {
-      var sv = JSON.parse(localStorage.getItem(STATS) || 'null'); if (sv) for (var k in sv) if (typeof sv[k] === 'number') stats[k] = sv[k];
-      taste = JSON.parse(localStorage.getItem(TASTE) || '{}') || {};
-    } catch (err) { /* fine */ }
-    function save() { try { localStorage.setItem(STATS, JSON.stringify(stats)); localStorage.setItem(TASTE, JSON.stringify(taste)); } catch (err) { /* fine */ } }
-
-    function h(tag, cls, text) {
-      var n = document.createElement(tag);
-      if (cls) n.className = cls;
-      if (text !== undefined) n.textContent = text;
-      return n;
+    var state = 'idle', waiting = null;
+    function script(src) {
+      return new Promise(function (ok, no) {
+        var tag = document.createElement('script');
+        tag.src = src; tag.onload = ok; tag.onerror = no;
+        document.head.appendChild(tag);
+      });
     }
-    function pickOne(list) { return list[Math.floor(Math.random() * list.length)]; }
-    function shuffle(list) { var a = list.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
-    function words(text, mood, hold) {
-      say.textContent = text;
-      say.classList.remove('is-in'); void say.offsetWidth; say.classList.add('is-in');
-      if (mood) Dot.mood(dotEl, mood, hold || 1500);
+    function load() {
+      if (state === 'ready') return Promise.resolve();
+      if (waiting) return waiting;
+      waiting = (window.Sprites ? Promise.resolve() : script('js/sprites.js'))
+        .then(function () { return window.M45Play ? null : script('js/play.js'); })
+        .then(function () {
+          window.M45Play.init({ Dot: Dot, Buddy: typeof Buddy !== 'undefined' ? Buddy : null, shell: function () { return shell; }, reduceMotion: reduceMotion });
+          state = 'ready';
+        })
+        .catch(function () { waiting = null; toast('\u26A0\uFE0F', 'The games would not load', 'Check the connection and try again.'); });
+      return waiting;
     }
-    function btn(label, cls, fn) {
-      var b = h('button', cls || 'dg-btn', label);
-      b.type = 'button';
-      b.addEventListener('click', function () { Sound.tick(); fn(b); });
-      return b;
-    }
-    function screen() { clear2(body); return body; }
-
-    /* ---- the picker ---- */
-    var GAMES = [
-      { id: 'arena', icon: '\u{1F336}\u{FE0F}', name: 'Food Fight', blurb: 'Survive the chillies. Level up, pick upgrades.' },
-      { id: 'jump', icon: '\u{1F680}', name: 'Dot Jump', blurb: 'Bounce up the kitchen. Springs, crumbling shelves.' },
-      { id: 'merge', icon: '\u{1F451}', name: 'Merge Pot', blurb: 'Drop dishes. Merge them up to a crown.' },
-      { id: 'pop', icon: '\u{1F52E}', name: 'Dish Pop', blurb: 'Aim, bounce, match three, bring the ceiling down.' },
-      { id: 'match', icon: '\u{1F36C}', name: 'Match Meal', blurb: 'Swap dishes, chain combos. Sixty seconds.' },
-      { id: 'invade', icon: '\u{1F47E}', name: 'Chilli Invaders', blurb: 'Hold the line against the marching chillies.' },
-      { id: 'cross', icon: '\u{1F6D2}', name: 'Kitchen Crossing', blurb: 'Hop across the lanes. Mind the trolleys.' },
-      { id: 'stack', icon: '\u{1F35E}', name: 'Dish Stack', blurb: 'Stack the dishes. Time it right.' },
-      { id: 'spit', icon: '\u{1F3AF}', name: 'Seed Spit', blurb: 'Aim, mind the wind, hit the plate.' },
-      { id: 'says', icon: '\u{1F9E0}', name: 'Dot Says', blurb: 'Watch the pads. Copy the pattern.' }
-    ];
-    var RUN = function () { return { arena: arenaGame, jump: jumpGame, merge: mergeGame, pop: popBubbles, match: matchGame, invade: invadeGame, cross: crossGame, stack: stackGame, spit: spitGame, says: simonGame }; };
-    // Each game's own colours, the same ones its stage is painted in, so a tile
-    // is a small picture of the game and not a line of text about it.
-    var TILE = {
-      arena: ['#4a1f17', '#ff6a4d'], jump: ['#17406b', '#4da3ff'], merge: ['#4b3a14', '#ffc94d'], pop: ['#2c1a52', '#b58cff'],
-      match: ['#4d1738', '#ff6fb1'], invade: ['#1d3a2a', '#5fd38d'], cross: ['#183b3f', '#4dd6d0'], stack: ['#2f2552', '#b48cff'],
-      spit: ['#1e3a29', '#8ae06a'], says: ['#43264d', '#ff8fe0']
+    return {
+      open: function (which) { load().then(function () { if (state === 'ready') window.M45Play.open(which); }); },
+      close: function () { if (state === 'ready') window.M45Play.close(); },
+      isOpen: function () { return state === 'ready' && window.M45Play.isOpen(); },
+      stats: function () { return state === 'ready' ? window.M45Play.stats() : {}; }
     };
-    function menu() {
-      stopGame();
-      var s = screen();
-      words(pickOne(['Pick a game. I will lose gracefully. Probably.', 'Games. My favourite thing after dishes.', 'Go on. Choose. I have all day.']), 'happy');
-      var bestAll = {}; try { bestAll = JSON.parse(localStorage.getItem('morsels-dot-best') || '{}') || {}; } catch (err) { /* fine */ }
-      var surprise = btn('Pick one for me', 'dg-btn is-main dg-surprise', function () { var g = pickOne(GAMES); RUN()[g.id](); });
-      s.appendChild(surprise);
-      var grid = h('div', 'dg-grid');
-      GAMES.forEach(function (g) {
-        var card = h('button', 'dg-card-btn');
-        card.type = 'button';
-        var c = TILE[g.id] || ['#222', '#e0a340'];
-        card.style.setProperty('--tile', c[0]); card.style.setProperty('--tile-ink', c[1]);
-        card.appendChild(h('span', 'dg-card-icon', g.icon));
-        card.appendChild(h('strong', '', g.name));
-        card.appendChild(h('span', 'dg-card-blurb', g.blurb));
-        var best = bestAll[g.id];
-        var stars = best ? starsFor(g.id, best) : 0;
-        var foot = h('span', 'dg-card-foot', best ? 'Best ' + best : 'New');
-        if (best) foot.insertBefore(h('span', 'dg-card-stars', '\u2605\u2605\u2605'.slice(0, stars) + '\u2606\u2606\u2606'.slice(0, 3 - stars)), foot.firstChild).setAttribute('aria-hidden', 'true');
-        card.appendChild(foot);
-        card.addEventListener('click', function () { Sound.tick(); RUN()[g.id](); });
-        grid.appendChild(card);
-      });
-      s.appendChild(grid);
-    }
-
-    function finish(game, won) {
-      stats[game] = (stats[game] || 0) + 1;
-      save();
-      if (typeof Buddy !== 'undefined') Buddy.played(game, won);
-    }
-    function endButtons(again) {
-      var row = h('div', 'dg-row');
-      row.appendChild(btn('Play again', 'dg-btn is-main', again));
-      row.appendChild(btn('Another game', 'dg-btn', menu));
-      body.appendChild(row);
-    }
-
-    /* ---- the action games ---- */
-    var cleanup = null;
-    // Which run owns the screen. A game that ends queues its results a moment
-    // later; if the panel is closed and opened again in that moment, the stale
-    // results landed on top of the picker.
-    var runToken = null;
-    function stopGame() { runToken = null; if (cleanup) { var f = cleanup; cleanup = null; f(); } }
-    function bestOf(game, score) {
-      var all = {};
-      try { all = JSON.parse(localStorage.getItem('morsels-dot-best') || '{}') || {}; } catch (err) { all = {}; }
-      var beat = score > (all[game] || 0);
-      if (beat) { all[game] = score; try { localStorage.setItem('morsels-dot-best', JSON.stringify(all)); } catch (err) { /* fine */ } }
-      return { best: Math.max(all[game] || 0, score), beat: beat };
-    }
-    // Score needed for one, two and three stars, per game.
-    var STARS = { merge: [300, 900, 2200], pop: [200, 600, 1400], match: [400, 1200, 3000], invade: [200, 600, 1400], cross: [30, 80, 160], arena: [8, 20, 40], jump: [40, 120, 260], rush: [150, 400, 900], chop: [1500, 3500, 6500], evolve: [300, 900, 2200], flap: [3, 8, 16], stack: [6, 14, 26], run: [60, 160, 320], pair: [40, 70, 100], sort: [80, 200, 420], flip: [150, 450, 1000], scramble: [60, 160, 280], spit: [40, 120, 220], says: [4, 8, 13] };
-    function starsFor(game, score) { var t = STARS[game] || [10, 30, 60]; return score >= t[2] ? 3 : score >= t[1] ? 2 : score >= t[0] ? 1 : 0; }
-    function results(game, score, again, notes) {
-      var b = bestOf(game, score);
-      var s = screen();
-      var big = h('p', 'dg-line is-big', 'Score 0'); s.appendChild(big);
-      var from = performance.now(); (function tick(now) { var k = Math.min(1, (now - from) / 900); big.textContent = 'Score ' + Math.round(score * (1 - Math.pow(1 - k, 3))); if (k < 1 && open) requestAnimationFrame(tick); })(from);
-      var stars = starsFor(game, score), row3 = h('p', 'dg-stars');
-      for (var si = 0; si < 3; si++) { var st3 = h('span', si < stars ? 'is-on' : '', '\u2605'); st3.style.animationDelay = (0.5 + si * 0.28) + 's'; row3.appendChild(st3); }
-      s.appendChild(row3);
-      s.appendChild(h('p', 'dg-score', b.beat ? 'New best' : 'Best ' + b.best));
-      words(b.beat ? pickOne(['A new best. I am not crying. You are.', 'Record. I will tell the dishes.']) : score >= b.best * 0.8 ? pickOne(['So close to your best.', 'Nearly. Again?']) : pickOne(notes), b.beat ? 'celebrate' : 'shrug');
-      finish(game, b.beat || score > 0);
-      endButtons(again);
-    }
-
-    // Dot, drawn on a canvas: a round face, two eyes, a blush and a mouth.
-    function drawDot(g, x, y, r, mouth) {
-      g.save();
-      g.fillStyle = '#f5eee1';
-      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#f5eee1';
-      g.beginPath(); g.moveTo(x, y - r + 1); g.quadraticCurveTo(x - r * .12, y - r * 1.28, x + r * .2, y - r * 1.34); g.quadraticCurveTo(x + r * .1, y - r * 1.1, x, y - r + 1); g.fill();
-      g.fillStyle = 'rgba(224,163,64,.55)';
-      g.beginPath(); g.arc(x - r * .58, y + r * .22, r * .17, 0, 6.3); g.arc(x + r * .58, y + r * .22, r * .17, 0, 6.3); g.fill();
-      g.fillStyle = '#2a2218';
-      g.beginPath(); g.arc(x - r * .3, y - r * .1, r * .1, 0, 6.3); g.arc(x + r * .3, y - r * .1, r * .1, 0, 6.3); g.fill();
-      g.strokeStyle = '#2a2218'; g.lineWidth = Math.max(1.5, r * .08); g.lineCap = 'round';
-      g.beginPath();
-      if (mouth === 'open') { g.fillStyle = '#2a2218'; g.ellipse(x, y + r * .34, r * .2, r * .27, 0, 0, 6.3); g.fill(); }
-      else if (mouth === 'sad') { g.arc(x, y + r * .6, r * .22, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); }
-      else { g.arc(x, y + r * .15, r * .26, Math.PI * .15, Math.PI * .85); g.stroke(); }
-      g.restore();
-    }
-
-    // The shared shell of the canvas games: a canvas, a clock, a loop, particles,
-    // floating numbers, screen shake, the pointer, and a teardown.
-    function canvasGame(opts) {
-      var s = screen();
-      words(opts.intro, 'happy');
-      var W = opts.W || 340, H = opts.H || 400, dpr = Math.min(2, window.devicePixelRatio || 1);
-      var cv = h('canvas', 'dg-canvas');
-      cv.width = W * dpr; cv.height = H * dpr;
-      cv.style.aspectRatio = W + ' / ' + H;
-      cv.setAttribute('aria-label', opts.label);
-      var g = cv.getContext('2d');
-      g.scale(dpr, dpr);
-      var hudBar = h('div', 'dg-hud'), hud = h('span', 'dg-hud-main', ''), lifeEl = h('span', 'dg-hud-lives', '');
-      hudBar.appendChild(hud); hudBar.appendChild(lifeEl);
-      var pauseBtn = h('button', 'dg-btn dg-pause', 'Pause');
-      pauseBtn.type = 'button';
-      var ACCENT = { arena: '#ff6a4d', jump: '#4da3ff', flap: '#8b9cff', stack: '#b48cff', run: '#ffb347', chop: '#9f8cff', spit: '#5fd38d' }[opts.id] || '#e0a340';
-      cv.style.setProperty('--ar', W / H);
-      cv.style.setProperty('--accent', ACCENT);
-      s.appendChild(hudBar); s.appendChild(cv);
-      s.appendChild(h('p', 'fine', opts.how));
-      s.appendChild(pauseBtn);
-      var st = { W: W, H: H, g: g, cv: cv, score: 0, lives: opts.lives === undefined ? 3 : opts.lives, t: 0, over: false, paused: false, mouth: 'smile', mouthT: 0, fx: [], pops: [], shake: 0, count: opts.count === 0 ? 0 : 3, ptr: { x: W / 2, y: H / 2, down: false } };
-      var last = performance.now(), raf = 0, hooks = [], token = (runToken = {});
-      var BG = { arena: ['#2b1612', '#120a0a'], jump: ['#1a3b5c', '#0d1828'], flap: ['#27324d', '#11141f'], stack: ['#2b2542', '#13111f'], run: ['#3b2b19', '#18110a'], chop: ['#201a35', '#0d0a17'], spit: ['#1e3529', '#0c1510'] }[opts.id] || ['#222', '#111'];
-      var bokeh = []; for (var bi = 0; bi < 14; bi++) bokeh.push({ x: Math.random() * W, y: Math.random() * H, r: 6 + Math.random() * 22, v: 4 + Math.random() * 10 });
-      function togglePause() { if (st.over || st.count > 0) return; st.paused = !st.paused; pauseBtn.textContent = st.paused ? 'Resume' : 'Pause'; }
-      pauseBtn.addEventListener('click', function () { togglePause(); });
-      function hearts() { return st.lives > 0 ? new Array(st.lives + 1).join('♥ ').trim() : '—'; }
-      var hudWas = '';
-      st.hud = function () {
-        var text = opts.hudText ? opts.hudText(st) : 'Score ' + st.score;
-        hud.textContent = text;
-        lifeEl.textContent = opts.lives === 0 ? '' : hearts();
-        lifeEl.setAttribute('aria-label', st.lives + (st.lives === 1 ? ' life left' : ' lives left'));
-        if (text !== hudWas && hudWas && !reduceMotion) { hudBar.classList.remove('is-bump'); void hudBar.offsetWidth; hudBar.classList.add('is-bump'); }
-        hudWas = text;
-      };
-      st.hurt = function () { if (st.over) return; try { if (navigator.vibrate) navigator.vibrate(40); } catch (err) { /* fine */ } st.lives--; st.mouth = 'sad'; st.mouthT = .5; st.shake = 9; st.flash = 1; Sound.bust(); Dot.mood(dotEl, 'sad', 700); if (st.lives <= 0) st.over = true; st.hud(); };
-      st.gain = function (n) { st.score += n; st.mouth = 'open'; st.mouthT = .25; Sound.climb(Math.min(14, st.score)); st.hud(); };
-      st.burst = function (x, y, color, n) { for (var i = 0; i < (n || 10); i++) { var a = Math.random() * 6.3, v = 40 + Math.random() * 160; st.fx.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 30, life: 0.5 + Math.random() * 0.4, c: color || '#e0a340', r: 1.6 + Math.random() * 2.6 }); } };
-      st.pop = function (x, y, text, color) { st.pops.push({ x: x, y: y, text: text, life: 0.9, c: color || '#fff' }); };
-      st.on = function (target, ev, fn, o) { target.addEventListener(ev, fn, o); hooks.push([target, ev, fn, o]); };
-      function point(e) { var r = cv.getBoundingClientRect(); st.ptr.x = (e.clientX - r.left) / r.width * W; st.ptr.y = (e.clientY - r.top) / r.height * H; }
-      cv.addEventListener('pointermove', point);
-      cv.addEventListener('pointerdown', function (e) { point(e); st.ptr.down = true; try { cv.setPointerCapture(e.pointerId); } catch (err) { /* fine */ } });
-      cv.addEventListener('pointerup', function () { st.ptr.down = false; });
-      function frame(now) {
-        var dt = Math.min(0.05, (now - last) / 1000); last = now;
-        if (!st.over) {
-          if (st.count > 0) st.count -= dt;
-          else { st.t += dt; st.mouthT -= dt; if (st.mouthT <= 0) st.mouth = 'smile'; if (!st.paused) opts.update(st, dt); }
-        }
-        st.fx.forEach(function (p) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; p.life -= dt; });
-        st.fx = st.fx.filter(function (p) { return p.life > 0; });
-        st.pops.forEach(function (p) { p.y -= 34 * dt; p.life -= dt; });
-        st.pops = st.pops.filter(function (p) { return p.life > 0; });
-        st.shake = Math.max(0, st.shake - dt * 30);
-        st.flash = Math.max(0, (st.flash || 0) - dt * 3.2);
-        if (st.goT > 0) st.goT -= dt;
-        g.clearRect(0, 0, W, H);
-        var grad = g.createLinearGradient(0, 0, 0, H); grad.addColorStop(0, BG[0]); grad.addColorStop(1, BG[1]); g.fillStyle = grad; g.fillRect(0, 0, W, H);
-        // A soft light from above, so the stage has a direction rather than a flat fill.
-        var lite = g.createRadialGradient(W / 2, -H * .1, 0, W / 2, -H * .1, H * .9); lite.addColorStop(0, 'rgba(255,255,255,.10)'); lite.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = lite; g.fillRect(0, 0, W, H);
-        g.fillStyle = 'rgba(255,255,255,.035)';
-        bokeh.forEach(function (b) { if (!reduceMotion && !st.paused) { b.y -= b.v * dt; if (b.y < -30) { b.y = H + 30; b.x = Math.random() * W; } } g.beginPath(); g.arc(b.x, b.y, b.r, 0, 6.3); g.fill(); });
-        g.save();
-        g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 5; g.shadowOffsetY = 2;
-        if (st.shake > 0.3 && !reduceMotion) g.translate((Math.random() - 0.5) * st.shake, (Math.random() - 0.5) * st.shake);
-        opts.draw(st);
-        g.globalCompositeOperation = 'lighter';
-        st.fx.forEach(function (p) { g.globalAlpha = Math.max(0, p.life * 1.4); g.fillStyle = p.c; g.beginPath(); g.arc(p.x, p.y, (p.r || 2.6) * (0.6 + p.life), 0, 6.3); g.fill(); });
-        g.globalCompositeOperation = 'source-over';
-        g.globalAlpha = 1;
-        g.textAlign = 'center'; g.textBaseline = 'middle';
-        st.pops.forEach(function (p) {
-          var k = Math.min(1, (0.9 - p.life) * 8); // springs in, then drifts up
-          g.save(); g.translate(p.x, p.y); g.scale(0.6 + 0.5 * Math.sin(Math.min(1, k) * 1.9), 0.6 + 0.5 * Math.sin(Math.min(1, k) * 1.9));
-          g.globalAlpha = Math.min(1, p.life * 2); g.font = 'bold 18px sans-serif'; g.lineWidth = 4; g.lineJoin = 'round'; g.strokeStyle = 'rgba(0,0,0,.55)'; g.strokeText(p.text, 0, 0); g.fillStyle = p.c; g.fillText(p.text, 0, 0); g.restore();
-        });
-        g.globalAlpha = 1;
-        g.restore();
-        if (st.flash > 0 && !reduceMotion) { g.fillStyle = 'rgba(255,60,50,' + (st.flash * 0.28) + ')'; g.fillRect(0, 0, W, H); }
-        if (opts.lives > 1 && st.lives === 1 && !st.over) { var pulse = 0.12 + 0.08 * Math.sin(st.t * 6), vg = g.createRadialGradient(W / 2, H / 2, H * 0.35, W / 2, H / 2, H * 0.75); vg.addColorStop(0, 'rgba(255,0,0,0)'); vg.addColorStop(1, 'rgba(255,40,40,' + pulse + ')'); g.fillStyle = vg; g.fillRect(0, 0, W, H); }
-        if (st.paused && !st.over) { g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(0, 0, W, H); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 28px sans-serif'; g.fillText('Paused', W / 2, H / 2); }
-        if (st.count > 0) {
-          var frac = st.count - Math.floor(st.count);   // 1 -> 0 inside each second
-          g.fillStyle = 'rgba(0,0,0,.5)'; g.fillRect(0, 0, W, H);
-          g.lineWidth = 5; g.strokeStyle = 'rgba(255,255,255,.14)'; g.beginPath(); g.arc(W / 2, H / 2, 54, 0, 6.3); g.stroke();
-          g.strokeStyle = ACCENT; g.lineCap = 'round'; g.beginPath(); g.arc(W / 2, H / 2, 54, -Math.PI / 2, -Math.PI / 2 + 6.2832 * (frac || 1)); g.stroke();
-          g.save(); g.translate(W / 2, H / 2); var pop = 1 + 0.25 * Math.pow(frac, 3); g.scale(pop, pop);
-          g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = 'bold 60px sans-serif'; g.fillText(String(Math.ceil(st.count)), 0, 3); g.restore();
-          g.fillStyle = 'rgba(255,255,255,.8)'; g.textAlign = 'center'; g.font = '600 14px sans-serif'; g.fillText('Get ready', W / 2, H / 2 + 86);
-          st.goT = 0.55;
-        } else if (st.goT > 0 && !st.over) {
-          g.save(); g.translate(W / 2, H / 2); var gs = 1 + (0.55 - st.goT) * 1.6; g.scale(gs, gs); g.globalAlpha = Math.min(1, st.goT * 2.4);
-          g.fillStyle = ACCENT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '800 54px sans-serif'; g.fillText('GO!', 0, 0); g.restore(); g.globalAlpha = 1;
-        }
-        if (st.over) { cancelAnimationFrame(raf); setTimeout(function () { if (open && runToken === token) results(opts.id, st.score, opts.again, opts.notes); }, 1100); return; }
-        raf = requestAnimationFrame(frame);
-      }
-      opts.setup(st);
-      st.hud();
-      st.on(document, 'keydown', function (e) { if (e.key === 'p' || e.key === 'P') togglePause(); });
-      st.on(document, 'visibilitychange', function () { if (document.hidden && !st.paused) togglePause(); });
-      raf = requestAnimationFrame(frame);
-      cleanup = function () { cancelAnimationFrame(raf); st.over = true; hooks.forEach(function (k) { k[0].removeEventListener(k[1], k[2], k[3]); }); if (opts.teardown) opts.teardown(st); };
-    }
-    function dirKeys(st, map) { st.on(document, 'keydown', function (e) { var f = map[e.key]; if (f) { e.preventDefault(); f(); } }); }
-    var DISH = function () { return pickOne(Data.ITEMS).icon; };
-
-    /* Food Fight: an arena. Dot throws seeds at the angry chillies on its own; you steer, collect the sparks, and pick an upgrade each level. */
-    function arenaGame() {
-      canvasGame({
-        id: 'arena', label: 'Food Fight', again: arenaGame, W: 360, H: 440, lives: 3,
-        intro: 'They are coming. I throw seeds. You do the moving.',
-        how: 'Drag to steer Dot (or use the arrow keys). It fires by itself. Pick an upgrade when you level up.',
-        notes: ['Chillies everywhere. I did warn you.', 'It was the onions. It is always the onions.'],
-        hudText: function (st) { return 'Level ' + st.lvl + ' · ' + st.score + ' down'; },
-        setup: function (st) {
-          st.x = st.W / 2; st.y = st.H / 2; st.en = []; st.sh = []; st.gems = []; st.fire = 0; st.spawn = 0; st.inv = 0; st.xp = 0; st.need = 6; st.lvl = 1;
-          st.rate = 0.55; st.multi = 1; st.magnet = 46; st.speed = 150; st.keys = {}; st.choice = null;
-          st.on(document, 'keydown', function (e) { st.keys[e.key] = true; if (st.choice && (e.key === '1' || e.key === '2')) pick(+e.key - 1); });
-          st.on(document, 'keyup', function (e) { st.keys[e.key] = false; });
-          st.cv.addEventListener('pointerdown', function () { if (st.choice) pick(st.ptr.x < st.W / 2 ? 0 : 1); });
-          var UPS = [
-            { n: 'Faster seeds', d: 'Fire 30% faster', f: function () { st.rate *= 0.7; } },
-            { n: 'Twin seeds', d: 'One more seed per shot', f: function () { st.multi++; } },
-            { n: 'Magnet', d: 'Sparks fly to you', f: function () { st.magnet += 50; } },
-            { n: 'Quick feet', d: 'Move faster', f: function () { st.speed += 40; } },
-            { n: 'Second helping', d: 'Restore a heart', f: function () { st.lives = Math.min(5, st.lives + 1); st.hud(); } }
-          ];
-          function pick(i) { st.choice[i].f(); st.choice = null; st.paused = false; st.burst(st.x, st.y, '#fff', 14); }
-          st.levelUp = function () { st.lvl++; st.xp = 0; st.need = Math.round(st.need * 1.35) + 2; st.paused = true; st.choice = shuffle(UPS).slice(0, 2); Sound.reveal && Sound.reveal(); st.hud(); };
-        },
-        update: function (st, dt) {
-          var tx = st.ptr.down ? st.ptr.x : st.x, ty = st.ptr.down ? st.ptr.y : st.y;
-          if (st.keys.ArrowLeft) tx = st.x - 50; if (st.keys.ArrowRight) tx = st.x + 50; if (st.keys.ArrowUp) ty = st.y - 50; if (st.keys.ArrowDown) ty = st.y + 50;
-          var dx = tx - st.x, dy = ty - st.y, d = Math.hypot(dx, dy);
-          if (d > 3) { var m = Math.min(d, st.speed * dt); st.x += dx / d * m; st.y += dy / d * m; }
-          st.x = Math.max(14, Math.min(st.W - 14, st.x)); st.y = Math.max(14, Math.min(st.H - 14, st.y));
-          st.inv -= dt;
-          st.spawn -= dt;
-          if (st.spawn <= 0) {
-            st.spawn = Math.max(0.28, 0.95 - st.t * 0.011);
-            var side = Math.floor(Math.random() * 4), ex = side % 2 ? (side === 1 ? st.W + 14 : -14) : Math.random() * st.W, ey = side % 2 ? Math.random() * st.H : (side === 0 ? -14 : st.H + 14);
-            var tough = st.t > 25 && Math.random() < Math.min(0.4, (st.t - 25) * 0.01);
-            st.en.push({ x: ex, y: ey, hp: tough ? 3 : 1, icon: tough ? '\u{1F9C5}' : '\u{1F336}\u{FE0F}', v: (tough ? 38 : 52) + st.t * 0.6 + Math.random() * 18 });
-          }
-          st.fire -= dt;
-          if (st.fire <= 0 && st.en.length) {
-            st.fire = st.rate;
-            var near = st.en.slice().sort(function (a, b) { return Math.hypot(a.x - st.x, a.y - st.y) - Math.hypot(b.x - st.x, b.y - st.y); })[0], ang = Math.atan2(near.y - st.y, near.x - st.x);
-            for (var k = 0; k < st.multi; k++) { var a2 = ang + (k - (st.multi - 1) / 2) * 0.22; st.sh.push({ x: st.x, y: st.y, vx: Math.cos(a2) * 320, vy: Math.sin(a2) * 320, life: 1.2 }); }
-            st.mouth = 'open'; st.mouthT = 0.1;
-          }
-          st.sh.forEach(function (b) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; });
-          st.en.forEach(function (e) {
-            var a = Math.atan2(st.y - e.y, st.x - e.x); e.x += Math.cos(a) * e.v * dt; e.y += Math.sin(a) * e.v * dt;
-            st.sh.forEach(function (b) { if (b.life > 0 && Math.hypot(b.x - e.x, b.y - e.y) < 15) { b.life = 0; e.hp--; st.burst(e.x, e.y, '#ff7043', 5); } });
-            if (e.hp <= 0 && !e.dead) { e.dead = true; st.score++; st.gems.push({ x: e.x, y: e.y }); st.pop(e.x, e.y - 10, '+1'); st.burst(e.x, e.y, '#ffb74d', 9); Sound.climb(Math.min(14, st.score)); st.hud(); }
-            if (!e.dead && st.inv <= 0 && Math.hypot(st.x - e.x, st.y - e.y) < 19) { e.dead = true; st.inv = 1.1; st.hurt(); st.burst(st.x, st.y, '#ff5252', 12); }
-          });
-          st.en = st.en.filter(function (e) { return !e.dead; }); st.sh = st.sh.filter(function (b) { return b.life > 0; });
-          st.gems = st.gems.filter(function (gm) {
-            var d2 = Math.hypot(st.x - gm.x, st.y - gm.y);
-            if (d2 < st.magnet) { gm.x += (st.x - gm.x) * Math.min(1, dt * 9); gm.y += (st.y - gm.y) * Math.min(1, dt * 9); }
-            if (d2 < 14) { st.xp++; Sound.tick(); if (st.xp >= st.need) st.levelUp(); return false; }
-            return true;
-          });
-        },
-        draw: function (st) {
-          var g = st.g;
-          g.fillStyle = 'rgba(255,255,255,.04)'; for (var i = 0; i < st.W; i += 40) { g.fillRect(i, 0, 1, st.H); } for (var j = 0; j < st.H; j += 40) { g.fillRect(0, j, st.W, 1); }
-          g.fillStyle = '#8be9fd'; st.gems.forEach(function (gm) { g.beginPath(); g.arc(gm.x, gm.y, 4, 0, 6.3); g.fill(); });
-          g.fillStyle = '#fff'; st.sh.forEach(function (b) { g.beginPath(); g.arc(b.x, b.y, 3.5, 0, 6.3); g.fill(); });
-          g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '24px serif'; g.fillStyle = '#fff';
-          st.en.forEach(function (e) { g.fillText(e.icon, e.x, e.y + 1); });
-          if (st.inv > 0 && Math.floor(st.inv * 12) % 2) g.globalAlpha = 0.4;
-          drawDot(g, st.x, st.y, 15, st.mouth); g.globalAlpha = 1;
-          g.fillStyle = 'rgba(255,255,255,.15)'; g.fillRect(0, st.H - 6, st.W, 6); g.fillStyle = '#8be9fd'; g.fillRect(0, st.H - 6, st.W * st.xp / st.need, 6);
-          if (st.choice) {
-            g.fillStyle = 'rgba(0,0,0,.72)'; g.fillRect(0, 0, st.W, st.H);
-            g.fillStyle = '#fff'; g.font = 'bold 16px sans-serif'; g.fillText('Level ' + st.lvl + '! Pick one', st.W / 2, 60);
-            st.choice.forEach(function (c, k) {
-              var x = 20 + k * (st.W / 2 - 10), w = st.W / 2 - 30;
-              g.fillStyle = '#26262a'; g.strokeStyle = '#e0a340'; g.lineWidth = 2; g.beginPath(); g.roundRect ? g.roundRect(x, 120, w, 170, 14) : g.rect(x, 120, w, 170); g.fill(); g.stroke();
-              g.fillStyle = '#e0a340'; g.font = 'bold 16px sans-serif'; g.fillText(c.n, x + w / 2, 175); g.fillStyle = '#ddd'; g.font = '13px sans-serif'; g.fillText(c.d, x + w / 2, 215);
-              g.fillStyle = '#888'; g.fillText(String(k + 1), x + w / 2, 265);
-            });
-          }
-        }
-      });
-    }
-
-    /* Dot Jump: bounce up through the kitchen. Springs, moving shelves and shelves that crumble. */
-    function jumpGame() {
-      canvasGame({
-        id: 'jump', label: 'Dot Jump', again: jumpGame, W: 340, H: 460, lives: 0,
-        intro: 'Up we go. Land on the shelves. Grab the dishes. Do not fall.',
-        how: 'Drag left and right (or use the arrow keys) to steer. Dot bounces by itself.',
-        notes: ['Gravity again. It is always gravity.', 'I was nearly at the ceiling.'],
-        hudText: function (st) { return 'Height ' + Math.floor(st.height / 10) + ' · ' + st.dishes + ' dishes'; },
-        setup: function (st) {
-          st.x = st.W / 2; st.y = st.H - 90; st.vy = -520; st.height = 0; st.dishes = 0; st.cam = 0; st.keys = {}; st.pl = []; st.top = st.H;
-          function shelf(y) { var r = Math.random(), t = st.height > 200 && r < 0.18 ? 'move' : st.height > 400 && r < 0.3 ? 'crumble' : r > 0.93 ? 'spring' : 'norm'; var p = { x: 20 + Math.random() * (st.W - 80), y: y, w: 62, t: t, dx: 50 + Math.random() * 40, gone: false }; if (Math.random() < 0.28) p.food = DISH(); st.pl.push(p); }
-          st.shelf = shelf; for (var y = st.H - 40; y > -40; y -= 62) shelf(y); st.pl[0] = { x: st.W / 2 - 40, y: st.H - 40, w: 80, t: 'norm', dx: 0 };
-          st.on(document, 'keydown', function (e) { st.keys[e.key] = true; }); st.on(document, 'keyup', function (e) { st.keys[e.key] = false; });
-        },
-        update: function (st, dt) {
-          var tx = st.ptr.down ? st.ptr.x : null;
-          if (st.keys.ArrowLeft) st.x -= 230 * dt; else if (st.keys.ArrowRight) st.x += 230 * dt; else if (tx !== null) st.x += (tx - st.x) * Math.min(1, dt * 10);
-          if (st.x < -10) st.x = st.W + 10; if (st.x > st.W + 10) st.x = -10;
-          var oy = st.y; st.vy += 1150 * dt; st.y += st.vy * dt;
-          if (st.y < st.H * 0.4) { var d = st.H * 0.4 - st.y; st.y = st.H * 0.4; st.height += d; st.pl.forEach(function (p) { p.y += d; }); }
-          st.pl.forEach(function (p) {
-            if (p.t === 'move') { p.x += p.dx * dt; if (p.x < 0 || p.x + p.w > st.W) p.dx = -p.dx; }
-            if (!p.gone && st.vy > 0 && oy + 14 <= p.y + 4 && st.y + 14 >= p.y && st.x > p.x - 8 && st.x < p.x + p.w + 8) {
-              if (p.t === 'crumble') { p.gone = true; st.burst(p.x + 30, p.y, '#b58a5a', 10); Sound.shrug(); }
-              else { st.vy = p.t === 'spring' ? -860 : -560; st.mouth = 'open'; st.mouthT = 0.2; if (p.t === 'spring') { st.burst(st.x, p.y, '#ff5252', 10); st.pop(st.x, p.y - 20, 'BOING', '#ff8a80'); Sound.climb(10); } else Sound.tick(); }
-            }
-            if (p.food && Math.hypot(st.x - (p.x + p.w / 2), st.y - (p.y - 18)) < 24) { p.food = null; st.dishes++; st.score += 5; st.pop(st.x, st.y - 24, '+5', '#e0a340'); st.burst(st.x, st.y, '#e0a340', 8); Sound.climb(Math.min(14, st.dishes * 2)); st.hud(); }
-          });
-          st.pl = st.pl.filter(function (p) { return p.y < st.H + 20 && !p.gone; });
-          var hi = Math.min.apply(null, st.pl.map(function (p) { return p.y; }));
-          while (hi > -30) { hi -= 56 + Math.min(40, st.height / 80); st.shelf(hi); }
-          st.score = Math.floor(st.height / 10) + st.dishes * 5; st.hud();
-          if (st.y > st.H + 30) { st.over = true; st.shake = 10; Sound.bust(); }
-        },
-        draw: function (st) {
-          var g = st.g;
-          st.pl.forEach(function (p) {
-            g.fillStyle = p.t === 'spring' ? '#ff5252' : p.t === 'crumble' ? '#9c7a52' : p.t === 'move' ? '#64b5f6' : '#7bd17b';
-            g.beginPath(); g.roundRect ? g.roundRect(p.x, p.y, p.w, 10, 5) : g.rect(p.x, p.y, p.w, 10); g.fill();
-            if (p.food) { g.font = '22px serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#fff'; g.fillText(p.food, p.x + p.w / 2, p.y - 16); }
-          });
-          drawDot(g, st.x, st.y, 15, st.vy < 0 ? 'open' : st.mouth);
-        }
-      });
-    }
-
-    /* Dish Stack: drop each dish exactly on the last one. What overhangs is cut off. */
-    function stackGame() {
-      var keyHandler = null;
-      canvasGame({
-        id: 'stack', label: 'Dish Stack', again: stackGame, lives: 3,
-        intro: 'Stack the dishes. Time it right. Do not think about the wobble.',
-        how: 'Tap the board, or press space, to drop the dish.',
-        notes: ['Memory is overrated.', 'It was the dish’s fault.'],
-        setup: function (st) {
-          st.h = 22; st.blocks = [{ x: st.W / 2 - 80, w: 160, icon: '\u{1F35E}' }]; st.cx = 0; st.dir = 1; st.w = 160; st.shift = 0;
-          st.cx = 0;
-          function drop() {
-            var top = st.blocks[st.blocks.length - 1], left = Math.max(top.x, st.cx), right = Math.min(top.x + top.w, st.cx + st.w);
-            if (right - left < 4) { st.hurt(); st.cx = 0; st.dir = 1; return; }
-            var perfect = Math.abs(st.cx - top.x) < 5;
-            var nx = perfect ? top.x : left, nw = perfect ? top.w : right - left;
-            st.blocks.push({ x: nx, w: nw, icon: pickOne(Data.ITEMS).icon });
-            if (perfect) { st.pop(st.cx + st.w / 2, 120, 'Perfect', '#e0a340'); st.burst(st.cx + nw / 2, 160, '#e0a340', 14); }
-            st.w = nw; st.score++; st.mouth = 'open'; st.mouthT = 0.3; Sound.climb(Math.min(14, st.score)); st.hud();
-          }
-          st.cv.addEventListener('pointerdown', function (e) { e.preventDefault(); drop(); });
-          keyHandler = function (e) { if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); drop(); } };
-          document.addEventListener('keydown', keyHandler);
-        },
-        update: function (st, dt) {
-          var speed = 130 + st.score * 9;
-          st.cx += st.dir * speed * dt;
-          if (st.cx < 0) { st.cx = 0; st.dir = 1; }
-          if (st.cx + st.w > st.W) { st.cx = st.W - st.w; st.dir = -1; }
-          var want = Math.max(0, st.blocks.length - 11) * st.h;
-          st.shift += (want - st.shift) * Math.min(1, dt * 6);
-        },
-        draw: function (st) {
-          var g = st.g, base = st.H - 30 + st.shift;
-          st.blocks.forEach(function (b, i) {
-            var y = base - i * st.h;
-            g.fillStyle = 'hsl(' + ((i * 23 + 30) % 360) + ',60%,58%)';
-            g.fillRect(b.x, y, b.w, st.h - 2);
-          });
-          var y = base - st.blocks.length * st.h;
-          g.fillStyle = '#f5eee1'; g.fillRect(st.cx, y, st.w, st.h - 2);
-          drawDot(g, st.cx + st.w / 2, y - 16, 14, st.mouth);
-        },
-        teardown: function () { if (keyHandler) document.removeEventListener('keydown', keyHandler); }
-      });
-    }
-
-    /* Seed Spit: drag back and let go. Wind moves the seed; the plate drifts up and down. */
-    function spitGame() {
-      canvasGame({
-        id: 'spit', label: 'Seed Spit', again: spitGame, W: 360, H: 380, lives: 0,
-        intro: 'Eight seeds. One plate. Mind the wind. I will not be blamed.',
-        how: 'Drag back from Dot to aim and set the power, then let go.',
-        notes: ['The wind did that. Not me.', 'The plate moved. I saw it move.'],
-        hudText: function (st) { return 'Score ' + st.score + ' · ' + st.shots + ' seeds left'; },
-        setup: function (st) {
-          st.shots = 8; st.px = 60; st.py = st.H - 60; st.aim = null; st.seed = null; st.wind = (Math.random() - 0.5) * 160; st.ty = 150; st.tx = st.W - 56; st.trail = [];
-          st.cv.addEventListener('pointerdown', function (e) { if (!st.seed && st.shots > 0) st.aim = { x: st.ptr.x, y: st.ptr.y }; });
-          st.cv.addEventListener('pointerup', function () {
-            if (!st.aim || st.seed) return;
-            var dx = st.px - st.ptr.x, dy = st.py - st.ptr.y, pw = Math.min(130, Math.hypot(dx, dy));
-            st.aim = null;
-            if (pw < 14) return;
-            var a = Math.atan2(dy, dx); st.seed = { x: st.px, y: st.py, vx: Math.cos(a) * pw * 4.2, vy: Math.sin(a) * pw * 4.2 }; st.shots--; st.trail = []; st.mouth = 'open'; st.mouthT = 0.3; Sound.tick(); st.hud();
-          });
-        },
-        update: function (st, dt) {
-          st.ty = st.H * 0.42 + Math.sin(st.t * 0.9) * 90;
-          if (st.seed) {
-            var sd = st.seed; sd.vx += st.wind * dt; sd.vy += 420 * dt; sd.x += sd.vx * dt; sd.y += sd.vy * dt; st.trail.push([sd.x, sd.y]);
-            var d = Math.hypot(sd.x - st.tx, sd.y - st.ty);
-            if (d < 34) { var pts = d < 9 ? 50 : d < 20 ? 25 : 10; st.score += pts; st.pop(sd.x, sd.y - 10, pts === 50 ? 'Bullseye +50' : '+' + pts, '#e0a340'); st.burst(sd.x, sd.y, '#e0a340', pts === 50 ? 22 : 10); Sound.climb(pts / 4); st.seed = null; st.wind = (Math.random() - 0.5) * 160; st.hud(); }
-            else if (sd.y > st.H || sd.x > st.W + 20 || sd.x < -20) { st.pop(Math.max(20, Math.min(st.W - 20, sd.x)), st.H - 20, 'Miss', '#ff8a80'); st.seed = null; st.wind = (Math.random() - 0.5) * 160; }
-          }
-          if (!st.seed && st.shots <= 0) st.over = true;
-        },
-        draw: function (st) {
-          var g = st.g;
-          g.fillStyle = 'rgba(255,255,255,.06)'; g.fillRect(0, st.py + 22, st.W, st.H);
-          [34, 20, 9].forEach(function (r, i) { g.fillStyle = ['#e0a340', '#f5eee1', '#d9534f'][i]; g.beginPath(); g.arc(st.tx, st.ty, r, 0, 6.3); g.fill(); });
-          g.fillStyle = '#fff'; g.font = '13px sans-serif'; g.textAlign = 'center'; g.fillText('wind ' + (st.wind > 0 ? '→' : '←') + ' ' + Math.round(Math.abs(st.wind) / 16), st.W / 2, 24);
-          if (st.aim) {
-            var dx = st.px - st.ptr.x, dy = st.py - st.ptr.y, pw = Math.min(130, Math.hypot(dx, dy)), a = Math.atan2(dy, dx), vx = Math.cos(a) * pw * 4.2, vy = Math.sin(a) * pw * 4.2;
-            g.fillStyle = 'rgba(255,255,255,.55)';
-            for (var k = 1; k < 14; k++) { var tt = k * 0.07; g.beginPath(); g.arc(st.px + vx * tt + 0.5 * st.wind * tt * tt, st.py + vy * tt + 0.5 * 420 * tt * tt, 2.2, 0, 6.3); g.fill(); }
-          }
-          g.fillStyle = 'rgba(255,255,255,.3)'; st.trail.forEach(function (p) { g.fillRect(p[0], p[1], 2, 2); });
-          if (st.seed) { g.fillStyle = '#fff'; g.beginPath(); g.arc(st.seed.x, st.seed.y, 4, 0, 6.3); g.fill(); }
-          drawDot(g, st.px, st.py, 20, st.aim ? 'open' : st.mouth);
-        }
-      });
-    }
-
-    /* Merge Pot: drop dishes into the pot. Two of the same merge into the next one up. Do not let the pot overflow. */
-    function mergeGame() {
-      var CHAIN = ['\u{1F9C4}', '\u{1F345}', '\u{1F955}', '\u{1F336}\u{FE0F}', '\u{1F954}', '\u{1F373}', '\u{1F354}', '\u{1F355}', '\u{1F35C}', '\u{1F370}', '\u{1F451}'];
-      var R = function (t) { return 13 + t * 5.4; };
-      canvasGame({
-        id: 'merge', label: 'Merge Pot', again: mergeGame, W: 340, H: 480, lives: 0,
-        intro: 'Drop. Merge. Climb from a garlic clove to a crown. Mind the rim.',
-        how: 'Move to aim, tap to drop. Same dishes merge into the next one.',
-        notes: ['The pot overflowed. Pots do that.', 'So close to the crown. Allegedly.'],
-        setup: function (st) {
-          st.balls = []; st.cd = 0; st.next = Math.floor(Math.random() * 3); st.cur = Math.floor(Math.random() * 3); st.top = 80; st.full = 0; st.best = 0;
-          st.drop = function () {
-            if (st.cd > 0 || st.over) return;
-            var x = Math.max(22 + R(st.cur), Math.min(st.W - 22 - R(st.cur), st.ptr.x));
-            st.balls.push({ x: x, y: 40, vx: 0, vy: 60, t: st.cur, age: 0 });
-            st.cur = st.next; st.next = Math.floor(Math.random() * Math.min(4, 2 + Math.floor(st.score / 300))); st.cd = 0.5; Sound.tick();
-          };
-          st.cv.addEventListener('pointerup', function () { st.drop(); });
-          st.on(document, 'keydown', function (e) { if (e.key === ' ' || e.key === 'ArrowDown') { e.preventDefault(); st.drop(); } if (e.key === 'ArrowLeft') st.ptr.x -= 24; if (e.key === 'ArrowRight') st.ptr.x += 24; });
-        },
-        update: function (st, dt) {
-          st.cd -= dt;
-          var L = 22, Rt = st.W - 22, F = st.H - 22, steps = 4, h2 = dt / steps;
-          for (var s2 = 0; s2 < steps; s2++) {
-            st.balls.forEach(function (b) { b.vy += 1000 * h2; b.x += b.vx * h2; b.y += b.vy * h2; b.age += h2; var r = R(b.t);
-              if (b.x < L + r) { b.x = L + r; b.vx = Math.abs(b.vx) * 0.3; } if (b.x > Rt - r) { b.x = Rt - r; b.vx = -Math.abs(b.vx) * 0.3; }
-              if (b.y > F - r) { b.y = F - r; b.vy = -Math.abs(b.vy) * 0.18; b.vx *= 0.96; } });
-            for (var i = 0; i < st.balls.length; i++) for (var j = i + 1; j < st.balls.length; j++) {
-              var a = st.balls[i], b2 = st.balls[j]; if (!a || !b2 || a.dead || b2.dead) continue;
-              var dx = b2.x - a.x, dy = b2.y - a.y, d = Math.hypot(dx, dy) || 0.01, min = R(a.t) + R(b2.t);
-              if (d < min) {
-                if (a.t === b2.t && a.t < CHAIN.length - 1 && (a.age > 0.05 || b2.age > 0.05)) {
-                  a.dead = b2.dead = true; var nt = a.t + 1; st.balls.push({ x: (a.x + b2.x) / 2, y: (a.y + b2.y) / 2, vx: 0, vy: -60, t: nt, age: 0 });
-                  var pts = (nt + 1) * 10; st.score += pts; st.pop((a.x + b2.x) / 2, (a.y + b2.y) / 2 - 18, '+' + pts, '#e0a340'); st.burst((a.x + b2.x) / 2, (a.y + b2.y) / 2, '#e0a340', 12 + nt); Sound.climb(Math.min(14, nt * 2)); st.hud();
-                  if (nt === CHAIN.length - 1) { st.score += 500; st.pop(st.W / 2, 120, 'CROWN +500', '#ffd54f'); st.shake = 8; }
-                  continue;
-                }
-                var nx = dx / d, ny = dy / d, over = (min - d) / 2, ma = R(a.t) * R(a.t), mb = R(b2.t) * R(b2.t), tot = ma + mb;
-                a.x -= nx * over * (mb / tot) * 2; a.y -= ny * over * (mb / tot) * 2; b2.x += nx * over * (ma / tot) * 2; b2.y += ny * over * (ma / tot) * 2;
-                var rv = (b2.vx - a.vx) * nx + (b2.vy - a.vy) * ny;
-                if (rv < 0) { var imp = -rv * 1.15; a.vx -= nx * imp * (mb / tot); a.vy -= ny * imp * (mb / tot); b2.vx += nx * imp * (ma / tot); b2.vy += ny * imp * (ma / tot); }
-              }
-            }
-            st.balls = st.balls.filter(function (b) { return !b.dead; });
-          }
-          // overflow: a settled ball above the rim for a while
-          var over2 = st.balls.some(function (b) { return b.age > 1.4 && b.y - R(b.t) < st.top && Math.abs(b.vy) < 60; });
-          st.full = over2 ? st.full + dt : Math.max(0, st.full - dt * 2);
-          if (st.full > 1.6) { st.over = true; st.shake = 10; Sound.bust(); }
-        },
-        draw: function (st) {
-          var g = st.g;
-          g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = 3; g.beginPath(); g.moveTo(20, st.top - 20); g.lineTo(20, st.H - 18); g.lineTo(st.W - 20, st.H - 18); g.lineTo(st.W - 20, st.top - 20); g.stroke();
-          g.setLineDash([6, 6]); g.strokeStyle = 'rgba(255,90,90,' + (0.25 + Math.min(0.7, st.full / 1.6)) + ')'; g.beginPath(); g.moveTo(20, st.top); g.lineTo(st.W - 20, st.top); g.stroke(); g.setLineDash([]);
-          g.textAlign = 'center'; g.textBaseline = 'middle';
-          st.balls.forEach(function (b) { var r = R(b.t); g.fillStyle = 'hsla(' + (b.t * 31 + 20) + ',55%,52%,.28)'; g.beginPath(); g.arc(b.x, b.y, r, 0, 6.3); g.fill(); g.strokeStyle = 'hsla(' + (b.t * 31 + 20) + ',60%,62%,.7)'; g.lineWidth = 2; g.stroke(); g.fillStyle = '#fff'; g.font = Math.round(r * 1.25) + 'px serif'; g.fillText(CHAIN[b.t], b.x, b.y + 1); });
-          var x = Math.max(22 + R(st.cur), Math.min(st.W - 22 - R(st.cur), st.ptr.x));
-          g.globalAlpha = st.cd > 0 ? 0.35 : 1; g.fillStyle = '#fff'; g.font = Math.round(R(st.cur) * 1.25) + 'px serif'; g.fillText(CHAIN[st.cur], x, 36);
-          g.globalAlpha = 0.25; g.fillRect(x - 0.5, 50, 1, st.H); g.globalAlpha = 1;
-          g.font = '12px sans-serif'; g.fillStyle = '#aaa'; g.fillText('next ' + CHAIN[st.next], st.W - 44, 14);
-        }
-      });
-    }
-
-    /* Dish Pop: aim and shoot. Three of a kind pop; whatever they were holding up falls. */
-    function popBubbles() {
-      var COLORS = ['#e8573b', '#e0a340', '#62b6ea', '#7bd17b', '#c58bf0'];
-      canvasGame({
-        id: 'pop', label: 'Dish Pop', again: popBubbles, W: 360, H: 480, lives: 0,
-        intro: 'Match three. Bring the ceiling down before it brings you down.',
-        how: 'Aim with your finger or mouse and tap to shoot. Bounce shots off the walls.',
-        notes: ['The ceiling won. It is a very patient ceiling.', 'I was aiming at the other one.'],
-        setup: function (st) {
-          st.R = 17; st.cols = 10; st.rows = 15; st.grid = []; st.icons = shuffle(Data.ITEMS.map(function (d) { return d.icon; }).filter(function (v, i, a) { return a.indexOf(v) === i; })).slice(0, 5);
-          for (var r = 0; r < st.rows; r++) { st.grid.push([]); for (var c = 0; c < st.cols; c++) st.grid[r].push(r < 6 ? Math.floor(Math.random() * 5) : -1); }
-          st.shot = null; st.cur = Math.floor(Math.random() * 5); st.next = Math.floor(Math.random() * 5); st.shots = 0; st.fall = [];
-          st.xy = function (r, c) { return { x: st.R + c * 2 * st.R + (r % 2 ? st.R : 0), y: st.R + r * st.R * 1.74 }; };
-          st.nb = function (r, c) { var o = r % 2 ? [[0, -1], [0, 1], [-1, 0], [-1, 1], [1, 0], [1, 1]] : [[0, -1], [0, 1], [-1, -1], [-1, 0], [1, -1], [1, 0]]; return o.map(function (d) { return [r + d[0], c + d[1]]; }).filter(function (p) { return p[0] >= 0 && p[0] < st.rows && p[1] >= 0 && p[1] < st.cols; }); };
-          st.cv.addEventListener('pointerup', function () {
-            if (st.shot || st.over || st.paused) return;
-            var dx = st.ptr.x - st.W / 2, dy = st.ptr.y - (st.H - 34), a = Math.atan2(dy, dx); if (dy > -20) return;
-            st.shot = { x: st.W / 2, y: st.H - 34, vx: Math.cos(a) * 560, vy: Math.sin(a) * 560, c: st.cur }; st.cur = st.next; st.next = Math.floor(Math.random() * 5); Sound.tick();
-          });
-        },
-        update: function (st, dt) {
-          st.fall.forEach(function (f) { f.vy += 900 * dt; f.y += f.vy * dt; }); st.fall = st.fall.filter(function (f) { return f.y < st.H + 20; });
-          var sh = st.shot; if (!sh) return;
-          var steps = 3;
-          for (var k = 0; k < steps && st.shot; k++) {
-            sh.x += sh.vx * dt / steps; sh.y += sh.vy * dt / steps;
-            if (sh.x < st.R) { sh.x = st.R; sh.vx = Math.abs(sh.vx); } if (sh.x > st.W - st.R) { sh.x = st.W - st.R; sh.vx = -Math.abs(sh.vx); }
-            var hit = sh.y <= st.R;
-            for (var r = 0; r < st.rows && !hit; r++) for (var c = 0; c < st.cols; c++) if (st.grid[r][c] >= 0) { var p = st.xy(r, c); if (Math.hypot(p.x - sh.x, p.y - sh.y) < st.R * 1.8) { hit = true; break; } }
-            if (hit) { place(st, sh); st.shot = null; }
-          }
-        },
-        draw: function (st) {
-          var g = st.g; g.textAlign = 'center'; g.textBaseline = 'middle';
-          function bub(x, y, c) { g.fillStyle = COLORS[c] + '55'; g.beginPath(); g.arc(x, y, st.R - 1, 0, 6.3); g.fill(); g.strokeStyle = COLORS[c]; g.lineWidth = 2; g.stroke(); g.fillStyle = '#fff'; g.font = '20px serif'; g.fillText(st.icons[c], x, y + 1); }
-          for (var r = 0; r < st.rows; r++) for (var c = 0; c < st.cols; c++) if (st.grid[r][c] >= 0) { var p = st.xy(r, c); bub(p.x, p.y, st.grid[r][c]); }
-          st.fall.forEach(function (f) { bub(f.x, f.y, f.c); });
-          var lineY = st.xy(12, 0).y; g.setLineDash([5, 6]); g.strokeStyle = 'rgba(255,90,90,.45)'; g.beginPath(); g.moveTo(0, lineY); g.lineTo(st.W, lineY); g.stroke(); g.setLineDash([]);
-          var dx = st.ptr.x - st.W / 2, dy = st.ptr.y - (st.H - 34), a = Math.atan2(dy, dx);
-          if (!st.shot && dy < -20) { g.fillStyle = 'rgba(255,255,255,.5)'; for (var q = 1; q < 9; q++) { g.beginPath(); g.arc(st.W / 2 + Math.cos(a) * q * 26, st.H - 34 + Math.sin(a) * q * 26, 2, 0, 6.3); g.fill(); } }
-          if (st.shot) bub(st.shot.x, st.shot.y, st.shot.c);
-          drawDot(g, st.W / 2, st.H - 30, 22, st.mouth); bub(st.W / 2, st.H - 34, st.cur); g.globalAlpha = 0.8; bub(st.W / 2 - 60, st.H - 24, st.next); g.globalAlpha = 1;
-        }
-      });
-      function place(st, sh) {
-        var best = null, bd = 1e9;
-        for (var r = 0; r < st.rows; r++) for (var c = 0; c < st.cols; c++) if (st.grid[r][c] < 0) { var p = st.xy(r, c), d = Math.hypot(p.x - sh.x, p.y - sh.y); if (d < bd) { bd = d; best = [r, c]; } }
-        if (!best) { st.over = true; return; }
-        st.grid[best[0]][best[1]] = sh.c; st.shots++;
-        var seen = {}, stack = [best], grp = [];
-        while (stack.length) { var cur = stack.pop(), key = cur[0] + ',' + cur[1]; if (seen[key]) continue; seen[key] = 1; if (st.grid[cur[0]][cur[1]] !== sh.c) continue; grp.push(cur); st.nb(cur[0], cur[1]).forEach(function (n) { stack.push(n); }); }
-        if (grp.length >= 3) {
-          grp.forEach(function (p) { var xy = st.xy(p[0], p[1]); st.burst(xy.x, xy.y, COLORS[sh.c], 7); st.grid[p[0]][p[1]] = -1; }); st.score += grp.length * 10 + (grp.length - 3) * 10; st.pop(sh.x, sh.y - 16, '+' + (grp.length * 10), '#e0a340'); Sound.climb(Math.min(14, grp.length * 2));
-          var con = {}, q = []; for (var c2 = 0; c2 < st.cols; c2++) if (st.grid[0][c2] >= 0) { q.push([0, c2]); con['0,' + c2] = 1; }
-          while (q.length) { var p2 = q.pop(); st.nb(p2[0], p2[1]).forEach(function (n) { var k2 = n[0] + ',' + n[1]; if (!con[k2] && st.grid[n[0]][n[1]] >= 0) { con[k2] = 1; q.push(n); } }); }
-          var dropped = 0; for (var r2 = 0; r2 < st.rows; r2++) for (var c3 = 0; c3 < st.cols; c3++) if (st.grid[r2][c3] >= 0 && !con[r2 + ',' + c3]) { var xy2 = st.xy(r2, c3); st.fall.push({ x: xy2.x, y: xy2.y, vy: 0, c: st.grid[r2][c3] }); st.grid[r2][c3] = -1; dropped++; }
-          if (dropped) { st.score += dropped * 20; st.pop(st.W / 2, 140, 'Drop! +' + dropped * 20, '#8be9fd'); st.shake = 4; }
-          st.mouth = 'open'; st.mouthT = 0.3; st.hud();
-        }
-        if (st.shots % 6 === 0) { st.grid.pop(); var row = []; for (var cc = 0; cc < st.cols; cc++) row.push(Math.floor(Math.random() * 5)); st.grid.unshift(row); st.shake = 3; }
-        for (var rr = 12; rr < st.rows; rr++) for (var c4 = 0; c4 < st.cols; c4++) if (st.grid[rr][c4] >= 0) st.over = true;
-        var alive = st.grid.some(function (r3) { return r3.some(function (v) { return v >= 0; }); }); if (!alive) { st.score += 200; st.pop(st.W / 2, 200, 'Clear! +200', '#ffd54f'); for (var r5 = 0; r5 < 4; r5++) for (var c5 = 0; c5 < st.cols; c5++) st.grid[r5][c5] = Math.floor(Math.random() * 5); }
-      }
-    }
-
-    /* Match Meal: swap two neighbours to line up three. Cascades score more. Sixty seconds. */
-    function matchGame() {
-      var s = screen();
-      words('Swap neighbours. Line up three. Chain reactions are encouraged.', 'happy');
-      var N = 7, ICONS = shuffle(Data.ITEMS.map(function (d) { return d.icon; }).filter(function (v, i, a) { return a.indexOf(v) === i; })).slice(0, 6);
-      var grid = [], els = [], score = 0, left = 60, busy = true, over = false, sel = null, combo = 0, timers = [];
-      var hud = h('p', 'dg-score dg-hud-solo', ''), board = h('div', 'dg-match');
-      s.appendChild(hud); s.appendChild(board); s.appendChild(h('p', 'fine', 'Tap a dish, then a neighbour to swap. Four or more in a row add time.'));
-      function later(f, ms) { timers.push(setTimeout(f, ms)); }
-      function paint() { hud.textContent = 'Score ' + score + (combo > 1 ? ' · ×' + combo : '') + ' · ' + left + 's'; }
-      function tile(r, c, v, fromTop) { var e = h('span', 'dg-mt', ICONS[v]); e.style.setProperty('--r', fromTop ? -1 - Math.random() : r); e.style.setProperty('--c', c); board.appendChild(e); if (fromTop) { void e.offsetWidth; e.style.setProperty('--r', r); } e.addEventListener('pointerdown', function (ev) { ev.preventDefault(); tap(e); }); return { v: v, e: e }; }
-      function pos(e) { for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) if (grid[r][c] && grid[r][c].e === e) return [r, c]; return null; }
-      function setPos(t, r, c) { t.e.style.setProperty('--r', r); t.e.style.setProperty('--c', c); }
-      function matches() {
-        var out = {}, runs = [];
-        for (var r = 0; r < N; r++) { var c = 0; while (c < N) { var v = grid[r][c] && grid[r][c].v, k = c; while (k < N && grid[r][k] && grid[r][k].v === v) k++; if (v !== null && k - c >= 3) { runs.push(k - c); for (var x = c; x < k; x++) out[r + ',' + x] = 1; } c = Math.max(k, c + 1); } }
-        for (var c2 = 0; c2 < N; c2++) { var r2 = 0; while (r2 < N) { var v2 = grid[r2][c2] && grid[r2][c2].v, k2 = r2; while (k2 < N && grid[k2][c2] && grid[k2][c2].v === v2) k2++; if (v2 !== null && k2 - r2 >= 3) { runs.push(k2 - r2); for (var y = r2; y < k2; y++) out[y + ',' + c2] = 1; } r2 = Math.max(k2, r2 + 1); } }
-        return { cells: Object.keys(out), runs: runs };
-      }
-      function swap(a, b) { var t = grid[a[0]][a[1]]; grid[a[0]][a[1]] = grid[b[0]][b[1]]; grid[b[0]][b[1]] = t; setPos(grid[a[0]][a[1]], a[0], a[1]); setPos(grid[b[0]][b[1]], b[0], b[1]); }
-      function hasMove() { for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) for (var d = 0; d < 2; d++) { var r2 = r + d, c2 = c + (1 - d); if (r2 >= N || c2 >= N) continue; var t = grid[r][c]; grid[r][c] = grid[r2][c2]; grid[r2][c2] = t; var ok = matches().cells.length > 0; t = grid[r][c]; grid[r][c] = grid[r2][c2]; grid[r2][c2] = t; if (ok) return true; } return false; }
-      function resolve() {
-        var m = matches();
-        if (!m.cells.length) { combo = 0; busy = false; paint(); if (!hasMove()) shuffleBoard(); return; }
-        combo++; var pts = m.cells.length * 10 * combo; score += pts; if (m.runs.some(function (x) { return x >= 4; })) left += 3; Sound.climb(Math.min(14, combo * 3)); Dot.mood(dotEl, combo > 2 ? 'celebrate' : 'happy', 500); paint();
-        m.cells.forEach(function (k) { var p = k.split(','), t = grid[+p[0]][+p[1]]; t.e.classList.add('is-gone'); (function (e) { later(function () { e.remove(); }, 220); })(t.e); grid[+p[0]][+p[1]] = null; });
-        later(function () {
-          for (var c = 0; c < N; c++) { var w = N - 1; for (var r = N - 1; r >= 0; r--) if (grid[r][c]) { if (r !== w) { grid[w][c] = grid[r][c]; grid[r][c] = null; setPos(grid[w][c], w, c); } w--; } for (var r3 = w; r3 >= 0; r3--) grid[r3][c] = tile(r3, c, Math.floor(Math.random() * ICONS.length), true); }
-          later(resolve, 360);
-        }, 240);
-      }
-      function shuffleBoard() { var all = []; for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) all.push(grid[r][c]); all = shuffle(all); var i = 0; for (r = 0; r < N; r++) for (c = 0; c < N; c++) { grid[r][c] = all[i++]; setPos(grid[r][c], r, c); } later(resolve, 350); }
-      function tap(e) {
-        if (busy || over) return; var p = pos(e); if (!p) return; Sound.tick();
-        if (!sel) { sel = p; e.classList.add('is-sel'); return; }
-        var a = sel, selEl = grid[a[0]][a[1]].e; selEl.classList.remove('is-sel'); sel = null;
-        if (Math.abs(a[0] - p[0]) + Math.abs(a[1] - p[1]) !== 1) { sel = p; e.classList.add('is-sel'); return; }
-        busy = true; swap(a, p);
-        if (!matches().cells.length) { later(function () { swap(a, p); Sound.shrug(); busy = false; }, 260); } else later(resolve, 260);
-      }
-      for (var r = 0; r < N; r++) { grid.push([]); for (var c = 0; c < N; c++) { var v; do { v = Math.floor(Math.random() * ICONS.length); } while ((c > 1 && grid[r][c - 1].v === v && grid[r][c - 2].v === v) || (r > 1 && grid[r - 1][c].v === v && grid[r - 2][c].v === v)); grid[r].push(tile(r, c, v, false)); } }
-      if (!hasMove()) shuffleBoard(); else busy = false;
-      paint();
-      var clock = setInterval(function () { if (busy && false) return; left--; paint(); if (left <= 0) { over = true; stopGame(); results('match', score, matchGame, ['The board won. Boards do.', 'Three in a row was right there.']); } }, 1000);
-      cleanup = function () { over = true; clearInterval(clock); timers.forEach(clearTimeout); };
-    }
-
-    /* Chilli Invaders: hold the line. Rows of chillies march down; Dot shoots up. Catch the sparkles for better seeds. */
-    function invadeGame() {
-      canvasGame({
-        id: 'invade', label: 'Chilli Invaders', again: invadeGame, W: 360, H: 460, lives: 3,
-        intro: 'They march. I shoot. You steer. We have done this before.',
-        how: 'Drag to move Dot (or use the arrow keys). It fires by itself. Catch the sparkles.',
-        notes: ['They reached the kitchen. We lost the kitchen.', 'One more wave. Always one more wave.'],
-        hudText: function (st) { return 'Wave ' + st.wave + ' · ' + st.score; },
-        setup: function (st) {
-          st.x = st.W / 2; st.wave = 0; st.en = []; st.sh = []; st.bomb = []; st.drops = []; st.dir = 1; st.fire = 0; st.rate = 0.34; st.triple = 0; st.inv = 0; st.keys = {};
-          st.next = function () { st.wave++; st.en = []; var rows = Math.min(5, 3 + Math.floor(st.wave / 2)); for (var r = 0; r < rows; r++) for (var c = 0; c < 8; c++) st.en.push({ x: 40 + c * 40, y: 50 + r * 34, icon: ['\u{1F336}\u{FE0F}', '\u{1F9C5}', '\u{1F346}', '\u{1F345}', '\u{1F955}'][r % 5], hp: r === 0 && st.wave > 2 ? 2 : 1, pts: 10 + (rows - r) * 5 }); st.dir = 1; st.pause = 1.2; st.hud(); };
-          st.next();
-          st.on(document, 'keydown', function (e) { st.keys[e.key] = true; }); st.on(document, 'keyup', function (e) { st.keys[e.key] = false; });
-        },
-        update: function (st, dt) {
-          var tx = st.ptr.down ? st.ptr.x : st.x; if (st.keys.ArrowLeft) tx = st.x - 60; if (st.keys.ArrowRight) tx = st.x + 60;
-          st.x += Math.max(-300 * dt, Math.min(300 * dt, tx - st.x)); st.x = Math.max(20, Math.min(st.W - 20, st.x)); st.inv -= dt; st.triple -= dt;
-          st.fire -= dt; if (st.fire <= 0) { st.fire = st.triple > 0 ? st.rate * 0.7 : st.rate; var spread = st.triple > 0 ? [-0.18, 0, 0.18] : [0]; spread.forEach(function (a) { st.sh.push({ x: st.x, y: st.H - 52, vx: Math.sin(a) * 420, vy: -Math.cos(a) * 420 }); }); }
-          st.sh.forEach(function (b) { b.x += b.vx * dt; b.y += b.vy * dt; });
-          if ((st.pause -= dt) > 0) { st.sh = st.sh.filter(function (b) { return b.y > -10; }); return; }
-          var speed = (36 + st.wave * 9 + (40 - st.en.length) * 1.5) * st.dir, edge = false;
-          st.en.forEach(function (e) { e.x += speed * dt; if (e.x < 20 || e.x > st.W - 20) edge = true; });
-          if (edge) { st.dir *= -1; st.en.forEach(function (e) { e.y += 16; e.x += st.dir * 3; }); }
-          if (st.en.length && Math.random() < dt * (0.7 + st.wave * 0.15)) { var sh = st.en[Math.floor(Math.random() * st.en.length)]; st.bomb.push({ x: sh.x, y: sh.y + 12, v: 130 + st.wave * 10 }); }
-          st.bomb.forEach(function (b) { b.y += b.v * dt; if (st.inv <= 0 && Math.abs(b.x - st.x) < 15 && Math.abs(b.y - (st.H - 40)) < 17) { b.y = 9999; st.inv = 1.3; st.hurt(); st.burst(st.x, st.H - 40, '#ff5252', 14); } });
-          st.sh.forEach(function (b) { st.en.forEach(function (e) { if (b.y > -10 && !e.dead && Math.abs(b.x - e.x) < 16 && Math.abs(b.y - e.y) < 15) { b.y = -99; e.hp--; st.burst(e.x, e.y, '#ffb74d', 5); if (e.hp <= 0) { e.dead = true; st.score += e.pts; st.pop(e.x, e.y - 12, '+' + e.pts); st.burst(e.x, e.y, '#ff7043', 9); Sound.climb(Math.min(14, Math.floor(st.score / 40))); if (Math.random() < 0.07) st.drops.push({ x: e.x, y: e.y }); st.hud(); } } }); });
-          st.en = st.en.filter(function (e) { return !e.dead; });
-          st.sh = st.sh.filter(function (b) { return b.y > -10 && b.x > -10 && b.x < st.W + 10; }); st.bomb = st.bomb.filter(function (b) { return b.y < st.H + 10; });
-          st.drops.forEach(function (d) { d.y += 90 * dt; if (Math.abs(d.x - st.x) < 20 && Math.abs(d.y - (st.H - 40)) < 20) { d.y = 9999; st.triple = 8; st.pop(st.x, st.H - 70, 'Triple shot!', '#8be9fd'); Sound.climb(12); } });
-          st.drops = st.drops.filter(function (d) { return d.y < st.H + 10; });
-          if (st.en.some(function (e) { return e.y > st.H - 80; })) { st.lives = 0; st.hurt(); st.over = true; }
-          if (!st.en.length) { st.score += 50 * st.wave; st.pop(st.W / 2, st.H / 2, 'Wave clear! +' + 50 * st.wave, '#ffd54f'); Sound.climb(14); st.next(); }
-        },
-        draw: function (st) {
-          var g = st.g; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '26px serif'; g.fillStyle = '#fff';
-          st.en.forEach(function (e) { g.fillText(e.icon, e.x, e.y + Math.sin(st.t * 5 + e.x) * 1.5); });
-          st.bomb.forEach(function (b) { g.fillText('\u{1F525}', b.x, b.y); }); g.fillStyle = '#8be9fd'; st.drops.forEach(function (d) { g.font = '20px serif'; g.fillText('✨', d.x, d.y); });
-          g.fillStyle = '#fff'; st.sh.forEach(function (b) { g.beginPath(); g.arc(b.x, b.y, 3.2, 0, 6.3); g.fill(); });
-          if (st.inv > 0 && Math.floor(st.inv * 12) % 2) g.globalAlpha = 0.4; drawDot(g, st.x, st.H - 40, 19, st.mouth); g.globalAlpha = 1;
-        }
-      });
-    }
-
-    /* Kitchen Crossing: hop across the kitchen. Fire, knives and trolleys run along the lanes. Time your hops. */
-    function crossGame() {
-      var C = 40;
-      canvasGame({
-        id: 'cross', label: 'Kitchen Crossing', again: crossGame, W: 360, H: 440, lives: 3,
-        intro: 'Get Dot across the kitchen. The floor is lava. Also the trolleys.',
-        how: 'Tap above, below, left or right of Dot to hop (or use the arrow keys). Reach the top for points.',
-        notes: ['Splat. Educational.', 'The trolley had right of way.'],
-        hudText: function (st) { return 'Crossed ' + st.crossed + ' · ' + st.score; },
-        setup: function (st) {
-          st.crossed = 0; st.gx = 4; st.gy = 10; st.px = 4 * C + 20; st.py = 10 * C + 20; st.lanes = []; st.hop = 0; st.inv = 0; st.food = [];
-          st.build = function () {
-            st.lanes = []; st.food = [];
-            for (var r = 1; r <= 9; r++) { if (r === 5) continue; var dir = r % 2 ? 1 : -1, sp = (36 + Math.random() * 40 + st.crossed * 6) * dir, gap = 120 + Math.random() * 70 - st.crossed * 4, items = [], n = Math.ceil(st.W / gap) + 2, off = Math.random() * gap; var icon = ['\u{1F525}', '\u{1F52A}', '\u{1F6D2}'][r % 3]; for (var i = 0; i < n; i++) items.push(i * Math.max(95, gap) + off); st.lanes.push({ r: r, sp: sp, items: items, span: n * Math.max(95, gap), icon: icon }); }
-            for (var k = 0; k < 3; k++) st.food.push({ c: Math.floor(Math.random() * 9), r: pickOne([5, 10, 5]), icon: DISH() });
-          };
-          st.build();
-          function go(dx, dy) { if (st.hop > 0.05 || st.over) return; var nx = Math.max(0, Math.min(8, st.gx + dx)), ny = Math.max(0, Math.min(10, st.gy + dy)); if (nx === st.gx && ny === st.gy) return; st.gx = nx; st.gy = ny; st.hop = 0.14; Sound.tick(); if (st.gy === 0) { st.crossed++; st.score += 10 + st.crossed * 2; st.pop(st.px, 30, '+' + (10 + st.crossed * 2), '#ffd54f'); st.burst(st.px, 30, '#ffd54f', 14); Sound.climb(Math.min(14, st.crossed * 2)); st.gy = 10; st.px = st.gx * C + 20; st.py = 10 * C + 20; st.build(); st.hud(); } }
-          st.go = go;
-          var sx = 0, sy = 0;
-          st.cv.addEventListener('pointerdown', function (e) { sx = e.clientX; sy = e.clientY; });
-          st.cv.addEventListener('pointerup', function (e) { var dx = e.clientX - sx, dy = e.clientY - sy; if (Math.abs(dx) > 18 || Math.abs(dy) > 18) { if (Math.abs(dx) > Math.abs(dy)) go(dx > 0 ? 1 : -1, 0); else go(0, dy > 0 ? 1 : -1); } else { var ex = st.ptr.x - st.px, ey = st.ptr.y - st.py; if (Math.abs(ex) > Math.abs(ey)) go(ex > 0 ? 1 : -1, 0); else go(0, ey > 0 ? 1 : -1); } });
-          st.on(document, 'keydown', function (e) { var m = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key]; if (m) { e.preventDefault(); go(m[0], m[1]); } });
-        },
-        update: function (st, dt) {
-          st.hop -= dt; st.inv -= dt;
-          st.px += (st.gx * C + 20 - st.px) * Math.min(1, dt * 22); st.py += (st.gy * C + 20 - st.py) * Math.min(1, dt * 22);
-          st.lanes.forEach(function (l) { for (var i = 0; i < l.items.length; i++) { l.items[i] += l.sp * dt; if (l.sp > 0 && l.items[i] > st.W + 40) l.items[i] -= l.span; if (l.sp < 0 && l.items[i] < -40) l.items[i] += l.span; } if (st.inv <= 0 && Math.abs(st.py - (l.r * C + 20)) < 14) l.items.forEach(function (x) { if (Math.abs(x - st.px) < 22 && st.inv <= 0) { st.inv = 1.2; st.hurt(); st.burst(st.px, st.py, '#ff5252', 14); st.gx = 4; st.gy = 10; st.px = 4 * C + 20; st.py = 10 * C + 20; } }); });
-          st.food = st.food.filter(function (f) { if (f.c === st.gx && f.r === st.gy) { st.score += 5; st.pop(st.px, st.py - 22, '+5', '#e0a340'); Sound.climb(8); st.hud(); return false; } return true; });
-        },
-        draw: function (st) {
-          var g = st.g;
-          for (var r = 0; r <= 10; r++) { var lane = r >= 1 && r <= 9 && r !== 5; g.fillStyle = lane ? 'rgba(255,255,255,.05)' : 'rgba(120,200,120,.13)'; if (r % 2 === 0 || !lane) g.fillRect(0, r * C, st.W, C); else g.fillRect(0, r * C, st.W, C); if (lane) { g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(0, r * C, st.W, 1); } }
-          g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '26px serif'; g.fillStyle = '#fff';
-          st.food.forEach(function (f) { g.fillText(f.icon, f.c * C + 20, f.r * C + 20); });
-          st.lanes.forEach(function (l) { l.items.forEach(function (x) { g.fillText(l.icon, x, l.r * C + 20); }); });
-          if (st.inv > 0 && Math.floor(st.inv * 12) % 2) g.globalAlpha = 0.4; drawDot(g, st.px, st.py - (st.hop > 0 ? 5 : 0), 15, st.hop > 0 ? 'open' : st.mouth); g.globalAlpha = 1;
-          g.fillStyle = 'rgba(255,255,255,.5)'; g.font = '11px sans-serif'; g.fillText('▲ goal', st.W / 2, 8);
-        }
-      });
-    }
-
-    /* Dot Says: watch the pads light up, then play them back. */
-    function simonGame() {
-      var s = screen();
-      words('Watch the pads. Then copy me. I will not make it easy.', 'happy');
-      var PADS = [{ icon: '\u{1F355}', c: '#d9534f' }, { icon: '\u{1F35C}', c: '#e0a340' }, { icon: '\u{1F336}\u{FE0F}', c: '#5cb85c' }, { icon: '\u{1F366}', c: '#5bc0de' }];
-      var seq = [], at = 0, accepting = false, over = false, timers = [];
-      var hud = h('p', 'dg-score dg-hud-solo', 'Round 0');
-      var grid = h('div', 'dg-pads');
-      var pads = PADS.map(function (p, i) {
-        var b = h('button', 'dg-pad', p.icon);
-        b.type = 'button';
-        b.style.setProperty('--pad', p.c);
-        b.addEventListener('pointerdown', function (e) { e.preventDefault(); press(i); });
-        grid.appendChild(b);
-        return b;
-      });
-      s.appendChild(hud); s.appendChild(grid);
-      function flash(i, ms) { pads[i].classList.add('is-lit'); Sound.climb(i * 3 + 2); timers.push(setTimeout(function () { pads[i].classList.remove('is-lit'); }, ms || 380)); }
-      function round() {
-        seq.push(Math.floor(Math.random() * 4)); at = 0; accepting = false;
-        hud.textContent = 'Round ' + seq.length;
-        Dot.mood(dotEl, 'thinking', 1200);
-        var gap = Math.max(260, 520 - seq.length * 14);
-        seq.forEach(function (p, k) { timers.push(setTimeout(function () { flash(p, gap * 0.7); }, 700 + k * gap)); });
-        timers.push(setTimeout(function () { accepting = true; words('Your turn.', 'wink'); }, 700 + seq.length * gap));
-      }
-      function press(i) {
-        if (!accepting || over) return;
-        flash(i, 200);
-        if (i !== seq[at]) {
-          over = true; accepting = false; Sound.bust();
-          timers.push(setTimeout(function () { stopGame(); results('says', seq.length - 1, simonGame, ['I made it too hard. Sorry. Not sorry.', 'Memory is overrated.']); }, 500));
-          return;
-        }
-        at++;
-        if (at === seq.length) { accepting = false; words(pickOne(['Good. Again, longer.', 'Yes. Keep up.', 'Correct. Smug about it.']), 'happy'); timers.push(setTimeout(round, 800)); }
-      }
-      timers.push(setTimeout(round, 600));
-      cleanup = function () { over = true; timers.forEach(clearTimeout); };
-    }
-
-    function build() {
-      root = h('div', 'dg');
-      root.setAttribute('role', 'dialog');
-      root.setAttribute('aria-modal', 'true');
-      root.setAttribute('aria-labelledby', 'dg-title');
-      root.hidden = true;
-      var card = h('div', 'dg-panel');
-      var head = h('header', 'dg-head');
-      dotEl = h('span', 'mascot dg-dot');
-      Dot.mount(dotEl);
-      var txt = h('div', 'dg-headtext');
-      var title = h('h2', '', 'Play with Dot');
-      title.id = 'dg-title';
-      say = h('p', 'dg-say');
-      say.setAttribute('aria-live', 'polite');
-      txt.appendChild(title); txt.appendChild(say);
-      var x = h('button', 'dg-x', '×');
-      x.type = 'button';
-      x.setAttribute('aria-label', 'Close');
-      x.addEventListener('click', close);
-      head.appendChild(dotEl); head.appendChild(txt); head.appendChild(x);
-      body = h('div', 'dg-body');
-      card.appendChild(head); card.appendChild(body);
-      root.appendChild(card);
-      root.addEventListener('click', function (e) { if (e.target === root) close(); });
-      document.addEventListener('keydown', function (e) { if (open && e.key === 'Escape') close(); });
-      document.body.appendChild(root);
-    }
-
-    function openGames(which) {
-      if (open) return;
-      if (!root) build();
-      open = true;
-      back = document.activeElement;
-      if (typeof Buddy !== 'undefined') Buddy.sync();
-      root.hidden = false;
-      root.classList.remove('is-in'); void root.offsetWidth; root.classList.add('is-in');
-      if ('inert' in shell) shell.inert = true;
-      RUN()[which] ? RUN()[which]() : menu();
-      var first = body.querySelector('button');
-      if (first) first.focus();
-    }
-    function close() {
-      if (!open) return;
-      open = false;
-      stopGame();
-      root.hidden = true;
-      if ('inert' in shell && !document.body.classList.contains('is-landing')) shell.inert = false;
-      if (typeof Buddy !== 'undefined') Buddy.sync();
-      if (back && back.focus) try { back.focus(); } catch (err) { /* fine */ }
-    }
-    return { open: openGames, close: close, isOpen: function () { return open; }, stats: function () { return stats; } };
   })();
+
+  window.M45.Play = Play;
 
   /* ------------------------------------------------------------------ Tour */
   /*
@@ -18161,8 +17494,8 @@
     $('welcome-hot').classList.toggle('is-taken', side === 'yes');
     $('welcome-cold').classList.toggle('is-taken', side === 'no');
     $('welcome-taste-note').textContent = side === 'yes'
-      ? 'Noted — warm things, then. That is one answer in; a real game is about eight.'
-      : 'Noted — cold things, then. That is one answer in; a real game is about eight.';
+      ? 'Noted — warm things, then. That is one answer in; a real game is about a dozen.'
+      : 'Noted — cold things, then. That is one answer in; a real game is about a dozen.';
     Sound.tick();
     applyTaste();
   }
@@ -18670,7 +18003,7 @@
   $('landing-recipes').textContent = String(Recipes.count());
   // Measured, not claimed: tools/check.js plays 2,800 games and reports the
   // average. Written here as the number it rounds to rather than as a promise.
-  $('landing-questions').textContent = '8';
+  $('landing-questions').textContent = '12';
 
   // Everybody starts in the same local profile — there is no separate
   // account to sign into first. Premium, when it is on, is layered on top of

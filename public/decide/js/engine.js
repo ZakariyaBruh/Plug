@@ -21,11 +21,11 @@
 })(typeof self !== 'undefined' ? self : this, function (Data) {
   'use strict';
 
-  var MAX_QUESTIONS = 20;
+  var MAX_QUESTIONS = 24;
   var DRINK = 'drink';
-  var CONFIDENT = 0.85;      // enough belief in one dish to stop asking
-  var MIN_GAIN = 0.02;       // below this, no remaining question tells us much
-  var MIN_QUESTIONS = 5;     // always ask a few, even if we get lucky early
+  var CONFIDENT = 0.95;      // enough belief in one dish to stop asking (on the tolerant belief: see `tolerant`)
+  var MIN_GAIN = 0.005;      // below this, no remaining question tells us much
+  var MIN_QUESTIONS = 8;     // always ask a few, even if we get lucky early
   var OPENERS = 3;           // big obvious splits come first, whatever the maths prefers
 
   // A tag of 1 becomes 0.94 rather than 1 so a single surprising answer can
@@ -64,6 +64,19 @@
     // An optional per-dish multiplier on the starting prior — how the taste
     // profile gets a say. Absent, every dish starts equally likely.
     this.bias = options.bias || null;
+    // The stopping rule, overridable so it can be measured rather than argued
+    // about (scripts/accuracy-sweep.mjs); the game itself passes none of these.
+    this.minQuestions = options.minQuestions || MIN_QUESTIONS;
+    this.confident = options.confident || CONFIDENT;
+    this.maxQuestions = options.maxQuestions || MAX_QUESTIONS;
+    // Whether questions are chosen, and the game ended, on a belief that expects the
+    // odd wrong answer (see `tolerant` below). Off only so it can be compared.
+    this.tolerantOn = options.tolerant === undefined ? true : !!options.tolerant;
+    this.noise = options.noise || NOISE;
+    this.slack = options.slack === undefined ? SLACK : options.slack;
+    this.tolerantAfter = options.tolerantAfter === undefined ? TOLERANT_AFTER : options.tolerantAfter;
+    this.lateAfter = options.lateAfter === undefined ? LATE_AFTER : options.lateAfter;
+    this.minGain = options.minGain === undefined ? MIN_GAIN : options.minGain;
 
     // Which answers act as constraints rather than preferences.
     this.strict = {};
@@ -283,6 +296,9 @@
       if (self.rejected[item.name]) self.weights[i] *= 0.0005;
     });
 
+    // The belief before contradictions are priced: what `tolerant` starts from.
+    this.soft = normalise(this.weights.slice());
+
     // Everything is measured against the best anybody manages, so a game where
     // every dish contradicts something still has a live field rather than an
     // empty one. This is the safety valve that used to be a special case in
@@ -300,6 +316,50 @@
   // about sixteen times, so a million is sixteen answers of headroom — and
   // finite, so the dish is behind rather than gone.
   var FAULT = 1e-6;
+
+  /*
+   * A SECOND BELIEF, FOR DECIDING WHAT TO ASK AND WHEN TO STOP. NOT FOR THE ANSWER.
+   *
+   * The ranking above is exact on purpose: a dish that contradicts nothing said
+   * always beats one that does. That is the right promise for "no meat". It is
+   * also why the game used to stop the moment one dish was the only consistent
+   * one, because to a belief that assumes every reply is right, one consistent
+   * dish IS the answer. People do not answer that way. Measured on the whole
+   * catalogue with one reply in twelve wrong, the intended dish came first 40%
+   * of the time, and asking more of the same kind of question moved it by
+   * nothing (scripts/accuracy-sweep.mjs), because the extra questions were asked
+   * of a field already narrowed to a single dish.
+   *
+   * So the questions are chosen on a belief in which a contradiction costs a
+   * dish a factor of NOISE rather than a million: a dish that disagrees with one
+   * reply is unlikely, not impossible. Under that belief the leader after eight
+   * questions is not safe, and the game goes on asking the questions that
+   * separate it from the dishes one wrong reply away, which is error correction
+   * in the plain sense. The ranking, and every promise it makes, is untouched.
+   */
+  var NOISE = 0.12;
+  var TOLERANT_AFTER = 6;    // answers given before the tolerant belief takes over the questions
+  var LATE_AFTER = 6;        // answers given before the late questions may be asked
+  var SLACK = 2;             // how many contradictions wide the questions still worth asking reach
+
+  // Only after the broad strokes. The first few questions are asked on the exact
+  // belief, as they always were: drink, sweet, hot, and what each person came in
+  // caring about get asked in the order they have always been asked in. The
+  // tolerant belief takes over for the part of the game where one wrong reply
+  // starts to matter, which is once there is a leader to be wrong about.
+  Game.prototype.tolerating = function () { return this.tolerantOn && this.answers.length >= this.tolerantAfter; };
+
+  Game.prototype.tolerant = function () {
+    var self = this;
+    var w = this.soft.map(function (x, i) { return x * Math.pow(self.noise, self.faults[i]); });
+    return normalise(w);
+  };
+
+  Game.prototype.tolerantBest = function () {
+    var w = this.tolerant(), top = 0;
+    for (var i = 0; i < w.length; i++) if (w[i] > top) top = w[i];
+    return top;
+  };
 
   // The frame of a question, counted like any other requirement. See
   // `foodOnly` in the constructor for what a food-only question is, and the
@@ -399,9 +459,9 @@
   // "In the running" means the dishes contradicting the least so far, not the
   // whole catalogue: offering "no cheese" as a reply when the only cheese-free
   // things left are already ruled out twice over is offering nothing.
-  Game.prototype.canAnswer = function (tag, value) {
+  Game.prototype.canAnswer = function (tag, value, slack) {
     if (!this.isStrict(tag, value)) return true;
-    var live = this.floor();
+    var live = this.floor() + (slack || 0);
     for (var i = 0; i < this.items.length; i++) {
       if (this.faults[i] > live) continue;
       if (!this.contradicts(this.items[i], tag, value)) return true;
@@ -448,6 +508,10 @@
       }
     }
 
+    if (this.tolerating()) {
+      var soft = this.applyAnswer(this.soft, tag, value);
+      return soft.map(function (w, i) { return w * Math.pow(self.noise, faults[i]); });
+    }
     var floor = Math.min.apply(null, faults);
     return weights.map(function (w, i) {
       var over = faults[i] - floor;
@@ -471,7 +535,7 @@
     if (pYes < 1e-9 || pNo < 1e-9) return 0;
 
     for (i = 0; i < yesBranch.length; i++) { yesBranch[i] /= pYes; noBranch[i] /= pNo; }
-    return entropy(this.weights) - (pYes * entropy(yesBranch) + pNo * entropy(noBranch));
+    return entropy(this.tolerating() ? this.tolerant() : this.weights) - (pYes * entropy(yesBranch) + pNo * entropy(noBranch));
   };
 
   Game.prototype.nextQuestion = function () {
@@ -499,6 +563,11 @@
     var drinking = this.wantsDrink();
     var remaining = this.questions.filter(function (q) {
       if (seen[q.tag] || bans.indexOf(q.tag) !== -1) return false;
+      // The five asked last (see `late` in data.js): "egg in it?" as the fourth
+      // question is a strange thing to be asked by somebody who has not said what
+      // they want yet, and the point of them is to tell the leader from its
+      // neighbours, which is only a question once there is a leader.
+      if (q.late && self.answers.length < self.lateAfter) return false;
       // "Hands or cutlery?" is not a question about a smoothie. Somebody who
       // has asked for a drink is never put a question whose frame is food —
       // the same flag that makes answering one rule drinks out.
@@ -509,7 +578,14 @@
       // reply silently threw away what the player had just said. Asked for
       // something crunchy after asking for a drink, the game used to nod and
       // hand back a coffee.
-      return self.canAnswer(q.tag, 'yes') && self.canAnswer(q.tag, 'no');
+      //
+      // With the tolerant belief, "live" is one contradiction wider: the dishes
+      // one wrong reply away are still candidates, and the questions that tell
+      // them from the leader are exactly the ones worth asking. Without that
+      // the pool emptied at about twelve questions, whatever the stopping rule
+      // said (measured: the same answers at a minimum of 8 and of 16).
+      var slack = self.tolerating() ? self.slack : 0;
+      return self.canAnswer(q.tag, 'yes', slack) && self.canAnswer(q.tag, 'no', slack);
     });
 
     // Pure information gain opens with whatever splits the list best, which can
@@ -522,12 +598,12 @@
         .sort(function (a, b) { return a.opens - b.opens; })[0];
       if (opener) {
         var g = this.gain(opener.tag);
-        if (g >= MIN_GAIN) return { question: this.phrase(opener), gain: g };
+        if (g >= this.minGain) return { question: this.phrase(opener), gain: g };
       }
     }
 
     var choice = pick(remaining);
-    if (!choice || choice.gain < MIN_GAIN) return null;
+    if (!choice || choice.gain < this.minGain) return null;
     return { question: this.phrase(choice.question), gain: choice.gain };
   };
 
@@ -648,11 +724,14 @@
 
   // Should we stop asking and commit to a guess?
   Game.prototype.shouldGuess = function () {
-    if (this.answers.length >= MAX_QUESTIONS) return true;
+    if (this.answers.length >= this.maxQuestions) return true;
     var next = this.nextQuestion();
     if (!next) return true;
-    if (this.answers.length < MIN_QUESTIONS) return false;
-    if (this.best().score >= CONFIDENT) return true;
+    // The minimum is for people giving answers. Somebody who has shrugged at every
+    // question has said, six times, that they have nothing to tell us, and making
+    // them sit through eight is the old complaint with a bigger number.
+    if (this.answers.length < this.minQuestions && !this.hasGivenUp()) return false;
+    if ((this.tolerating() ? this.tolerantBest() : this.best().score) >= this.confident) return true;
     return this.hasGivenUp();
   };
 

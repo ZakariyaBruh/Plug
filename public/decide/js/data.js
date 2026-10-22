@@ -249,6 +249,47 @@
       asks: [
         { text: 'Meat-free tonight?',                    yes: 'Meat-free',      no: 'No need' },
         { text: 'Does it have to be vegetarian?',        yes: 'It does',        no: 'It does not' }
+      ] },
+
+    // THE FIVE ASKED LAST, and only ever when the answers so far are not enough.
+    // Appended after the others on purpose: a shared result encodes each answer as
+    // its question's place in this list, so putting anything earlier would change
+    // what every link already sent means.
+    //
+    // They exist for error correction rather than for new information. Somebody
+    // answers about one reply in twelve wrong, and a game that stops the moment one
+    // dish is the only consistent one cannot notice. These are tags dishes already
+    // carry (they drive the diet rules), so asking them costs no new data: a dish
+    // the first questions put second is separated from the leader by one of these
+    // more often than by anything that has already been asked.
+    { late: true, strict: true, tag: 'beef', ban: 'No beef', text: 'Beef in it?', yes: 'Beef', no: 'No beef', yesIcon: '\u{1F42E}', noIcon: '\u{1F645}',
+      asks: [
+        { text: 'Is there beef involved?',               yes: 'Beef',           no: 'No beef' },
+        { text: 'Burger, steak or brisket territory?',   yes: 'Yes',            no: 'No' }
+      ] },
+
+    { late: true, strict: true, tag: 'pork', ban: 'No pork', text: 'Any pork?', yes: 'Pork', no: 'No pork', yesIcon: '\u{1F437}', noIcon: '\u{1F645}',
+      asks: [
+        { text: 'Pork, bacon or ham in it?',             yes: 'Pork',           no: 'None' },
+        { text: 'Is pig part of the plan?',              yes: 'Yes',            no: 'No' }
+      ] },
+
+    { late: true, strict: true, tag: 'egg', ban: 'No egg', text: 'Egg in it?', yes: 'Egg', no: 'No egg', yesIcon: '\u{1F95A}', noIcon: '\u{1F645}',
+      asks: [
+        { text: 'Is egg involved?',                      yes: 'Egg, yes',       no: 'No egg' },
+        { text: 'Eggs in it, or without?',               yes: 'With egg',       no: 'Without' }
+      ] },
+
+    { late: true, strict: true, tag: 'dairy', ban: 'No dairy', text: 'Milk, cream or butter in it?', yes: 'Dairy', no: 'No dairy', yesIcon: '\u{1F95B}', noIcon: '\u{1F645}',
+      asks: [
+        { text: 'Any dairy in this?',                    yes: 'Dairy',          no: 'Dairy-free' },
+        { text: 'Creamy, buttery, milky?',               yes: 'Yes',            no: 'No' }
+      ] },
+
+    { late: true, strict: true, tag: 'root', ban: 'No potato or root veg', text: 'Potato or root vegetables?', yes: 'Potato or roots', no: 'None of those', yesIcon: '\u{1F954}', noIcon: '\u{1F645}',
+      asks: [
+        { text: 'Potato, carrot, beetroot in it?',       yes: 'Yes',            no: 'No' },
+        { text: 'Anything dug out of the ground?',       yes: 'Dug up',         no: 'Not really' }
       ] }
   ];
 

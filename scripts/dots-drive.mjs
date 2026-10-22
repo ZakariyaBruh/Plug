@@ -1,7 +1,7 @@
 /*
- * Play with Dot, in a real browser: all ten games start, run through their
- * countdown and a few seconds of input without a single page error, the stage
- * fills the screen it has instead of sitting at 340px, and nothing scrolls
+ * Play with Dot, in a real browser: all ten games load on demand, start, run
+ * through their start card, countdown and a few seconds of input without a
+ * single page error, end on a results card, close on Escape, and nothing scrolls
  * sideways on a phone.
  *
  *   bun run dotsdrive
@@ -54,7 +54,7 @@ const { chromium } = pw.default || pw
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
 
 
-const GAMES = 10
+const IDS = ['arena', 'jump', 'merge', 'pop', 'match', 'invade', 'cross', 'stack', 'spit', 'says']
 async function session(width, height) {
   const ctx = await browser.newContext({ viewport: { width, height }, hasTouch: width < 700, isMobile: width < 700 })
   const page = await ctx.newPage()
@@ -73,43 +73,43 @@ async function session(width, height) {
   page.errors = errors
   return page
 }
-const openPicker = async (page) => {
-  await page.evaluate(() => { const d = document.querySelector('.dg'); if (d && !d.hidden) return; document.getElementById('buddy-games').click() })
-  await page.waitForTimeout(400)
-  // A game that has just ended is on its results screen, and the way out of that is the button on it.
-  if (!(await page.locator('.dg-card-btn').count())) {
-    const another = page.locator('button:has-text("Another game")')
-    if (await another.count()) await another.first().click()
-    await page.waitForTimeout(300)
-  }
-}
 
 for (const [label, w, h] of [['phone 390x844', 390, 844], ['desktop 1280x800', 1280, 800]]) {
   const page = await session(w, h)
-  await openPicker(page)
-  ok(`${label}: the picker lists ${GAMES} games`, (await page.locator('.dg-card-btn').count()) === GAMES)
-  ok(`${label}: and a button that picks one`, (await page.locator('.dg-surprise').count()) === 1)
-  for (let i = 0; i < GAMES; i++) {
-    await page.locator('.dg-card-btn').nth(i).click()
-    await page.waitForTimeout(700)
-    const name = await page.evaluate((n) => document.querySelectorAll('.dg-card-btn strong')[n]?.textContent, i).catch(() => '')
-    const cv = page.locator('.dg-canvas, .dg-board, .dg-match, .dg-pads').first()
-    const box = (await cv.count()) ? await cv.boundingBox() : null
-    // Move a finger about while the countdown runs out and the game begins.
-    if (box) {
-      await page.mouse.move(box.x + box.width / 2, box.y + box.height * 0.8)
-      await page.mouse.down()
-      for (let k = 0; k < 8; k++) { await page.mouse.move(box.x + box.width * (0.2 + 0.08 * k), box.y + box.height * 0.8, { steps: 3 }); await page.waitForTimeout(450) }
-      await page.mouse.up()
+  // The games are fetched on first use, not at startup.
+  ok(`${label}: nothing of the games is loaded until they are asked for`, await page.evaluate(() => !window.M45Play && !window.Sprites))
+  await page.evaluate(() => document.getElementById('buddy-games').click())
+  await page.waitForSelector('.pg-tile', { timeout: 8000 })
+  ok(`${label}: the shelf has ${IDS.length} games and a way to pick one`, (await page.locator('.pg-tile').count()) === IDS.length && (await page.locator('.pg-shuffle').count()) === 1)
+  ok(`${label}: and they are the ones we expect, in order`, JSON.stringify(await page.evaluate(() => M45Play.shelf())) === JSON.stringify(IDS))
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200)
+
+  for (const id of IDS) {
+    await page.evaluate((id) => M45.Play.open(id), id)
+    await page.waitForSelector('.pg-canvas', { timeout: 5000 })
+    const box = await page.locator('.pg-canvas').boundingBox()
+    // the start card, then the countdown, then play
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+    await page.waitForTimeout(3900)
+    const phase = await page.evaluate(() => M45Play._st && M45Play._st.phase)
+    // Move about, press, drag, and let go, the way a thumb would.
+    for (let k = 0; k < 10; k++) {
+      const fx = 0.15 + 0.7 * ((k * 0.37) % 1), fy = 0.3 + 0.5 * ((k * 0.53) % 1)
+      await page.mouse.move(box.x + box.width * fx, box.y + box.height * fy)
+      await page.mouse.down(); await page.mouse.move(box.x + box.width * (1 - fx), box.y + box.height * fy, { steps: 4 })
+      await page.waitForTimeout(260); await page.mouse.up(); await page.waitForTimeout(160)
+      await page.keyboard.press(['ArrowLeft', 'ArrowRight', ' ', 'ArrowUp'][k % 4])
     }
     const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
-    ok(`${label}: game ${i + 1} plays with no page error and no sideways scroll`, page.errors.length === 0 && over <= 0, page.errors.join(' | ') + ' overflow ' + over)
-    if (box && box.width > 0 && i === 0) {
-      const want = w >= 700 ? 400 : 330
-      ok(`${label}: the stage is ${Math.round(box.width)}px wide, not stuck at 340`, box.width >= want, `${box.width}`)
-    }
-    await page.keyboard.press('Escape'); await page.waitForTimeout(250)
-    await openPicker(page)
+    const live = await page.evaluate(() => !!M45Play._st)
+    ok(`${label}: ${id} starts, runs and takes input with no page error and no sideways scroll (${phase})`, page.errors.length === 0 && over <= 0 && live && (phase === 'play' || phase === 'over'), page.errors.join(' | ') + ' overflow ' + over)
+    if (id === 'arena') ok(`${label}: the stage is ${Math.round(box.width)}px wide, not 340`, box.width >= (w >= 700 ? 380 : 330), `${box.width}`)
+    // Ending it, whatever it was doing, lands on a results card with a way on.
+    await page.evaluate(() => M45Play._st.end())
+    await page.waitForSelector('.pg-result', { timeout: 6000 }).catch(() => {})
+    ok(`${label}: ${id} ends on a results card with play-again and another-game`, (await page.locator('.pg-result .is-main').count()) === 1 && (await page.locator('.pg-result .pg-btn').count()) === 2)
+    await page.keyboard.press('Escape'); await page.waitForTimeout(150)
+    ok(`${label}: and Escape closes it`, await page.evaluate(() => !M45Play.isOpen()))
   }
   await page.context().close()
 }
