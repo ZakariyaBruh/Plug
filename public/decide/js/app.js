@@ -12689,7 +12689,11 @@
 
     /* ---- the action games ---- */
     var cleanup = null;
-    function stopGame() { if (cleanup) { var f = cleanup; cleanup = null; f(); } }
+    // Which run owns the screen. A game that ends queues its results a moment
+    // later; if the panel is closed and opened again in that moment, the stale
+    // results landed on top of the picker.
+    var runToken = null;
+    function stopGame() { runToken = null; if (cleanup) { var f = cleanup; cleanup = null; f(); } }
     function bestOf(game, score) {
       var all = {};
       try { all = JSON.parse(localStorage.getItem('morsels-dot-best') || '{}') || {}; } catch (err) { all = {}; }
@@ -12756,7 +12760,7 @@
       s.appendChild(h('p', 'fine', opts.how));
       s.appendChild(pauseBtn);
       var st = { W: W, H: H, g: g, cv: cv, score: 0, lives: opts.lives === undefined ? 3 : opts.lives, t: 0, over: false, paused: false, mouth: 'smile', mouthT: 0, fx: [], pops: [], shake: 0, count: opts.count === 0 ? 0 : 3, ptr: { x: W / 2, y: H / 2, down: false } };
-      var last = performance.now(), raf = 0, hooks = [];
+      var last = performance.now(), raf = 0, hooks = [], token = (runToken = {});
       var BG = { arena: ['#2b1612', '#120a0a'], jump: ['#1a3b5c', '#0d1828'], flap: ['#27324d', '#11141f'], stack: ['#2b2542', '#13111f'], run: ['#3b2b19', '#18110a'], chop: ['#201a35', '#0d0a17'], spit: ['#1e3529', '#0c1510'] }[opts.id] || ['#222', '#111'];
       var bokeh = []; for (var bi = 0; bi < 14; bi++) bokeh.push({ x: Math.random() * W, y: Math.random() * H, r: 6 + Math.random() * 22, v: 4 + Math.random() * 10 });
       function togglePause() { if (st.over || st.count > 0) return; st.paused = !st.paused; pauseBtn.textContent = st.paused ? 'Resume' : 'Pause'; }
@@ -12831,7 +12835,7 @@
           g.save(); g.translate(W / 2, H / 2); var gs = 1 + (0.55 - st.goT) * 1.6; g.scale(gs, gs); g.globalAlpha = Math.min(1, st.goT * 2.4);
           g.fillStyle = ACCENT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = '800 54px sans-serif'; g.fillText('GO!', 0, 0); g.restore(); g.globalAlpha = 1;
         }
-        if (st.over) { cancelAnimationFrame(raf); setTimeout(function () { if (open) results(opts.id, st.score, opts.again, opts.notes); }, 1100); return; }
+        if (st.over) { cancelAnimationFrame(raf); setTimeout(function () { if (open && runToken === token) results(opts.id, st.score, opts.again, opts.notes); }, 1100); return; }
         raf = requestAnimationFrame(frame);
       }
       opts.setup(st);
