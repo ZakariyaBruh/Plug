@@ -142,6 +142,25 @@ var Ads = (function () {
     }
     house(f);
   }
+  /*
+   * ASKED AGAIN AFTER THE FIRST TAP. On a real device every frame made with the page said it was filled and
+   * drew a blank white box, while the same frame made inside a tap (the /ads-check buttons) drew an ad. So
+   * the first time the visitor taps or presses a key, every frame on the page is asked afresh (once), and
+   * frames made after that are made after a tap anyway.
+   */
+  var gestured = false;
+  function onGesture() {
+    if (gestured) return;
+    gestured = true;
+    ['pointerup', 'keydown', 'touchend', 'click'].forEach(function (t) { document.removeEventListener(t, onGesture, true); });
+    setTimeout(function () {
+      if (premium) return;
+      var fr = document.querySelectorAll('iframe[data-ad]');
+      for (var i = 0; i < fr.length; i++) { fr[i]._info = null; fr[i]._again = true; fr[i].removeAttribute('data-state'); fr[i].src = frameUrl(fr[i].getAttribute('data-ad'), fr[i]._try); }
+    }, 300);
+  }
+  ['pointerup', 'keydown', 'touchend', 'click'].forEach(function (t) { document.addEventListener(t, onGesture, true); });
+
   function unhouse(f) { if (f._house) { f._house.remove(); f._house = null; f.hidden = false; } }
 
   window.addEventListener('message', function (e) {
@@ -151,6 +170,7 @@ var Ads = (function () {
     for (var i = 0; i < frames.length; i++) {
       if (frames[i].contentWindow !== e.source) continue;
       var name = frames[i].getAttribute('data-ad');
+      if (d.s === 'info') { frames[i]._info = String(d.h || '(nothing)').slice(0, 200) + '  activated=' + !!d.a; return; }
       outcome[name] = d.s;
       frames[i].setAttribute('data-state', d.s);
       if (d.s === 'filled') unhouse(frames[i]);
@@ -335,8 +355,8 @@ var Ads = (function () {
     dbg.style.cssText = 'position:fixed;left:6px;top:60px;z-index:70;margin:0;padding:6px 8px;max-width:92vw;max-height:40vh;overflow:auto;font:11px/1.35 ui-monospace,monospace;background:rgba(0,0,0,.85);color:#9fe39f;border:1px solid #555;border-radius:6px;pointer-events:none';
     document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(dbg); });
     setInterval(function () {
-      var fr = document.querySelectorAll('iframe[data-ad]'), out = ['ads  consent=' + (typeof Consent !== 'undefined' ? Consent.allowed() : '?') + '  premium=' + premium + '  known=' + known_ + '  started=' + started];
-      for (var i = 0; i < fr.length; i++) out.push((fr[i].closest('#ad-dock') ? 'dock ' : 'slot ') + fr[i].getAttribute('data-ad') + '  state=' + (fr[i].getAttribute('data-state') || 'pending') + '  tries=' + fr[i]._try + (fr[i]._house ? '  [house card]' : ''));
+      var fr = document.querySelectorAll('iframe[data-ad]'), out = ['ads  consent=' + (typeof Consent !== 'undefined' ? Consent.allowed() : '?') + '  premium=' + premium + '  known=' + known_ + '  started=' + started + '  tapped=' + gestured];
+      for (var i = 0; i < fr.length; i++) out.push((fr[i].closest('#ad-dock') ? 'dock ' : 'slot ') + fr[i].getAttribute('data-ad') + '  state=' + (fr[i].getAttribute('data-state') || 'pending') + '  tries=' + fr[i]._try + (fr[i]._house ? '  [house card]' : '') + (fr[i]._again ? '  [asked again after tap]' : '') + '\n      ' + (fr[i]._info || 'drew: not reported yet'));
       out.push('said: ' + JSON.stringify(outcome));
       dbg.textContent = out.join('\n');
     }, 700);

@@ -36,7 +36,10 @@ export const adFramePage = (name: AdSize): string | null => {
     'var el=document.getElementById("ad-src");if(el)el.addEventListener("error",function(){say("error")});' +
     'function count(){return document.body.querySelectorAll(":not(script):not(style)").length}' +
     'try{new MutationObserver(function(){if(count())say("filled")}).observe(document.body,{childList:true,subtree:true})}catch(e){}' +
-    'if(count())say("filled");setTimeout(function(){say(count()?"filled":"empty")},6000)})();</script>' +
+    'if(count())say("filled");setTimeout(function(){say(count()?"filled":"empty")},6000);' +
+    // For ?adsdebug on a device with no console: what the network drew (tags and where any frame inside points, no query), and whether this frame has been tapped.
+    'setTimeout(function(){try{var h=[].map.call(document.body.querySelectorAll(":not(script):not(style)"),function(n){return n.tagName.toLowerCase()+(n.src?"("+n.src.split("?")[0].slice(0,60)+")":"")}).join(" ").slice(0,200);' +
+    'parent.postMessage({m45ad:{u:u,s:"info",h:h,a:!!(navigator.userActivation&&navigator.userActivation.hasBeenActive)}},"*")}catch(e){}},3000)})();</script>' +
     '</body>'
   )
 }

@@ -113,7 +113,7 @@ button.quiet{background:transparent;color:#e0a340}
   // 3 and 4: the frames of this site report in by message
   var f3 = $('f3'), f4 = null;
   window.addEventListener('message', function (e) {
-    var d = e.data && e.data.m45ad; if (!d) return;
+    var d = e.data && e.data.m45ad; if (!d || d.s === "info") return;
     var id = e.source === f3.contentWindow ? 'r3' : f4 && e.source === f4.contentWindow ? 'r4' : null; if (!id) return;
     if (d.s === 'filled') show(id, true, 'Drew an ad');
     else if (d.s === 'empty') show(id, false, 'Nothing came back');
@@ -159,7 +159,7 @@ button.quiet{background:transparent;color:#e0a340}
       slots.appendChild(f); frames.push(f);
     });
     window.addEventListener('message', function (e) {
-      var d = e.data && e.data.m45ad; if (!d) return;
+      var d = e.data && e.data.m45ad; if (!d || d.s === "info") return;
       for (var i = 0; i < frames.length; i++) if (e.source === frames[i].contentWindow) { var o = $('v' + i); o.textContent = d.s === 'filled' ? 'Drew an ad' : d.s === 'empty' ? 'Nothing came back' : 'Script failed'; o.className = 'v ' + (d.s === 'filled' ? 'ok' : 'bad'); }
     });
     setTimeout(function () {

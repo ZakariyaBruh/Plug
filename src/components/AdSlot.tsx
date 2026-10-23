@@ -38,6 +38,9 @@ export const AD_SANDBOX = 'allow-scripts allow-popups allow-popups-to-escape-san
 /** The name a unit goes by in /ad-frame?u=…, found from its key. */
 const nameOf = (unit: AdUnit): AdSize => (Object.keys(AD_UNITS) as AdSize[]).find((n) => AD_UNITS[n].key === unit.key) as AdSize
 
+/* The frames made with the page have come back blank on a real device where the same frames made inside a tap drew ads (see public/decide/js/ads.js): the first tap asks them again, once. */
+let tapped = false
+
 export function AdSlot({
   placement,
   premium = false,
@@ -51,6 +54,18 @@ export function AdSlot({
   const box = useRef<HTMLDivElement>(null)
   const [units, setUnits] = useState<AdUnit[]>([])
   const allowed = useConsentAllowed()
+  const [again, setAgain] = useState(() => (tapped ? 1 : 0))
+  useEffect(() => {
+    if (tapped) return
+    const ev = ['pointerup', 'keydown', 'touchend', 'click']
+    const on = () => {
+      tapped = true
+      ev.forEach((t) => document.removeEventListener(t, on, true))
+      setTimeout(() => setAgain(1), 300)
+    }
+    ev.forEach((t) => document.addEventListener(t, on, true))
+    return () => ev.forEach((t) => document.removeEventListener(t, on, true))
+  }, [])
   // Sizes whose frame said nothing arrived: the box shows the site's own card instead of an empty rectangle.
   const [empty, setEmpty] = useState<Record<string, boolean>>({})
   // How many times an empty frame has asked again, by size: the first ask of a visit is sometimes answered with nothing.
@@ -147,7 +162,7 @@ export function AdSlot({
                     sandbox={AD_SANDBOX}
                     referrerPolicy="origin"
                     data-try={tries[name] ?? 0}
-                    src={`/ad-frame?u=${name}&r=${tries[name] ?? 0}`}
+                    src={`/ad-frame?u=${name}&r=${tries[name] ?? 0}&g=${again}`}
                     loading="lazy"
                     hidden={!!empty[name]}
                     className="max-w-full border-0"

@@ -117,3 +117,7 @@ third-party row appear with the ads, and it describes the sponsor-page option.
 
 `bun run adsdrive` (a fake network with a hostile creative, in a real browser, and
 the whole bonus flow), `ads-test` (cluster logic), `bonus-test` (the token).
+
+## Blank white boxes that say "filled"
+
+Seen on a real iPad with `?adsdebug`: every frame reported `filled` (the network's script drew an element) and the dock showed an empty white box. Frames made inside a tap (the /ads-check buttons) drew real ads; frames made with the page did not. So the first tap, key press or click now asks every frame again, once, from a fresh address (`public/decide/js/ads.js` `onGesture`, and the same in `src/components/AdSlot.tsx`). The `?adsdebug` panel shows `tapped=`, `[asked again after tap]` and, per frame, what the network drew and whether the frame itself had been activated. "Filled" means something was drawn, not that it is visible: a frame cannot see inside the network's own nested frame.
