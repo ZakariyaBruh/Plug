@@ -171,6 +171,8 @@ var Ads = (function () {
   function reserve(h) {
     document.documentElement.style.setProperty('--anchor-h', h + 'px');
     document.body.classList.toggle('has-dock', h > 0);
+    // Dot (the companion) stands above whatever the bottom of the screen has taken.
+    try { window.dispatchEvent(new Event('m45:dock')); } catch (err) { /* old browser */ }
   }
 
   function drawDock() {

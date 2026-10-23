@@ -12137,11 +12137,16 @@
       return true;
     }
 
-    // How much of the bottom of the screen the tab bar has taken (0 when it is not
-    // showing), so Dot rests above it rather than under it.
+    // How much of the bottom of the screen is taken: the tab bar (0 when it is not
+    // showing) and the ad strip (its reserved height, 0 for Premium and before it loads),
+    // so Dot rests, and can be dragged, in the part of the screen that is left.
+    // It used to count the tab bar alone, which left Dot under the ad strip on every phone.
     function lift() {
       var bar = $('tabbar');
-      return bar ? Math.round(bar.getBoundingClientRect().height) : 0;
+      var barH = bar ? Math.round(bar.getBoundingClientRect().height) : 0;
+      var dock = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--anchor-h')) || 0;
+      // On a phone with the tab bar hidden the strip sits at the very bottom; with it showing, the strip is above the bar. Either way they stack.
+      return barH + Math.round(dock);
     }
 
     // Where Dot lives when it is not visiting something.
@@ -12168,6 +12173,8 @@
       b.classList.toggle('to-below', y < 150);
     }
     function goHome(instant) { var h = homeSpot(); go(h.x, h.y, instant); }
+    // The ad strip arriving, changing size or going (Premium) moves the floor Dot stands on.
+    window.addEventListener('m45:dock', function () { var b = box(); if (b && !b.hidden && !drag) goHome(); });
 
     // Only does anything when something that matters has changed: whether Dot
     // should be on screen at all, or whether the screen has become a game. A
@@ -12606,13 +12613,13 @@
     }
 
     function placeMenu() {
-      var r = menu.root, vw = window.innerWidth, vh = window.innerHeight;
+      var r = menu.root, vw = window.innerWidth, vh = window.innerHeight - lift();
       r.style.left = r.style.top = r.style.bottom = '';
       r.classList.toggle('is-sheet', vw < 620);
       if (vw < 620) return;
       var w = 288;
       r.style.left = Math.max(12, Math.min(vw - w - 12, at.x + SIZE / 2 - w / 2)) + 'px';
-      if (at.y > vh / 2) r.style.bottom = (vh - at.y + 10) + 'px';
+      if (at.y > vh / 2) r.style.bottom = (vh + lift() - at.y + 10) + 'px';
       else r.style.top = (at.y + SIZE + 10) + 'px';
     }
 

@@ -241,6 +241,12 @@ const named = new Set([...playJs.matchAll(/\b(?:sprite\(g, |sprite\(g2, )'([a-z]
 const missing = [...named].filter((n) => !spriteNames.has(n) && !['hit', 'back'].includes(n))
 check('every sprite the games name is drawn in sprites.js', missing.length === 0, missing.join(', '))
 check('there are ten games on the shelf', (playJs.match(/\bregister\(\{/g) || []).length === 10)
+// The games are made of the app's own materials: its variables, read when a game opens, and none of the old paper palette.
+check('the games read the app’s own colour variables', ['--void', '--raise', '--hair', '--ink', '--amber'].every((v) => playJs.includes(`'${v}'`)))
+check('and the cream, brown and mustard of the first rebuild are gone from them', !/#f4ead8|#fff8e8|#2a1d16|#f0b429|#b7855a|#e9dcc2|#f5e6cc/i.test(playJs))
+check('the stage is fitted to the panel and there is no Pause/Quit bar under it', /function fit\(\)/.test(playJs) && !/pg-bar|'Quit'/.test(playJs))
+check('the panel takes the ad strip’s room off its height', /\.pg-panel \{[^}]*--anchor-h/.test(css))
+check('Dot keeps above the ad strip', /--anchor-h/.test(read('js/app.js')) && /m45:dock/.test(read('js/app.js')) && /m45:dock/.test(read('js/ads.js')))
 
 // A new game file has to be listed in every place the build tracks them.
 for (const [label, file] of [['vite.config.ts', 'vite.config.ts'], ['routes/decide/$.ts', 'src/routes/decide/$.ts'], ['sw.js', 'public/decide/sw.js']]) {

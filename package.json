@@ -18,6 +18,7 @@
     "navdrive": "node scripts/nav-drive.mjs",
     "adsdrive": "bun run scripts/ads-drive.mjs",
     "returndrive": "bun run scripts/return-drive.mjs",
+    "playbots": "bun run scripts/play-bots.mjs",
     "dotsdrive": "node scripts/dots-drive.mjs",
     "retention": "node scripts/retention-drive.mjs"
   },

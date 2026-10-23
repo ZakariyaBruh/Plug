@@ -127,14 +127,25 @@ Seven places, and `scripts/shell-test.mjs` fails until all of them agree:
 - **Dot no longer acts out the questions.** A big Dot above each question that melted, salted
   and dashed off was tried and taken out (it was disliked); the question screen is back to the
   small Dot on the progress track and the words. `shell-test` fails if the stage comes back.
-- **Play with Dot, rebuilt as `js/play.js` + `js/sprites.js`, loaded on first use.** Ten games
-  with rulebooks (survivor with perks, a springy climb, a real-physics merge jar, a bubble
-  shooter with falling clusters, match-3 with specials, invaders with shields and a pot, an
-  endless lane crosser, a burger stacker, a wind-and-catapult spitter, a memory game with
-  backwards rounds), one hand of art (paper, one ink outline, flat colour, a hard shadow; no
-  emoji, gradients or glow, and `shell-test` fails on all three), a start card, countdown, real
-  pause, hit-stop and shake. The old file's CSS and code are gone.
-
+- **Play with Dot, rebuilt twice (`js/play.js` + `js/sprites.js`, loaded on first use).** The first
+  rebuild was cream paper, a thick brown line and a mustard header: a picture book in a charcoal
+  app. The second is made of the app's own materials. Every stage colour comes from the CSS
+  variables the rest of the app uses (`--void`, `--raise`, `--hair`, `--ink`, `--amber`), read when
+  a game opens, so the games follow whichever theme is on, the light one included; food keeps its own
+  colours with a thin near-black edge; the chrome is hairlines, pills and amber for the one thing to
+  press (`shell-test` fails if the old paper palette comes back). The stage is a 9:16 canvas fitted
+  by script to what is left of the panel after the header and the ad strip, so it is as large as the
+  screen allows; the HUD and the pause button are on the stage and there is no Pause/Quit bar under it
+  for a thumb to hit (back is in the header, "Leave this game" is on the pause card). Ten games:
+  Food Fight (survivor, now with a tap-to-dash), Dot Jump (relative steering, so Dot moves with the
+  thumb rather than leaping to it), Merge Pot (with the chain from cherry to crown along the counter),
+  Dish Pop, Match Meal (a 7x9 board), Chilli Invaders, Kitchen Crossing, Dish Stack, and two new ones
+  that replaced Seed Spit and Dot Says: **Slice** (swipe through food thrown up from below; chain
+  strokes; bombs and misses cost hearts; hearts give one back) and **Chop Chop** (four lanes, tap as
+  food reaches the line; perfect/great/good, a multiplier for a clean run, a quicker beat the longer you
+  last). `dotsdrive` plays all ten; `playbots` plays the two timing games with a bot (a good run is
+  paid and keeps its hearts, doing nothing loses them, a whiff is a whiff, a cut bomb costs a heart).
+  Dot, the companion, rests above the ad strip and cannot be dragged under it (`adsdrive`).
 
 ## The ad dock, the free assistant and the Advanced extras
 

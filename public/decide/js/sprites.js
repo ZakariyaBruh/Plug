@@ -19,16 +19,18 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var INK = '#2a1d16';
+  // A near-black outline, thinner than it was: on the dark stage a heavy brown line read as a sticker.
+  var INK = '#0d0b09';
+  var LW = 0.64;
   var TAU = Math.PI * 2;
 
-  function stroke(g, w) { g.strokeStyle = INK; g.lineWidth = w || 4.2; g.lineJoin = 'round'; g.lineCap = 'round'; g.stroke(); }
+  function stroke(g, w) { g.strokeStyle = INK; g.lineWidth = (w || 4.2) * LW; g.lineJoin = 'round'; g.lineCap = 'round'; g.stroke(); }
   function fillStroke(g, fill, w) { if (fill) { g.fillStyle = fill; g.fill(); } stroke(g, w); }
   function circle(g, x, y, r, fill, w) { g.beginPath(); g.arc(x, y, r, 0, TAU); fillStroke(g, fill, w); }
   function oval(g, x, y, rx, ry, fill, rot, w) { g.beginPath(); g.ellipse(x, y, rx, ry, rot || 0, 0, TAU); fillStroke(g, fill, w); }
   function poly(g, pts, fill, w) { g.beginPath(); pts.forEach(function (p, i) { if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); }); g.closePath(); fillStroke(g, fill, w); }
   function shine(g, x, y, r, rot) { g.fillStyle = 'rgba(255,255,255,.6)'; g.beginPath(); g.ellipse(x, y, r, r * 0.55, rot === undefined ? -0.7 : rot, 0, TAU); g.fill(); }
-  function line(g, pts, w, color) { g.beginPath(); pts.forEach(function (p, i) { if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); }); g.strokeStyle = color || INK; g.lineWidth = w || 3; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(); }
+  function line(g, pts, w, color) { g.beginPath(); pts.forEach(function (p, i) { if (i) g.lineTo(p[0], p[1]); else g.moveTo(p[0], p[1]); }); g.strokeStyle = color || INK; g.lineWidth = (w || 3) * LW; g.lineCap = 'round'; g.lineJoin = 'round'; g.stroke(); }
   function leaf(g, x, y, rot, s, fill) { g.save(); g.translate(x, y); g.rotate(rot); g.beginPath(); g.moveTo(0, 0); g.quadraticCurveTo(s * 0.5, -s * 0.55, s, 0); g.quadraticCurveTo(s * 0.5, s * 0.45, 0, 0); fillStroke(g, fill || '#5aa469', 3.4); g.restore(); }
 
   var P = {
@@ -206,6 +208,17 @@
     bolt: function (g) { poly(g, [[8, -44], [-26, 6], [-4, 6], [-12, 44], [28, -10], [4, -10]], '#f6c744'); },
     clock: function (g) { circle(g, 0, 0, 38, '#fffaf0'); line(g, [[0, 0], [0, -22]], 5); line(g, [[0, 0], [16, 8]], 5); circle(g, 0, 0, 4, INK, 1); },
     leafy: function (g) { leaf(g, -30, 20, -0.9, 70, '#5aa469'); leaf(g, -26, 26, -0.2, 60, '#6fbf5e'); },
+    bomb: function (g) {
+      circle(g, 0, 8, 34, '#2b2a2f', 5); shine(g, -14, -4, 8, -0.8);
+      g.beginPath(); g.moveTo(10, -22); g.quadraticCurveTo(22, -40, 34, -34); stroke(g, 5);
+      circle(g, 36, -36, 6, '#f6c744', 2.4); line(g, [[36, -50], [36, -44]], 3, '#f0762a'); line(g, [[46, -36], [52, -36]], 3, '#f0762a'); line(g, [[28, -46], [24, -50]], 3, '#f0762a');
+      line(g, [[-14, 20], [-6, 26]], 4, '#f0762a'); line(g, [[-6, 20], [-14, 26]], 4, '#f0762a');
+    },
+    board: function (g) {
+      g.beginPath(); g.roundRect ? g.roundRect(-42, -26, 84, 52, 12) : g.rect(-42, -26, 84, 52); fillStroke(g, '#c58b4e', 4);
+      line(g, [[-30, -12], [30, -12]], 3, '#a86f35'); line(g, [[-30, 0], [30, 0]], 3, '#a86f35'); line(g, [[-30, 12], [30, 12]], 3, '#a86f35');
+      circle(g, 30, 16, 4, '#8a5a28', 2);
+    },
     pepper: function (g) {
       g.beginPath(); g.moveTo(-30, -18); g.bezierCurveTo(-46, 0, -38, 40, -10, 40); g.bezierCurveTo(0, 44, 8, 36, 14, 40); g.bezierCurveTo(40, 40, 46, 0, 30, -18); g.bezierCurveTo(20, -28, 10, -22, 0, -26); g.bezierCurveTo(-10, -22, -20, -28, -30, -18); g.closePath(); fillStroke(g, '#4caf50'); shine(g, -22, -2, 6, 1.2);
       line(g, [[0, -26], [2, -40]], 5);

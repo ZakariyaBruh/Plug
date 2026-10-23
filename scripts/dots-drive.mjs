@@ -54,7 +54,7 @@ const { chromium } = pw.default || pw
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
 
 
-const IDS = ['arena', 'jump', 'merge', 'pop', 'match', 'invade', 'cross', 'stack', 'spit', 'says']
+const IDS = ['arena', 'jump', 'merge', 'pop', 'match', 'invade', 'cross', 'stack', 'slice', 'chop']
 async function session(width, height) {
   const ctx = await browser.newContext({ viewport: { width, height }, hasTouch: width < 700, isMobile: width < 700 })
   const page = await ctx.newPage()

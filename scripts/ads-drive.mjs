@@ -209,7 +209,7 @@ configured = true
   const g = await dockBox(page)
   ok('in a game the strip is still there, at the very bottom', g && g.fixed && Math.abs(g.bottom - g.vh) < 2, JSON.stringify(g))
   ok('and sits over the game panel (the games are under it)', await page.evaluate(() => { const d = document.getElementById('ad-dock'); const r = d.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return d === hit || d.contains(hit) }))
-  ok('the game’s Pause and Quit buttons are clear of it', (await reachable(page, '.pg-pause')) && (await reachable(page, '.pg-quit')))
+  ok('the back button is clear of it, and the whole stage (pause included, drawn on it) is above it', (await reachable(page, '.pg-back')) && await page.evaluate(() => { const c = document.querySelector('.pg-canvas').getBoundingClientRect(); return c.bottom <= document.getElementById('ad-dock').getBoundingClientRect().top + 1 }))
   ok('and so is the close button', await reachable(page, '.pg-x'))
   const box = await page.locator('.pg-canvas').boundingBox()
   ok('the stage fits above it', box.y + box.height <= g.top + 1, `${box.y + box.height} vs ${g.top}`)
@@ -339,6 +339,24 @@ configured = true
   silent = false
 }
 
+{
+  // Dot, the companion, lives above the ad strip and can be dragged only as low as the strip.
+  for (const [w, h] of [[390, 800], [1280, 800]]) {
+    const page = await open({ width: w, height: h, decisions: 5 })
+    await page.waitForTimeout(900)
+    await go(page, 'dishes'); await page.waitForTimeout(1500)
+    const rect = async () => page.evaluate(() => { const b = document.querySelector('.buddy'); const d = document.getElementById('ad-dock'); const r = b.getBoundingClientRect(); return { shown: !b.hidden, bottom: r.bottom, dockTop: d.getBoundingClientRect().top, tab: (document.getElementById('tabbar').getBoundingClientRect().height) } })
+    let r = await rect()
+    ok(`${w}px: Dot is there and rests above the ad strip, not under it`, r.shown && r.bottom <= r.dockTop + 1, JSON.stringify(r))
+    // Dragged as far down as it will go.
+    const face = page.locator('.buddy-face')
+    const fb = await face.boundingBox()
+    await page.mouse.move(fb.x + 25, fb.y + 25); await page.mouse.down(); await page.mouse.move(fb.x + 25, h - 2, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(1200)
+    r = await rect()
+    ok(`${w}px: and cannot be dragged down under it`, r.bottom <= r.dockTop + 1, JSON.stringify(r))
+    await page.context().close()
+  }
+}
 console.log(`\n${pass} passed, ${fails} failed`)
 await browser.close()
 server.close()
