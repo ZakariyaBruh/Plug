@@ -131,13 +131,16 @@ export const GA4_ID = 'G-M5PMRS475E'
  * HOW MUCH THERE IS, as numbers rather than adjectives. The owner asked for ads
  * on every screen, from the first visit, and for Save-Data to be ignored; this
  * is that, with the lines that were kept:
- *   - in the app (public/decide), ONE fixed strip along the bottom of the screen, the
- *     ad dock (js/ads.js): over the page rather than pushing it, so it is there during
- *     the decide questions, in every game and in Ask. It has a fixed height the page
- *     reserves once, so it never makes anything jump and never lies across a button
- *     (a fixed ad on top of controls gets accidental taps, which is invalid traffic and
- *     what an ad network closes accounts for). Two banners side by side on a wide
- *     screen, one on a phone, swapped for a fresh one about once a minute
+ *   - in the app (public/decide), two layers that add up. The dock: one fixed strip along the
+ *     bottom of the screen (js/ads.js), over the page rather than pushing it, so it is there
+ *     during the decide questions, in every game and in Ask; it has a fixed height the page
+ *     reserves once, so it never makes anything jump and never lies across a button (a fixed ad
+ *     on top of controls gets accidental taps, which is invalid traffic and what an ad network
+ *     closes accounts for). Two banners side by side on a wide screen, one on a phone, swapped
+ *     for a fresh one about once a minute. And the slots: a cluster under every section, in the
+ *     Dishes list, at the end of Profile and on the front page. Every ad is a page of this site
+ *     (routes/ad-frame.ts) that reports whether anything arrived; if not, the box shows the
+ *     app's own Premium card
  *   - on the site (/, /faq, /how-it-works, /info, /eat, each /eat/<dish>) a cluster of
  *     two or three banners at the end of the page, lazy-loaded when it is about to
  *     scroll into view; never on /premium, /checkout or /account

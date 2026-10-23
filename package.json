@@ -16,7 +16,8 @@
     "test": "bun run scripts/whop-token-test.mjs && bun run scripts/diet-test.mjs && bun run scripts/honesty-test.mjs && bun run scripts/nav-test.mjs && bun run scripts/shell-test.mjs && bun run scripts/ads-test.mjs && bun run scripts/bonus-test.mjs && bun run scripts/free-ai-test.mjs && bun run scripts/accuracy-test.mjs && bun run scripts/mood-test.mjs && bun run scripts/allowance-test.mjs && bun run scripts/hooks-test.mjs && bun run scripts/gemini-test.mjs",
     "drive": "node scripts/play-drive.mjs",
     "navdrive": "node scripts/nav-drive.mjs",
-    "adsdrive": "node scripts/ads-drive.mjs",
+    "adsdrive": "bun run scripts/ads-drive.mjs",
+    "returndrive": "bun run scripts/return-drive.mjs",
     "dotsdrive": "node scripts/dots-drive.mjs",
     "retention": "node scripts/retention-drive.mjs"
   },

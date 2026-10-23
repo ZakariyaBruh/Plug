@@ -30,6 +30,7 @@ import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
+import { adFramePage } from '../src/routes/ad-frame.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(here, '..', 'public')
@@ -42,6 +43,7 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
 }
 
+let silent = false // the network answers every request with an empty script, as it does for a unit it will not fill
 let configured = true // flipped per scenario: are the units live, or stripped out as if none were pasted?
 const adRequests = []
 const reports = []
@@ -64,7 +66,15 @@ const server = createServer((req, res) => {
   if (url.startsWith('/fake-ad/')) {
     adRequests.push(url)
     res.writeHead(200, { 'Content-Type': 'text/javascript' })
-    return res.end(FAKE_AD)
+    return res.end(silent ? '' : FAKE_AD)
+  }
+  if (url === '/ad-frame') {
+    // The real route's page, pointed at the fake network (and nothing when no unit is configured).
+    const u = new URL(req.url, 'http://x').searchParams.get('u')
+    const html = configured ? adFramePage(u) : null
+    if (!html) { res.writeHead(404); return res.end('not found') }
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Referrer-Policy': 'origin' })
+    return res.end(html.replaceAll('https://bauval.org/22/', `http://127.0.0.1:${PORT}/fake-ad/`))
   }
   const path = normalize(url).replace(/^(\.\.[/\\])+/, '')
   let file = join(ROOT, path)
@@ -268,7 +278,7 @@ configured = true
   await page.waitForTimeout(900)
   let f1 = await frames(page)
   ok('opt-in region, nothing chosen: the ads are still shown', f1.length >= 1, JSON.stringify(f1))
-  ok('and every one is loaded cookie-free: credentialless, no referrer', f1.length >= 1 && f1.every((f) => f.mode === 'cookieless' && f.cl && f.ref === 'no-referrer'), JSON.stringify(f1))
+  ok('and every one is loaded cookie-free (credentialless) and still says which site it is on (referrer: the site’s address only)', f1.length >= 1 && f1.every((f) => f.mode === 'cookieless' && f.cl && f.ref === 'origin'), JSON.stringify(f1))
   ok('the two buttons are equally easy to reach', await page.locator('.consent [data-c="all"]').isVisible() && await page.locator('.consent [data-c="essential"]').isVisible())
   ok('and the cookie notice is not underneath the strip', await page.evaluate(() => { const c = document.querySelector('.consent').getBoundingClientRect(); const d = document.getElementById('ad-dock').getBoundingClientRect(); return c.bottom <= d.top + 1 }))
   await page.locator('.consent [data-c="all"]').click(); await page.waitForTimeout(1200)
@@ -290,6 +300,43 @@ configured = true
   ok('an earlier "Essential only" still gets ads', fr.length >= 1 && fr.every((f) => f.mode === 'cookieless'), JSON.stringify(fr))
   ok('and the notice does not nag', await page.locator('.consent:not([hidden])').count() === 0)
   await page.context().close()
+}
+
+{
+  // Both layers, together: the dock along the bottom AND the slots in the page.
+  const page = await open({ width: 390, height: 800, decisions: 5 })
+  await page.waitForTimeout(800)
+  await go(page, 'dishes')
+  await page.evaluate(() => document.getElementById('dish-ad').scrollIntoView({ block: 'center' })); await page.waitForTimeout(1200)
+  const inList = await page.evaluate(() => document.querySelectorAll('#dish-ad iframe').length)
+  ok('in the middle of the Dishes list there is a cluster of its own', inList === 2, `${inList}`)
+  ok('and the dock is still along the bottom at the same time', (await frames(page)).length === 1)
+  await go(page, 'chat'); await page.evaluate(() => document.getElementById('view-ad').scrollIntoView({ block: 'center' })); await page.waitForTimeout(1200)
+  ok('under a section (Ask) there is a slot as well', await page.evaluate(() => !document.getElementById('view-ad').hidden && document.querySelectorAll('#view-ad iframe').length === 2))
+  ok('so a phone shows the dock and a cluster, three or more in all', await page.evaluate(() => document.querySelectorAll('iframe[data-ad]').length >= 3))
+  ok('and the slot is not shown under the questions', await page.evaluate(() => { window.M45.setView('decide'); return document.getElementById('view-ad').hidden }))
+  await page.context().close()
+}
+{
+  // What the frame is: a real page on this site, sent this site’s address and no more, that says whether anything arrived.
+  const page = await open({ width: 390, height: 800, decisions: 5 })
+  await page.waitForTimeout(1500)
+  const src = await page.evaluate(() => document.querySelector('#ad-dock iframe').getAttribute('src'))
+  ok('the ad frame is a page of this site, not a srcdoc', /^\/ad-frame\?u=mobile$/.test(src) && await page.evaluate(() => !document.querySelector('#ad-dock iframe').hasAttribute('srcdoc')), src)
+  ok('and it told the page something was drawn', await page.evaluate(() => Ads.status().mobile === 'filled'), await page.evaluate(() => JSON.stringify(Ads.status())))
+  await page.context().close()
+}
+{
+  // The network has nothing to show (a unit it will not fill, an ad blocker): the box is not left empty.
+  silent = true
+  const page = await open({ width: 1280, height: 800, decisions: 5 })
+  await page.waitForTimeout(7500)
+  const houses = await page.evaluate(() => [...document.querySelectorAll('#ad-dock .house-ad')].map((a) => ({ w: a.style.width, h: a.style.height, href: a.getAttribute('href') })))
+  ok('an empty answer from the network becomes the app’s own card, in the same box', houses.length === 2 && houses[0].w === '728px' && houses[0].h === '90px' && houses[1].w === '468px', JSON.stringify(houses))
+  ok('which points at Premium and is not dressed as an ad', houses.every((h) => h.href === '/premium') && await page.evaluate(() => /Premium/.test(document.querySelector('.house-ad').textContent)))
+  ok('and the page knows it was empty', await page.evaluate(() => Ads.status().leaderboard === 'empty'))
+  await page.context().close()
+  silent = false
 }
 
 console.log(`\n${pass} passed, ${fails} failed`)

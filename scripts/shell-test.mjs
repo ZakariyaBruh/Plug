@@ -170,9 +170,9 @@ const zOf = (sel) => { const m = css.match(new RegExp('(?:^|\\n)' + sel.replace(
 // The app's ads are ONE fixed strip, over the page, that never pushes it and never goes away
 // for a free visitor. It is started once, told about Premium, and reserves its height in a variable.
 check('the game starts the dock once and tells it about Premium', (app.match(/Ads\.start\(\)/g) || []).length === 1 && /Ads\.premiumKnown\(!!status\.hasPremium\)/.test(app))
-check('and has no in-page slots left', !/Ads\.(mount|refresh)\(/.test(app) && !/class="ad-wrap"|id="(dish|profile|view|landing)-ad/.test(html))
+check('and the in-page slots are there too, on top of the dock (the owner asked for both, for more ads)', /Ads\.mount\(\$\('profile-ad'\)/.test(app) && /Ads\.refresh\(slot, 'end'/.test(app) && /Ads\.mount\(adItem, 'inline'/.test(app) && /id="landing-ad-a"/.test(html) && /id="view-ad"/.test(html) && /id="profile-ad"/.test(html))
 check('the dock is fixed, and the page reserves its height instead of moving when it loads', /\.dock \{[^}]*position: fixed/.test(css) && /--anchor-h/.test(adsJs) && /body\.has-dock \{ padding-bottom: var\(--anchor-h\)/.test(css))
-check('the dock is gone for a Premium member, in the stylesheet and in the script', /body\.is-premium \.dock \{ display: none/.test(css) && /if \(premium\) \{[^}]*remove\(\)/.test(adsJs))
+check('the dock is gone for a Premium member, in the stylesheet and in the script', /body\.is-premium \.dock \{ display: none/.test(css) && /if \(premium\) \{[^}]*removeDock\(\)/.test(adsJs))
 check('the games sit under the dock and over the rest; the welcome and tour sit over it', zOf('.topbar') < zOf('.pg') && zOf('.pg') < zOf('.dock') && zOf('.dock') < zOf('.welcome') && zOf('.welcome') < zOf('.tour'), `pg ${zOf('.pg')} dock ${zOf('.dock')} welcome ${zOf('.welcome')} tour ${zOf('.tour')}`)
 check('open games and a decision being played put the dock at the very bottom', /body\.is-playing \.dock, body\.is-games \.dock \{ bottom:/.test(css) && /classList\.add\('is-games'\)/.test(read('js/play.js')) && /classList\.remove\('is-games'\)/.test(read('js/play.js')))
 check('the dock shows when the questions are asked and while a game is played: nothing in the game hides it', !/is-playing[^{]*\.dock[^{]*\{[^}]*display: none/.test(css) && !/is-games[^{]*\.dock[^{]*\{[^}]*display: none/.test(css))
@@ -199,7 +199,8 @@ check('the app and the site store the choice under the same key', (consentJs.mat
 check('the cookie bar sits under the welcome screen, not over its Next button', zOf('.consent') !== null && zOf('.welcome') !== null && zOf('.consent') < zOf('.welcome'), `consent ${zOf('.consent')}, welcome ${zOf('.welcome')}`)
 // The cookie choice changes HOW an ad is loaded, never WHETHER: no way to turn the ads off for free.
 const adCode = (adsJs + adSlot).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
-check('without consent an ad is loaded without cookies, not withheld', /credentialless/.test(adsJs) && /credentialless/.test(adSlot) && /no-referrer/.test(adsJs) && /no-referrer/.test(adSlot))
+check('without consent an ad is loaded without cookies, not withheld', /credentialless/.test(adsJs) && /credentialless/.test(adSlot) && /referrerpolicy', 'origin'/.test(adsJs) && /referrerPolicy="origin"/.test(adSlot) && !/no-referrer/.test(adsJs + adSlot))
+check('ads are real pages of this site, not srcdoc, and report back', /ad-frame\?u=/.test(adsJs) && !/srcdoc/i.test(adCode) && /ad-frame\?u=/.test(adSlot) && /house/.test(adsJs))
 check('ads.js has no waiting list for consent', !/waiting/.test(adCode.split('function restricted')[1] || ''))
 check('AdSlot draws whatever the answer, once it is known', /allowed === null\) \{ setUnits/.test(adSlot) && !/allowed !== true\) \{ setUnits/.test(adSlot))
 check('nothing in the ad code reads a setting, Do Not Track, Save-Data or storage', !/localStorage|sessionStorage|doNotTrack|saveData|navigator\.connection|matchMedia/i.test(adCode))

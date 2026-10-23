@@ -145,11 +145,24 @@ Seven places, and `scripts/shell-test.mjs` fails until all of them agree:
   top bar < games < dock < welcome/toasts < tour. `body.is-games` (set by `play.js`) and
   `body.is-playing` put it at the very bottom on a phone when the tab bar is hidden.
   `adsdrive` checks the geometry (reachable buttons, reserved height, Premium never sees it).
-- **The free assistant** (Standard) never touches Gemini: `lib/free-ai.ts` races LLM7 and
-  Pollinations (fast model first, the next joining after 3.5s or at once on failure), skips
-  a service that keeps failing, rejects error bodies, and remembers a first question for ten
-  minutes. If every service fails, `lib/free-local.ts` answers from the menu or the app's own
-  fact list, says so, and does not count it against the day. `free-ai-test` covers all of it.
+- **The free assistant** (Standard) never touches Gemini, and its calling system is `lib/free-ai.ts`
+  over a provider table in `lib/llm-providers.ts`. Measured from one machine, ten questions in a
+  row per model: LLM7 answered 4 of 10 on its best model and 0 of 10 on another ("Rate limit
+  exceeded", "Too many concurrent requests for this client"), Pollinations 4 of 10 (503s and
+  timeouts). They rate-limit by caller address and this app's visitors are all one caller, so the
+  keyless tier is a floor and not a main road. The router therefore works in **providers** (a
+  rate limit belongs to the provider; its other models rest too, for as long as it said), caps
+  how many calls each is given at once, orders by what has happened lately, hedges a slow provider
+  with a *different* provider, tells a limit from a retired model from a bad key, remembers answers
+  for six hours (and serves one up to two days old if everything fails), and reports who answered
+  and what it tried. `/api/ai-health` shows each provider's state (never a key). If all of it
+  fails the menu answers (`lib/free-local.ts`) and says so. The chat page retries once on its own
+  ("Trying another way…") before asking the visitor to. `free-ai-test` covers all of it (49 checks).
+  **To make it dependable, add keys** (all free tiers, no card; the keyed providers switch on by
+  themselves and go first): `whop apps secrets set GROQ_API_KEY=…` (console.groq.com),
+  `CEREBRAS_API_KEY=…` (cloud.cerebras.ai), `OPENROUTER_API_KEY=…`, `MISTRAL_API_KEY=…`,
+  `GITHUB_MODELS_TOKEN=…`, or `CF_ACCOUNT_ID=…` + `CF_AI_TOKEN=…` (Workers AI). A model id can be
+  swapped without a deploy (`GROQ_MODELS=a,b`).
 - **Advanced** (Premium, Gemini) gained skills (swap, scale, budget, leftovers, pair), recipe
   cards that can be saved to the cookbook, follow-up suggestions and a Listen button. If
   Gemini is busy a Premium member is answered by Standard, with a note.

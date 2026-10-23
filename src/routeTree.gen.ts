@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
+import { Route as AdFrameRouteImport } from './routes/ad-frame'
 import { Route as DecideRouteImport } from './routes/decide'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as HonestyRouteImport } from './routes/honesty'
@@ -21,6 +22,7 @@ import { Route as PremiumRouteImport } from './routes/premium'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ApiAiHealthRouteImport } from './routes/api/ai-health'
 import { Route as ApiBriefingRouteImport } from './routes/api/briefing'
 import { Route as ApiBudgetRouteImport } from './routes/api/budget'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
@@ -73,6 +75,11 @@ const AccountRoute = AccountRouteImport.update({
   path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdFrameRoute = AdFrameRouteImport.update({
+  id: '/ad-frame',
+  path: '/ad-frame',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DecideRoute = DecideRouteImport.update({
   id: '/decide',
   path: '/decide',
@@ -121,6 +128,11 @@ const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAiHealthRoute = ApiAiHealthRouteImport.update({
+  id: '/api/ai-health',
+  path: '/api/ai-health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiBriefingRoute = ApiBriefingRouteImport.update({
@@ -332,6 +344,7 @@ const ApiOauthLogoutRoute = ApiOauthLogoutRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/ad-frame': typeof AdFrameRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
@@ -342,6 +355,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/ai-health': typeof ApiAiHealthRoute
   '/api/briefing': typeof ApiBriefingRoute
   '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
@@ -387,6 +401,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/ad-frame': typeof AdFrameRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
@@ -397,6 +412,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/ai-health': typeof ApiAiHealthRoute
   '/api/briefing': typeof ApiBriefingRoute
   '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
@@ -443,6 +459,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
+  '/ad-frame': typeof AdFrameRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
@@ -453,6 +470,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/ai-health': typeof ApiAiHealthRoute
   '/api/briefing': typeof ApiBriefingRoute
   '/api/budget': typeof ApiBudgetRoute
   '/api/chat': typeof ApiChatRoute
@@ -500,6 +518,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/account'
+    | '/ad-frame'
     | '/decide'
     | '/faq'
     | '/honesty'
@@ -510,6 +529,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/ai-health'
     | '/api/briefing'
     | '/api/budget'
     | '/api/chat'
@@ -555,6 +575,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/account'
+    | '/ad-frame'
     | '/decide'
     | '/faq'
     | '/honesty'
@@ -565,6 +586,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/ai-health'
     | '/api/briefing'
     | '/api/budget'
     | '/api/chat'
@@ -610,6 +632,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/account'
+    | '/ad-frame'
     | '/decide'
     | '/faq'
     | '/honesty'
@@ -620,6 +643,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/api/ai-health'
     | '/api/briefing'
     | '/api/budget'
     | '/api/chat'
@@ -666,6 +690,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
+  AdFrameRoute: typeof AdFrameRoute
   DecideRoute: typeof DecideRouteWithChildren
   FaqRoute: typeof FaqRoute
   HonestyRoute: typeof HonestyRoute
@@ -676,6 +701,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiAiHealthRoute: typeof ApiAiHealthRoute
   ApiBriefingRoute: typeof ApiBriefingRoute
   ApiBudgetRoute: typeof ApiBudgetRoute
   ApiChatRoute: typeof ApiChatRoute
@@ -732,6 +758,13 @@ declare module '@tanstack/react-router' {
       path: '/account'
       fullPath: '/account'
       preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ad-frame': {
+      id: '/ad-frame'
+      path: '/ad-frame'
+      fullPath: '/ad-frame'
+      preLoaderRoute: typeof AdFrameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/decide': {
@@ -802,6 +835,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/ai-health': {
+      id: '/api/ai-health'
+      path: '/api/ai-health'
+      fullPath: '/api/ai-health'
+      preLoaderRoute: typeof ApiAiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/briefing': {
@@ -1108,6 +1148,7 @@ const DecideRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
+  AdFrameRoute: AdFrameRoute,
   DecideRoute: DecideRouteWithChildren,
   FaqRoute: FaqRoute,
   HonestyRoute: HonestyRoute,
@@ -1118,6 +1159,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiAiHealthRoute: ApiAiHealthRoute,
   ApiBriefingRoute: ApiBriefingRoute,
   ApiBudgetRoute: ApiBudgetRoute,
   ApiChatRoute: ApiChatRoute,
@@ -1162,3 +1204,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

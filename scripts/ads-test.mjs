@@ -6,7 +6,8 @@
  * half is scripts/shell-test.mjs.
  */
 import { readFileSync } from 'node:fs'
-import { AD_SANDBOX, adHtml } from '../src/components/AdSlot.tsx'
+import { AD_SANDBOX } from '../src/components/AdSlot.tsx'
+import { adFramePage } from '../src/routes/ad-frame.ts'
 import { ADS_ON, AD_UNITS, SMARTLINK_URL, adCluster, adLive } from '../src/lib/site.ts'
 
 let pass = 0
@@ -46,7 +47,10 @@ AD_UNITS.leaderboard.key = ''
 check('a unit with no key is skipped and the next fits in', widths(adCluster('inline', 1280)) === '468+320')
 Object.assign(AD_UNITS.leaderboard, saved)
 
-const html = adHtml(AD_UNITS.mobile)
+const html = adFramePage('mobile')
+check('the frame page asks for this site’s address as the referrer, and no more', /<meta name="referrer" content="origin">/.test(html))
+check('it reports back whether anything arrived', /m45ad/.test(html) && /"empty"/.test(html) && /"filled"/.test(html) && /"error"/.test(html))
+check('a size that is not a unit gets no page (the script cannot be chosen from the URL)', adFramePage('evil') === null && adFramePage('../x') === null)
 check('the frame loads the unit’s own script', html.includes('src="https://bauval.org/22/5854b8b6f2fdd21988e40b9eb9be56c6"'))
 check('and sets atOptions from the unit', /atOptions=\{"key":"5854b8b6f2fdd21988e40b9eb9be56c6","format":"iframe","height":50,"width":320/.test(html))
 check('the sandbox grants scripts and real-click popups only', AD_SANDBOX === 'allow-scripts allow-popups allow-popups-to-escape-sandbox', AD_SANDBOX)

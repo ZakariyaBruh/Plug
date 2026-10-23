@@ -194,6 +194,17 @@ and the only new thing written down is one date.
 `paintNext`, `openWhereAsked`), `src/components/GamePreview.tsx`,
 `bun run retention`, `scripts/hooks-test.mjs`
 
+**What Dot calls you, and one true thing a day.** Two small things for coming back, both honest by
+construction. A *name*: asked once on the result screen after three decisions, "not now" as final as
+"yes", editable in Profile, kept on the device and never sent anywhere (no beacon carries it), and used
+only to say hello ("Evening, Sam."). A *note*: under the greeting, a line about cooking or eating that
+is true, chosen by the date alone, so it is the same for everybody on a given day and cannot be re-rolled
+by reloading (an unpredictable reward is the mechanism of a slot machine, see Refused). Nothing counts
+days, nothing is missed by not looking, tomorrow's is not withheld to be returned for. Not built, on
+purpose: push notifications and email (/honesty rules them out), and any line that makes an absence
+Dot's loss. Dot is glad you are back; it never says you owed it a visit.
+→ `public/decide/js/app.js` (`nickName`, `withName`, `NOTES`, `noteOfTheDay`, `paintNick`, `paintHello`)
+
 ### Loss aversion — framed on what is already yours
 Losing is felt about twice as strongly as gaining. Applied only where
 something is genuinely at stake and genuinely yours: at the end of a trial, a

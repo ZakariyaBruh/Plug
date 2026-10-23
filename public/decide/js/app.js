@@ -679,6 +679,27 @@
     // keeps scrolling it into view from somewhere else in the app.
     else stopTyping();
     window.scrollTo(0, 0);
+    adForView(name);
+  }
+
+  /*
+   * ADS UNDER EVERY SCREEN THAT IS READ, on top of the dock along the bottom. One slot sits
+   * under the current section, so the cluster is the same size and place everywhere and there
+   * is never more than one of them from this (Dishes also has its own in the middle of the list,
+   * and Profile its own at the bottom, so those two are left to them). A fresh cluster is asked
+   * for when the section changes, but not more than once in 20 seconds, so flipping between tabs
+   * is not a way of making the network count a page 40 times. Not under the questions, the answer,
+   * a game or the reward: that is `decide`, and the dock is what covers it.
+   */
+  var adStamp = 0;
+  function adForView(name) {
+    var slot = $('view-ad');
+    if (!slot || typeof Ads === 'undefined') return;
+    var skip = name === 'decide' || name === 'profile';
+    slot.hidden = skip;
+    if (skip) return;
+    var now = Date.now();
+    if (!slot.dataset.adArmed || now - adStamp > 20000) { adStamp = now; Ads.refresh(slot, 'end', { premium: isPlus() }); }
   }
 
   function setPanel(name) {
@@ -1008,18 +1029,146 @@
                          'Late. The kitchen is technically still open.'] }
   ];
 
+  /*
+   * WHAT DOT CALLS YOU, AND ONE TRUE THING A DAY.
+   *
+   * Two small things for coming back, both honest by construction and neither of them a hook.
+   *
+   * A NAME. Asked once, after a few decisions, with "not now" as final as "yes"; set or changed
+   * any time in Profile. Kept on this device with the rest of the profile and never sent
+   * anywhere (no beacon carries it). It is used to say hello, nowhere else: "Evening, Sam."
+   * It is a first name in a greeting, which is most of what being known feels like.
+   *
+   * A NOTE. Under the greeting, a line about cooking or eating that is true, chosen by the
+   * date alone, so it is the same for everybody on a given day and cannot be rolled again by
+   * reloading. That is on purpose: an unpredictable reward is the mechanism of a slot machine
+   * (see docs/persuasion.md, "Refused"); a date is just a date. Nothing counts days, nothing
+   * is missed by not looking, and tomorrow's is not withheld to be returned for: it is a
+   * different line, that is all.
+   */
+  var NICK_AFTER = 3;
+  function cleanNick(v) { return String(v || '').replace(/[^\p{L}\p{N} '\u2019.-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 24); }
+  function nickName() { return cleanNick(progress.state.nick); }
+  // "Evening. Right then." -> "Evening, Sam. Right then." Lines that do not open on words are left alone.
+  function withName(line) {
+    var n = nickName();
+    return n ? line.replace(/^([A-Za-z\u2019' ]+?)([.,!?])/, '$1, ' + n + '$2') : line;
+  }
+
+  var NOTES = [
+    'Salt the pasta water until it tastes like the sea. It is the only chance to season the pasta itself.',
+    'Let meat rest for a few minutes after cooking. The juices settle instead of running out onto the plate.',
+    'A squeeze of lemon at the end wakes up a soup that tastes flat.',
+    'Rice rinsed until the water runs clearer cooks up less sticky.',
+    'Toast whole spices in a dry pan for a minute. The smell tells you when they are ready.',
+    'A pinch of sugar rounds off a tomato sauce that tastes sharp.',
+    'Cooked rice should be cooled quickly and kept cold. Reheat it until it is steaming hot all the way through.',
+    'Onions turn sweet the slower they cook, not the hotter.',
+    'Keep a cup of the pasta water. A splash of it helps the sauce cling.',
+    'Very ripe bananas are for baking. The browner they are, the sweeter the bread.',
+    'Pat meat dry before it goes in the pan. Dry surfaces brown, wet ones steam.',
+    'Garlic burns in seconds. Add it after the onions, not before.',
+    'Taste as you go. Checking is the cheapest seasoning there is.',
+    'Soft herbs go in at the end. Woody ones, like rosemary and thyme, can go in early.',
+    'Day-old bread makes the best breadcrumbs, croutons and French toast.',
+    'Do not crowd the pan. Food in a single layer browns instead of steaming.',
+    'Lentils need no soaking. Most are tender in twenty to thirty minutes.',
+    'Salt the beans while they cook. It does not toughen them, whatever the old advice said.',
+    'A spoonful of mustard in a dressing helps the oil and vinegar stay together.',
+    'Wet your hands before shaping rice and it stops sticking to them.',
+    'Roll a lemon under your palm before juicing it. You will get more out of it.',
+    'Chicken bones are most of a good stock. Cover with water, simmer gently for a couple of hours.',
+    'The rind of a hard cheese like parmesan adds savoury depth to a soup. Simmer it in and fish it out.',
+    'Chill cookie dough for an hour and the cookies spread less and taste richer.',
+    'Mushrooms like a hot dry pan. Let the water cook off first, then add the fat.',
+    'Older eggs are easier to peel once hard-boiled.',
+    'Too spicy? Dairy, sugar or something sour calms it. Water mostly does not.',
+    'A little acid, vinegar or lime, at the end lifts almost any rich dish.',
+    'Keep ginger in the freezer. It grates straight from frozen, skin and all.',
+    'Parsley and coriander keep longer stems-down in a glass of water in the fridge.',
+    'Pasta cooked a minute short and finished in the sauce tastes better than pasta drained and sauced after.',
+    'Honey does not spoil. Keep it in the cupboard, not the fridge.',
+    'Tomatoes taste better kept out of the fridge. The cold dulls them.',
+    'Smoke off the oil means the pan is too hot. Turn it down.',
+    'Too salty? Add more of the unsalted things, or a little acid. The potato trick does not work.',
+    'Eggs on toast is dinner. It does not need to be a recipe to count.',
+    'Deciding while very hungry makes everything sound good. A glass of water first helps.',
+    'A tin of chickpeas, a lemon and some olive oil is a meal.',
+    'Warm the plates, a minute under hot water will do, and the food stays hot longer.',
+    'Crack eggs on a flat surface rather than the edge of a bowl. Fewer bits of shell.',
+    'Cut harder vegetables smaller so they cook in the same time as the soft ones.',
+    'Table salt, flaky sea salt and kosher salt all weigh differently by the spoon. Taste before you add more.',
+    'Hot pan first, then the oil, then the food. Food sticks less when the pan is hot enough.',
+    'Let a steak come out of the fridge for twenty minutes before it goes in the pan.',
+    'Stale crackers and chips come back to life in a low oven for a few minutes.',
+    'Frozen peas are picked and frozen quickly. They are often better than the fresh ones that have travelled.',
+    'A bay leaf in the rice pot, or the bean pot, adds more than you would expect for something so small.',
+    'When a recipe says "until golden", it means it. Pale onions taste raw; the colour is the flavour.',
+    'Wash up as you cook and the end of the meal is a good deal less gloomy.',
+    'The best sandwich filling is the thing you forgot was in the fridge.'
+  ];
+  function noteOfTheDay() {
+    var day = Math.floor(Date.parse(ProgressLib.dayKey(new Date())) / 864e5);
+    return NOTES[((day % NOTES.length) + NOTES.length) % NOTES.length];
+  }
+
+  function nickDue() {
+    var st = progress.state;
+    return !nickName() && !st.nickAsked && (st.decisions || 0) >= NICK_AFTER;
+  }
+  function paintNick() {
+    var wrap = $('nick-strip');
+    if (!wrap) return;
+    wrap.hidden = !nickDue();
+  }
+  function saveNick(value) {
+    progress.state.nick = cleanNick(value);
+    progress.state.nickAsked = true;
+    progress.save();
+    paintNick();
+    var field = $('setting-nick-input');
+    if (field) field.value = progress.state.nick;
+  }
+  (function wireNick() {
+    var form = $('nick-form');
+    if (form) form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = cleanNick($('nick-input').value);
+      if (!name) { $('nick-input').focus(); return; }
+      saveNick(name);
+      Sound.tick();
+      toast('\u{1F44B}', 'Nice to meet you, ' + name, 'I will say hello properly next time.');
+    });
+    var no = $('nick-no');
+    if (no) no.addEventListener('click', function () { progress.state.nickAsked = true; progress.save(); paintNick(); });
+    var save = $('setting-nick');
+    if (save) save.addEventListener('click', function () {
+      var name = cleanNick($('setting-nick-input').value);
+      saveNick(name);
+      save.textContent = name ? 'Saved \u2713' : 'Cleared';
+      setTimeout(function () { save.textContent = 'Save'; }, 1600);
+    });
+    var field = $('setting-nick-input');
+    if (field) field.value = nickName();
+  })();
+
   function paintHello(state, played) {
     var el = $('landing-hello');
     if (!el) return;
     el.hidden = !played;
     var row = $('landing-hello-row');
     if (row) row.hidden = !played;
+    var note = $('landing-note');
+    if (note) {
+      note.hidden = !played;
+      if (played) { note.textContent = ''; var lead = document.createElement('b'); lead.textContent = 'Dot\u2019s note for today. '; note.appendChild(lead); note.appendChild(document.createTextNode(noteOfTheDay())); }
+    }
     if (!played) return;
 
 
     var hour = new Date().getHours();
     var band = HELLOS.filter(function (h) { return hour < h.until; })[0] || HELLOS[HELLOS.length - 1];
-    var line = band.lines[Math.floor(Math.random() * band.lines.length)];
+    var line = withName(band.lines[Math.floor(Math.random() * band.lines.length)]);
 
     /*
      * THEIR OWN PLAN, READ BACK AT THE HOUR THEY NAMED.
@@ -1037,7 +1186,7 @@
      */
     var plan = progress.plan();
     if (plan && progress.planIsDue()) {
-      el.textContent = 'You said you would work this out ' + plan.phrase + '. Here I am.';
+      el.textContent = (nickName() ? nickName() + ', you' : 'You') + ' said you would work this out ' + plan.phrase + '. Here I am.';
       return;
     }
 
@@ -1073,7 +1222,7 @@
         awayDays + ' days. I did not wait by the door. Okay, I did.',
         'Oh. You\u2019re back. ' + awayDays + ' days. I\u2019m fine. Slightly dusty.'
       ];
-      el.textContent = quiet[Math.floor(Math.random() * quiet.length)];
+      el.textContent = withName(quiet[Math.floor(Math.random() * quiet.length)]);
       wistful = true;
       dotMood('mascot-l', 'wistful', 0);
       return;
@@ -1095,7 +1244,7 @@
       else if (gap >= 7) pool = ['Look who it is. ' + gap + ' days. You had ' + last.name + ', last time.'];
       else if (gap >= 2) pool = [gap + ' days. I kept your seat warm. You had ' + last.name + ', last time.'];
       else pool = ['Back already. Yesterday was ' + last.name + '. Any regrets?', 'Welcome back. Last time: ' + last.name + '.'];
-      el.textContent = pool[Math.floor(Math.random() * pool.length)];
+      el.textContent = withName(pool[Math.floor(Math.random() * pool.length)]);
       return;
     }
 
@@ -5047,6 +5196,7 @@
 
     renderRating(item);
     paintKeep();
+    paintNick();
     paintNext();
     paintPeek();
     paintWhy();
@@ -7667,19 +7817,42 @@
       if (sentImage) payload.image = { mime: sentImage.mime, data: sentImage.data };
     }
 
-    fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      // A relative path, so this is whatever host the app is actually being
-      // served from — the phone's, not a machine it was written on.
-      body: JSON.stringify(payload)
-    }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (body) {
-        return { ok: res.ok, status: res.status, body: body };
+    // The call. A free model is somebody else's service, and it is allowed to be busy for a
+    // moment: one automatic second try (after a short breath, saying so) before the visitor is
+    // asked to do it themselves. Never for a limit, a Premium check or a request the server refused.
+    function sendChat(attempt) {
+      var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var cut = setTimeout(function () { if (ctl) ctl.abort(); }, 34000);
+      var slow = setTimeout(function () {
+        var t = waiting.querySelector('.chat-text');
+        if (t && waiting.isConnected && !waiting.dataset.slow) { waiting.dataset.slow = '1'; t.textContent = 'Still on it\u2026'; }
+      }, 7000);
+      return fetch('/api/chat', {
+        method: 'POST',
+        signal: ctl ? ctl.signal : undefined,
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        // A relative path, so this is whatever host the app is actually being
+        // served from — the phone's, not a machine it was written on.
+        body: JSON.stringify(payload)
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (body) {
+          return { ok: res.ok, status: res.status, body: body };
+        });
+      }).catch(function () {
+        return { ok: false, status: 0, body: {} };
+      }).then(function (answer) {
+        clearTimeout(cut); clearTimeout(slow);
+        var err = (answer.body && answer.body.error) || '';
+        var transient = !answer.ok && (answer.status === 0 || answer.status === 502 || answer.status === 503 || err === 'busy' || err === 'unavailable');
+        if (transient && attempt < 1) {
+          var t = waiting.querySelector('.chat-text');
+          if (t && waiting.isConnected) t.textContent = 'Trying another way\u2026';
+          return new Promise(function (go) { setTimeout(go, 1800); }).then(function () { return sendChat(attempt + 1); });
+        }
+        return answer;
       });
-    }).catch(function () {
-      return { ok: false, status: 0, body: {} };
-    }).then(function (answer) {
+    }
+    sendChat(0).then(function (answer) {
       chat.busy = false;
       $('chat-send').disabled = false;
       Buddy.think(false);
@@ -8687,8 +8860,25 @@
     });
 
     var grid = $('dish-grid');
-    clear2(grid);
-    matches.forEach(function (dish) {
+    /*
+     * One ad, in the list, because the bottom of four hundred and fifty rows is not somewhere
+     * anybody gets to. It is a single node that is never removed and never moved: this function
+     * runs on every filter tap and keystroke, and rebuilding the list around it (rather than
+     * emptying the list) is what keeps the ad from reloading, and being counted again, each time.
+     */
+    var adItem = $('dish-ad');
+    if (!adItem) {
+      adItem = document.createElement('li');
+      adItem.id = 'dish-ad';
+      adItem.className = 'ad-wrap ad-feed';
+    }
+    Array.prototype.slice.call(grid.children).forEach(function (child) {
+      if (child !== adItem) grid.removeChild(child);
+    });
+    if (adItem.parentNode !== grid) grid.appendChild(adItem);
+    // Only worth a slot in a list long enough to have somewhere to put it.
+    adItem.hidden = matches.length < 12;
+    matches.forEach(function (dish, at) {
       var li = document.createElement('li');
       var row = document.createElement('button');
       row.type = 'button';
@@ -8706,8 +8896,10 @@
         ? 'Struck off' : dish.blurb;
       row.addEventListener('click', function () { openSheet(dish); });
       li.appendChild(row);
-      grid.appendChild(li);
+      // The first eight rows go above the ad, the rest below it.
+      if (at < 8) grid.insertBefore(li, adItem); else grid.appendChild(li);
     });
+    if (typeof Ads !== 'undefined') Ads.mount(adItem, 'inline', { premium: isPlus() });
 
     $('dish-empty').hidden = matches.length > 0;
     $('dish-count-label').textContent = matches.length === Data.ITEMS.length
@@ -9014,6 +9206,8 @@
   }
 
   function renderProfile() {
+    // The end of the screen that is read to the bottom. A no-op until a unit is configured, and every time after the first.
+    if (typeof Ads !== 'undefined') Ads.mount($('profile-ad'), 'end', { premium: isPlus() });
     var level = progress.level();
     var state = progress.state;
 
@@ -17697,6 +17891,10 @@
     renderIntro();
     startReel();
     loadDaily();
+    if (typeof Ads !== 'undefined') {
+      Ads.mount($('landing-ad-a'), 'inline', { premium: isPlus() });
+      Ads.mount($('landing-ad-b'), 'end', { premium: isPlus() });
+    }
     focusQuietly($('landing-start'));
   }
 

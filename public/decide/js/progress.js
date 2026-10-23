@@ -242,6 +242,8 @@
       plan: null,             // { id, hour, phrase, at } — see PLAN_CUES
       resume: null,           // { code, at } — half a decide game, see app.js
       whyAnswered: null,      // which option was tapped on the one-question ask
+      nick: '',               // what Dot calls this person; set by them, kept on this device only
+      nickAsked: false,       // asked once; 'not now' is final
       nightOwl: false,
       earlyBird: false,
       badges: [],

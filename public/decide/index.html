@@ -321,6 +321,8 @@
     <!-- Only for somebody who has been here before. A first-timer gets the
          pitch clean, with nothing in front of it. -->
     <div class="landing-hello-row" id="landing-hello-row" hidden><span class="mascot" id="mascot-l" aria-hidden="true"></span><p class="landing-hello" id="landing-hello" hidden></p></div>
+    <!-- Dot's note for today: one true thing about cooking or eating, the same for everybody on a given day. -->
+    <p class="landing-note" id="landing-note" hidden></p>
 
     <!-- Word for word what the site's own hero says, which is the point: the
          two screens are the same product and used to end on a promise to read
@@ -501,6 +503,8 @@
          Hidden until it has something. A shelf that says "nothing today" is
          worse than no shelf.
          =================================================================== -->
+    <div class="ad-wrap" id="landing-ad-a"></div>
+
     <section class="strip" id="daily-wrap" hidden>
       <h2 class="strip-title" id="daily-title">Five to try today</h2>
       <p class="fine" id="daily-note">Dishes the app does not already know,
@@ -710,6 +714,8 @@
       <li><b id="landing-questions">8</b><span>questions, usually</span></li>
       <li><b id="landing-recipes">780</b><span>recipes inside</span></li>
     </ul>
+
+    <div class="ad-wrap" id="landing-ad-b"></div>
 
     <p class="landing-foot">Free to play. Premium is extra.
       <button class="link-btn" id="landing-premium">See what Premium adds</button>
@@ -1120,6 +1126,17 @@
             <button class="plan-cue" type="button" id="keep-go"></button>
             <button class="plain keep-no" type="button" id="keep-no">Not now</button>
           </div>
+        </section>
+
+        <!-- What Dot calls you. Asked once, after a few decisions; "not now" is final. It stays on this device. -->
+        <section class="strip" id="nick-strip" hidden>
+          <h2 class="strip-title">What should I call you?</h2>
+          <p class="fine">A first name or a nickname. It stays in this browser, and I only use it to say hello.</p>
+          <form class="nick-form" id="nick-form">
+            <input id="nick-input" type="text" maxlength="24" autocomplete="nickname" placeholder="e.g. Sam" aria-label="What should Dot call you?">
+            <button class="plan-cue" type="submit">Save</button>
+            <button class="plain keep-no" type="button" id="nick-no">Not now</button>
+          </form>
         </section>
 
         <section class="strip" id="why-strip" hidden>
@@ -2815,15 +2832,25 @@
             <button class="quiet" id="setting-sound">On</button>
           </div>
           <div class="setting">
+            <span><b>What Dot calls you</b><small>Kept in this browser, only to say hello with.</small></span>
+            <span class="nick-edit"><input id="setting-nick-input" type="text" maxlength="24" autocomplete="nickname" placeholder="Not set" aria-label="What Dot calls you"><button class="quiet" id="setting-nick" type="button">Save</button></span>
+          </div>
+          <div class="setting">
             <span><b>Reset everything</b><small>XP, badges, streak, saved dishes on this browser. Premium stays right where it is.</small></span>
             <button class="quiet danger" id="profile-reset-btn">Reset</button>
           </div>
         </div>
       </section>
 
+      <!-- The end of the one screen that is read to the bottom. Armed by renderProfile()
+           through js/ads.js, which draws nothing unless a unit is configured and the
+           visitor is not Premium. -->
+      <div class="ad-wrap" id="profile-ad"></div>
     </section>
 
-
+    <!-- Under whichever section is current, except the questions and Profile (which has its
+         own). Armed by adForView() in app.js. The dock along the bottom is separate. -->
+    <div class="ad-wrap" id="view-ad" hidden></div>
 
   </main>
 </div>

@@ -24,26 +24,47 @@ Inactive, and this network showed nothing for the whole of its previous run here
 
 ## What a visitor sees
 
-In the **app** there is one fixed strip along the bottom, the *ad dock* (`js/ads.js`):
-it sits **over** the page, never pushing it, and is there during the decide
-questions, in every game and in Ask. Its height is reserved once (`--anchor-h`), so
-nothing jumps when it loads and it never lies across a control: a fixed ad on top of
-buttons gets accidental taps, which is invalid traffic. Two banners side by side on
-a wide screen (728x90 + 468x60, or one 728x90 from 900px, one 468x60 from 520px), one
-320x50 on a phone, swapped for a fresh one about every minute while the page is
-visible. Z-order: cookie bar < top bar < games < dock < welcome / toasts < tour.
-On a phone it sits above the tab bar, and at the very bottom when the tab bar is
-hidden (a game is open). The **site** pages keep a cluster of two or three at the end
-of the page.
+In the **app** there are two layers, and they add up (the owner asked for both):
+
+1. **The dock** (`js/ads.js`): one fixed strip along the bottom, **over** the page, never pushing
+   it, present during the decide questions, in every game and in Ask. Its height is reserved
+   once (`--anchor-h`), so nothing jumps when it loads and it never lies across a control: a fixed
+   ad on top of buttons gets accidental taps, which is invalid traffic. Two banners side by side
+   on a wide screen, one 320x50 on a phone, swapped for a fresh one about every minute while the
+   page is visible. Z-order: cookie bar < top bar < games < dock < welcome / toasts < tour. On a
+   phone it sits above the tab bar, and at the very bottom when the tab bar is hidden (a game is
+   open). The side menu and the More sheet stop above it.
+2. **The slots**, in the page: under every section but the questions and Profile (`#view-ad`,
+   `adForView()`, a fresh cluster at most every 20 seconds), after the 8th dish in the Dishes
+   list, at the end of Profile, twice on the front page. Two banners (three at the end of a page
+   on a wide screen).
+
+The **site** pages keep a cluster of two or three at the end of the page.
+
+### Every ad is a page of this site: `/ad-frame?u=<size>`
+Not srcdoc. `src/routes/ad-frame.ts` serves a tiny page (the unit is looked up by name in
+`AD_UNITS`, never taken from the URL) that loads the network's script with the site's address as
+the referrer (`origin`, never a path), and tells the embedding page `filled`, `empty` or `error`.
+**Why:** a srcdoc frame has no address, and in cookie-free mode it also asked for no referrer, so
+the network was asked as a stranger and answered with an empty script. When a frame reports
+`empty` or `error` the box shows the app's own Premium card at the same size (`.house-ad`); an
+advertiser's ad always wins the box when there is one. `Ads.status()` in the console shows what
+each size said.
+
+### If the boxes are still the house card
+That means the network's script came back empty. From the build server **every** key (even a made-up
+one) returns an empty script from `bauval.org/22/<key>`, so this cannot be settled from the code.
+Check in Adsterra: the **site** is approved (not only the units being Active) and its domain is
+the one serving the app (`morsels45-app.whop.site`; a free subdomain is often not approved, a
+domain of your own is); Statistics shows requests (if zero, something is blocking the script:
+try without an ad blocker or Brave shields) and impressions (requests with no impressions is no fill).
 
 | | |
 |---|---|
-| Game | the dock, everywhere in the app, games and questions included |
-| Site | the end of /, /faq, /how-it-works, /info, /eat and each /eat/<dish> |
 | Never | /premium, /checkout, /account; the welcome and tour screens sit on top of it |
 | Who | everybody except Premium members, **from the first visit** |
 | How | the dock loads as soon as Premium status is known (a member never sees a flash); the site's end-of-page clusters load within 400px of view. Save-Data is ignored (the owner's call) |
-| Consent | changes how an ad loads, **never whether**. Without consent where the law asks first (EU, EEA, UK, Switzerland, or a country that cannot be told), the same ad loads in a `credentialless` frame with no referrer; **Accept all** loads it normally; **Essential only** reloads it cookie-free. There is no free way to turn ads off: Save-Data, the cookie choice and stored settings do nothing, and `shell-test` and `adsdrive` fail if one appears |
+| Consent | changes how an ad loads, **never whether**. Without consent where the law asks first (EU, EEA, UK, Switzerland, or a country that cannot be told), the same ad loads in a `credentialless` frame (it is still told this site's address, and only that, because a network cannot serve a site it cannot identify); **Accept all** loads it normally; **Essential only** reloads it cookie-free. There is no free way to turn ads off: Save-Data, the cookie choice and stored settings do nothing, and `shell-test` and `adsdrive` fail if one appears |
 
 ## The sponsor page: more Standard questions
 

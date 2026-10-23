@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
 import { useConsentAllowed } from '#/lib/consent-client'
-import { ADS_ON, adCluster, type AdUnit } from '#/lib/site'
+import { ADS_ON, AD_UNITS, adCluster, type AdSize, type AdUnit } from '#/lib/site'
 
 /*
  * A SMALL CLUSTER OF ADS, FROM THE FIRST VISIT, NEVER FOR A PREMIUM MEMBER, AND NO
@@ -28,23 +28,15 @@ import { ADS_ON, adCluster, type AdUnit } from '#/lib/site'
  * normal tab) and nothing else. No allow-same-origin: the ad gets an opaque
  * origin and cannot read this page's cookies, storage or DOM. No
  * allow-top-navigation: a script inside that tries to set window.top.location
- * is refused by the browser itself. srcdoc rather than writing into the
- * frame, because writing needs the same-origin access the sandbox removes.
+ * is refused by the browser itself. The frame is a real page on this site, /ad-frame, not
+ * srcdoc: see src/routes/ad-frame.ts for why, and for how it says whether anything arrived.
  * Both were checked against a real browser when this was first written, and
  * ads.test (scripts/shell-test.mjs) fails if either flag ever appears here.
  */
 export const AD_SANDBOX = 'allow-scripts allow-popups allow-popups-to-escape-sandbox'
 
-export function adHtml(unit: AdUnit): string {
-  const options = JSON.stringify({ key: unit.key, format: 'iframe', height: unit.height, width: unit.width, params: {} })
-  return (
-    '<!doctype html><html><head><meta charset="utf-8"></head>' +
-    '<body style="margin:0;padding:0;overflow:hidden">' +
-    `<script>atOptions=${options};</script>` +
-    `<script src="${unit.src}"></script>` +
-    '</body></html>'
-  )
-}
+/** The name a unit goes by in /ad-frame?u=…, found from its key. */
+const nameOf = (unit: AdUnit): AdSize => (Object.keys(AD_UNITS) as AdSize[]).find((n) => AD_UNITS[n].key === unit.key) as AdSize
 
 export function AdSlot({
   placement,
@@ -59,6 +51,18 @@ export function AdSlot({
   const box = useRef<HTMLDivElement>(null)
   const [units, setUnits] = useState<AdUnit[]>([])
   const allowed = useConsentAllowed()
+  // Sizes whose frame said nothing arrived: the box shows the site's own card instead of an empty rectangle.
+  const [empty, setEmpty] = useState<Record<string, boolean>>({})
+  useEffect(() => {
+    const on = (e: MessageEvent) => {
+      const d = e.data?.m45ad
+      if (!d || (d.s !== 'empty' && d.s !== 'error')) return
+      const frames = box.current?.querySelectorAll('iframe') ?? []
+      for (const f of Array.from(frames)) if (f.contentWindow === e.source) setEmpty((m) => ({ ...m, [f.getAttribute('data-ad') ?? '']: true }))
+    }
+    window.addEventListener('message', on)
+    return () => window.removeEventListener('message', on)
+  }, [])
 
   useEffect(() => {
     // Waits only until it is known whether to ask first (one small request). The
@@ -86,11 +90,12 @@ export function AdSlot({
   if (!ADS_ON || premium) return null
   // With consent, a normal frame. Without it, where we have to ask first and have not
   // been told yes, or where we cannot tell: the same ad in a frame that asks the browser
-  // for no cookies and a throwaway storage partition, and no referrer. `credentialless`
+  // for no cookies and a throwaway storage partition. (It is still sent this site's address as its
+  // referrer, and only that: a network cannot tell what site it is on without it, and answers with nothing.) `credentialless`
   // is honoured by Chromium browsers and ignored by the rest; the network still sees an
   // IP address and a browser either way, and the privacy page says so.
   const restricted = allowed !== true
-  const extra = restricted ? ({ credentialless: '', referrerPolicy: 'no-referrer', 'data-mode': 'cookieless' } as Record<string, string>) : {}
+  const extra = restricted ? ({ credentialless: '', 'data-mode': 'cookieless' } as Record<string, string>) : {}
 
   return (
     <div
@@ -109,20 +114,32 @@ export function AdSlot({
           </p>
           {/* Chosen 400px before it can be seen, so whatever it does to the page's height happens off-screen. */}
           <div className="flex flex-wrap items-start justify-center gap-4">
-            {units.map((unit) => (
-              <iframe
-                key={unit.key + (restricted ? ':c' : '')}
-                {...extra}
-                title="Advertisement"
-                width={unit.width}
-                height={unit.height}
-                scrolling="no"
-                sandbox={AD_SANDBOX}
-                srcDoc={adHtml(unit)}
-                loading="lazy"
-                className="max-w-full border-0"
-              />
-            ))}
+            {units.map((unit) => {
+              const name = nameOf(unit)
+              if (empty[name])
+                return (
+                  <Link key={unit.key + ':house'} to="/premium" target="_blank" className="grid max-w-full content-center gap-0.5 overflow-hidden rounded border border-[var(--line-2)] bg-[var(--wash)] px-3 text-left no-underline" style={{ width: unit.width, height: unit.height }}>
+                    <b className="text-sm text-[var(--amber)]">{unit.height >= 90 ? 'morsels45 Premium' : 'Premium'}</b>
+                    <span className="text-xs text-[var(--text-dim)]">{unit.height >= 90 ? 'No ads. A smarter assistant. See what Premium adds.' : 'No ads. See Premium'}</span>
+                  </Link>
+                )
+              return (
+                <iframe
+                  key={unit.key + (restricted ? ':c' : '')}
+                  {...extra}
+                  data-ad={name}
+                  title="Advertisement"
+                  width={unit.width}
+                  height={unit.height}
+                  scrolling="no"
+                  sandbox={AD_SANDBOX}
+                  referrerPolicy="origin"
+                  src={`/ad-frame?u=${name}`}
+                  loading="lazy"
+                  className="max-w-full border-0"
+                />
+              )
+            })}
           </div>
         </>
       ) : null}

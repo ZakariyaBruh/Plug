@@ -4463,6 +4463,22 @@ body.is-beaming { overflow: hidden; }
   color: var(--amber);
 }
 
+/* Dot's note for today, under the greeting: small, true, and the same for everybody that day. */
+.landing-note {
+  margin: 0 0 var(--s3); max-width: 34rem; font-size: var(--t-sm); line-height: 1.45; color: var(--ink-2);
+  padding-left: var(--s3); border-left: 2px solid var(--line-2);
+}
+.landing-note[hidden] { display: none; }
+.landing-note b { color: var(--ink); font-weight: 500; }
+.nick-form { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.nick-form input, .nick-edit input {
+  min-height: var(--tap); padding: 0 var(--s3); border-radius: var(--r); border: 1px solid var(--line-2);
+  background: var(--wash); color: var(--ink); font: inherit; min-width: 0; width: 11rem;
+}
+.nick-form input:focus-visible, .nick-edit input:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+.nick-edit { display: inline-flex; gap: var(--s2); align-items: center; }
+.nick-edit input { width: 9rem; }
+
 /* The reel is running and this button is now the only thing that matters on
    the screen. Amber, and breathing, so it reads as "act now" rather than as
    the same button it was a second ago. */
@@ -7592,6 +7608,40 @@ html.vt-active .tabbar { view-transition-name: tabbar; }
   ::view-transition-old(tabbar), ::view-transition-new(tabbar) { animation: none; mix-blend-mode: normal; }
 }
 
+
+/* ---------------------------------------------------------------- ad slots ---
+   The ones that sit IN the page (the dock along the bottom is above). Quiet, labelled, and
+   gone entirely for a Premium member. Empty until a unit fills it, and an empty slot takes no
+   room: nothing here reserves space for an ad that may not arrive. See js/ads.js. */
+.ad-wrap { margin-top: var(--s7); text-align: center; }
+/* Rendered but flat, not display:none: a hidden element cannot be observed, so a slot that was
+   hidden until it was needed could never find out it was needed. */
+.ad-wrap:not(.is-filled) { height: 0; margin: 0; padding: 0; border: 0; overflow: hidden; }
+.ad-wrap iframe { display: block; max-width: 100%; border: 0; }
+/* Two or three together, centred, wrapping to rows when they do not fit side by side. */
+.ad-row { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: center; gap: var(--s4); }
+.ad-wrap .ad-label { margin: 0 0 var(--s2); }
+.ad-label { font-size: var(--t-xs); color: var(--ink-3); }
+.ad-label a { color: inherit; text-underline-offset: .2em; }
+.ad-label a:hover { color: var(--amber); }
+/* Inside the Dishes list it is one row among the rest, set off by hairlines. */
+.ad-feed { list-style: none; }
+.ad-feed.is-filled { margin: 0; padding: var(--s4) 0; border-bottom: 1px solid var(--line); }
+body.is-premium .ad-wrap { display: none; }
+.landing-inner > .ad-wrap:not(.is-filled) { margin-top: calc(var(--s4) * -1); }
+#view-ad[hidden] { display: none; }
+#view-ad { margin: var(--s6) auto var(--s5); max-width: 60rem; padding-inline: var(--s4); }
+
+/* The app's own card, in the box of an ad that did not come. Plainly ours, not dressed as an ad. */
+.house-ad {
+  display: grid; align-content: center; gap: .15rem; box-sizing: border-box; max-width: 100%; padding: 0 var(--s3);
+  overflow: hidden; text-align: left; text-decoration: none; color: var(--ink);
+  background: var(--wash); border: 1px solid var(--line-2); border-radius: var(--r);
+}
+.house-ad b { font-family: var(--display); font-size: var(--t-sm); font-weight: 600; color: var(--amber); line-height: 1.2; }
+.house-ad span { font-size: var(--t-xs); color: var(--ink-2); line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.house-ad:hover { border-color: var(--amber); }
+.dock .house-ad { padding: 0 var(--s2); }
 
 /* ------------------------------------------------------------ the ad dock ---
    One fixed strip along the bottom, over the page and never pushing it (see js/ads.js
