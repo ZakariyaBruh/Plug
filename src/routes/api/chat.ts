@@ -18,9 +18,11 @@ const bonusOffer = (s: Standing) => ({ per: BONUS_PER_CLAIM, claimsLeft: Math.ma
  * answer, a plain pick from the app's own menu (lib/free-local.ts), said to be what it is and not
  * counted: three questions a day per free Whop account, counted in the database, and what a
  * Premium member can switch to for a quick answer. ADVANCED is Gemini, on this
- * app's own key, for Premium only: it knows your taste profile, can read a
+ * app's own key, for Premium only, and ONLY Gemini: when Gemini is slow it is asked again on other Gemini models, and when
+ * it still cannot answer the member is told so, never handed to a free provider. It knows your taste profile, can read a
  * photo, can look things up on the web, suggests where to take the
- * conversation next, and has room to answer properly. The tier is asked for by
+ * conversation next, answers with cards you can keep (a week's plan, a shopping list, meal prep,
+ * a nutrition estimate, a dinner for guests, a recipe) and has room to answer properly. The tier is asked for by
  * the page and checked here — a request for Advanced from anybody who does not
  * own Premium is refused whatever the page claimed.
  *
@@ -193,7 +195,19 @@ const SKILLS: Record<string, string> = {
   budget: 'They are cooking on a budget: keep to cheap staples, give a rough cost per portion in the currency they used (or say the cost is approximate and name no currency), and say where the saving comes from.',
   leftovers: 'They have leftovers or odd ingredients: give two or three ideas ranked by effort, using what they have named and as little else as possible, and say how long each takes.',
   pair: 'They want something to go with what they are having: a drink, a side and a pudding if it fits, one pick each, with the reason in a line.',
+  // The ones below answer with a card (see CARD_SKILLS): the thing to keep, with a line or two of reply over it.
+  week: 'They want a week of meals. Put it in the card: one section per day (the days of the week, starting tomorrow unless they say otherwise), each item a meal with a few words on why it fits. Vary the cuisines and the effort, put the quick dinners on the busy days, and reuse ingredients across days so the shopping stays short. Ask nothing first: pick, and say in the reply what you assumed.',
+  shop: 'They want a shopping list. Put it in the card: one section per part of the shop (Fruit and veg, Meat and fish, Dairy and eggs, Tins and dry goods, Bakery, Frozen, Other), each item with its quantity, combined across everything they named so nothing is listed twice, and leave out basics nobody runs out of unless the recipe needs a lot of them.',
+  prep: 'They want to meal prep. Put it in the card: a section "Cook once" (what to cook, in what order, with timings so the oven and hob overlap), a section "Containers" (what goes in which, and how many portions), and a section "Keep and reheat" (how long each keeps in the fridge or freezer and how to reheat it so it is not sad). Say in the reply how long the whole session takes.',
+  macros: 'They want to know what is in it. Put it in the card: a section "Per serving" with calories, protein, carbohydrate, fat, fibre and salt as rounded estimates (say "about"), and a section "Notes" with the two biggest things moving the numbers and one easy change that improves them. These are estimates from typical quantities: say so in the reply, in one clause, and never present them as exact or as medical advice.',
+  diet: 'They want a dish made to fit a way of eating (vegan, vegetarian, gluten-free, dairy-free, halal, kosher, low-carb, nut-free, or what they name). Say first whether it can be done well and what changes, then give the full recipe in the recipe object with every substitution built into the quantities. For halal and kosher, name the ingredients that need checking on the label (gelatine, alcohol, stock, rennet, meat source) instead of saying it is fine.',
+  host: 'They are having people over. Put it in the card: a section "Menu" (starter, main, side, pudding, drink: one pick each that works together and that can mostly be done ahead), a section "Quantities" (for the number of guests they gave, or six if they gave none, in things a person can buy), and a section "Timeline" (working backwards from when they want to eat: the day before, the morning, then every 15 to 30 minutes of the last two hours). Ask about allergies and what they will not eat only if they have not said.',
+  teach: 'They want to understand a technique or the reason behind something in cooking. Explain it the way a good cook would at the counter: the principle in one or two sentences, the three or four things that decide whether it works, the mistake nearly everybody makes, and a quick way to practise it with something cheap.',
+  look: 'They have attached a photo. Work out what it is and answer for that: a fridge or cupboard (what you can see, then two or three things to cook from it, ranked by effort, saying what you would need to buy), a menu (the two best orders for them given their rules and taste, and the one to avoid, with a line each), a packet or label (read the ingredients and say plainly anything that conflicts with their food rules, allergens and E-numbers worth knowing, and whether it is something they would want), or a dish (what it is, and how to make it). Say when something in the photo is too small or blurry to read, rather than guessing.',
 }
+
+// Skills whose answer is a thing to keep, so the model is asked for the card object as well.
+const CARD_SKILLS = new Set(['week', 'shop', 'prep', 'macros', 'host'])
 
 /*
  * The advanced assistant's instruction: the same app and the same catalogue as
@@ -229,12 +243,14 @@ function advancedInstruction(profile: Profile, skill: string, search: boolean) {
   else {
     lines.push('', 'After the answer, offer two or three short follow-ups they might actually tap next (under 45 characters each, written as what the person would say).')
     lines.push('When, and only when, you are giving them ONE complete recipe to cook, also fill in the recipe object (name, serves, minutes, every ingredient with its quantity, every step) so the app can offer to save it. For anything else leave it out.')
+    lines.push('When the answer is a list or a plan to keep (a week of meals, a shopping list, a prep plan, nutrition figures, a plan for guests), fill in the card object (title, optional note, and sections each with a heading and short items) and keep the reply to a line or two that says what is in it and what you assumed. Do not repeat the card in the reply. For anything else leave the card out.')
   }
   return lines.join('\n')
 }
 
 type Recipe = { name: string; serves: number; minutes: number | null; ingredients: string[]; steps: string[] }
-type Reply = { reply: string; followups: string[]; sources: { title: string; url: string }[]; recipe?: Recipe }
+type Card = { title: string; note: string; sections: { heading: string; items: string[] }[] }
+type Reply = { reply: string; followups: string[]; sources: { title: string; url: string }[]; recipe?: Recipe; card?: Card }
 
 function cleanRecipe(raw: unknown): Recipe | undefined {
   if (!raw || typeof raw !== 'object') return undefined
@@ -256,6 +272,23 @@ function cleanRecipe(raw: unknown): Recipe | undefined {
   }
 }
 
+function cleanCard(raw: unknown): Card | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as Record<string, unknown>
+  const text = (v: unknown, n: number) => String(typeof v === 'string' ? v : '').replace(/[\r\n]+/g, ' ').trim().slice(0, n)
+  const title = text(r.title, 100)
+  const sections = (Array.isArray(r.sections) ? r.sections : [])
+    .map((x) => {
+      const sec = (x ?? {}) as Record<string, unknown>
+      const items = (Array.isArray(sec.items) ? sec.items : []).map((i) => text(i, 220)).filter(Boolean).slice(0, 40)
+      return { heading: text(sec.heading, 60), items }
+    })
+    .filter((x) => x.items.length)
+    .slice(0, 14)
+  if (!title || !sections.length) return undefined
+  return { title, note: text(r.note, 300), sections }
+}
+
 function readGemini(payload: unknown, structured: boolean): Reply | null {
   const cand = (payload as { candidates?: { content?: { parts?: { text?: string }[] }; groundingMetadata?: { groundingChunks?: { web?: { uri?: string; title?: string } }[] } }[] } | null)
     ?.candidates?.[0]
@@ -270,14 +303,14 @@ function readGemini(payload: unknown, structured: boolean): Reply | null {
     .slice(0, 4)
   if (!structured) return { reply: text, followups: [], sources }
   try {
-    const parsed = JSON.parse(text) as { reply?: unknown; followups?: unknown; recipe?: unknown }
+    const parsed = JSON.parse(text) as { reply?: unknown; followups?: unknown; recipe?: unknown; card?: unknown }
     const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : ''
     const followups = (Array.isArray(parsed.followups) ? parsed.followups : [])
       .filter((x): x is string => typeof x === 'string')
       .map((x) => x.trim().slice(0, 60))
       .filter(Boolean)
       .slice(0, 3)
-    if (reply) return { reply, followups, sources, recipe: cleanRecipe(parsed.recipe) }
+    if (reply) return { reply, followups, sources, recipe: cleanRecipe(parsed.recipe), card: cleanCard(parsed.card) }
   } catch {
     /* the model ignored the format: the text is still an answer */
   }
@@ -328,7 +361,9 @@ export const Route = createFileRoute('/api/chat')({
           }
           const profile = cleanProfile(sent.profile)
           const image = cleanImage(sent.image)
-          const skill = typeof sent.skill === 'string' && sent.skill in SKILLS ? sent.skill : 'chat'
+          const asked = typeof sent.skill === 'string' && sent.skill in SKILLS ? sent.skill : 'chat'
+          // "Read a photo" with no photo is just a question.
+          const skill = asked === 'look' && !image ? 'chat' : asked
           const search = sent.search === true && !image
           const contents = turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] as Record<string, unknown>[] }))
           if (image) contents[contents.length - 1].parts.push({ inlineData: image })
@@ -338,9 +373,9 @@ export const Route = createFileRoute('/api/chat')({
             contents,
             ...(search ? { tools: [{ google_search: {} }] } : {}),
             generationConfig: {
-              maxOutputTokens: 2400,
+              maxOutputTokens: CARD_SKILLS.has(skill) ? 4000 : 2400,
               temperature: 0.8,
-              thinkingConfig: { thinkingLevel: skill === 'plan' || skill === 'compare' ? 'medium' : 'low' },
+              thinkingConfig: { thinkingLevel: ['plan', 'compare', 'week', 'prep', 'host', 'diet', 'macros'].includes(skill) ? 'medium' : 'low' },
               ...(search
                 ? {}
                 : {
@@ -361,6 +396,22 @@ export const Route = createFileRoute('/api/chat')({
                           },
                           required: ['name', 'ingredients', 'steps'],
                         },
+                        card: {
+                          type: 'OBJECT',
+                          properties: {
+                            title: { type: 'STRING' },
+                            note: { type: 'STRING' },
+                            sections: {
+                              type: 'ARRAY',
+                              items: {
+                                type: 'OBJECT',
+                                properties: { heading: { type: 'STRING' }, items: { type: 'ARRAY', items: { type: 'STRING' } } },
+                                required: ['heading', 'items'],
+                              },
+                            },
+                          },
+                          required: ['title', 'sections'],
+                        },
                       },
                       required: ['reply'],
                     },
@@ -368,20 +419,28 @@ export const Route = createFileRoute('/api/chat')({
             },
           })
 
-          const { res, lastStatus } = await askGemini(key, body, 'chat-advanced', {
-            models: ['gemini-3.5-flash', 'gemini-3.5-flash-lite'],
-            staggerMs: 7000,
-            attemptMs: 26000,
-            timeoutMs: 30000,
+          // GEMINI AND NOTHING ELSE. First the main model with the quick one overlapped behind it; if neither answered
+          // (overloaded, rate-limited, timed out) one more round on the other Gemini models. A refusal that asking again
+          // cannot change (a bad key, a bad request) is not asked twice. The free providers are never in this path.
+          const main = process.env.GEMINI_ADVANCED_MODEL?.trim() || 'gemini-3.5-flash'
+          let ask = await askGemini(key, body, 'chat-advanced', {
+            models: [main, 'gemini-3.5-flash-lite'],
+            staggerMs: 6000,
+            attemptMs: 18000,
+            timeoutMs: 20000,
           })
+          if (!ask.res && (ask.lastStatus === 0 || ask.lastStatus === 429 || ask.lastStatus >= 500)) {
+            ask = await askGemini(key, body, 'chat-advanced-2', {
+              models: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'],
+              staggerMs: 2500,
+              attemptMs: 10000,
+              timeoutMs: 12000,
+            })
+          }
+          const { res, lastStatus } = ask
           const out = res ? readGemini(await res.json().catch(() => null), !search) : null
           if (!out) {
             if (res) console.error('chat: advanced answer had no text')
-            // Gemini is busy or down. A Premium member is not told to wait: the free model
-            // answers instead, and the page says plainly that this one came from Standard.
-            // (No second trip to Gemini from here: it has just failed, and the free ones are the point.)
-            const stand = await askFree(instruction() + langLine(want) + '\nAlways answer in at least two complete sentences, and give the reason for a pick.', turns, 600, undefined, { gemini: false })
-            if (stand?.text) return json({ reply: stand.text, followups: [], sources: [], mode: 'standard', degraded: 'advanced_busy', left: null, limit: mine.limit })
             return json({ error: res ? 'no_answer' : lastStatus === 429 ? 'busy' : 'unavailable' }, 502)
           }
           return json({ ...out, mode: 'advanced', left: null, limit: mine.limit })

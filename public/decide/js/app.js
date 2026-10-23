@@ -7430,7 +7430,15 @@
     { id: 'scale', label: 'Scale and shop' },
     { id: 'budget', label: 'On a budget' },
     { id: 'leftovers', label: 'Use it up' },
-    { id: 'pair', label: 'What goes with it' }
+    { id: 'pair', label: 'What goes with it' },
+    { id: 'week', label: 'Week of meals' },
+    { id: 'shop', label: 'Shopping list' },
+    { id: 'prep', label: 'Meal prep' },
+    { id: 'macros', label: 'What is in it' },
+    { id: 'diet', label: 'Make it fit my diet' },
+    { id: 'host', label: 'Host a dinner' },
+    { id: 'teach', label: 'Teach me' },
+    { id: 'look', label: 'Read a photo' }
   ];
   var CHAT_SEEDS_ADV = [
     'Plan my dinners for the week',
@@ -7440,7 +7448,10 @@
     'Is there a good place for a late breakfast nearby?',
     'Compare a stir-fry and a curry for tonight',
     'I have no cream. What do I use in a carbonara?',
-    'Scale a lasagne for eight, and list what to buy'
+    'Scale a lasagne for eight, and list what to buy',
+    'Plan a vegetarian week for two, with one batch-cook night',
+    'Dinner for six on Saturday, one of them is gluten-free',
+    'How many calories and how much protein in a chicken katsu curry?'
   ];
   chat.mode = 'standard';
   chat.skill = 'chat';
@@ -7464,7 +7475,7 @@
     });
     var note = $('chat-mode-note');
     note.textContent = adv
-      ? 'Advanced knows your taste, reads a photo, can look things up and keeps this conversation.'
+      ? 'Advanced is Gemini: it knows your taste, reads a photo, looks things up, and gives you plans and lists to keep.'
       : isPlus()
         ? 'Standard is the quick one. Switch to Advanced for the full answer.'
         : 'Standard is free: three questions a day on your account. Premium unlocks Advanced.';
@@ -7768,6 +7779,37 @@
     addListen(card, r.name + '. Ingredients. ' + r.ingredients.join('. ') + '. Method. ' + r.steps.map(function (st, i) { return 'Step ' + (i + 1) + '. ' + st; }).join(' '));
   }
 
+  // A plan or list the assistant gave, as a card you can keep: sections of short lines, copied as plain text
+  // (a shopping list pastes into Notes or a message), or read aloud. Built from text nodes only.
+  function addListCard(row, c) {
+    if (!c || !c.sections || !c.sections.length) return;
+    var card = document.createElement('div');
+    card.className = 'chat-recipe chat-card';
+    var head = document.createElement('h4');
+    head.textContent = c.title;
+    card.appendChild(head);
+    if (c.note) { var n = document.createElement('p'); n.className = 'fine'; n.textContent = c.note; card.appendChild(n); }
+    var plain = [c.title];
+    c.sections.forEach(function (sec) {
+      if (sec.heading) { var h = document.createElement('h5'); h.textContent = sec.heading; card.appendChild(h); plain.push('', sec.heading); }
+      var ul = document.createElement('ul');
+      sec.items.forEach(function (i) { var li = document.createElement('li'); li.textContent = i; ul.appendChild(li); plain.push('- ' + i); });
+      card.appendChild(ul);
+    });
+    var bar = document.createElement('div');
+    bar.className = 'chat-bar';
+    var copy = document.createElement('button');
+    copy.type = 'button'; copy.className = 'chat-mini'; copy.textContent = 'Copy';
+    copy.addEventListener('click', function () {
+      var done = function () { copy.textContent = 'Copied'; setTimeout(function () { copy.textContent = 'Copy'; }, 1600); };
+      try { navigator.clipboard.writeText(plain.join('\n')).then(done, function () {}); } catch (err) { /* fine */ }
+    });
+    bar.appendChild(copy);
+    card.appendChild(bar);
+    row.appendChild(card);
+    addListen(card, c.title + '. ' + c.sections.map(function (sec) { return (sec.heading ? sec.heading + '. ' : '') + sec.items.join('. '); }).join('. '));
+  }
+
   function askChat() {
     if (chat.busy) return;
     var field = $('chat-input');
@@ -7822,7 +7864,7 @@
     // asked to do it themselves. Never for a limit, a Premium check or a request the server refused.
     function sendChat(attempt) {
       var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-      var cut = setTimeout(function () { if (ctl) ctl.abort(); }, 34000);
+      var cut = setTimeout(function () { if (ctl) ctl.abort(); }, mode === 'advanced' ? 44000 : 34000);
       var slow = setTimeout(function () {
         var t = waiting.querySelector('.chat-text');
         if (t && waiting.isConnected && !waiting.dataset.slow) { waiting.dataset.slow = '1'; t.textContent = 'Still on it\u2026'; }
@@ -7878,14 +7920,13 @@
         row.scrollIntoView({ block: 'nearest' });
         var finish = function () {
           addDishTaps(row, reply);
-          if (adv) { addSources(row, answer.body.sources); addRecipeCard(row, answer.body.recipe); addFollowups(row, answer.body.followups); }
+          if (adv) { addSources(row, answer.body.sources); addRecipeCard(row, answer.body.recipe); addListCard(row, answer.body.card); addFollowups(row, answer.body.followups); }
           addCopy(row, reply);
-          if (adv && !answer.body.recipe) addListen(row, reply);
+          if (adv && !answer.body.recipe && !answer.body.card) addListen(row, reply);
           // Not the assistant that was asked: said, in a line, so nobody takes a menu pick for an answer.
           var deg = answer.body.degraded;
           if (deg === 'menu') addNote(row, 'The assistant was busy, so this one is straight from the app\u2019s menu and did not use up a question. Ask again for a proper answer.');
           else if (deg === 'app') addNote(row, 'From the app\u2019s own help, because the assistant was busy. This did not use up a question.');
-          else if (deg === 'advanced_busy') addNote(row, 'Advanced was busy, so the Standard assistant answered this one. Ask again for the full answer.');
           row.scrollIntoView({ block: 'nearest' });
         };
         if (adv) { richInto(row.querySelector('.chat-text'), reply); row.classList.add('is-in'); finish(); }
@@ -7921,7 +7962,7 @@
       var said = why === 'too_fast'
         ? 'That was a lot of questions at once'
         : why === 'busy'
-          ? 'The assistant is busy'
+          ? (mode === 'advanced' ? 'Advanced is busy right now' : 'The assistant is busy')
           : why === 'no_answer'
             ? 'The assistant had nothing to say to that'
             : 'The assistant did not answer in time';
@@ -7941,7 +7982,7 @@
       btn.className = 'filter';
       btn.dataset.skill = sk.id;
       btn.textContent = sk.label;
-      btn.addEventListener('click', function () { chat.skill = sk.id; paintChatMode(); $('chat-input').focus(); });
+      btn.addEventListener('click', function () { chat.skill = sk.id; paintChatMode(); if (sk.id === 'look' && !chat.image) $('chat-file').click(); else $('chat-input').focus(); });
       wrap.appendChild(btn);
     });
     $('chat-search').addEventListener('click', function () { chat.search = !chat.search; paintChatMode(); });

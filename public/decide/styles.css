@@ -7919,6 +7919,7 @@ body.has-dock.is-playing .app { min-height: calc(100dvh - var(--topbar-h) - var(
 @keyframes dg-rise { from { opacity: 0; transform: translateY(18px) scale(.96); } }
 
 /* Ask: a recipe the assistant gave, kept as a card; and the line under an answer that came from somewhere else. */
+.chat-card h5 { margin: var(--s3) 0 var(--s1); font-size: var(--t-xs); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
 .chat-recipe { margin-top: var(--s3); padding: var(--s4); border: 1px solid var(--line-2); border-radius: var(--r-lg); background: color-mix(in srgb, var(--ink) 4%, transparent); display: grid; gap: var(--s2); }
 .chat-recipe h4 { margin: 0; font-family: var(--display); font-size: var(--t-md); letter-spacing: -.01em; }
 .chat-recipe ul, .chat-recipe ol { margin: 0; padding-left: 1.2rem; display: grid; gap: .25rem; font-size: var(--t-sm); color: var(--ink-2); }

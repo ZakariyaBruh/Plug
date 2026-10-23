@@ -250,5 +250,23 @@ la = localAnswer('im hungry, something cheap and spicy')
 check('and "cheap" in a food question is not read as the price of Premium', la?.kind === 'menu')
 check('and the same question gives the same pick, so it does not flicker', JSON.stringify(localAnswer('a cheap vegetarian dinner')) === JSON.stringify(localAnswer('a cheap vegetarian dinner')))
 
+// ADVANCED IS GEMINI AND NOTHING ELSE: the Premium branch of the chat route never reaches a free provider.
+{
+  const { readFileSync } = await import('node:fs')
+  const route = readFileSync(new URL('../src/routes/api/chat.ts', import.meta.url), 'utf8')
+  const adv = route.slice(route.indexOf('if (advanced) {'), route.indexOf('// STANDARD: three a day'))
+  check('the advanced branch is found', adv.length > 500)
+  check('and never calls the free providers', !/askFree|llm7|pollinations|groq|cerebras|openrouter/i.test(adv))
+  check('it asks Gemini twice over before it gives up (a second round on the other Gemini models)', (adv.match(/askGemini\(/g) || []).length === 2 && /gemini-3\.1-flash-lite/.test(adv))
+  check('and a refusal asking again cannot change is not asked twice', /lastStatus === 429 \|\| ask\.lastStatus >= 500/.test(adv))
+  check('a member whose Gemini is down is told so, not handed a free answer', /error: res \? 'no_answer'/.test(adv) && !/degraded/.test(adv))
+  check('the model can be changed with GEMINI_ADVANCED_MODEL and no deploy', /GEMINI_ADVANCED_MODEL/.test(adv))
+  const skills = [...route.matchAll(/^  (week|shop|prep|macros|diet|host|teach|look): '/gm)].map((m) => m[1])
+  check('the new skills are all there', skills.length === 8, skills.join())
+  const client = readFileSync(new URL('../public/decide/js/app.js', import.meta.url), 'utf8')
+  check('and every one has a chip', skills.every((id) => new RegExp(`id: '${id}', label`).test(client)))
+  check('a plan or list comes back as a card the page draws and can copy', /card: cleanCard/.test(route) && /addListCard\(row, answer\.body\.card\)/.test(client))
+}
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
