@@ -530,6 +530,23 @@ configured = true
   inplace = false
 }
 
+{
+  // Accepted, then "Essential only" where we must ask first: the boxes must become cards, never be left blank.
+  inplace = true
+  const page = await open({ width: 1280, height: 800, decisions: 5, askFirst: true, consent: 'all', inPage: true })
+  await page.waitForTimeout(2500)
+  await page.evaluate(() => Consent.show()); await page.waitForTimeout(200)
+  await page.locator('.consent [data-c="essential"]').click(); await page.waitForTimeout(2500)
+  const r = await page.evaluate(() => ({
+    boxes: [...document.querySelectorAll('#ad-dock .ad-direct')].map((b) => ({ fake: !!b.querySelector('.fake'), kids: b.children.length, h: b.getBoundingClientRect().height })),
+    cards: [...document.querySelectorAll('#ad-dock .house-ad')].map((c) => ({ text: c.textContent.slice(0, 60), h: c.getBoundingClientRect().height })),
+    dockH: document.getElementById('ad-dock') ? document.getElementById('ad-dock').getBoundingClientRect().height : 0,
+  }))
+  ok('accepted, then Essential only where asked first: no blank boxes left, only cards', r.boxes.length === 0 && r.cards.length === 2 && r.cards.every((c) => c.h > 0 && /cookies/.test(c.text)), JSON.stringify(r))
+  await page.context().close()
+  inplace = false
+}
+
 console.log(`\n${pass} passed, ${fails} failed`)
 await browser.close()
 server.close()
