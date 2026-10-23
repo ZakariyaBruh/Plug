@@ -468,11 +468,28 @@ configured = true
   await page.context().close()
 }
 {
-  // Not asked yet / said no: the framed, sandboxed, cookie-free way stays.
+  // Where asking is required and the answer is not yes: the network is not asked at all, and the box says why.
+  const before = adRequests.length
   const page = await open({ width: 1280, height: 800, decisions: 5, askFirst: true, consent: 'essential', inPage: true })
   await page.waitForTimeout(2500)
-  const r = await page.evaluate(() => ({ frames: document.querySelectorAll('#ad-dock iframe').length, boxes: document.querySelectorAll('.ad-direct').length, sandbox: document.querySelector('#ad-dock iframe') && document.querySelector('#ad-dock iframe').getAttribute('sandbox') }))
-  ok('where cookies were not accepted the ad stays framed and sandboxed', r.frames === 2 && r.boxes === 0 && r.sandbox === 'allow-scripts allow-popups allow-popups-to-escape-sandbox', JSON.stringify(r))
+  const r = await page.evaluate(() => ({ frames: document.querySelectorAll('iframe').length, boxes: document.querySelectorAll('.ad-direct').length, cards: [...document.querySelectorAll('#ad-dock .house-ad')].map((c) => ({ w: c.style.width, why: /cookies/i.test(c.textContent) })) }))
+  ok('asked first and not yes: cards that say ads need cookies, in the size of the ads, and no network call', r.frames === 0 && r.boxes === 0 && r.cards.length === 2 && r.cards[0].w === '728px' && r.cards.every((c) => c.why) && adRequests.length === before, JSON.stringify({ r, calls: adRequests.length - before }))
+  // ...and accepting there turns them into ads without a reload.
+  await page.evaluate(() => Consent.show()); await page.waitForTimeout(200)
+  await page.locator('.consent [data-c="all"]').click(); await page.waitForTimeout(3000)
+  ok('and accepting makes them ads, in the page', await page.evaluate(() => document.querySelectorAll('#ad-dock .house-ad').length === 0 && document.querySelectorAll('#ad-dock .ad-direct .fake').length === 2))
+  await page.context().close()
+}
+{
+  // Where the law does not make us ask, "Essential only" does not take the ads away: that is what left empty boxes.
+  const page = await open({ width: 1280, height: 800, decisions: 5, askFirst: false, consent: 'essential', inPage: true })
+  await page.waitForTimeout(2500)
+  const r = await page.evaluate(() => ({ cards: document.querySelectorAll('.house-ad').length, drawn: document.querySelectorAll('#ad-dock .ad-direct .fake').length }))
+  ok('not asked, and Essential only: the ads still draw, in the page', r.cards === 0 && r.drawn === 2, JSON.stringify(r))
+  await page.evaluate(() => Consent.show()); await page.waitForTimeout(200)
+  await page.evaluate(() => { window.__same = document.querySelector('#ad-dock .ad-direct') })
+  await page.locator('.consent [data-c="essential"]').click(); await page.waitForTimeout(1200)
+  ok('and choosing Essential only again does not redraw them', await page.evaluate(() => document.querySelector('#ad-dock .ad-direct') === window.__same))
   await page.context().close()
   inplace = false
 }

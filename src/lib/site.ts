@@ -150,10 +150,12 @@ export const GA4_ID = 'G-M5PMRS475E'
  *     a reason to skip them
  *   - NO OTHER OFF SWITCH, and nothing may become one: not Save-Data, not the cookie
  *     choice, not a setting. Cookie law is about what is stored and who is tracked,
- *     not about whether an advert may be shown (YouTube and Spotify keep showing
- *     ads to people who decline cookies, and Premium is how you remove them). So
- *     where the law says to ask first (see lib/consent.ts) and the visitor has not
- *     said yes, the same ads load without cookies instead of not at all
+ *     not about whether an advert may be shown, and Premium is how you remove them.
+ *     So "Essential only" does not take ads away where the law lets us show them
+ *     without asking. The one exception is the law's own: where we must ask first
+ *     (see lib/consent.ts) and the visitor has not said yes, the network is not
+ *     contacted (it cannot draw without its cookies; cookie-free it drew empty
+ *     boxes) and the box is a Premium card that says so, until they accept
  *
  * WHAT IS NOT MITIGATED. The creatives are not reviewed here, cannot be, and
  * will sometimes be for things nobody here would choose to advertise —

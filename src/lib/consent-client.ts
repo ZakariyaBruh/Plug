@@ -65,3 +65,25 @@ export function useConsentAllowed(): boolean | null {
   }, [])
   return allowed
 }
+
+/**
+ * null while it is still being found out; then whether the ad network's own code may run in the page: yes after
+ * "Accept all", and yes wherever the law does not make us ask first, whatever else was picked. See the same
+ * rule in public/decide/js/consent.js (adsInPage).
+ */
+export function useAdsInPage(): boolean | null {
+  const [inPage, setInPage] = useState<boolean | null>(null)
+  useEffect(() => {
+    let live = true
+    const settle = async () => {
+      if (storedConsent() === 'all') return live && setInPage(true)
+      const ask = await askFirstHere()
+      if (live) setInPage(!ask)
+    }
+    void settle()
+    const onChange = () => void settle()
+    window.addEventListener(CONSENT_EVENT, onChange)
+    return () => { live = false; window.removeEventListener(CONSENT_EVENT, onChange) }
+  }, [])
+  return inPage
+}

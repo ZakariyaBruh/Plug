@@ -78,8 +78,8 @@ var Ads = (function () {
   }
 
   // Which way to load it. Consent known and given: normally. Anything else: without cookies.
-  function restricted() { return typeof Consent === 'undefined' || Consent.allowed() !== true; }
-  function known(cb) { if (typeof Consent === 'undefined') return cb(false); Consent.ready(cb); }
+  function restricted() { return typeof Consent === 'undefined' || Consent.adsInPage() !== true; }
+  function known(cb) { if (typeof Consent === 'undefined') return cb(false); Consent.adsReady(cb); }
 
   // A page of this site, never from a cache and never the same address twice: the network has to be asked afresh each time.
   function frameUrl(name, attempt) { return '/ad-frame?u=' + encodeURIComponent(name) + '&r=' + attempt + '&t=' + Date.now().toString(36); }
@@ -101,10 +101,10 @@ var Ads = (function () {
     return f;
   }
 
-  // The app's own card, in the exact size of the ad that did not come.
-  function house(f) {
-    if (f._house) return;
-    var unit = cfg[f.getAttribute('data-ad')];
+  // The app's own card, in the exact size of the ad that did not come. `why` 'cookies': the visitor has to be
+  // asked first and has not said yes, so the network is not asked at all.
+  function houseCard(name, why) {
+    var unit = cfg[name];
     var a = document.createElement('a');
     a.className = 'house-ad';
     a.href = '/premium';
@@ -112,16 +112,28 @@ var Ads = (function () {
     a.rel = 'noopener noreferrer';
     a.style.width = unit.width + 'px';
     a.style.height = unit.height + 'px';
-    a.setAttribute('data-house', f.getAttribute('data-ad'));
+    a.setAttribute('data-house', name);
     var big = unit.height >= 90;
     var b = document.createElement('b');
     b.textContent = big ? 'morsels45 Premium' : 'Premium';
     var s = document.createElement('span');
-    s.textContent = unit.height >= 250 ? 'No ads, and the smarter assistant: recipes, swaps, a plan for the week.'
-      : unit.height >= 90 ? 'No ads. A smarter assistant. See what Premium adds.'
-      : unit.width >= 400 ? 'No ads, and a smarter assistant. See Premium.'
-      : 'No ads. See Premium';
+    if (why === 'cookies') {
+      s.textContent = unit.height >= 250 ? 'Ads need cookies, and they pay for this app. Accept them in Cookie settings, or go Premium: no ads, and the smarter assistant.'
+        : unit.height >= 90 ? 'Ads need cookies and pay for this app. Accept them in Cookie settings, or go Premium for none.'
+        : unit.width >= 400 ? 'Ads need cookies. Accept them in Cookie settings, or go Premium for none.'
+        : 'Ads need cookies. Or go Premium.';
+    } else {
+      s.textContent = unit.height >= 250 ? 'No ads, and the smarter assistant: recipes, swaps, a plan for the week.'
+        : unit.height >= 90 ? 'No ads. A smarter assistant. See what Premium adds.'
+        : unit.width >= 400 ? 'No ads, and a smarter assistant. See Premium.'
+        : 'No ads. See Premium';
+    }
     a.appendChild(b); a.appendChild(s);
+    return a;
+  }
+  function house(f) {
+    if (f._house) return;
+    var a = houseCard(f.getAttribute('data-ad'));
     // The frame stays, hidden, and is given back if the network turns out to have been slow rather than empty:
     // an auction that takes eight seconds is still an ad.
     f._house = a; f.hidden = true; f.parentNode.insertBefore(a, f);
@@ -201,7 +213,10 @@ var Ads = (function () {
   }
   // Which way a unit is put in the page. `?adsframe` on the address forces the framed way, for comparing the two.
   function unitEl(name, lazy) {
-    return restricted() || /[?&]adsframe\b/.test(location.search) ? frame(name, lazy) : direct(name);
+    if (/[?&]adsframe\b/.test(location.search)) return frame(name, lazy);
+    // Asked first and not yes: the network cannot draw without its cookies, so it is not asked, and the box
+    // says why instead of standing there empty.
+    return restricted() ? houseCard(name, 'cookies') : direct(name);
   }
 
   /*
@@ -301,6 +316,7 @@ var Ads = (function () {
     if (!names.length) return;
     buildDock();
     lastW = window.innerWidth;
+    dockEl._restricted = restricted();
     rowEl.textContent = '';
     var tallest = 0;
     names.forEach(function (n) {
@@ -334,6 +350,7 @@ var Ads = (function () {
     container.setAttribute('role', 'complementary');
     container.setAttribute('aria-label', 'Advertisement');
     container.classList.add('is-filled');
+    container._restricted = restricted();
   }
 
   function arm(container) {
@@ -424,10 +441,12 @@ var Ads = (function () {
 
   // A changed mind changes how the ads are loaded: the ones on screen are redrawn the other way.
   if (typeof Consent !== 'undefined') {
+    // Only when the way ads are loaded changes (accepting where asking is required): "Essential only" where
+    // we need not ask changes nothing about ads, so the ads on screen are left alone.
     Consent.onChange(function () {
-      drawDock();
+      if (!dockEl || dockEl._restricted !== restricted()) drawDock();
       var slots = document.querySelectorAll('.ad-wrap[data-ad-armed]');
-      for (var i = 0; i < slots.length; i++) { var c = slots[i]; clear(c); arm(c); }
+      for (var i = 0; i < slots.length; i++) { var c = slots[i]; if (c._restricted === restricted()) continue; clear(c); arm(c); }
     });
   }
 

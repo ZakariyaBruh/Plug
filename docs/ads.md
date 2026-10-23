@@ -87,19 +87,26 @@ nothing, so the worst case is cheap. `bonus-test` covers the token.
 
 ## What is and is not safe
 
-Two ways in, by the cookie choice (`restricted()` in `js/ads.js`, `restricted` in
-`AdSlot.tsx`):
+Two ways in, by whether the network's own cookies may be used (`Consent.adsInPage()` in
+`js/consent.js`, `useAdsInPage()` in `consent-client.ts`):
 
-- **Cookies accepted, or none asked for: the network's own snippet in the page.** A box of
-  the unit's size with `atOptions = {...}` set and the network's script added inside it, one
-  box at a time (the snippet reads one global as it runs). Chosen by the owner after the
-  framed way drew blank white boxes on a real iPad while the snippet drew ads. The script
-  runs with the page's own rights: it can read storage and cookies of this origin and move the
-  tab. That is the network's own recommended use and the trade the owner accepted; the privacy
-  page says so. Add `?adsframe` to the app's address to force the framed way for comparing.
-- **Not accepted: the sandboxed frame**, as before: scripts and real-click popups, no
-  same-origin, no top navigation, `credentialless` where supported. `adsdrive` checks that
-  with a creative that tries all of it, and `shell-test` fails if either flag is widened.
+- **Yes: the network's own snippet in the page.** "Accept all", or a place the law does not make
+  us ask first (`lib/consent.ts`), **whatever else was pressed**: "Essential only" there turns off
+  analytics and nothing else. A box of the unit's size with `atOptions = {...}` set and the
+  network's script added inside it, one box at a time (the snippet reads one global as it runs).
+  The network cannot draw without its own cookies: framed, sandboxed and cookie-free the same
+  unit drew blank boxes on a real iPad, so there is no cookie-free ad. The script runs with the
+  page's own rights: it can read this origin's storage and cookies and move the tab. That is the
+  network's own recommended use and the trade the owner accepted; the privacy page says so.
+- **No: asked first and not yes, or not yet known which.** The network is not contacted. Each box
+  is a Premium card, in the size of the ad, saying ads need cookies and pointing at Cookie
+  settings and Premium (`houseCard(name, 'cookies')`; `AdSlot` the same). Accepting turns the
+  cards into ads without a reload. This is the one case where an ad does not show to someone who
+  is not on Premium, and it is the consent law's doing, not a switch: nobody can reach it by
+  choice outside those places.
+- `?adsframe` on the address forces the old sandboxed frame (`/ad-frame`), for comparing. Its
+  sandbox (scripts and real-click popups, no same-origin, no top navigation) is checked by
+  `adsdrive` with a creative that tries all of it, and `shell-test` fails if either flag is widened.
 
 Not handled, and worth deciding:
 

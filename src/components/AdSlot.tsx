@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
-import { useConsentAllowed } from '#/lib/consent-client'
+import { useAdsInPage } from '#/lib/consent-client'
 import { ADS_ON, AD_UNITS, adCluster, type AdSize, type AdUnit } from '#/lib/site'
 
 /*
@@ -120,7 +120,7 @@ export function AdSlot({
 }) {
   const box = useRef<HTMLDivElement>(null)
   const [units, setUnits] = useState<AdUnit[]>([])
-  const allowed = useConsentAllowed()
+  const allowed = useAdsInPage()
   const [again, setAgain] = useState(() => (tapped ? 1 : 0))
   useEffect(() => {
     if (tapped) return
@@ -188,7 +188,11 @@ export function AdSlot({
   // referrer, and only that: a network cannot tell what site it is on without it, and answers with nothing.) `credentialless`
   // is honoured by Chromium browsers and ignored by the rest; the network still sees an
   // IP address and a browser either way, and the privacy page says so.
+  // The network cannot draw without its own cookies. Where we have to ask first and the answer is not yes it is not
+  // asked at all, and the box says so (`?adsframe` on the address brings the old framed way back, for comparing).
   const restricted = allowed !== true
+  const forceFrame = typeof window !== 'undefined' && /[?&]adsframe\b/.test(window.location.search)
+  const cookieCard = restricted && !forceFrame
   const extra = restricted ? ({ credentialless: '', 'data-mode': 'cookieless' } as Record<string, string>) : {}
 
   return (
@@ -213,17 +217,21 @@ export function AdSlot({
               // The frame stays mounted while the site's own card stands in for it, so a slow auction can still take the box back.
               return (
                 <span key={unit.key + (restricted ? ':c' : '')} className="contents">
-                  {empty[name] ? (
+                  {cookieCard || empty[name] ? (
                     <Link to="/premium" target="_blank" className="grid max-w-full content-center gap-0.5 overflow-hidden rounded border border-[var(--line-2)] bg-[var(--wash)] px-3 text-left no-underline" style={{ width: unit.width, height: unit.height }}>
                       <b className="text-sm text-[var(--amber)]">{unit.height >= 90 ? 'morsels45 Premium' : 'Premium'}</b>
-                      <span className="text-xs text-[var(--text-dim)]">{unit.height >= 90 ? 'No ads. A smarter assistant. See what Premium adds.' : 'No ads. See Premium'}</span>
+                      <span className="text-xs text-[var(--text-dim)]">
+                        {cookieCard
+                          ? unit.height >= 90 ? 'Ads need cookies and pay for this site. Accept them in Cookie settings, or go Premium for none.' : 'Ads need cookies. Or go Premium.'
+                          : unit.height >= 90 ? 'No ads. A smarter assistant. See what Premium adds.' : 'No ads. See Premium'}
+                      </span>
                     </Link>
                   ) : null}
                   {!restricted ? (
                     <span hidden={!!empty[name]} className="contents">
                       <DirectAd unit={unit} onEmpty={() => setEmpty((m) => ({ ...m, [name]: true }))} onFilled={() => setEmpty((m) => (m[name] ? { ...m, [name]: false } : m))} />
                     </span>
-                  ) : (
+                  ) : forceFrame ? (
                   <iframe
                     {...extra}
                     data-ad={name}
@@ -239,7 +247,7 @@ export function AdSlot({
                     hidden={!!empty[name]}
                     className="max-w-full border-0"
                   />
-                  )}
+                  ) : null}
                 </span>
               )
             })}

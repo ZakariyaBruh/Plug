@@ -35,10 +35,24 @@ var Consent = (function () {
     if (askFirst === null) return null;
     return !askFirst;
   }
+  /*
+   * WHETHER THE AD NETWORK'S OWN CODE RUNS IN THE PAGE. The network cannot draw an ad without its own
+   * cookies (shown on a real device: framed and cookie-free it drew blank boxes), so this is not the same
+   * question as allowed(), which gates analytics. Yes when "Accept all" was pressed, and yes where the law
+   * does not make us ask first (see lib/consent.ts), whatever else was pressed. No where asking is required
+   * and the answer is not yes, and until it is known which of those this is: null.
+   */
+  function adsInPage() {
+    if (stored() === 'all') return true;
+    if (askFirst === null) return null;
+    return !askFirst;
+  }
+  var adsWaiting = [];
   function flush() {
     var a = allowed();
-    if (a === null) return;
-    ready.splice(0).forEach(function (cb) { cb(a); });
+    if (a !== null) ready.splice(0).forEach(function (cb) { cb(a); });
+    var b = adsInPage();
+    if (b !== null) adsWaiting.splice(0).forEach(function (cb) { cb(b); });
   }
   function choose(value) {
     try { localStorage.setItem(KEY, value); } catch (err) { /* the choice lasts until the page closes */ }
@@ -58,9 +72,11 @@ var Consent = (function () {
     bar.setAttribute('aria-label', 'Cookies');
     bar.innerHTML =
       '<p class="consent-text"><b>Cookies.</b> Essential ones remember your settings and progress in this browser; ' +
-      'the app needs them. Ads pay for the free app and always run on it; Premium has none. Your choice is whether the ' +
-      'ad network (Adsterra) and analytics (Google Analytics, Microsoft Clarity) may use cookies to personalise and measure. ' +
-      'Say no and you still see ads, just loaded without cookies. Whop, which hosts this app, counts page views on every page ' +
+      'the app needs them. Ads pay for the free app; Premium has none. The ad network (Adsterra) cannot draw an ad ' +
+      'without its own cookies, and analytics (Google Analytics, Microsoft Clarity) use them too. Where the law lets us show ads ' +
+      'without asking first, they run whatever you pick here and \u201cEssential only\u201d turns analytics off. Where we have to ask ' +
+      '(the EU, the UK, Switzerland, or a place we cannot tell), no cookies means no ad network, and the box shows a Premium card instead. ' +
+      'Whop, which hosts this app, counts page views on every page ' +
       'itself, and this choice cannot switch that off. ' +
       '<a href="/privacy" target="_blank" rel="noopener">Details</a></p>' +
       '<div class="consent-actions">' +
@@ -101,6 +117,8 @@ var Consent = (function () {
     ready: function (cb) { var a = allowed(); if (a === null) ready.push(cb); else cb(a); },
     onChange: function (cb) { changed.push(cb); },
     allowed: allowed,
+    adsInPage: adsInPage,
+    adsReady: function (cb) { var b = adsInPage(); if (b === null) adsWaiting.push(cb); else cb(b); },
     show: show,
     // For ?adsdebug: what is stored, and whether this place has to be asked.
     peek: function () { return { stored: stored(), askFirst: askFirst }; }

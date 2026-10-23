@@ -3,10 +3,10 @@
  *
  * Third-party advertising cookies and analytics need a visitor's opt-in in the
  * EU, the EEA, the UK and Switzerland (ePrivacy and the GDPR, and the UK's PECR).
- * That is about cookies and tracking, not about whether an advert is shown: the
- * ads are always shown, and without that opt-in they load without cookies.
- * Everywhere else the cookie-using version runs straight away, with the same
- * banner available to change that. The country comes from Cloudflare's own header on
+ * Where that applies and the visitor has not said yes, the ad network is not contacted
+ * (it cannot draw an ad without its own cookies) and the box says so. Everywhere else the
+ * ads run straight away, whatever is pressed on the banner; "Essential only" there turns
+ * analytics off. The country comes from Cloudflare's own header on
  * the request. A visitor whose country cannot be told is treated as being in one
  * of those places: wrongly asking costs a tap, wrongly not asking is the
  * problem.

@@ -200,13 +200,14 @@ check('the app and the site store the choice under the same key', (consentJs.mat
 check('the cookie bar sits under the welcome screen, not over its Next button', zOf('.consent') !== null && zOf('.welcome') !== null && zOf('.consent') < zOf('.welcome'), `consent ${zOf('.consent')}, welcome ${zOf('.welcome')}`)
 // The cookie choice changes HOW an ad is loaded, never WHETHER: no way to turn the ads off for free.
 const adCode = (adsJs + adSlot).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
-check('without consent an ad is loaded without cookies, not withheld', /credentialless/.test(adsJs) && /credentialless/.test(adSlot) && /referrerpolicy', 'origin'/.test(adsJs) && /referrerPolicy="origin"/.test(adSlot) && !/no-referrer/.test(adsJs + adSlot))
+check('where we need not ask the network runs whatever is picked; where we must, it is not asked and a card says why', /adsInPage/.test(consentJs) && /useAdsInPage/.test(adSlot) && /houseCard\(name, 'cookies'\)/.test(adsJs) && /cookieCard/.test(adSlot))
+check('the framed way is kept for comparing only (?adsframe) and stays sandboxed without cookies', /credentialless/.test(adsJs) && /credentialless/.test(adSlot) && /referrerpolicy', 'origin'/.test(adsJs) && /referrerPolicy="origin"/.test(adSlot) && !/no-referrer/.test(adsJs + adSlot))
 check('ads are real pages of this site, not srcdoc, and report back', /ad-frame\?u=/.test(adsJs) && !/srcdoc/i.test(adCode) && /ad-frame\?u=/.test(adSlot) && /house/.test(adsJs))
 check('ads.js has no waiting list for consent', !/waiting/.test(adCode.split('function restricted')[1] || ''))
 check('AdSlot draws whatever the answer, once it is known', /allowed === null\) \{ setUnits/.test(adSlot) && !/allowed !== true\) \{ setUnits/.test(adSlot))
 check('nothing in the ad code reads a setting, Do Not Track, Save-Data or storage', !/localStorage|sessionStorage|doNotTrack|saveData|navigator\.connection|matchMedia/i.test(adCode))
 check('no control anywhere offers to hide ads', !/(hide|turn off|disable|block|remove)\s+(the\s+)?ads?\b/i.test(html.replace(/Remove ads with Premium/g, '')) && !/id="[^"]*(hide|no|block)[-_]?ads?[^"]*"/i.test(html))
-check('the banner says ads always run, and that saying no keeps them', /always run/.test(consentJs) && /still see ads/.test(consentJs) && /always run/.test(consentBar) && /still see ads/.test(consentBar))
+check('the banner says what each answer does to ads, in both places', [consentJs, consentBar].map((t) => t.replace(/'\s*\+\s*'/g, '').replace(/\s+/g, ' ')).every((t) => /Premium has none/.test(t) && /cannot draw an ad/.test(t) && /whatever you pick/.test(t) && /no cookies means no ad network/.test(t) && /Premium card/.test(t)))
 check('and that Whop counts page views whatever is chosen', /Whop[^']*counts page views/.test(consentJs) && /Whop, which hosts this site, counts page views/.test(consentBar))
 check('a country that cannot be told is asked, not assumed', /c === 'XX' \|\| c === 'T1'/.test(consentLib) && /settle\(true\)/.test(consentJs))
 for (const [name, text] of [['js/consent.js', consentJs], ['ConsentBar', consentBar]]) {
