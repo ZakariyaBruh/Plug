@@ -13,8 +13,9 @@ const bonusOffer = (s: Standing) => ({ per: BONUS_PER_CLAIM, claimsLeft: Math.ma
 /*
  * /api/chat — the food assistant, in two tiers.
  *
- * STANDARD answers on free models that need no key — LLM7 and Pollinations, raced and health-checked (lib/free-ai.ts), and
- * when none of them answers, a plain pick from the app's own menu (lib/free-local.ts), said to be what it is and not
+ * STANDARD answers on free providers, routed and health-checked (lib/free-ai.ts: LLM7 and Pollinations, plus any keyed free tier
+ * whose secret is set), then, only if every one of them fails, on the cheapest Gemini model, capped; and when even that does not
+ * answer, a plain pick from the app's own menu (lib/free-local.ts), said to be what it is and not
  * counted: three questions a day per free Whop account, counted in the database, and what a
  * Premium member can switch to for a quick answer. ADVANCED is Gemini, on this
  * app's own key, for Premium only: it knows your taste profile, can read a
@@ -378,8 +379,8 @@ export const Route = createFileRoute('/api/chat')({
             if (res) console.error('chat: advanced answer had no text')
             // Gemini is busy or down. A Premium member is not told to wait: the free model
             // answers instead, and the page says plainly that this one came from Standard.
-            // (Nothing goes the other way: Standard never reaches the paid key.)
-            const stand = await askFree(instruction() + langLine(want) + '\nAlways answer in at least two complete sentences, and give the reason for a pick.', turns)
+            // (No second trip to Gemini from here: it has just failed, and the free ones are the point.)
+            const stand = await askFree(instruction() + langLine(want) + '\nAlways answer in at least two complete sentences, and give the reason for a pick.', turns, 600, undefined, { gemini: false })
             if (stand?.text) return json({ reply: stand.text, followups: [], sources: [], mode: 'standard', degraded: 'advanced_busy', left: null, limit: mine.limit })
             return json({ error: res ? 'no_answer' : lastStatus === 429 ? 'busy' : 'unavailable' }, 502)
           }
@@ -393,8 +394,8 @@ export const Route = createFileRoute('/api/chat')({
         if (metered && mine.left === 0) return json({ error: 'limit', left: 0, limit: mine.limit, bonus: bonusOffer(mine) }, 402)
 
         const system = instruction() + langLine(want)
-        // Pollinations, then LLM7. If neither answers, the question is not counted and
-        // is not handed to the paid key: Standard stays free, and the visitor asks again.
+        // The free providers, then (askFree does this itself) one capped call to the cheapest Gemini model. If nothing
+        // answers, the question is not counted and the visitor asks again.
         // The free model is terse when left alone ("Pizza."); a pick with a reason is the answer.
         const free = await askFree(system + '\nAlways answer in at least two complete sentences, and give the reason for a pick.', turns)
         const reply = free?.text ?? ''

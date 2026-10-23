@@ -145,7 +145,7 @@ Seven places, and `scripts/shell-test.mjs` fails until all of them agree:
   top bar < games < dock < welcome/toasts < tour. `body.is-games` (set by `play.js`) and
   `body.is-playing` put it at the very bottom on a phone when the tab bar is hidden.
   `adsdrive` checks the geometry (reachable buttons, reserved height, Premium never sees it).
-- **The free assistant** (Standard) never touches Gemini, and its calling system is `lib/free-ai.ts`
+- **The free assistant** (Standard) goes to Gemini only as a last resort (below), and its calling system is `lib/free-ai.ts`
   over a provider table in `lib/llm-providers.ts`. Measured from one machine, ten questions in a
   row per model: LLM7 answered 4 of 10 on its best model and 0 of 10 on another ("Rate limit
   exceeded", "Too many concurrent requests for this client"), Pollinations 4 of 10 (503s and
@@ -156,7 +156,12 @@ Seven places, and `scripts/shell-test.mjs` fails until all of them agree:
   with a *different* provider, tells a limit from a retired model from a bad key, remembers answers
   for six hours (and serves one up to two days old if everything fails), and reports who answered
   and what it tried. `/api/ai-health` shows each provider's state (never a key). If all of it
-  fails the menu answers (`lib/free-local.ts`) and says so. The chat page retries once on its own
+  fails, **one call to the cheapest Gemini model** answers (`gemini-3.1-flash-lite`, $0.25 in / $1.50 out per
+  million tokens, against $0.30 / $2.50 for 3.5 Flash-Lite; the owner's call, made once the free tier
+  proved it could not carry a crowd alone): the same instruction and question the free ones got, never a
+  profile, capped at 400 tokens and 300 calls an hour per worker, remembered like any answer, switched
+  off when the key is missing, and changeable with `GEMINI_FALLBACK_MODEL`. If even that fails the menu
+  answers (`lib/free-local.ts`) and says so. The chat page retries once on its own
   ("Trying another way…") before asking the visitor to. `free-ai-test` covers all of it (49 checks).
   **To make it dependable, add keys** (all free tiers, no card; the keyed providers switch on by
   themselves and go first): `whop apps secrets set GROQ_API_KEY=…` (console.groq.com),

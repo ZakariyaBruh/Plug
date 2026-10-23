@@ -14,7 +14,8 @@
  *  - a bad key or a retired model rests for half an hour; a 429 for as long as it said
  *  - something that is not an answer is not returned as one
  *  - the same first question twice is one trip; when everything fails an older answer beats none
- *  - nothing is ever sent to the paid key, and LLM7 is never sent reasoning_effort (it answers 400)
+ *  - the paid key is touched only when every free provider has failed, with the cheapest Gemini model, capped
+ *    in tokens and per hour; never while a free one answers. LLM7 is never sent reasoning_effort (it answers 400)
  *  - when every model is down a question about what to eat is still answered from the menu,
  *    honouring "no pork" and "not spicy", and a question the menu cannot speak to is not
  */
@@ -30,6 +31,7 @@ function check(name, ok, detail) {
 }
 
 const KEYS = ['GROQ_API_KEY', 'CEREBRAS_API_KEY', 'OPENROUTER_API_KEY', 'MISTRAL_API_KEY', 'GITHUB_MODELS_TOKEN', 'CF_ACCOUNT_ID', 'CF_AI_TOKEN', 'GROQ_MODELS']
+KEYS.push('GEMINI_API_KEY', 'GEMINI_FALLBACK_MODEL')
 for (const k of KEYS) delete process.env[k]
 
 const calls = []
@@ -41,8 +43,10 @@ const realNow = Date.now
 globalThis.fetch = (url, init) => {
   const body = JSON.parse(init.body)
   const host = new URL(String(url)).host
-  calls.push({ url: String(url), host, model: body.model, body, headers: init.headers })
-  const how = behaviour[body.model] ?? behaviour[host] ?? 'ok'
+  const model = body.model ?? String(url).match(/models\/([^:]+):/)?.[1]
+  calls.push({ url: String(url), host, model, body, headers: init.headers })
+  const how = behaviour[model] ?? behaviour[host] ?? 'ok'
+  if (host.includes('generativelanguage') && how === 'ok') return Promise.resolve(new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: `Gemini says: ${model}. A fine pick, with a reason.` }] } }] })))
   const reply = (content, status = 200) => Promise.resolve(new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status }))
   if (how === 'hang') return new Promise((_, rej) => init.signal.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' }))))
   if (how === 'slow') {
@@ -77,7 +81,7 @@ reset()
 let [r, ms] = await timed(() => ask())
 check('a healthy network answers from the first provider, quickly, in one call', r?.via === 'llm7/gpt-oss:20b' && ms < 500 && calls.length === 1, `${r?.via} ${ms}ms ${calls.length} calls`)
 check('the result says what it tried', r?.tried?.length === 1 && r.tried[0].ok)
-check('nothing is sent to the paid key', calls.every((c) => !/google|gemini|generativelanguage/i.test(c.url)))
+check('nothing is sent to the paid key while a free provider answers', calls.every((c) => !/google|gemini|generativelanguage/i.test(c.url)))
 reset()
 await Promise.all([ask('a'), ask('b'), ask('c')])
 reset({ 'api.llm7.io': 'down' })
@@ -168,6 +172,44 @@ await ask('again'); await ask('and again')
 calls.length = 0
 await ask('still')
 check('with every model marked down they are all still tried', calls.length === 6, `${calls.length}`)
+
+
+// the last resort: the cheapest Gemini, only when every free provider has failed
+const DOWN = { 'api.llm7.io': 'down', 'text.pollinations.ai': 'down' }
+reset(DOWN)
+;[r, ms] = await timed(() => ask('no key at all'))
+check('with no Gemini key and every free provider down: nothing, and no call to Google', r === null && !calls.some((c) => c.host.includes('generativelanguage')))
+process.env.GEMINI_API_KEY = 'secret-gemini'
+reset()
+await ask('everything is fine')
+check('with the key set, a healthy free provider still answers and Google is not called', calls.length === 1 && !calls.some((c) => c.host.includes('generativelanguage')))
+reset(DOWN)
+;[r, ms] = await timed(() => ask('all the free ones are down'))
+const g = calls.filter((c) => c.host.includes('generativelanguage'))
+check('every free provider down: one call to Gemini, and it answers', g.length === 1 && r?.via === 'gemini:gemini-3.1-flash-lite' && /Gemini says/.test(r.text), `${r?.via} ${g.length}`)
+check('it is the cheapest model (3.1 Flash-Lite: $0.25/$1.50, not 3.5: $0.30/$2.50) and sends the key in the header, not the URL', g[0].model === 'gemini-3.1-flash-lite' && g[0].headers['x-goog-api-key'] === 'secret-gemini' && !g[0].url.includes('secret-gemini'))
+check('capped at 400 tokens however many were asked for', g[0].body.generationConfig.maxOutputTokens === 400)
+check('sent the instruction and the question, and nothing else', g[0].body.systemInstruction.parts[0].text === 'system' && g[0].body.contents.length === 1 && g[0].body.contents[0].parts[0].text === 'all the free ones are down' && Object.keys(g[0].body).sort().join() === 'contents,generationConfig,systemInstruction')
+calls.length = 0
+r = await ask('all the free ones are down')
+check('and the answer is remembered, so the same question does not cost twice', r?.via?.startsWith('memory:gemini') && calls.length === 0, `${r?.via} ${calls.length}`)
+reset(DOWN)
+r = await askFree('system', [{ role: 'user', text: 'not for this caller' }], 600, undefined, { gemini: false })
+check('a caller can say no (a Premium answer that has just come from Gemini): then it is null', r === null && !calls.some((c) => c.host.includes('generativelanguage')))
+reset({ ...DOWN, 'api.llm7.io': 'down', 'gemini-3.1-flash-lite': 'down' })
+r = await ask('gemini is down too')
+check('Gemini refusing too gives null, so the menu can answer', r === null)
+reset(DOWN)
+process.env.GEMINI_FALLBACK_MODEL = 'gemini-x-test'
+await ask('a different model')
+check('the model can be changed without a deploy', calls.some((c) => c.model === 'gemini-x-test'))
+delete process.env.GEMINI_FALLBACK_MODEL
+reset(DOWN)
+let paid = 0
+for (let i = 0; i < 320; i++) { await ask('q ' + i); }
+paid = calls.filter((c) => c.host.includes('generativelanguage')).length
+check('and it is capped per hour, so a dead free tier costs a bounded amount', paid === 300, `${paid} calls`)
+delete process.env.GEMINI_API_KEY
 
 // memory
 reset()

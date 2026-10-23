@@ -40,7 +40,14 @@ import { activeProviders, type Model, type Provider } from '#/lib/llm-providers'
  *   Honest. The result says who answered and what it tried, and /api/ai-health shows the
  *   state of every provider (never a key).
  *
- * If all of that fails, the caller can still answer from the app's own menu (free-local.ts).
+ * LAST RESORT. If all of that fails, one call to the cheapest Gemini model (gemini-3.1-flash-lite,
+ * $0.25 in / $1.50 out per million tokens against $0.30 / $2.50 for 3.5 Flash-Lite), on the app's own
+ * key: the same instruction and conversation the free ones got, never a profile, a name or an account,
+ * answers capped at 400 tokens, and no more than GEMINI_FALLBACK_PER_HOUR calls an hour from one worker,
+ * so a dead free tier costs a bounded amount and not an open tab. It is skipped when the key is not set,
+ * when the caller says not to (a Premium answer that has just come from Gemini has nothing to gain), and
+ * when the hour's allowance is spent. The model can be changed without a deploy: GEMINI_FALLBACK_MODEL.
+ * Past that, the caller can still answer from the app's own menu (free-local.ts).
  *
  * WHAT IS SENT: the conversation and the app's own instruction, never a name, an address or
  * the taste profile the Advanced assistant is given; the privacy page says so. The memory is
@@ -67,6 +74,10 @@ const HARD_DOWN_MS = 30 * 60_000 // a bad key or a retired model
 const CACHE_FRESH_MS = 6 * 3600_000
 const CACHE_STALE_MS = 48 * 3600_000
 const CACHE_MAX = 600
+const GEMINI_FALLBACK_MODEL = 'gemini-3.1-flash-lite' // the cheapest of the two Flash-Lites in use
+const GEMINI_FALLBACK_TOKENS = 400
+const GEMINI_FALLBACK_PER_HOUR = 300
+const GEMINI_FALLBACK_MS = 10000
 
 const envNow = (): Env => (typeof process !== 'undefined' && process.env ? (process.env as Env) : {})
 
@@ -183,6 +194,8 @@ function cacheKey(system: string, turns: FreeTurn[], maxTokens: number, temperat
 
 /** For tests. */
 export function resetFreeAi() {
+  fallbackHour = { at: 0, n: 0 }
+  lastTried = []
   lanes.clear()
   provs.clear()
   cache.clear()
@@ -264,19 +277,84 @@ export async function askFree(
   turns: FreeTurn[],
   maxTokens = 600,
   temperature?: number,
-  opts: { env?: Env; totalMs?: number } = {},
+  opts: { env?: Env; totalMs?: number; gemini?: boolean } = {},
+): Promise<FreeResult | null> {
+  const env = opts.env ?? envNow()
+  const t0 = Date.now()
+  const key = cacheKey(system, turns, maxTokens, temperature)
+  const hit = key ? cache.get(key) : undefined
+  const raced = await race(system, turns, maxTokens, temperature, opts, key, hit)
+  if (raced) return raced
+  // Every free provider failed: the cheapest Gemini, once, inside its allowance.
+  if (opts.gemini !== false) {
+    const last = await lastResort(env, system, turns, maxTokens, temperature)
+    if (last) {
+      if (key) {
+        if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value as string)
+        cache.set(key, { text: last.text, via: last.via, at: Date.now() })
+      }
+      return { text: last.text, via: last.via, ms: Date.now() - t0, tried: [...lastTried, { via: last.via, ok: true, ms: last.ms }] }
+    }
+  }
+  return hit && t0 - hit.at < CACHE_STALE_MS ? { text: hit.text, via: 'stale:' + hit.via, ms: Date.now() - t0, tried: lastTried } : null
+}
+
+let lastTried: Tried[] = []
+let fallbackHour: { at: number; n: number } = { at: 0, n: 0 }
+
+/** The one call to the cheapest Gemini model, or null: no key, over the hour's allowance, refused, or not an answer. */
+async function lastResort(env: Env, system: string, turns: FreeTurn[], maxTokens: number, temperature?: number): Promise<{ text: string; via: string; ms: number } | null> {
+  const key = env.GEMINI_API_KEY
+  if (!key) return null
+  const now = Date.now()
+  if (now - fallbackHour.at > 3600_000) fallbackHour = { at: now, n: 0 }
+  if (fallbackHour.n >= GEMINI_FALLBACK_PER_HOUR) {
+    console.error('free-ai: the hour\'s Gemini fallback allowance is spent')
+    return null
+  }
+  fallbackHour.n += 1
+  const model = env.GEMINI_FALLBACK_MODEL || GEMINI_FALLBACK_MODEL
+  const t0 = Date.now()
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST',
+      signal: AbortSignal.timeout(GEMINI_FALLBACK_MS),
+      headers: { 'x-goog-api-key': key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents: turns.map((t) => ({ role: t.role === 'model' ? 'model' : 'user', parts: [{ text: t.text }] })),
+        generationConfig: { maxOutputTokens: Math.min(maxTokens, GEMINI_FALLBACK_TOKENS), temperature: temperature ?? 0.8 },
+      }),
+    })
+    if (!res.ok) { console.error('free-ai: gemini fallback refused', res.status); return null }
+    const data = (await res.json().catch(() => null)) as { candidates?: { content?: { parts?: { text?: string }[] } }[] } | null
+    const text = cleanFreeAnswer((data?.candidates?.[0]?.content?.parts ?? []).map((p) => p?.text ?? '').join(''))
+    if (!text || looksBad(text)) return null
+    return { text, via: `gemini:${model}`, ms: Date.now() - t0 }
+  } catch (err) {
+    console.error('free-ai: gemini fallback failed', (err as Error)?.name)
+    return null
+  }
+}
+
+async function race(
+  system: string,
+  turns: FreeTurn[],
+  maxTokens: number,
+  temperature: number | undefined,
+  opts: { env?: Env; totalMs?: number },
+  key: string | null,
+  hit: { text: string; via: string; at: number } | undefined,
 ): Promise<FreeResult | null> {
   const env = opts.env ?? envNow()
   const total = opts.totalMs ?? TOTAL_MS
   const t0 = Date.now()
-  const key = cacheKey(system, turns, maxTokens, temperature)
-  const hit = key ? cache.get(key) : undefined
   if (hit && t0 - hit.at < CACHE_FRESH_MS) return { text: hit.text, via: 'memory:' + hit.via, ms: 0, tried: [] }
 
   const all = lanesFor(env)
   const tried: Tried[] = []
-  const stale = () => (hit && t0 - hit.at < CACHE_STALE_MS ? { text: hit.text, via: 'stale:' + hit.via, ms: Date.now() - t0, tried } : null)
-  if (!all.length) return stale()
+  lastTried = tried
+  if (!all.length) return null
 
   const abort = new AbortController()
   const started = new Set<string>()
@@ -295,7 +373,7 @@ export async function askFree(
       clearTimeout(timer)
       abort.abort()
       if (!value) console.error('free-ai: no provider answered', JSON.stringify(tried))
-      resolve(value ?? stale())
+      resolve(value)
     }
 
     // The next lane that may be started now, and when the soonest blocked one could be.
