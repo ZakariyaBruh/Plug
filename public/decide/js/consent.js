@@ -101,6 +101,8 @@ var Consent = (function () {
     ready: function (cb) { var a = allowed(); if (a === null) ready.push(cb); else cb(a); },
     onChange: function (cb) { changed.push(cb); },
     allowed: allowed,
-    show: show
+    show: show,
+    // For ?adsdebug: what is stored, and whether this place has to be asked.
+    peek: function () { return { stored: stored(), askFirst: askFirst }; }
   };
 })();

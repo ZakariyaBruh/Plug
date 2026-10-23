@@ -491,6 +491,28 @@ configured = true
   inplace = false
 }
 
+{
+  // Signing in to Premium and out again: the ads go, and come back, in the page and without a reload.
+  inplace = true
+  const page = await open({ width: 1280, height: 800, decisions: 5, inPage: true })
+  await page.waitForTimeout(2500)
+  const status = (premium) => page.route(/\/api\/premium-status/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ signedIn: premium, hasPremium: premium, username: premium ? 'tester' : '', userId: premium ? 'u1' : null }) }))
+  const dock = () => page.evaluate(() => ({ el: !!document.getElementById('ad-dock'), boxes: [...document.querySelectorAll('#ad-dock .ad-direct')].map((b) => !!b.querySelector('.fake')), has: document.body.classList.contains('has-dock') }))
+  ok('before: the dock is up with ads in it', (await dock()).boxes.length === 2)
+  await status(true); await page.evaluate(() => window.dispatchEvent(new Event('focus'))); await page.waitForTimeout(1500)
+  const gone = await dock()
+  ok('signed in to Premium: no dock, and the room is given back', !gone.el && !gone.has, JSON.stringify(gone))
+  await go(page, 'dishes'); await page.waitForTimeout(2000)
+  ok('and no ads in the page either', await page.evaluate(() => document.querySelectorAll('.ad-direct, iframe[data-ad]').length === 0))
+  await status(false); await page.evaluate(() => window.dispatchEvent(new Event('focus'))); await page.waitForTimeout(4500)
+  const back = await dock()
+  ok('signed out: the dock is back with ads in it', back.el && back.has && back.boxes.length === 2 && back.boxes.every(Boolean), JSON.stringify(back))
+  await go(page, 'profile'); await go(page, 'dishes'); await page.waitForTimeout(3000)
+  ok('and the slots in the page draw again', await page.evaluate(() => document.querySelectorAll('#dish-ad .ad-direct .fake').length >= 2), await page.evaluate(() => document.getElementById('dish-ad') && document.getElementById('dish-ad').innerHTML.slice(0, 300)))
+  await page.context().close()
+  inplace = false
+}
+
 console.log(`\n${pass} passed, ${fails} failed`)
 await browser.close()
 server.close()

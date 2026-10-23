@@ -389,9 +389,13 @@ var Ads = (function () {
   // Called once the first answer to "is this a Premium member?" is in (and again whenever it
   // changes). A member is never shown the dock, not even for the moment before it is known.
   function premiumKnown(isPremium) {
+    var was = premium;
     known_ = true;
     premium = !!isPremium;
     if (premium) { clearInterval(timer); removeDock(); return; }
+    // Asked again every time the tab regains focus (see syncPremium): a dock that is already up and
+    // was not Premium before is left alone, so a tab switch does not ask the network for new ads.
+    if (was === false && dockEl && dockEl.isConnected) return;
     // Once it is known whether to ask first (one small request), so the first load is the right one.
     known(function () {
       if (premium) return;
@@ -433,7 +437,7 @@ var Ads = (function () {
     dbg.style.cssText = 'position:fixed;left:6px;top:60px;z-index:70;margin:0;padding:6px 8px;max-width:92vw;max-height:40vh;overflow:auto;font:11px/1.35 ui-monospace,monospace;background:rgba(0,0,0,.85);color:#9fe39f;border:1px solid #555;border-radius:6px;pointer-events:none';
     document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(dbg); });
     setInterval(function () {
-      var fr = document.querySelectorAll('[data-ad]'), out = ['ads  consent=' + (typeof Consent !== 'undefined' ? Consent.allowed() : '?') + '  premium=' + premium + '  known=' + known_ + '  started=' + started + '  tapped=' + gestured];
+      var fr = document.querySelectorAll('[data-ad]'), out = ['ads  consent=' + (typeof Consent !== 'undefined' ? Consent.allowed() : '?') + ' ' + (typeof Consent !== 'undefined' && Consent.peek ? JSON.stringify(Consent.peek()) : '') + '  premium=' + premium + '  known=' + known_ + '  started=' + started + '  tapped=' + gestured];
       for (var i = 0; i < fr.length; i++) out.push((fr[i].closest('#ad-dock') ? 'dock ' : 'slot ') + fr[i].getAttribute('data-ad') + '  state=' + (fr[i].getAttribute('data-state') || 'pending') + '  tries=' + fr[i]._try + (fr[i].tagName === 'DIV' ? '  [in the page]' : '  [framed]') + (fr[i]._house ? '  [house card]' : '') + (fr[i]._again ? '  [asked again after tap]' : '') + '\n      ' + (fr[i]._info || 'drew: not reported yet'));
       out.push('said: ' + JSON.stringify(outcome));
       dbg.textContent = out.join('\n');
