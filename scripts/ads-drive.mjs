@@ -31,6 +31,7 @@ import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dirname } from 'node:path'
 import { adFramePage } from '../src/routes/ad-frame.ts'
+import { adsCheckPage } from '../src/routes/ads-check.ts'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(here, '..', 'public')
@@ -43,6 +44,8 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
 }
 
+let polite = false // a creative that draws and nothing else, for the one page that runs it unsandboxed
+let blocked = false // the script cannot be fetched at all (a blocker, a filter)
 let silent = false // the network answers every request with an empty script, as it does for a unit it will not fill
 let configured = true // flipped per scenario: are the units live, or stripped out as if none were pasted?
 const adRequests = []
@@ -63,10 +66,15 @@ const FAKE_AD = `
 
 const server = createServer((req, res) => {
   const url = decodeURIComponent((req.url || '/').split('?')[0])
+  if (url.startsWith('/fake-ad/') && blocked) { res.writeHead(404); return res.end('no') }
+  if (url === '/ads-check') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+    return res.end(adsCheckPage().replaceAll('https://bauval.org/22/', `http://127.0.0.1:${PORT}/fake-ad/`))
+  }
   if (url.startsWith('/fake-ad/')) {
     adRequests.push(url)
     res.writeHead(200, { 'Content-Type': 'text/javascript' })
-    return res.end(silent ? '' : FAKE_AD)
+    return res.end(silent ? '' : polite ? "document.body.insertAdjacentHTML('beforeend', '<div style=\"width:320px;height:50px;background:#ccc\"></div>');" : FAKE_AD)
   }
   if (url === '/ad-frame') {
     // The real route's page, pointed at the fake network (and nothing when no unit is configured).
@@ -357,6 +365,36 @@ configured = true
     await page.context().close()
   }
 }
+{
+  // /ads-check: the page that says why an ad does not show, on the device that is not showing it.
+  const run = async (compare) => {
+    const page = await open({ width: 390, height: 800, decisions: 5 })
+    await page.goto(`http://127.0.0.1:${PORT}/ads-check`, { waitUntil: 'load' })
+    await page.waitForTimeout(8800)
+    const first = await page.evaluate(() => ({ v: document.getElementById('verdict').textContent, rows: ['r1', 'r2', 'r3', 'r4', 'r5'].map((i) => document.getElementById(i).textContent) }))
+    let second = null
+    if (compare) {
+      await page.click('#cmp'); await page.waitForTimeout(8800)
+      second = await page.evaluate(() => ({ v: document.getElementById('verdict').textContent, rows: ['r1', 'r2', 'r3', 'r4', 'r5'].map((i) => document.getElementById(i).textContent) }))
+    }
+    await page.context().close()
+    return { first, second }
+  }
+  configured = true; polite = true
+  let r = await run(true)
+  ok('ads-check: the safe tests draw, and it says ads work', /^Loads/.test(r.first.rows[0]) && r.first.rows[2] === 'Drew an ad' && /Ads work on this device/.test(r.first.v), JSON.stringify(r.first))
+  ok('and the unsandboxed ones are NOT run until the button is pressed', r.first.rows[1] === 'not run' && r.first.rows[3] === 'not run' && r.first.rows[4] === 'not run', JSON.stringify(r.first))
+  ok('after the button all of them draw', r.second.rows.slice(1).every((x) => x === 'Drew an ad'), JSON.stringify(r.second))
+  silent = true; polite = false
+  r = await run(true)
+  ok('ads-check, a network that answers with nothing: the safe tests say so and point at the button', /^Loads/.test(r.first.rows[0]) && r.first.rows[2] === 'Nothing came back' && /button above tells those apart/.test(r.first.v), JSON.stringify(r.first))
+  ok('and after the button, nothing anywhere: it says the network is choosing to show nothing', r.second.rows.slice(1).every((x) => x === 'Nothing came back') && /Not even without the sandbox/.test(r.second.v), JSON.stringify(r.second))
+  silent = false; blocked = true
+  r = await run(false)
+  ok('ads-check, a script that cannot be fetched: it says it is being stopped on the way', r.first.rows[0] === 'Blocked or unreachable' && /stopped on the way/.test(r.first.v), JSON.stringify(r.first))
+  blocked = false
+}
+
 console.log(`\n${pass} passed, ${fails} failed`)
 await browser.close()
 server.close()

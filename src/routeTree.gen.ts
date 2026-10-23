@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AccountRouteImport } from './routes/account'
 import { Route as AdFrameRouteImport } from './routes/ad-frame'
+import { Route as AdsCheckRouteImport } from './routes/ads-check'
 import { Route as DecideRouteImport } from './routes/decide'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as HonestyRouteImport } from './routes/honesty'
@@ -78,6 +79,11 @@ const AccountRoute = AccountRouteImport.update({
 const AdFrameRoute = AdFrameRouteImport.update({
   id: '/ad-frame',
   path: '/ad-frame',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdsCheckRoute = AdsCheckRouteImport.update({
+  id: '/ads-check',
+  path: '/ads-check',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DecideRoute = DecideRouteImport.update({
@@ -345,6 +351,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/ad-frame': typeof AdFrameRoute
+  '/ads-check': typeof AdsCheckRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
@@ -402,6 +409,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/ad-frame': typeof AdFrameRoute
+  '/ads-check': typeof AdsCheckRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
@@ -460,6 +468,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/account': typeof AccountRoute
   '/ad-frame': typeof AdFrameRoute
+  '/ads-check': typeof AdsCheckRoute
   '/decide': typeof DecideRouteWithChildren
   '/faq': typeof FaqRoute
   '/honesty': typeof HonestyRoute
@@ -519,6 +528,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/ad-frame'
+    | '/ads-check'
     | '/decide'
     | '/faq'
     | '/honesty'
@@ -576,6 +586,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/ad-frame'
+    | '/ads-check'
     | '/decide'
     | '/faq'
     | '/honesty'
@@ -633,6 +644,7 @@ export interface FileRouteTypes {
     | '/'
     | '/account'
     | '/ad-frame'
+    | '/ads-check'
     | '/decide'
     | '/faq'
     | '/honesty'
@@ -691,6 +703,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AccountRoute: typeof AccountRoute
   AdFrameRoute: typeof AdFrameRoute
+  AdsCheckRoute: typeof AdsCheckRoute
   DecideRoute: typeof DecideRouteWithChildren
   FaqRoute: typeof FaqRoute
   HonestyRoute: typeof HonestyRoute
@@ -765,6 +778,13 @@ declare module '@tanstack/react-router' {
       path: '/ad-frame'
       fullPath: '/ad-frame'
       preLoaderRoute: typeof AdFrameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ads-check': {
+      id: '/ads-check'
+      path: '/ads-check'
+      fullPath: '/ads-check'
+      preLoaderRoute: typeof AdsCheckRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/decide': {
@@ -1149,6 +1169,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AccountRoute: AccountRoute,
   AdFrameRoute: AdFrameRoute,
+  AdsCheckRoute: AdsCheckRoute,
   DecideRoute: DecideRouteWithChildren,
   FaqRoute: FaqRoute,
   HonestyRoute: HonestyRoute,

@@ -53,6 +53,7 @@ const NOT_NAVIGABLE = {
   'order-complete': 'reached by Whop after paying',
   'together.$code': 'arrives as a link somebody was handed',
   'seat.$id': 'a tombstone that redirects to /premium',
+  'ads-check': 'a diagnostic page, linked from nowhere on purpose: it is sent to somebody who asks why an ad does not show',
   'ad-frame': 'the page an ad lives in, embedded as an iframe by the pages that show one; never a destination',
   'eat.$dish': 'one of 450 dish pages, reached from /eat',
   'eat.index': 'the hub itself — linked as "/eat"',
