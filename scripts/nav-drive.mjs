@@ -102,7 +102,7 @@ async function open(width, height, { xl = false, hash = '', motion = false } = {
 async function section(name, fn) {
   // ONLY=history node scripts/nav-drive.mjs runs the sections whose name contains it.
   if (process.env.ONLY && !name.includes(process.env.ONLY)) return
-  try { await fn() } catch (e) { ok(`${name}: ran to the end`, false, String(e.message).split('\n')[0]) }
+  try { await fn() } catch (e) { ok(`${name}: ran to the end`, false, String(e.message).split("\n").slice(0,12).join(" | ")) }
 }
 
 const snap = (page) => page.evaluate(() => ({
@@ -209,7 +209,7 @@ await section('the phone\'s bar', async () => {
   ok('Escape closes it and gives focus back to More', await page.evaluate(() => !document.body.classList.contains('nav-open')) && (await active(page)) === 'tab-more', await active(page))
 
   await page.click('#tab-more'); await page.waitForTimeout(300)
-  await page.click('#nav-scrim', { position: { x: 195, y: 60 } }); await page.waitForTimeout(250)
+  await page.click('#nav-scrim', { position: { x: 195, y: 20 } }); await page.waitForTimeout(250)
   ok('the scrim closes it', await page.evaluate(() => !document.body.classList.contains('nav-open')))
 
   await page.click('#tab-more'); await page.waitForTimeout(300)

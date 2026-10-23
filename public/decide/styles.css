@@ -352,7 +352,7 @@ button { font-family: inherit; }
    ========================================================================== */
 .rail {
   position: fixed;
-  inset: var(--topbar-h) auto 0 0;
+  inset: var(--topbar-h) auto var(--anchor-h) 0; /* clear of the ad dock along the bottom */
   width: var(--rail-w);
   display: flex;
   flex-direction: column;
@@ -519,9 +519,9 @@ button { font-family: inherit; }
   /* The list, as a sheet that rises from the bar. Closed, it is hidden from
      assistive tech and the tab order as well as from the eye. */
   .rail {
-    inset: auto 0 calc(var(--tabbar-h) + env(safe-area-inset-bottom)) 0;
+    inset: auto 0 calc(var(--tabbar-h) + env(safe-area-inset-bottom) + var(--anchor-h)) 0;
     width: auto;
-    max-height: calc(100dvh - var(--topbar-h) - var(--tabbar-h) - env(safe-area-inset-bottom) - var(--s4));
+    max-height: calc(100dvh - var(--topbar-h) - var(--tabbar-h) - env(safe-area-inset-bottom) - var(--anchor-h) - var(--s4));
     border: 1px solid var(--line-2);
     border-bottom: 0;
     border-radius: var(--r-xl) var(--r-xl) 0 0;
