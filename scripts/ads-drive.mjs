@@ -44,7 +44,6 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
 }
 
-let socialRequests = 0
 let polite = false // a creative that draws and nothing else, for the one page that runs it unsandboxed
 let blocked = false // the script cannot be fetched at all (a blocker, a filter)
 let silent = false // the network answers every request with an empty script, as it does for a unit it will not fill
@@ -67,12 +66,6 @@ const FAKE_AD = `
 
 const server = createServer((req, res) => {
   const url = decodeURIComponent((req.url || '/').split('?')[0])
-  if (url.startsWith('/fake-social/')) {
-    socialRequests += 1
-    res.writeHead(200, { 'Content-Type': 'text/javascript' })
-    // A bar the way the network draws it: a fixed element over everything, above anything the app has.
-    return res.end("var d = document.createElement('div'); d.id = 'fake-social'; d.style.cssText = 'position:fixed;left:10px;bottom:90px;width:220px;height:60px;background:#fff;z-index:2147483647'; document.body.appendChild(d);")
-  }
   if (url.startsWith('/fake-ad/') && blocked) { res.writeHead(404); return res.end('no') }
   if (url === '/ads-check') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
@@ -100,8 +93,8 @@ const server = createServer((req, res) => {
     // The shipped file carries the real keys and the real network. Either take them out (as if
     // nothing had been pasted) or keep the keys and point the network at the fake one here.
     body = Buffer.from(configured
-      ? String(body).replaceAll('https://bauval.org/22/', `http://127.0.0.1:${PORT}/fake-ad/`).replaceAll('https://bauval.org/14/', `http://127.0.0.1:${PORT}/fake-social/`).replace("social: '", 'socialDelay: 600, social: \'')
-      : String(body).replace(/src: '[^']*', key: '[^']*'/g, "src: '', key: ''").replace(/social: '[^']*'/, "social: ''"))
+      ? String(body).replaceAll('https://bauval.org/22/', `http://127.0.0.1:${PORT}/fake-ad/`)
+      : String(body).replace(/src: '[^']*', key: '[^']*'/g, "src: '', key: ''"))
   }
   res.writeHead(200, { 'Content-Type': TYPES[extname(file)] || 'application/octet-stream' })
   res.end(body)
@@ -338,23 +331,41 @@ configured = true
   const page = await open({ width: 390, height: 800, decisions: 5 })
   await page.waitForTimeout(1500)
   const src = await page.evaluate(() => document.querySelector('#ad-dock iframe').getAttribute('src'))
-  ok('the ad frame is a page of this site, not a srcdoc', /^\/ad-frame\?u=mobile$/.test(src) && await page.evaluate(() => !document.querySelector('#ad-dock iframe').hasAttribute('srcdoc')), src)
+  ok('the ad frame is a page of this site, not a srcdoc', /^\/ad-frame\?u=mobile&r=0&t=[a-z0-9]+$/.test(src) && await page.evaluate(() => !document.querySelector('#ad-dock iframe').hasAttribute('srcdoc')), src)
   ok('and it told the page something was drawn', await page.evaluate(() => Ads.status().mobile === 'filled'), await page.evaluate(() => JSON.stringify(Ads.status())))
   await page.context().close()
 }
 {
-  // The network has nothing to show (a unit it will not fill, an ad blocker): the box is not left empty.
+  // The network has nothing to show (a unit it will not fill, an ad blocker): it is asked again twice, and only then is the box not left empty.
   silent = true
   const page = await open({ width: 1280, height: 800, decisions: 5 })
-  await page.waitForTimeout(7500)
+  await page.waitForTimeout(7000)
+  const early = await page.evaluate(() => ({ houses: document.querySelectorAll('#ad-dock .house-ad').length, tries: [...document.querySelectorAll('#ad-dock iframe')].map((f) => f._try) }))
+  ok('an empty answer is not the end: the frames ask again before any card stands in', early.houses === 0 && early.tries.every((t) => t >= 1), JSON.stringify(early))
+  await page.waitForTimeout(24000)
   const houses = await page.evaluate(() => [...document.querySelectorAll('#ad-dock .house-ad')].map((a) => ({ w: a.style.width, h: a.style.height, href: a.getAttribute('href') })))
-  ok('an empty answer from the network becomes the app’s own card, in the same box', houses.length === 2 && houses[0].w === '728px' && houses[0].h === '90px' && houses[1].w === '468px', JSON.stringify(houses))
+  ok('after the retries an empty network becomes the app’s own card, in the same box', houses.length === 2 && houses[0].w === '728px' && houses[0].h === '90px' && houses[1].w === '468px', JSON.stringify(houses))
   ok('which points at Premium and is not dressed as an ad', houses.every((h) => h.href === '/premium') && await page.evaluate(() => /Premium/.test(document.querySelector('.house-ad').textContent)))
   ok('and the page knows it was empty', await page.evaluate(() => Ads.status().leaderboard === 'empty'))
+  // ...and a slow auction is not lost: when the network answers late, the ad takes the box back.
+  silent = false
+  await page.evaluate(() => { document.querySelectorAll('#ad-dock iframe').forEach((f) => { f.src = '/ad-frame?u=' + f.getAttribute('data-ad') + '&r=9&t=late' }) })
+  await page.waitForTimeout(2500)
+  ok('a late answer takes the box back from the card', await page.evaluate(() => document.querySelectorAll('#ad-dock .house-ad').length === 0 && [...document.querySelectorAll('#ad-dock iframe')].every((f) => !f.hidden && f.getAttribute('data-state') === 'filled')))
   await page.context().close()
   silent = false
 }
-
+{
+  // The first ask of a visit is answered with nothing; the second, a few seconds later, fills: it must end up with an ad and no card.
+  silent = true
+  const page = await open({ width: 390, height: 800, decisions: 5 })
+  await page.waitForTimeout(3000)
+  silent = false
+  await page.waitForTimeout(9000)
+  const r = await page.evaluate(() => ({ houses: document.querySelectorAll('.house-ad').length, states: [...document.querySelectorAll('#ad-dock iframe')].map((f) => f.getAttribute('data-state')) }))
+  ok('an empty first answer followed by a full one ends with an ad and no house card', r.houses === 0 && r.states.every((x) => x === 'filled'), JSON.stringify(r))
+  await page.context().close()
+}
 {
   // Dot, the companion, lives above the ad strip and can be dragged only as low as the strip.
   for (const [w, h] of [[390, 800], [1280, 800]]) {
@@ -431,52 +442,6 @@ configured = true
   ok('ads-check: the five sandbox settings are tried and reported, and the reading says the current ones already draw', r.rows.every((x) => x === 'Drew an ad') && /already draw here/.test(r.box), JSON.stringify(r))
   await page.context().close()
   polite = false
-}
-
-{
-  // The Social Bar: the one script that runs in the page, and the conditions it is held to.
-  const social = async (opts, after) => {
-    socialRequests = 0
-    const page = await open({ width: 390, height: 800, decisions: 5, ...opts })
-    await page.waitForTimeout(2500)
-    const r = await after(page)
-    await page.context().close()
-    return r
-  }
-  configured = true
-  let r = await social({}, async (page) => ({ n: socialRequests, tagged: await page.evaluate(() => !!document.querySelector('#fake-social[data-social-bar]')), on: await page.evaluate(() => Ads.social()) }))
-  ok('the social bar loads for an ordinary visitor where cookies are not asked about, and is found by what it is', r.n === 1 && r.tagged && r.on, JSON.stringify(r))
-  r = await social({}, async (page) => {
-    await page.evaluate(() => window.M45.Play.open('stack')); await page.waitForTimeout(600)
-    const over = await page.evaluate(() => getComputedStyle(document.getElementById('fake-social')).display)
-    await page.evaluate(() => window.M45Play.close()); await page.waitForTimeout(300)
-    const after = await page.evaluate(() => getComputedStyle(document.getElementById('fake-social')).display)
-    return { over, after }
-  })
-  ok('it is hidden over a game and back when the game closes', r.over === 'none' && r.after === 'block', JSON.stringify(r))
-  r = await social({ premium: true }, async () => ({ n: socialRequests }))
-  ok('it never loads for a Premium member', r.n === 0, JSON.stringify(r))
-  r = await social({ askFirst: true }, async (page) => {
-    const before = socialRequests
-    await page.locator('.consent [data-c="all"]').click(); await page.waitForTimeout(4300)
-    return { before, after: socialRequests }
-  })
-  ok('where the visitor must be asked, it waits for Accept all, and then comes', r.before === 0 && r.after === 1, JSON.stringify(r))
-  r = await social({ askFirst: true, consent: 'essential' }, async () => ({ n: socialRequests }))
-  ok('Essential only does not get it (it cannot be loaded without cookies)', r.n === 0, JSON.stringify(r))
-  r = await social({}, async (page) => {
-    await page.evaluate(() => window.M45.setView('dishes')); await page.waitForTimeout(300)
-    await page.evaluate(() => Consent.show()); await page.waitForTimeout(150)
-    await page.evaluate(() => { window.__marker = 1 })
-    await page.locator('.consent [data-c="essential"]').click()
-    await page.waitForTimeout(3000)
-    return { gone: await page.evaluate(() => window.__marker === undefined), on: await page.evaluate(() => Ads.social()) }
-  })
-  ok('taking the cookie choice back reloads the page (when nobody is mid-game) so the script is gone', r.gone && !r.on, JSON.stringify(r))
-  configured = false
-  r = await social({}, async () => ({ n: socialRequests }))
-  ok('and with no ad unit configured it is not requested either', r.n === 0, JSON.stringify(r))
-  configured = true
 }
 
 console.log(`\n${pass} passed, ${fails} failed`)

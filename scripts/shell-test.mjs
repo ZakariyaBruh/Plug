@@ -149,10 +149,9 @@ for (const n of SIZES) {
   check(`the ${n} unit is ${liveInSite(n) ? 'live' : 'off'} in both the site and the game`, liveInSite(n) === liveInGame(n),
     `site.ts says ${liveInSite(n) ? 'live' : 'off'}, config.js says ${liveInGame(n) ? 'live' : 'off'}`)
 }
-for (const [name, key] of [['the 160x600 skyscraper', '6e26981c742d3600ec6ed4e1b94da64f'], ['the native unit', '01063e465ea5a0371d49dd42b5b6e99d']]) {
+for (const [name, key] of [['the 160x600 skyscraper', '6e26981c742d3600ec6ed4e1b94da64f'], ['the native unit', '01063e465ea5a0371d49dd42b5b6e99d'], ['the Social Bar', '90be8892dec9da526ced9fd07a01edf1']]) {
   check(`${name} stays out of both tables`, !siteTs.includes(key) && !configJs.includes(key))
 }
-check('the social bar is the same in the site constants and the game', (siteTs.match(/SOCIAL_BAR_URL = '([^']+)'/) || [])[1] === (configJs.match(/social: '([^']+)'/) || [])[1] && !!(siteTs.match(/SOCIAL_BAR_URL = '([^']+)'/) || [])[1])
 check('the smart link is the same in the site and the game', (siteTs.match(/SMARTLINK_URL = '([^']+)'/) || [])[1] === (configJs.match(/smartlink: '([^']+)'/) || [])[1] && !!(siteTs.match(/SMARTLINK_URL = '([^']+)'/) || [])[1])
 check('the decisions threshold is the same in both, and it is zero: ads from the first visit', (siteTs.match(/ADS_AFTER_DECISIONS = (\d+)/) || [])[1] === (configJs.match(/adsAfterDecisions: (\d+)/) || [])[1] && (configJs.match(/adsAfterDecisions: (\d+)/) || [])[1] === '0')
 check('nothing in the ads code steps aside for Save-Data', !/saveData|save-data/i.test((adsJs + adSlot).replace(/\/\*[\s\S]*?\*\//g, '')))
@@ -165,13 +164,8 @@ for (const [name, src] of [['js/ads.js', adsJs], ['AdSlot.tsx', adSlot]]) {
   check(`${name} never grants same-origin or top navigation`, !/sandbox[^;\n]*(allow-same-origin|allow-top-navigation)/.test(src))
 }
 const adsCode = adsJs.replace(/\/\*[\s\S]*?\*\//g, '')
-check('the Smartlink is not an ad slot anywhere in the ads code', !/smartlink/i.test(adsCode + adSlot.replace(/\/\*[\s\S]*?\*\//g, '')))
-// The Social Bar is the one script that runs in the page, so it is held to its conditions in code, not in intention.
-check('the Social Bar never loads for Premium, or before that is known', /function loadSocial\(\) \{[^}]*premium !== false\) return/.test(adsCode))
-check('and only where cookies are accepted (it cannot be loaded without them)', /function loadSocial\(\) \{[\s\S]*?Consent\.allowed\(\) !== true\) return/.test(adsCode))
-check('and after a delay, and never over a game or a decision being played', /socialDelay/.test(adsCode) && /body\.is-games \[data-social-bar\], body\.is-playing \[data-social-bar\]/.test(css))
-check('and it is hidden at once and the page reloaded to lose it (not mid-game) if consent is taken back or Premium starts', (adsCode.match(/dropSocial\(\)/g) || []).length >= 3 && /location\.reload\(\)/.test(adsCode) && /social-withdrawn/.test(css))
-check('and it is not on the site’s pages (the sandboxed banners only)', !/social/i.test(adSlot))
+check('no Social Bar or Smartlink is implemented anywhere', !/social.?bar|smartlink/i.test(adsJs + adSlot.replace(/\/\*[\s\S]*?\*\//g, '')),
+  'they are left out on purpose: the Social Bar was tried and removed on the owner’s say, and is not to be added back without being asked')
 
 const zOf = (sel) => { const m = css.match(new RegExp('(?:^|\\n)' + sel.replace(/[.]/g, '\\.') + ' \\{[^}]*?z-index: (\\d+)')); return m ? Number(m[1]) : null }
 // The app's ads are ONE fixed strip, over the page, that never pushes it and never goes away

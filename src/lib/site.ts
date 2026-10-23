@@ -121,9 +121,11 @@ export const GA4_ID = 'G-M5PMRS475E'
  * components, the game's ads.js and the privacy page all read, so none of
  * them can say something the product is not doing.
  *
- * THE SOCIAL BAR is in, with conditions (see SOCIAL_BAR_URL below and js/ads.js).
- * WHAT STAYS OUT, on purpose: the native unit (it sizes itself, which a sandbox
- * cannot measure) and the 160x600 skyscraper (it does not fit a phone). Five fixed sizes are used, and which
+ * WHAT STAYS OUT, on purpose: the Social Bar (the owner asked for it, tried it,
+ * and had it removed again: it is a script that runs in the page itself, outside
+ * any sandbox, built to look like a notification), the native unit (it sizes
+ * itself, which a sandbox cannot measure) and the 160x600 skyscraper (it does
+ * not fit a phone). Five fixed sizes are used, and which
  * ones depend on the width and on where the cluster sits: see adCluster below.
  * The Smartlink is not an ad slot at all; it is an opt-in, see SMARTLINK_URL.
  *
@@ -175,9 +177,11 @@ export interface AdUnit {
 
 /*
  * Pasted from the snippets as handed over. The network serves these from
- * bauval.org/22/<key>, with no invoke.js. The 160x600 skyscraper and the native
- * unit were handed over too and are not used: the skyscraper does not fit a
- * phone and the native unit sizes itself (which a sandbox cannot measure).
+ * bauval.org/22/<key>, with no invoke.js. The 160x600 skyscraper, the native
+ * unit and the Social Bar script were handed over too and are not used: the
+ * skyscraper does not fit a phone, the native unit sizes itself (which a
+ * sandbox cannot measure), and the Social Bar runs on the page itself, outside
+ * the sandbox, built to look like a notification.
  */
 export const AD_UNITS: Record<AdSize, AdUnit> = {
   leaderboard: { src: 'https://bauval.org/22/13578a9ee1178c2080f04a9a7acb94e7', key: '13578a9ee1178c2080f04a9a7acb94e7', width: 728, height: 90 },
@@ -193,17 +197,6 @@ export const AD_UNITS: Record<AdSize, AdUnit> = {
  * lib/allowance.ts). It is only ever opened by a tap on a button that says what
  * it is, never automatically and never as a redirect.
  */
-/**
- * THE SOCIAL BAR. Unlike every banner it is not in a sandboxed frame: it is a script that draws a small
- * notification-style bar over the page, so it runs in the page with a page's powers. It was left out
- * until the network's stricter ad verification was switched on, and is in now with these conditions
- * (enforced in js/ads.js, checked by shell-test and adsdrive): never for Premium; only where cookies
- * are accepted or not asked about, because it cannot be loaded cookie-free; ten seconds in; hidden
- * over a game or a decision being played; the page is reloaded if consent is taken back. In the app
- * only, not on the site's reading pages.
- */
-export const SOCIAL_BAR_URL = 'https://bauval.org/14/90be8892dec9da526ced9fd07a01edf1'
-
 export const SMARTLINK_URL = 'https://araplhn.org/4/fd1fabea155b5555cea9a2d25b525f86'
 
 /**

@@ -8,8 +8,8 @@
  * ADS. Five fixed-size banners from the snippets handed over, served from
  * bauval.org/22/<key>. A unit with either half empty is off, and with all of
  * them empty nothing is loaded or drawn and the privacy page does not mention
- * ads. The 160x600 skyscraper and the native unit were handed
- * over too and are deliberately not here (the Social Bar is, below, with its own rules): see the note over ADS_ON in
+ * ads. The 160x600 skyscraper, the native unit and the Social Bar were handed
+ * over too and are deliberately not here: see the note over ADS_ON in
  * src/lib/site.ts.
  *
  * This copy has to say the same as AD_UNITS in src/lib/site.ts, which is what
@@ -23,8 +23,6 @@ window.FoodConfig = {
   // Opened only by a tap on the button that offers it, for two more free
   // Standard questions. Never an ad slot, never automatic.
   smartlink: 'https://araplhn.org/4/fd1fabea155b5555cea9a2d25b525f86',
-  // The Social Bar: a script that runs in the page, with the conditions in js/ads.js. Empty is off.
-  social: 'https://bauval.org/14/90be8892dec9da526ced9fd07a01edf1',
   ads: {
     leaderboard: { src: 'https://bauval.org/22/13578a9ee1178c2080f04a9a7acb94e7', key: '13578a9ee1178c2080f04a9a7acb94e7', width: 728, height: 90 },
     wide: { src: 'https://bauval.org/22/e6a338e45d2440354df283cc5cc84a16', key: 'e6a338e45d2440354df283cc5cc84a16', width: 468, height: 60 },

@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs'
 import { AD_SANDBOX } from '../src/components/AdSlot.tsx'
 import { adFramePage } from '../src/routes/ad-frame.ts'
-import { ADS_ON, AD_UNITS, SMARTLINK_URL, SOCIAL_BAR_URL, adCluster, adLive } from '../src/lib/site.ts'
+import { ADS_ON, AD_UNITS, SMARTLINK_URL, adCluster, adLive } from '../src/lib/site.ts'
 
 let pass = 0
 let fail = 0
@@ -56,14 +56,13 @@ check('and sets atOptions from the unit', /atOptions=\{"key":"84c0716c8abaa82649
 check('the sandbox grants scripts and real-click popups only', AD_SANDBOX === 'allow-scripts allow-popups allow-popups-to-escape-sandbox', AD_SANDBOX)
 check('and neither same-origin nor top navigation', !/same-origin|top-navigation/.test(AD_SANDBOX))
 
-// Handed over but deliberately not used: the skyscraper and the native unit. (The Social Bar is used, with conditions: shell-test.)
+// Handed over but deliberately not used: the skyscraper, the native unit and the Social Bar.
 const files = ['src/lib/site.ts', 'src/components/AdSlot.tsx', 'public/decide/js/config.js', 'public/decide/js/ads.js']
   .map((f) => readFileSync(new URL('../' + f, import.meta.url), 'utf8'))
   .join('\n')
-for (const [name, key] of [['the 160x600 skyscraper', '6e26981c742d3600ec6ed4e1b94da64f'], ['the native unit', '01063e465ea5a0371d49dd42b5b6e99d']]) {
+for (const [name, key] of [['the 160x600 skyscraper', '6e26981c742d3600ec6ed4e1b94da64f'], ['the native unit', '01063e465ea5a0371d49dd42b5b6e99d'], ['the Social Bar', '90be8892dec9da526ced9fd07a01edf1']]) {
   check(`${name} is not used`, !files.includes(key))
 }
-check('the social bar is not a banner unit', SOCIAL_BAR_URL === 'https://bauval.org/14/90be8892dec9da526ced9fd07a01edf1' && !Object.values(AD_UNITS).some((u) => u.src === SOCIAL_BAR_URL))
 check('the smart link is an opt-in constant, not a unit', SMARTLINK_URL === 'https://araplhn.org/4/fd1fabea155b5555cea9a2d25b525f86' && !Object.values(AD_UNITS).some((u) => u.src === SMARTLINK_URL))
 
 console.log(`\n${pass} passed, ${fail} failed`)

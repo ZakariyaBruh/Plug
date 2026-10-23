@@ -49,7 +49,7 @@ export const Route = createFileRoute('/ad-frame')({
         const html = name ? adFramePage(name) : null
         if (!html) return new Response('not found', { status: 404, headers: { 'Cache-Control': 'no-store' } })
         return new Response(html, {
-          headers: { 'Content-Type': 'text/html; charset=utf-8', 'Referrer-Policy': 'origin', 'Cache-Control': 'public, max-age=600' },
+          headers: { 'Content-Type': 'text/html; charset=utf-8', 'Referrer-Policy': 'origin', 'Cache-Control': 'no-store' },
         })
       },
     },

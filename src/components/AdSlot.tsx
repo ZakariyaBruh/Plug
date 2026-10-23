@@ -53,13 +53,24 @@ export function AdSlot({
   const allowed = useConsentAllowed()
   // Sizes whose frame said nothing arrived: the box shows the site's own card instead of an empty rectangle.
   const [empty, setEmpty] = useState<Record<string, boolean>>({})
+  // How many times an empty frame has asked again, by size: the first ask of a visit is sometimes answered with nothing.
+  const [tries, setTries] = useState<Record<string, number>>({})
   useEffect(() => {
     const on = (e: MessageEvent) => {
       const d = e.data?.m45ad
       if (!d || typeof d.s !== 'string') return
       const frames = box.current?.querySelectorAll('iframe') ?? []
       // Empty puts the site's own card in the box; a late fill (a slow auction) takes it out again.
-      for (const f of Array.from(frames)) if (f.contentWindow === e.source) setEmpty((m) => ({ ...m, [f.getAttribute('data-ad') ?? '']: d.s === 'empty' || d.s === 'error' }))
+      for (const f of Array.from(frames)) {
+        if (f.contentWindow !== e.source) continue
+        const name = f.getAttribute('data-ad') ?? ''
+        if (d.s === 'filled') { setEmpty((m) => ({ ...m, [name]: false })); continue }
+        if (d.s !== 'empty' && d.s !== 'error') continue
+        const n = Number(f.getAttribute('data-try') ?? 0)
+        // Ask again (twice, a few seconds apart) before the site's own card stands in.
+        if (n < 2) setTimeout(() => setTries((t) => ({ ...t, [name]: Math.max(t[name] ?? 0, n + 1) })), n === 0 ? 3500 : 8000)
+        else setEmpty((m) => ({ ...m, [name]: true }))
+      }
     }
     window.addEventListener('message', on)
     return () => window.removeEventListener('message', on)
@@ -135,7 +146,8 @@ export function AdSlot({
                     scrolling="no"
                     sandbox={AD_SANDBOX}
                     referrerPolicy="origin"
-                    src={`/ad-frame?u=${name}`}
+                    data-try={tries[name] ?? 0}
+                    src={`/ad-frame?u=${name}&r=${tries[name] ?? 0}`}
                     loading="lazy"
                     hidden={!!empty[name]}
                     className="max-w-full border-0"
