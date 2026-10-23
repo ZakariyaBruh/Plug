@@ -7,11 +7,11 @@ member sees none.
 
 | Size | Used | Served from |
 |---|---|---|
-| 728x90 | wide screens, in a list | `https://bauval.org/22/79c3a17f…` |
-| 468x60 | wide screens | `…/22/08a0aa14…` |
-| 320x50 | phones | `…/22/5854b8b6…` |
-| 300x250 | the end of a page | `…/22/df667c7b…` |
-| 160x300 | the end of a page, wide | `…/22/31d2d666…` |
+| 728x90 | wide screens, in a list | `https://bauval.org/22/13578a9e…` |
+| 468x60 | wide screens | `…/22/e6a338e4…` |
+| 320x50 | phones | `…/22/84c0716c…` |
+| 300x250 | the end of a page | `…/22/47b83994…` |
+| 160x300 | the end of a page, wide | `…/22/ff664151…` |
 
 The same table is in `src/lib/site.ts` (`AD_UNITS`) and `public/decide/js/config.js`;
 `shell-test` fails if they disagree. Handed over and **deliberately not used**: the

@@ -149,7 +149,7 @@ for (const n of SIZES) {
   check(`the ${n} unit is ${liveInSite(n) ? 'live' : 'off'} in both the site and the game`, liveInSite(n) === liveInGame(n),
     `site.ts says ${liveInSite(n) ? 'live' : 'off'}, config.js says ${liveInGame(n) ? 'live' : 'off'}`)
 }
-for (const [name, key] of [['the 160x600 skyscraper', 'c34df66c2852fa155381e97d401a1a4a'], ['the native unit', 'd3500e59199e09eee4a23799c098b4e5'], ['the Social Bar', '081a53853ee78e59ce72a9333b3d4700']]) {
+for (const [name, key] of [['the 160x600 skyscraper', '6e26981c742d3600ec6ed4e1b94da64f'], ['the native unit', '01063e465ea5a0371d49dd42b5b6e99d'], ['the Social Bar', '90be8892dec9da526ced9fd07a01edf1']]) {
   check(`${name} stays out of both tables`, !siteTs.includes(key) && !configJs.includes(key))
 }
 check('the smart link is the same in the site and the game', (siteTs.match(/SMARTLINK_URL = '([^']+)'/) || [])[1] === (configJs.match(/smartlink: '([^']+)'/) || [])[1] && !!(siteTs.match(/SMARTLINK_URL = '([^']+)'/) || [])[1])

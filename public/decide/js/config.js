@@ -22,12 +22,12 @@ window.FoodConfig = {
   adsAfterDecisions: 0,
   // Opened only by a tap on the button that offers it, for two more free
   // Standard questions. Never an ad slot, never automatic.
-  smartlink: 'https://araplhn.org/4/c3b5fbe91c3b67d3648196f1c2b7711d',
+  smartlink: 'https://araplhn.org/4/fd1fabea155b5555cea9a2d25b525f86',
   ads: {
-    leaderboard: { src: 'https://bauval.org/22/79c3a17f491d7757c1a53e16f2e54e4b', key: '79c3a17f491d7757c1a53e16f2e54e4b', width: 728, height: 90 },
-    wide: { src: 'https://bauval.org/22/08a0aa1467566733b34557c293a41586', key: '08a0aa1467566733b34557c293a41586', width: 468, height: 60 },
-    mobile: { src: 'https://bauval.org/22/5854b8b6f2fdd21988e40b9eb9be56c6', key: '5854b8b6f2fdd21988e40b9eb9be56c6', width: 320, height: 50 },
-    rectangle: { src: 'https://bauval.org/22/df667c7b76c1f15de99aa40aed5384d6', key: 'df667c7b76c1f15de99aa40aed5384d6', width: 300, height: 250 },
-    tower: { src: 'https://bauval.org/22/31d2d6666f860531539ff1e9d29c51f6', key: '31d2d6666f860531539ff1e9d29c51f6', width: 160, height: 300 }
+    leaderboard: { src: 'https://bauval.org/22/13578a9ee1178c2080f04a9a7acb94e7', key: '13578a9ee1178c2080f04a9a7acb94e7', width: 728, height: 90 },
+    wide: { src: 'https://bauval.org/22/e6a338e45d2440354df283cc5cc84a16', key: 'e6a338e45d2440354df283cc5cc84a16', width: 468, height: 60 },
+    mobile: { src: 'https://bauval.org/22/84c0716c8abaa82649e86753f0334cd8', key: '84c0716c8abaa82649e86753f0334cd8', width: 320, height: 50 },
+    rectangle: { src: 'https://bauval.org/22/47b839943930ad4fcc3a16984ffe9ddd', key: '47b839943930ad4fcc3a16984ffe9ddd', width: 300, height: 250 },
+    tower: { src: 'https://bauval.org/22/ff664151b19a82696f071b16d9088566', key: 'ff664151b19a82696f071b16d9088566', width: 160, height: 300 }
   }
 };
