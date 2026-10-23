@@ -7216,7 +7216,7 @@ html.vt-active .buddy { view-transition-name: buddy; }
    ========================================================================== */
 .tour { position: fixed; inset: 0; z-index: 80; }
 .tour[hidden] { display: none; }
-.tour-top { position: absolute; z-index: 3; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: var(--s3); padding: var(--s3) var(--s4); }
+.tour-top { position: absolute; z-index: 3; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: var(--s3); padding: 0 var(--s4); height: var(--topbar-h); box-sizing: border-box; background: color-mix(in srgb, var(--void) 94%, transparent); border-bottom: 1px solid var(--hair); }
 .tour-bar { flex: 1; display: flex; gap: 3px; }
 .tour-bar i { flex: 1; height: 6px; border-radius: 3px; background: rgb(255 255 255 / .22); transition: background .4s ease; }
 .tour-bar i.is-done { background: var(--amber); }

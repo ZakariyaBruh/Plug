@@ -12927,7 +12927,7 @@
       { view: 'profile', sel: ['#view-profile .head'], text: 'Your taste, your level, your language, and how much I talk. It is all here.', mood: 'happy' },
       { sel: ['#buddy'], text: 'That is me in the corner. Tap me and I say something. Pick me up and drop me anywhere, and I stay put until you move me again.', mood: 'love' },
       { sel: ['#buddy'], text: 'Hold me for a menu: ask me about morsels45, play a game, take this tour again, or give me a pat.', mood: 'happy' },
-      { sel: ['.tab-link[data-view="decide"]', '.rail-link[data-view="decide"]'], text: 'While you decide I ride the progress bar and react to your answers. Tap me there for a hint: how many dishes each answer would leave.', mood: 'thinking' },
+      { text: 'While you decide I ride the progress bar and react to your answers. Tap me there for a hint: how many dishes each answer would leave.', mood: 'thinking' },
       { text: 'That is everything. Go on, decide something. I will be right here.', mood: 'celebrate', last: true }
     ];
     var open = false, n = 0, root = null, ui = {}, back = null, timer = 0;
@@ -12982,7 +12982,12 @@
       var st = STEPS[n];
       for (var k = 0; st.sel && k < st.sel.length; k++) {
         var node = document.querySelector(st.sel[k]);
-        if (node) { var r = node.getBoundingClientRect(); if (r.width > 4 && r.height > 4) return r; }
+        if (node) {
+          // The menu scrolls inside itself, and since the ad strip took its room it can no longer show every
+          // link at once: bring the one being explained into view before it is lit, or the light lands under the strip.
+          if (node.closest && node.closest('.rail-scroll') && node.scrollIntoView) { try { node.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (err) { /* fine */ } }
+          var r = node.getBoundingClientRect(); if (r.width > 4 && r.height > 4) return r;
+        }
       }
       return null;
     }

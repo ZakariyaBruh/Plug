@@ -70,6 +70,11 @@ button.quiet{background:transparent;color:#e0a340}
 <p class="k">Runs the network's own code with nothing holding it back, to see whether the sandbox is what stops it. Whatever the network sends is then allowed to do anything a page can, including sending this tab somewhere else. Only press it if the result above leaves the question open.</p>
 <p style="margin-top:.6rem"><button class="quiet" id="cmp">Also test without the sandbox</button></p>
 
+<h2>Find which sandbox setting the network needs</h2>
+<p class="k">If the unsandboxed test draws an ad and the sandboxed one does not, this tries the app's frame under five different sandbox settings, to find the smallest change that makes it draw. Some of them let the frame reach this page, which is safe on this check page and would not be in the app. Press it only after the unsandboxed test has drawn something.</p>
+<p style="margin-top:.6rem"><button class="quiet" id="var">Try the five settings</button></p>
+<div class="box" id="varbox" hidden></div>
+
 <h2>This device</h2>
 <div class="box k" id="env"></div>
 
@@ -80,6 +85,7 @@ button.quiet{background:transparent;color:#e0a340}
   <iframe id="f2" title="Advertisement" width="${u.width}" height="${u.height}" scrolling="no" srcdoc="${attr(snippetDoc(UNIT))}"></iframe>
   <iframe id="f5" title="Advertisement" width="${u2.width}" height="${u2.height}" scrolling="no" srcdoc="${attr(snippetDoc(UNIT2))}"></iframe>
 </div>
+<div class="slot" id="varslots" hidden></div>
 <p style="margin-top:1.4rem"><button onclick="location.reload()">Run it again</button></p>
 
 <script>
@@ -131,6 +137,44 @@ button.quiet{background:transparent;color:#e0a340}
     if (res.r3 === null) show('r3', false, 'No report');
     verdict();
   }, 8000);
+
+  // Which sandbox setting? The same frame page, five ways.
+  var VARIANTS = [
+    ['A. As the app has it', 'allow-scripts allow-popups allow-popups-to-escape-sandbox'],
+    ['B. A + allow-same-origin', 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin'],
+    ['C. A + top navigation on a tap', 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation'],
+    ['D. A + forms, dialogs, presentation', 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-forms allow-modals allow-presentation'],
+    ['E. All of them together', 'allow-scripts allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-top-navigation-by-user-activation allow-forms allow-modals allow-presentation']
+  ];
+  $('var').onclick = function () {
+    $('var').disabled = true; $('var').textContent = 'Running…';
+    var box = $('varbox'), slots = $('varslots'); box.hidden = false; slots.hidden = false; box.textContent = '';
+    var frames = [];
+    VARIANTS.forEach(function (v, i) {
+      var row = document.createElement('div'); row.className = 'row';
+      var label = document.createElement('span'); label.innerHTML = '<b></b><br><span class="k"></span>'; label.firstChild.textContent = v[0]; label.lastChild.textContent = v[1];
+      var out = document.createElement('span'); out.className = 'v wait'; out.textContent = '…'; out.id = 'v' + i;
+      row.appendChild(label); row.appendChild(out); box.appendChild(row);
+      var f = document.createElement('iframe'); f.title = 'Advertisement'; f.width = ${u.width}; f.height = ${u.height}; f.setAttribute('scrolling', 'no'); f.setAttribute('sandbox', v[1]); f.setAttribute('referrerpolicy', 'origin'); f.src = '/ad-frame?u=${UNIT}&v=' + i;
+      slots.appendChild(f); frames.push(f);
+    });
+    window.addEventListener('message', function (e) {
+      var d = e.data && e.data.m45ad; if (!d) return;
+      for (var i = 0; i < frames.length; i++) if (e.source === frames[i].contentWindow) { var o = $('v' + i); o.textContent = d.s === 'filled' ? 'Drew an ad' : d.s === 'empty' ? 'Nothing came back' : 'Script failed'; o.className = 'v ' + (d.s === 'filled' ? 'ok' : 'bad'); }
+    });
+    setTimeout(function () {
+      var drew = VARIANTS.map(function (v, i) { return $('v' + i).textContent === 'Drew an ad'; });
+      var msg;
+      if (!drew.some(Boolean)) msg = 'None of the five drew an ad here. Run the unsandboxed test first: if that drew one, tell me, because then it is something else about the frame.';
+      else if (drew[0]) msg = 'The app’s current settings (A) already draw here. Reload the app and look again.';
+      else if (drew[2] && !drew[1]) msg = 'Allowing a top-level navigation on a tap (C) is what the network needs, and it does not need the frame to reach this page. That can be granted safely.';
+      else if (drew[3] && !drew[1]) msg = 'Forms, dialogs or presentation (D) is what the network needs. That can be granted safely.';
+      else if (drew[1]) msg = 'The network needs allow-same-origin (B): to read and write its own storage. In a frame of this same site that also lets it reach the whole app, which is not safe. The ad has to come from a different site than the app for that to be granted.';
+      else msg = 'Only the settings together (E) draw. Tell me which rows drew.';
+      var m = document.createElement('div'); m.className = 'row'; m.innerHTML = '<span><b>Reading</b></span>'; var t = document.createElement('span'); t.style.textAlign = 'left'; t.style.fontWeight = '600'; t.textContent = msg; m.appendChild(t); box.appendChild(m);
+      $('var').textContent = 'Done';
+    }, 8500);
+  };
 
   $('cmp').onclick = function () {
     $('cmp').disabled = true; $('cmp').textContent = 'Running…';

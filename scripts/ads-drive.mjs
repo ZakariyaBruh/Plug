@@ -395,6 +395,36 @@ configured = true
   blocked = false
 }
 
+{
+  // The tour lights what it is talking about, and the ad strip taking the menu's room must not push that out of view.
+  const page = await open({ width: 1100, height: 700, decisions: 5 })
+  await page.waitForTimeout(900)
+  await go(page, 'profile')
+  await page.evaluate(() => document.getElementById('buddy-tour').click()); await page.waitForTimeout(600)
+  for (let i = 0; i < 10; i++) { await page.locator('.tour-btn.is-main').click(); await page.waitForTimeout(750) }
+  await page.waitForTimeout(500)
+  const t = await page.evaluate(() => {
+    const spot = document.querySelector('.tour-spot').getBoundingClientRect(), link = document.querySelector('.rail-link[data-view="radio"]').getBoundingClientRect(), dock = document.getElementById('ad-dock').getBoundingClientRect()
+    return { spot: [spot.left, spot.top, spot.width, spot.height], link: [link.left, link.top, link.width, link.height], dockTop: dock.top, say: document.querySelector('.tour-say').textContent }
+  })
+  ok('the tour step about TV and radio lights the TV and radio link, in view and above the ad strip', /Free TV/.test(t.say) && t.spot[1] <= t.link[1] + 2 && t.spot[1] + t.spot[3] >= t.link[1] + t.link[3] - 2 && t.link[1] + t.link[3] <= t.dockTop + 1, JSON.stringify(t))
+  const top = await page.evaluate(() => ({ bar: document.querySelector('.tour-top').getBoundingClientRect().height, topbar: document.getElementById('topbar').getBoundingClientRect().height, bg: getComputedStyle(document.querySelector('.tour-top')).backgroundColor }))
+  ok('and the tour’s own top bar covers the app’s, so the two do not print over each other', Math.abs(top.bar - top.topbar) < 2 && !/rgba\(0, 0, 0, 0\)/.test(top.bg), JSON.stringify(top))
+  await page.context().close()
+}
+
+{
+  // /ads-check, the five sandbox settings: against a network that does not mind, all five draw and it says the current ones are enough.
+  configured = true; polite = true
+  const page = await open({ width: 390, height: 800, decisions: 5 })
+  await page.goto(`http://127.0.0.1:${PORT}/ads-check`, { waitUntil: 'load' })
+  await page.click('#var'); await page.waitForTimeout(9800)
+  const r = await page.evaluate(() => ({ rows: [0, 1, 2, 3, 4].map((i) => document.getElementById('v' + i).textContent), box: document.getElementById('varbox').textContent }))
+  ok('ads-check: the five sandbox settings are tried and reported, and the reading says the current ones already draw', r.rows.every((x) => x === 'Drew an ad') && /already draw here/.test(r.box), JSON.stringify(r))
+  await page.context().close()
+  polite = false
+}
+
 console.log(`\n${pass} passed, ${fails} failed`)
 await browser.close()
 server.close()
