@@ -7661,6 +7661,8 @@ body.is-premium .ad-wrap { display: none; }
 .dock-row { display: flex; gap: var(--s4); justify-content: center; align-items: flex-start; max-width: 100%; }
 .dock iframe { display: block; max-width: 100%; border: 0; }
 body.is-premium .dock { display: none; }
+/* The network's own notification-style bar (js/ads.js finds it) is never over a game or a decision being played. */
+body.is-games [data-social-bar], body.is-playing [data-social-bar], body.is-premium [data-social-bar], body.social-withdrawn [data-social-bar] { display: none !important; }
 body.has-dock { padding-bottom: var(--anchor-h); }
 @media (max-width: 60rem) {
   .dock { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom)); }

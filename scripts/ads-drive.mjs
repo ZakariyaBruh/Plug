@@ -44,6 +44,7 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
 }
 
+let socialRequests = 0
 let polite = false // a creative that draws and nothing else, for the one page that runs it unsandboxed
 let blocked = false // the script cannot be fetched at all (a blocker, a filter)
 let silent = false // the network answers every request with an empty script, as it does for a unit it will not fill
@@ -66,6 +67,12 @@ const FAKE_AD = `
 
 const server = createServer((req, res) => {
   const url = decodeURIComponent((req.url || '/').split('?')[0])
+  if (url.startsWith('/fake-social/')) {
+    socialRequests += 1
+    res.writeHead(200, { 'Content-Type': 'text/javascript' })
+    // A bar the way the network draws it: a fixed element over everything, above anything the app has.
+    return res.end("var d = document.createElement('div'); d.id = 'fake-social'; d.style.cssText = 'position:fixed;left:10px;bottom:90px;width:220px;height:60px;background:#fff;z-index:2147483647'; document.body.appendChild(d);")
+  }
   if (url.startsWith('/fake-ad/') && blocked) { res.writeHead(404); return res.end('no') }
   if (url === '/ads-check') {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
@@ -93,8 +100,8 @@ const server = createServer((req, res) => {
     // The shipped file carries the real keys and the real network. Either take them out (as if
     // nothing had been pasted) or keep the keys and point the network at the fake one here.
     body = Buffer.from(configured
-      ? String(body).replaceAll('https://bauval.org/22/', `http://127.0.0.1:${PORT}/fake-ad/`)
-      : String(body).replace(/src: '[^']*', key: '[^']*'/g, "src: '', key: ''"))
+      ? String(body).replaceAll('https://bauval.org/22/', `http://127.0.0.1:${PORT}/fake-ad/`).replaceAll('https://bauval.org/14/', `http://127.0.0.1:${PORT}/fake-social/`).replace("social: '", 'socialDelay: 600, social: \'')
+      : String(body).replace(/src: '[^']*', key: '[^']*'/g, "src: '', key: ''").replace(/social: '[^']*'/, "social: ''"))
   }
   res.writeHead(200, { 'Content-Type': TYPES[extname(file)] || 'application/octet-stream' })
   res.end(body)
@@ -117,6 +124,7 @@ const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromi
 async function open({ width = 1280, height = 800, decisions = 0, premium = false, askFirst = false, consent = null, saveData = false, keepWelcome = false, premiumDelay = 0 } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce', hasTouch: width < 700, isMobile: width < 700 })
   const page = await ctx.newPage()
+  page.on('console', (m) => { if (m.text().startsWith('COVERED')) console.log(m.text()) })
   page.on('pageerror', (e) => { console.log('PAGEERROR ' + e.message); fails += 1 })
   // Playwright tries the most recently added route first, so the specific one goes last.
   await page.route(/\/api\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }))
@@ -147,7 +155,7 @@ const go = (page, v) => page.evaluate((v) => window.M45.setView(v), v).then(() =
 const frames = (page) => page.evaluate(() => [...document.querySelectorAll('#ad-dock iframe')].map((f) => ({ w: f.width, h: f.height, sandbox: f.getAttribute('sandbox'), mode: f.getAttribute('data-mode'), cl: f.hasAttribute('credentialless'), ref: f.getAttribute('referrerpolicy') })))
 const dockBox = (page) => page.evaluate(() => { const d = document.getElementById('ad-dock'); if (!d) return null; const r = d.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: r.height, vh: window.innerHeight, anchor: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--anchor-h')), fixed: getComputedStyle(d).position === 'fixed' } })
 // Is the point at the centre of this element reachable, or is something (the dock) on top of it?
-const reachable = (page, sel) => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) return null; el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!hit && (el === hit || el.contains(hit)) }, sel)
+const reachable = (page, sel) => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) return null; el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); const okk = !!hit && (el === hit || el.contains(hit)); if (!okk) console.log('COVERED ' + sel + ' BY ' + (hit && hit.outerHTML.slice(0, 120))); return okk }, sel)
 
 /* ------------------------------------------------ nothing configured */
 configured = false
@@ -423,6 +431,52 @@ configured = true
   ok('ads-check: the five sandbox settings are tried and reported, and the reading says the current ones already draw', r.rows.every((x) => x === 'Drew an ad') && /already draw here/.test(r.box), JSON.stringify(r))
   await page.context().close()
   polite = false
+}
+
+{
+  // The Social Bar: the one script that runs in the page, and the conditions it is held to.
+  const social = async (opts, after) => {
+    socialRequests = 0
+    const page = await open({ width: 390, height: 800, decisions: 5, ...opts })
+    await page.waitForTimeout(2500)
+    const r = await after(page)
+    await page.context().close()
+    return r
+  }
+  configured = true
+  let r = await social({}, async (page) => ({ n: socialRequests, tagged: await page.evaluate(() => !!document.querySelector('#fake-social[data-social-bar]')), on: await page.evaluate(() => Ads.social()) }))
+  ok('the social bar loads for an ordinary visitor where cookies are not asked about, and is found by what it is', r.n === 1 && r.tagged && r.on, JSON.stringify(r))
+  r = await social({}, async (page) => {
+    await page.evaluate(() => window.M45.Play.open('stack')); await page.waitForTimeout(600)
+    const over = await page.evaluate(() => getComputedStyle(document.getElementById('fake-social')).display)
+    await page.evaluate(() => window.M45Play.close()); await page.waitForTimeout(300)
+    const after = await page.evaluate(() => getComputedStyle(document.getElementById('fake-social')).display)
+    return { over, after }
+  })
+  ok('it is hidden over a game and back when the game closes', r.over === 'none' && r.after === 'block', JSON.stringify(r))
+  r = await social({ premium: true }, async () => ({ n: socialRequests }))
+  ok('it never loads for a Premium member', r.n === 0, JSON.stringify(r))
+  r = await social({ askFirst: true }, async (page) => {
+    const before = socialRequests
+    await page.locator('.consent [data-c="all"]').click(); await page.waitForTimeout(4300)
+    return { before, after: socialRequests }
+  })
+  ok('where the visitor must be asked, it waits for Accept all, and then comes', r.before === 0 && r.after === 1, JSON.stringify(r))
+  r = await social({ askFirst: true, consent: 'essential' }, async () => ({ n: socialRequests }))
+  ok('Essential only does not get it (it cannot be loaded without cookies)', r.n === 0, JSON.stringify(r))
+  r = await social({}, async (page) => {
+    await page.evaluate(() => window.M45.setView('dishes')); await page.waitForTimeout(300)
+    await page.evaluate(() => Consent.show()); await page.waitForTimeout(150)
+    await page.evaluate(() => { window.__marker = 1 })
+    await page.locator('.consent [data-c="essential"]').click()
+    await page.waitForTimeout(3000)
+    return { gone: await page.evaluate(() => window.__marker === undefined), on: await page.evaluate(() => Ads.social()) }
+  })
+  ok('taking the cookie choice back reloads the page (when nobody is mid-game) so the script is gone', r.gone && !r.on, JSON.stringify(r))
+  configured = false
+  r = await social({}, async () => ({ n: socialRequests }))
+  ok('and with no ad unit configured it is not requested either', r.n === 0, JSON.stringify(r))
+  configured = true
 }
 
 console.log(`\n${pass} passed, ${fails} failed`)

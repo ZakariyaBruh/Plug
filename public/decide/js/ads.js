@@ -99,6 +99,7 @@ var Ads = (function () {
 
   // The app's own card, in the exact size of the ad that did not come.
   function house(f) {
+    if (f._house) return;
     var unit = cfg[f.getAttribute('data-ad')];
     var a = document.createElement('a');
     a.className = 'house-ad';
@@ -117,8 +118,11 @@ var Ads = (function () {
       : unit.width >= 400 ? 'No ads, and a smarter assistant. See Premium.'
       : 'No ads. See Premium';
     a.appendChild(b); a.appendChild(s);
-    f.replaceWith(a);
+    // The frame stays, hidden, and is given back if the network turns out to have been slow rather than empty:
+    // an auction that takes eight seconds is still an ad.
+    f._house = a; f.hidden = true; f.parentNode.insertBefore(a, f);
   }
+  function unhouse(f) { if (f._house) { f._house.remove(); f._house = null; f.hidden = false; } }
 
   window.addEventListener('message', function (e) {
     var d = e.data && e.data.m45ad;
@@ -129,6 +133,7 @@ var Ads = (function () {
       var name = frames[i].getAttribute('data-ad');
       outcome[name] = d.s;
       frames[i].setAttribute('data-state', d.s);
+      if (d.s === 'filled') unhouse(frames[i]);
       if (d.s === 'empty' || d.s === 'error') {
         try { console.info('[ads] nothing came back for the ' + name + ' unit (' + d.s + '). Network unit not approved or not filling, or a blocker.'); } catch (err) { /* fine */ }
         house(frames[i]);
@@ -260,15 +265,72 @@ var Ads = (function () {
     mount(container, placement, ctx);
   }
 
+
+  /* ------------------------------------------------------------- the social bar */
+  /*
+   * ADSTERRA'S SOCIAL BAR, WITH ITS CONDITIONS. It is the one ad here that is not in a sandboxed
+   * frame: it is a script that draws a small notification-style bar over the page, so it has to run
+   * in the page, with a page's powers. That is why it is held to more than the banners are:
+   *   - never for a Premium member, and not before it is known whether somebody is one;
+   *   - only where the visitor has accepted cookies (or is somewhere that does not ask), because it
+   *     cannot be loaded cookie-free the way a frame can: so Essential only, and a visitor who has to be
+   *     asked and has not said yes, get the banners and not this;
+   *   - not at once: ten seconds in, so nobody has it land on them while they are still reading;
+   *   - never over a game or a decision being played. It is the network's own element and we cannot
+   *     style it, but it is found (it is fixed and sits above everything the app has) and hidden for
+   *     as long as one is on screen: a bar under a thumb in the middle of a game is how accidental
+   *     taps happen, which is invalid traffic;
+   *   - if a visitor takes the cookie choice back, or signs in to Premium, the page is reloaded so the
+   *     script is gone, because a script cannot be unloaded.
+   */
+  var socialEl = null, socialT = 0;
+  function socialSrc() { return (window.FoodConfig && window.FoodConfig.social) || ''; }
+  function socialDelay() { return typeof (window.FoodConfig && window.FoodConfig.socialDelay) === 'number' ? window.FoodConfig.socialDelay : 10000; }
+  function tagSocial(n) {
+    if (!n || n.nodeType !== 1 || n.hasAttribute('data-social-bar')) return;
+    var check = function () {
+      try { var cs = getComputedStyle(n); if (cs.position === 'fixed' && parseInt(cs.zIndex, 10) >= 1000) n.setAttribute('data-social-bar', ''); } catch (err) { /* gone already */ }
+    };
+    requestAnimationFrame(check); setTimeout(check, 700); setTimeout(check, 2500);
+  }
+  function watchSocial() {
+    if (typeof MutationObserver === 'undefined') return;
+    var o = new MutationObserver(function (muts) { for (var i = 0; i < muts.length; i++) Array.prototype.forEach.call(muts[i].addedNodes, tagSocial); });
+    o.observe(document.body, { childList: true }); o.observe(document.documentElement, { childList: true });
+  }
+  function loadSocial() {
+    if (socialEl || !started || !socialSrc() || premium !== false) return;
+    if (typeof Consent === 'undefined' || Consent.allowed() !== true) return;
+    watchSocial();
+    socialEl = document.createElement('script');
+    socialEl.async = true; socialEl.setAttribute('data-cfasync', 'false'); socialEl.src = socialSrc();
+    document.body.appendChild(socialEl);
+  }
+  // Consent taken back, or Premium begun, with the script already on the page: the bar is hidden at once and the page
+  // reloaded to lose the script (a script cannot be unloaded), but not under somebody in the middle of a game or a question.
+  function dropSocial() {
+    document.body.classList.add('social-withdrawn');
+    (function again() {
+      var b = document.body;
+      if (b.classList.contains('is-playing') || b.classList.contains('is-games') || document.querySelector('#panel-question.is-current')) { setTimeout(again, 2000); return; }
+      location.reload();
+    })();
+  }
+  function scheduleSocial(ms) {
+    if (socialEl || !socialSrc()) return;
+    clearTimeout(socialT);
+    socialT = setTimeout(loadSocial, ms === undefined ? socialDelay() : ms);
+  }
+
   /* ----------------------------------------------------------------- the rest */
   // Called once the first answer to "is this a Premium member?" is in (and again whenever it
   // changes). A member is never shown the dock, not even for the moment before it is known.
   function premiumKnown(isPremium) {
     known_ = true;
     premium = !!isPremium;
-    if (premium) { clearInterval(timer); removeDock(); return; }
+    if (premium) { clearInterval(timer); removeDock(); clearTimeout(socialT); if (socialEl) dropSocial(); return; }
     // Once it is known whether to ask first (one small request), so the first load is the right one.
-    known(function () { if (!premium) { drawDock(); schedule(); } });
+    known(function () { if (!premium) { drawDock(); schedule(); scheduleSocial(); } });
   }
 
   function start() {
@@ -289,7 +351,9 @@ var Ads = (function () {
 
   // A changed mind changes how the ads are loaded: the ones on screen are redrawn the other way.
   if (typeof Consent !== 'undefined') {
-    Consent.onChange(function () {
+    Consent.onChange(function (allowed) {
+      // Said yes: the social bar may come, soon. Said no, with it already on the page: the page goes, and with it the script.
+      if (allowed) { if (known_ && premium === false) scheduleSocial(3000); } else if (socialEl) { dropSocial(); return; } else clearTimeout(socialT);
       drawDock();
       var slots = document.querySelectorAll('.ad-wrap[data-ad-armed]');
       for (var i = 0; i < slots.length; i++) { var c = slots[i]; clear(c); arm(c); }
@@ -298,7 +362,7 @@ var Ads = (function () {
 
   return {
     start: start, premiumKnown: premiumKnown, mount: mount, refresh: refresh, enabled: anyLive,
-    strip: strip, cluster: cluster,
+    strip: strip, cluster: cluster, social: function () { return !!socialEl; },
     // What the frames have said, by size: for a look in the console (`Ads.status()`).
     status: function () { return JSON.parse(JSON.stringify(outcome)); }
   };

@@ -15,9 +15,20 @@ member sees none.
 
 The same table is in `src/lib/site.ts` (`AD_UNITS`) and `public/decide/js/config.js`;
 `shell-test` fails if they disagree. Handed over and **deliberately not used**: the
-160x600 skyscraper (does not fit a phone), the native unit (sizes itself, which a
-sandbox cannot measure) and the **Social Bar** (built to look like a notification,
-and it would have to run on the page itself, outside the sandbox).
+160x600 skyscraper (does not fit a phone) and the native unit (sizes itself, which a
+sandbox cannot measure).
+
+### The Social Bar (in the app only), and why it has conditions
+It is a script that draws a notification-style bar over the page, so it cannot be sandboxed
+and runs with a page's powers. It stayed out until the network's stricter ad verification was
+switched on. `js/ads.js` (`loadSocial`) holds it to: never for Premium (and not before that is
+known); only where cookies are accepted or not asked about (it cannot load cookie-free, so
+Essential only, and a visitor who must be asked and has not said yes, get banners and not this);
+ten seconds in; found by being fixed with a z-index of 1000 or more (the app's own never exceed
+100) and hidden over a game or a decision being played (`body.is-games`, `body.is-playing`);
+the page is reloaded to lose the script if consent is taken back or Premium starts. Not on the
+site's reading pages. `shell-test` checks the conditions are in the code and `adsdrive` checks
+them in a browser against a fake bar.
 
 **Check approval first if a slot is empty.** The dashboard showed every unit
 Inactive, and this network showed nothing for the whole of its previous run here.

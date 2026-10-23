@@ -56,9 +56,10 @@ export function AdSlot({
   useEffect(() => {
     const on = (e: MessageEvent) => {
       const d = e.data?.m45ad
-      if (!d || (d.s !== 'empty' && d.s !== 'error')) return
+      if (!d || typeof d.s !== 'string') return
       const frames = box.current?.querySelectorAll('iframe') ?? []
-      for (const f of Array.from(frames)) if (f.contentWindow === e.source) setEmpty((m) => ({ ...m, [f.getAttribute('data-ad') ?? '']: true }))
+      // Empty puts the site's own card in the box; a late fill (a slow auction) takes it out again.
+      for (const f of Array.from(frames)) if (f.contentWindow === e.source) setEmpty((m) => ({ ...m, [f.getAttribute('data-ad') ?? '']: d.s === 'empty' || d.s === 'error' }))
     }
     window.addEventListener('message', on)
     return () => window.removeEventListener('message', on)
@@ -116,28 +117,30 @@ export function AdSlot({
           <div className="flex flex-wrap items-start justify-center gap-4">
             {units.map((unit) => {
               const name = nameOf(unit)
-              if (empty[name])
-                return (
-                  <Link key={unit.key + ':house'} to="/premium" target="_blank" className="grid max-w-full content-center gap-0.5 overflow-hidden rounded border border-[var(--line-2)] bg-[var(--wash)] px-3 text-left no-underline" style={{ width: unit.width, height: unit.height }}>
-                    <b className="text-sm text-[var(--amber)]">{unit.height >= 90 ? 'morsels45 Premium' : 'Premium'}</b>
-                    <span className="text-xs text-[var(--text-dim)]">{unit.height >= 90 ? 'No ads. A smarter assistant. See what Premium adds.' : 'No ads. See Premium'}</span>
-                  </Link>
-                )
+              // The frame stays mounted while the site's own card stands in for it, so a slow auction can still take the box back.
               return (
-                <iframe
-                  key={unit.key + (restricted ? ':c' : '')}
-                  {...extra}
-                  data-ad={name}
-                  title="Advertisement"
-                  width={unit.width}
-                  height={unit.height}
-                  scrolling="no"
-                  sandbox={AD_SANDBOX}
-                  referrerPolicy="origin"
-                  src={`/ad-frame?u=${name}`}
-                  loading="lazy"
-                  className="max-w-full border-0"
-                />
+                <span key={unit.key + (restricted ? ':c' : '')} className="contents">
+                  {empty[name] ? (
+                    <Link to="/premium" target="_blank" className="grid max-w-full content-center gap-0.5 overflow-hidden rounded border border-[var(--line-2)] bg-[var(--wash)] px-3 text-left no-underline" style={{ width: unit.width, height: unit.height }}>
+                      <b className="text-sm text-[var(--amber)]">{unit.height >= 90 ? 'morsels45 Premium' : 'Premium'}</b>
+                      <span className="text-xs text-[var(--text-dim)]">{unit.height >= 90 ? 'No ads. A smarter assistant. See what Premium adds.' : 'No ads. See Premium'}</span>
+                    </Link>
+                  ) : null}
+                  <iframe
+                    {...extra}
+                    data-ad={name}
+                    title="Advertisement"
+                    width={unit.width}
+                    height={unit.height}
+                    scrolling="no"
+                    sandbox={AD_SANDBOX}
+                    referrerPolicy="origin"
+                    src={`/ad-frame?u=${name}`}
+                    loading="lazy"
+                    hidden={!!empty[name]}
+                    className="max-w-full border-0"
+                  />
+                </span>
               )
             })}
           </div>
