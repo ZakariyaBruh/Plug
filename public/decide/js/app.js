@@ -4478,7 +4478,6 @@
       : Math.min(Engine.MAX_QUESTIONS, Data.QUESTIONS.length));
     paintProgress();
     $('q-text').textContent = q.text;
-    DotStage.ask(q.tag, !!q.neither);
     swapQuestion();
     $('yes-icon').textContent = q.yesIcon;
     $('yes-label').textContent = q.yes;
@@ -4574,7 +4573,6 @@
     qLeave(value === 'yes' ? -1 : value === 'no' ? 1 : 0);
 
     var answeredTag = current.tag;
-    DotStage.answer(answeredTag, value);
     game.answer(current.tag, value);
     step();
     saveResume();
@@ -11388,18 +11386,6 @@
       '<g class="fx-frost"><path d="M9 13l4 4m0-4l-4 4M35 11l4 4m0-4l-4 4M21 43v0"/><circle cx="37" cy="31" r="1.3"/><circle cx="11" cy="34" r="1.3"/></g>' +
       '<g class="fx-bubble"><circle cx="15" cy="34" r="2"/><circle cx="31" cy="30" r="1.6"/><circle cx="24" cy="38" r="2.2"/><circle cx="35" cy="37" r="1.3"/></g>' +
       '<g class="fx-flame"><path d="M17 8Q13 3 18 0Q17 4 21 6Q20 8 17 8Z"/><path d="M29 8Q26 4 30 1Q30 4 33 6Q32 8 29 8Z"/></g>' +
-      // The rest are for acting out a question (see DotStage): all hidden until a spec asks for them.
-      '<g class="fx-drip"><ellipse cx="9" cy="30" rx="1.6" ry="2.4"/><ellipse cx="39" cy="28" rx="1.4" ry="2.1"/><ellipse cx="24" cy="44" rx="1.5" ry="2.2"/></g>' +
-      '<g class="fx-crumbs"><path d="M8 18l2.4-1 .8 2.4z"/><path d="M38 14l2.2 1.2-1.6 1.8z"/><path d="M41 28l2.2-.6.2 2.4z"/><path d="M6 31l2.4.4-1.2 2z"/></g>' +
-      '<g class="fx-hearts"><path d="M10 12c-2.6-1.8-3-3.6-1.4-4.5.8-.4 1.4 0 1.4.8 0-.8.6-1.2 1.4-.8 1.6.9 1.2 2.7-1.4 4.5z"/><path d="M38 9c-2-1.4-2.3-2.8-1.1-3.5.6-.3 1.1 0 1.1.6 0-.6.5-.9 1.1-.6 1.2.7.9 2.1-1.1 3.5z"/></g>' +
-      '<g class="fx-spark"><path d="M8 10l1 2.6 2.6 1-2.6 1-1 2.6-1-2.6-2.6-1 2.6-1z"/><path d="M40 16l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/><path d="M36 4l.6 1.5 1.5.6-1.5.6-.6 1.5-.6-1.5-1.5-.6 1.5-.6z"/></g>' +
-      '<g class="fx-coins"><circle cx="9" cy="14" r="3"/><circle cx="39" cy="11" r="2.6"/><circle cx="24" cy="2" r="2.4"/></g>' +
-      '<g class="fx-bolt"><path d="M2 20h8M0 27h9M3 34h7"/><path d="M40 4l-4 7h4l-3 6"/></g>' +
-      '<g class="fx-sweat"><path d="M8 17Q5.4 21 8 22.6Q10.6 21 8 17Z"/><path d="M41 13Q38.8 16.4 41 17.8Q43.2 16.4 41 13Z"/></g>' +
-      '<g class="fx-salt"><rect x="9" y="4" width="2" height="2"/><rect x="21" y="0" width="2" height="2"/><rect x="34" y="5" width="2" height="2"/><rect x="40" y="14" width="2" height="2"/><rect x="5" y="20" width="2" height="2"/></g>' +
-      '<g class="fx-leaf"><path d="M14 5Q9 3 7 8Q12 9 14 5Z"/><path d="M34 4Q39 2 41 7Q36 8 34 4Z"/></g>' +
-      '<g class="fx-zzz"><path d="M34 6h6l-6 6h6" /><path d="M40 0h4l-4 4h4"/></g>' +
-      '<g class="fx-cutlery"><path d="M3 12v10M1 12v4a2 2 0 0 0 4 0v-4M3 22v8"/><path d="M45 12c-2 1-3 4-3 8h3z M45 20v10"/></g>' +
       '</g>' +
       '<g class="dot-love"><path d="M18 26.5C14.3 24 13.8 21.4 15.9 20.2C17 19.6 18 20.2 18 21.2C18 20.2 19 19.6 20.1 20.2C22.2 21.4 21.7 24 18 26.5Z"/><path d="M30 26.5C26.3 24 25.8 21.4 27.9 20.2C29 19.6 30 20.2 30 21.2C30 20.2 31 19.6 32.1 20.2C34.2 21.4 33.7 24 30 26.5Z"/></g>' +
       '<g class="dot-wink"><path d="M27.5 24Q30 20.5 32.5 24"/></g>' +
@@ -11455,143 +11441,6 @@
   })();
   Array.prototype.forEach.call(document.querySelectorAll('.mascot'), Dot.mount);
 
-
-  /* ------------------------------------------------------------ Dot's stage */
-  /*
-   * DOT ACTS OUT EVERY QUESTION. A big Dot above the question does two things:
-   *
-   *   asking     it imagines both answers in turn, faintly: a drink melts, a hot
-   *              thing steams, then the other side. A preview of the choice that
-   *              is in the words.
-   *   answering  it commits: yes to a drink and Dot melts into a puddle; no to
-   *              sweet and it gets salted; yes to quick and it dashes off.
-   *
-   * One spec per question per reply, in the table below (all 33 questions, and the
-   * middle reply where a question has one). It is decoration: aria-hidden, and
-   * under reduced motion it keeps the colour change and nothing else.
-   * Animations are Web Animations on the body, so they stack over the mood
-   * ones instead of fighting the stylesheet.
-   */
-  var DotStage = (function () {
-    var C = { water: '#62b6ea', ice: '#8ccbf4', fire: '#e8573b', chili: '#d92d2d', cream: '#efe6d2', gold: '#e2a63a', cheese: '#f6d453', sea: '#6fd0c8', pink: '#f7a8c9', leaf: '#92d78d', choc: '#8a5a3c', fruit: '#ef6f6f', warm: '#e9b678', meat: '#c9735b', grey: '#b9b4ad', sun: '#ffd45e', lilac: '#c9b8e6', mint: '#9fe3c8', bread: '#e0b36a' };
-    var K = function (list) { return list.map(function (t, i) { return { transform: t, offset: i / (list.length - 1) }; }); };
-    // Body animations. Origin is the bottom centre, so squashes sit on the ground.
-    var A = {
-      melt: { d: 1900, k: [ 'scale(1,1)', 'scale(1.08,.9)', 'scale(1.55,.3) translateY(10%)', 'scale(1.5,.34) translateY(10%)', 'scale(.9,1.14)', 'scale(1,1)' ] },
-      stand: { d: 900, k: [ 'scale(1,1)', 'scale(.88,1.16)', 'scale(.9,1.12)', 'scale(1,1)' ] },
-      shiver: { d: 1100, k: [ 'translateX(0)', 'translateX(-2.5%)', 'translateX(2.5%)', 'translateX(-2.5%)', 'translateX(2.5%)', 'translateX(-2%)', 'translateX(2%)', 'translateX(0)' ] },
-      sizzle: { d: 1200, k: [ 'scale(1)', 'scale(1.06) translateX(-2%)', 'scale(.98) translateX(2%)', 'scale(1.08) translateX(-2%)', 'scale(.98) translateX(2%)', 'scale(1.06)', 'scale(1)' ] },
-      puff: { d: 1100, k: [ 'scale(1)', 'scale(1.32,1.24)', 'scale(1.26,1.2)', 'scale(1)' ] },
-      shrink: { d: 1000, k: [ 'scale(1)', 'scale(.74)', 'scale(.78)', 'scale(1)' ] },
-      hop: { d: 1100, k: [ 'translateY(0) scale(1,1)', 'translateY(0) scale(1.1,.86)', 'translateY(-26%) scale(.92,1.12)', 'translateY(0) scale(1.12,.84)', 'translateY(-12%)', 'translateY(0) scale(1,1)' ] },
-      dash: { d: 1100, k: [ 'translateX(0) scale(1)', 'translateX(-10%) scale(.9,1.1)', 'translateX(70%) scale(1.3,.8)', 'translateX(-60%) scale(1.3,.8)', 'translateX(0) scale(1)' ] },
-      slow: { d: 1800, k: [ 'rotate(0)', 'rotate(-9deg) translateX(-4%)', 'rotate(9deg) translateX(4%)', 'rotate(-4deg)', 'rotate(0)' ] },
-      chomp: { d: 1000, k: [ 'scale(1)', 'scale(1.12,.74)', 'scale(.96,1.08)', 'scale(1.12,.74)', 'scale(.96,1.08)', 'scale(1)' ] },
-      stretch: { d: 1300, k: [ 'scale(1)', 'scale(.78,1.42)', 'scale(.74,1.5)', 'scale(1.18,.78)', 'scale(.96,1.06)', 'scale(1)' ] },
-      wobble: { d: 1400, k: [ 'scale(1)', 'scale(1.14,.86)', 'scale(.9,1.12)', 'scale(1.08,.92)', 'scale(.96,1.05)', 'scale(1)' ] },
-      spin: { d: 1000, k: [ 'rotate(0) scale(1)', 'rotate(180deg) scale(.92)', 'rotate(360deg) scale(1)' ] },
-      squish: { d: 1000, k: [ 'scale(1)', 'scale(1.3,.62)', 'scale(1.2,.72)', 'scale(.94,1.08)', 'scale(1)' ] },
-      nod: { d: 1100, k: [ 'translateY(0) scale(1)', 'translateY(8%) scale(1.04,.94)', 'translateY(0)', 'translateY(8%) scale(1.04,.94)', 'translateY(0) scale(1)' ] },
-      sway: { d: 1500, k: [ 'rotate(0)', 'rotate(-7deg) translateX(-3%)', 'rotate(7deg) translateX(3%)', 'rotate(-5deg)', 'rotate(0)' ] },
-      tilt: { d: 900, k: [ 'rotate(0)', 'rotate(15deg)', 'rotate(13deg)', 'rotate(0)' ] },
-      shake: { d: 800, k: [ 'translateX(0)', 'translateX(-9%)', 'translateX(9%)', 'translateX(-7%)', 'translateX(7%)', 'translateX(0)' ] },
-      buzz: { d: 1200, k: [ 'translate(0,0)', 'translate(-1.5%,1%)', 'translate(1.5%,-1%)', 'translate(-1.5%,-1%)', 'translate(1.5%,1%)', 'translate(-1.5%,1%)', 'translate(1.5%,-1%)', 'translate(0,0)' ] },
-      grow: { d: 1100, k: [ 'scale(.55)', 'scale(1.18)', 'scale(.96)', 'scale(1)' ] },
-      two: { d: 1100, k: [ 'translateX(0) scale(1)', 'translateX(-16%) scale(.92)', 'translateX(16%) scale(.92)', 'translateX(0) scale(1)' ] },
-      hug: { d: 1100, k: [ 'scale(1)', 'scale(.84,.9)', 'scale(.86,.92)', 'scale(1)' ] }
-    };
-    // y = what Dot does on the first reply, n = the second, m = the middle one.
-    // a body animation, t the tint, f the extras shown, m the face.
-    var S = {
-      drink:     { y: { a: 'melt', t: C.water, f: 'drip bubble puddle', m: 'surprised' }, n: { a: 'stand', t: C.cream, f: 'cutlery', m: 'happy' } },
-      sweet:     { y: { a: 'spin', t: C.pink, f: 'spark', m: 'love' }, n: { a: 'shake', t: C.cream, f: 'salt', m: 'happy' } },
-      hot:       { y: { a: 'sizzle', t: C.fire, f: 'steam sweat', m: 'surprised' }, n: { a: 'shiver', t: C.ice, f: 'frost', m: 'sad' }, m: { a: 'wobble', t: C.lilac, f: '', m: 'thinking' } },
-      light:     { y: { a: 'shrink', t: C.mint, f: 'spark', m: 'happy' }, n: { a: 'puff', t: C.warm, f: 'cutlery', m: 'happy' } },
-      meat:      { y: { a: 'chomp', t: C.meat, f: 'cutlery', m: 'open' }, n: { a: 'grow', t: C.leaf, f: 'leaf', m: 'happy' } },
-      spicy:     { y: { a: 'sizzle', t: C.chili, f: 'flame sweat', m: 'surprised' }, n: { a: 'sway', t: C.mint, f: 'frost', m: 'happy' } },
-      crunchy:   { y: { a: 'chomp', t: C.bread, f: 'crumbs', m: 'open' }, n: { a: 'squish', t: C.cream, f: 'bubble', m: 'love' }, m: { a: 'tilt', t: C.grey, f: '', m: 'shrug' } },
-      cheesy:    { y: { a: 'stretch', t: C.cheese, f: 'drip', m: 'love' }, n: { a: 'shake', t: C.grey, f: '', m: 'shrug' } },
-      handheld:  { y: { a: 'hop', t: C.warm, f: 'crumbs', m: 'happy' }, n: { a: 'stand', t: C.cream, f: 'cutlery', m: 'happy' } },
-      soupy:     { y: { a: 'wobble', t: C.warm, f: 'steam drip', m: 'love' }, n: { a: 'stand', t: C.cream, f: '', m: 'happy' } },
-      fried:     { y: { a: 'sizzle', t: C.gold, f: 'bubble crumbs', m: 'surprised' }, n: { a: 'hop', t: C.leaf, f: 'leaf', m: 'happy' } },
-      seafood:   { y: { a: 'sway', t: C.sea, f: 'bubble', m: 'happy' }, n: { a: 'nod', t: C.warm, f: '', m: 'happy' } },
-      bready:    { y: { a: 'puff', t: C.bread, f: 'crumbs', m: 'love' }, n: { a: 'shrink', t: C.cream, f: '', m: 'happy' } },
-      chicken:   { y: { a: 'chomp', t: C.gold, f: 'crumbs', m: 'open' }, n: { a: 'shake', t: C.grey, f: '', m: 'shrug' } },
-      chocolate: { y: { a: 'melt', t: C.choc, f: 'drip hearts puddle', m: 'love' }, n: { a: 'shake', t: C.cream, f: '', m: 'shrug' } },
-      fruity:    { y: { a: 'hop', t: C.fruit, f: 'spark hearts', m: 'happy' }, n: { a: 'nod', t: C.cream, f: '', m: 'happy' } },
-      comfort:   { y: { a: 'sway', t: C.warm, f: 'hearts', m: 'love' }, n: { a: 'hop', t: C.mint, f: 'spark', m: 'happy' }, m: { a: 'tilt', t: C.grey, f: '', m: 'shrug' } },
-      quick:     { y: { a: 'dash', t: C.sun, f: 'bolt', m: 'surprised' }, n: { a: 'slow', t: C.lilac, f: 'zzz', m: 'sleepy' } },
-      healthy:   { y: { a: 'hop', t: C.leaf, f: 'spark leaf', m: 'happy' }, n: { a: 'spin', t: C.pink, f: 'hearts', m: 'love' } },
-      homemade:  { y: { a: 'nod', t: C.warm, f: 'hearts steam', m: 'happy' }, n: { a: 'dash', t: C.sun, f: 'bolt', m: 'happy' } },
-      shareable: { y: { a: 'two', t: C.pink, f: 'hearts', m: 'happy' }, n: { a: 'hug', t: C.cream, f: '', m: 'happy' } },
-      caffeine:  { y: { a: 'buzz', t: C.choc, f: 'bolt sweat', m: 'surprised' }, n: { a: 'slow', t: C.lilac, f: 'zzz', m: 'sleepy' } },
-      breakfast: { y: { a: 'hop', t: C.sun, f: 'spark', m: 'happy' }, n: { a: 'tilt', t: C.cream, f: '', m: 'shrug' } },
-      messy:     { y: { a: 'squish', t: C.choc, f: 'drip crumbs', m: 'celebrate' }, n: { a: 'stand', t: C.cream, f: 'spark', m: 'happy' } },
-      carby:     { y: { a: 'puff', t: C.bread, f: 'crumbs', m: 'love' }, n: { a: 'shrink', t: C.leaf, f: 'leaf', m: 'happy' } },
-      cheap:     { y: { a: 'shrink', t: C.mint, f: 'coins', m: 'happy' }, n: { a: 'hop', t: C.gold, f: 'coins spark', m: 'celebrate' } },
-      indulgent: { y: { a: 'puff', t: C.gold, f: 'spark hearts coins', m: 'celebrate' }, n: { a: 'sway', t: C.mint, f: '', m: 'happy' } },
-      veg:       { y: { a: 'grow', t: C.leaf, f: 'leaf spark', m: 'happy' }, n: { a: 'chomp', t: C.meat, f: '', m: 'open' } },
-      // the five asked last
-      beef:      { y: { a: 'chomp', t: C.meat, f: 'cutlery', m: 'open' }, n: { a: 'shake', t: C.grey, f: '', m: 'shrug' } },
-      pork:      { y: { a: 'puff', t: C.pink, f: 'steam', m: 'happy' }, n: { a: 'shake', t: C.cream, f: '', m: 'shrug' } },
-      egg:       { y: { a: 'hop', t: C.sun, f: 'spark', m: 'happy' }, n: { a: 'stand', t: C.cream, f: '', m: 'happy' } },
-      dairy:     { y: { a: 'wobble', t: C.cream, f: 'drip hearts', m: 'love' }, n: { a: 'shrink', t: C.grey, f: '', m: 'shrug' } },
-      root:      { y: { a: 'grow', t: C.choc, f: 'crumbs', m: 'happy' }, n: { a: 'hop', t: C.leaf, f: 'leaf', m: 'happy' } }
-    };
-    var SHRUG = { a: 'tilt', t: '', f: '', m: 'shrug' };
-
-    var node = null, timer = 0, holdUntil = 0, askTimers = [], playing = null;
-    function el() { return node || (node = document.getElementById('q-stage-dot')); }
-    function body() { var n = el(); return n && n.querySelector('.dot-body'); }
-    function clear() {
-      var n = el(); if (!n) return;
-      clearTimeout(timer); askTimers.forEach(clearTimeout); askTimers = [];
-      if (playing) { try { playing.cancel(); } catch (err) { /* gone */ } playing = null; }
-      n.removeAttribute('data-fx'); n.removeAttribute('data-tinted'); n.removeAttribute('data-ghost');
-    }
-    function play(spec, ghost) {
-      var n = el(); if (!n || !spec) return 0;
-      Dot.mount(n);
-      clear();
-      if (spec.t) { n.style.setProperty('--tint', spec.t); n.setAttribute('data-tinted', ''); }
-      n.setAttribute('data-fx', spec.f || '');
-      if (ghost) n.setAttribute('data-ghost', '');
-      if (spec.m) Dot.mood(n, spec.m, ghost ? 560 : 1500);
-      var def = A[spec.a], b = body(), ms = 0;
-      if (def && b && !reduceMotion && b.animate) {
-        ms = Math.round(def.d * (ghost ? 0.55 : 1));
-        playing = b.animate(K(def.k), { duration: ms, easing: 'cubic-bezier(.4,0,.2,1)' });
-      } else ms = ghost ? 520 : 1100;
-      timer = setTimeout(function () { clear(); }, ms + 120);
-      return ms + 120;
-    }
-    function rest() { clear(); holdUntil = 0; }
-    return {
-      // A new question: imagine each reply, faintly, one after the other.
-      ask: function (tag, hasMiddle) {
-        var n = el(); if (!n) return;
-        var row = S[tag]; if (!row) return;
-        var wait = Math.max(0, holdUntil - Date.now());
-        askTimers.forEach(clearTimeout); askTimers = [];
-        askTimers.push(setTimeout(function () {
-          var t1 = play(row.y, true);
-          askTimers.push(setTimeout(function () { var t2 = play(row.n, true); holdUntil = 0; }, t1));
-        }, wait + 250));
-      },
-      // A reply: commit to it.
-      answer: function (tag, value) {
-        var row = S[tag]; if (!row) return;
-        var spec = value === 'yes' ? row.y : value === 'no' ? row.n : value === 'neither' ? (row.m || SHRUG) : SHRUG;
-        var ms = play(spec, false);
-        holdUntil = Date.now() + ms;
-      },
-      rest: rest,
-      table: S,
-      bodies: A
-    };
-  })();
-
-  window.M45.stage = DotStage;
 
   /* ---------------------------------------------------------------- Buddy */
   /*

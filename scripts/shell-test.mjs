@@ -216,23 +216,15 @@ for (const [name, text] of [['js/consent.js', consentJs], ['ConsentBar', consent
 }
 check('GA4 and replay are added only after consent', /allowed !== true\) return/.test(readFileSync(join(root, '..', '..', 'src/routes/__root.tsx'), 'utf8')) && !/googletagmanager[^`]*<\/script>/.test(readFileSync(join(root, '..', '..', 'src/routes/__root.tsx'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').split('Analytics')[0]))
 
-// Dot acts out every question: a spec for each question's tag, for both replies, and for
-// the middle one wherever the question has a middle. A question added without one is a
-// question where Dot just stands there, which is the thing this exists to prevent.
+// A shared result names each question in one base-36 character, so there can be at most 36.
+// (Dot used to act out each question on a big stage above it; that was taken out, and the
+// checks below make sure it stays out.)
 const dataJs = read('js/data.js')
 const qStart = dataJs.indexOf('var QUESTIONS = ['), qBlock = dataJs.slice(qStart, dataJs.indexOf('\n  ];', qStart))
 const qLines = qBlock.split('\n').filter((l) => /^\s*\{[^}]*\btag: '[a-z]+'/.test(l))
-const stageBlock = app.slice(app.indexOf('var DotStage = (function'), app.indexOf('window.M45.stage = DotStage'))
 check('the questions are found', qLines.length >= 30, `found ${qLines.length}`)
 check('a shared result can still name each question in one base-36 character', qLines.length <= 36, `${qLines.length} questions`)
-for (const line of qLines) {
-  const tag = (line.match(/\btag: '([a-z]+)'/) || [])[1]
-  const spec = (stageBlock.match(new RegExp(`\\b${tag}:\\s+\\{ y: \\{[^\\n]*`)) || [''])[0]
-  const needsMiddle = /\bneither:/.test(line)
-  check(`Dot has a move for "${tag}", both ways${needsMiddle ? ' and in the middle' : ''}`, /\by: \{/.test(spec) && /\bn: \{/.test(spec) && (!needsMiddle || /\bm: \{ a:/.test(spec)), spec.slice(0, 80))
-}
-check('the stage is on the question screen, hidden from assistive tech', /id="q-stage"[^>]*aria-hidden="true"/.test(html))
-check('and the question hands it each new question and each reply', /DotStage\.ask\(q\.tag/.test(app) && /DotStage\.answer\(answeredTag, value\)/.test(app))
+check('there is no acting-out stage above the question', !/DotStage|q-stage/.test(app + html + css))
 
 // The games: loaded on demand, drawn rather than typed, and every sprite they name exists.
 const playJs = read('js/play.js')

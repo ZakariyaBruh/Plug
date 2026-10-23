@@ -7781,67 +7781,6 @@ body.has-dock.is-playing .app { min-height: calc(100dvh - var(--topbar-h) - var(
 
 
 
-/* -------------------------------------------------------------- Dot's stage ---
-   A big Dot above the question that acts out each question and each reply (the
-   specs are in app.js, DotStage). Decoration only, and it keeps its footing: the
-   body squashes from its bottom edge, and everything it throws off is drawn in
-   the SVG, so nothing here can push the question around. */
-.q-stage { position: relative; display: grid; place-items: end center; height: 6.75rem; margin: 0 0 var(--s2); overflow: visible; }
-.q-stage-dot { width: 5.25rem; height: 5.25rem; position: relative; z-index: 1; --tint: var(--paper); }
-.q-stage-dot .dot-body { transform-box: fill-box; transform-origin: 50% 100%; }
-.q-stage-dot[data-tinted] .dot-face { fill: var(--tint); transition: fill .25s var(--out); }
-.q-stage-ground { position: absolute; left: 50%; bottom: .15rem; width: 5.6rem; height: .5rem; margin-left: -2.8rem; border-radius: 50%; background: rgb(0 0 0 / .35); filter: blur(3px); }
-.q-stage-dot[data-tinted] ~ .q-stage-ground { opacity: .8; }
-.q-stage-dot[data-tinted] .dot-blush { opacity: .3; }
-@media (max-height: 40rem) { .q-stage { height: 5.25rem; } .q-stage-dot { width: 4rem; height: 4rem; }}
-
-/* What it throws off. Each is a group in the Dot's SVG; none shows until a spec names it. */
-.q-stage-dot .dot-fx > * { display: none; transform-box: fill-box; transform-origin: 50% 50%; }
-.q-stage-dot[data-ghost] .dot-fx { opacity: .55; }
-.q-stage-dot .fx-drip ellipse, .q-stage-dot .fx-bubble circle { fill: var(--tint, #fff); opacity: .85; }
-.q-stage-dot .fx-crumbs path { fill: #d9a95b; }
-.q-stage-dot .fx-hearts path { fill: #ff7a9a; }
-.q-stage-dot .fx-spark path { fill: #ffe27a; }
-.q-stage-dot .fx-coins circle { fill: #ffd45e; stroke: #b98a1a; stroke-width: 1; }
-.q-stage-dot .fx-bolt path { fill: none; stroke: #ffd45e; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.q-stage-dot .fx-sweat path { fill: #bfe6ff; }
-.q-stage-dot .fx-salt rect { fill: #fff; }
-.q-stage-dot .fx-leaf path { fill: #6fcf6a; }
-.q-stage-dot .fx-zzz path { fill: none; stroke: #c9b8e6; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
-.q-stage-dot .fx-cutlery path { fill: none; stroke: rgb(255 255 255 / .8); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-.q-stage-dot .fx-puddle { fill: var(--tint, #62b6ea); opacity: .55; }
-
-.q-stage-dot[data-fx~="puddle"] .fx-puddle { display: block; animation: st-puddle 1.9s ease-in-out both; }
-.q-stage-dot[data-fx~="drip"] .fx-drip { display: block; animation: st-drip 1.1s ease-in 2 both; }
-.q-stage-dot[data-fx~="bubble"] .fx-bubble { display: block; animation: fx-rise 1.1s ease-in infinite; }
-.q-stage-dot[data-fx~="steam"] .fx-steam { display: block; animation: fx-rise 1.1s ease-out infinite; }
-.q-stage-dot[data-fx~="frost"] .fx-frost { display: block; animation: fx-twinkle 1s ease-in-out infinite; }
-.q-stage-dot[data-fx~="flame"] .fx-flame { display: block; animation: fx-flicker .35s ease-in-out infinite alternate; transform-origin: 50% 100%; }
-.q-stage-dot[data-fx~="crumbs"] .fx-crumbs { display: block; animation: st-crumb .9s ease-out 2 both; }
-.q-stage-dot[data-fx~="hearts"] .fx-hearts { display: block; animation: st-float 1.3s ease-out both; }
-.q-stage-dot[data-fx~="spark"] .fx-spark { display: block; animation: st-twinkle .7s ease-in-out infinite; }
-.q-stage-dot[data-fx~="coins"] .fx-coins { display: block; animation: st-coin 1.2s ease-out both; }
-.q-stage-dot[data-fx~="bolt"] .fx-bolt { display: block; animation: st-bolt .3s steps(2) infinite; }
-.q-stage-dot[data-fx~="sweat"] .fx-sweat { display: block; animation: st-sweat .8s ease-in infinite; }
-.q-stage-dot[data-fx~="salt"] .fx-salt { display: block; animation: st-salt 1s ease-in both; }
-.q-stage-dot[data-fx~="leaf"] .fx-leaf { display: block; animation: st-float 1.2s ease-out both; }
-.q-stage-dot[data-fx~="zzz"] .fx-zzz { display: block; animation: st-float 1.6s ease-out both; }
-.q-stage-dot[data-fx~="cutlery"] .fx-cutlery { display: block; animation: st-in .5s var(--spring) both; }
-@keyframes st-puddle { 0% { transform: scaleX(.4); opacity: 0; } 30%, 75% { transform: scaleX(1.5); opacity: .6; } 100% { transform: scaleX(.6); opacity: 0; } }
-@keyframes st-drip { 0% { transform: translateY(-5px); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(9px); opacity: 0; } }
-@keyframes st-crumb { 0% { transform: translateY(-3px) rotate(0); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(10px) rotate(160deg); opacity: 0; } }
-@keyframes st-float { 0% { transform: translateY(5px) scale(.5); opacity: 0; } 30% { opacity: 1; transform: translateY(0) scale(1); } 100% { transform: translateY(-9px) scale(1); opacity: 0; } }
-@keyframes st-twinkle { 0%, 100% { transform: scale(.4) rotate(0); opacity: .2; } 50% { transform: scale(1.15) rotate(40deg); opacity: 1; } }
-@keyframes st-coin { 0% { transform: translateY(-6px) scale(.5); opacity: 0; } 30% { opacity: 1; transform: translateY(0) scale(1); } 70% { transform: translateY(-2px); opacity: 1; } 100% { transform: translateY(-8px); opacity: 0; } }
-@keyframes st-bolt { 0% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(-4px); opacity: .5; } }
-@keyframes st-sweat { 0% { transform: translateY(-2px); opacity: 0; } 30% { opacity: 1; } 100% { transform: translateY(8px); opacity: 0; } }
-@keyframes st-salt { 0% { transform: translateY(-8px); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(18px); opacity: 0; } }
-@keyframes st-in { from { transform: scale(.4); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) {
-  .q-stage-dot .dot-fx > * { animation: none !important; }
-  .q-stage-dot[data-fx] .dot-fx > * { opacity: .85; }}
-
-
 /* ------------------------------------------------------------ Play with Dot ---
    Rebuilt (js/play.js). The first set looked like everything else made fast:
    emoji on gradients, a glowing outline, a dark card. These are drawn in one hand:

@@ -107,7 +107,7 @@ Seven places, and `scripts/shell-test.mjs` fails until all of them agree:
   "your streak ends tonight". The game stars and bests on the picker are the
   addition that fits.
 
-## More questions, Dot acting them out, and the games rebuilt
+## More questions, and the games rebuilt
 
 - **The engine asks more, on purpose, and it measurably helps.** `scripts/accuracy-sweep.mjs`
   plays the whole catalogue with an answerer who gets one reply in twelve wrong. Before: the
@@ -124,11 +124,9 @@ Seven places, and `scripts/shell-test.mjs` fails until all of them agree:
   Somebody who shrugs at everything is still let go at six. `accuracy-test` now gates the noisy
   player too; `mood-test` is why the tolerant belief waits until question seven (it reordered the
   opening and stopped asking what people came in with).
-- **Dot acts out every question.** A big Dot above the question (`DotStage` in app.js) imagines
-  each reply faintly while the question is up, then commits to the one you pick: yes to a drink
-  and it melts to a puddle, no to sweet and it gets salted, yes to quick and it dashes off. All 33
-  questions, both replies, and the middle where there is one; `shell-test` fails if a question has
-  no move. Web Animations on the body, SVG extras, nothing that can move the question around.
+- **Dot no longer acts out the questions.** A big Dot above each question that melted, salted
+  and dashed off was tried and taken out (it was disliked); the question screen is back to the
+  small Dot on the progress track and the words. `shell-test` fails if the stage comes back.
 - **Play with Dot, rebuilt as `js/play.js` + `js/sprites.js`, loaded on first use.** Ten games
   with rulebooks (survivor with perks, a springy climb, a real-physics merge jar, a bubble
   shooter with falling clusters, match-3 with specials, invaders with shields and a pot, an
