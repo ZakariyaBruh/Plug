@@ -23,9 +23,11 @@ export const adFramePage = (name: AdSize): string | null => {
   if (!unit || !adLive(unit)) return null
   const options = JSON.stringify({ key: unit.key, format: 'iframe', height: unit.height, width: unit.width, params: {} })
   return (
-    '<!doctype html><html><head><meta charset="utf-8"><meta name="referrer" content="origin">' +
+    // No <head> or <html> tags on purpose: the host adds its own page-view script to the head of any
+    // page it serves, and an ad frame is not a page view. The parser builds the head from the meta tags.
+    '<!doctype html><meta charset="utf-8"><meta name="referrer" content="origin">' +
     `<meta name="viewport" content="width=${unit.width}">` +
-    '<style>html,body{margin:0;padding:0;overflow:hidden;background:transparent}</style></head><body>' +
+    '<style>html,body{margin:0;padding:0;overflow:hidden;background:transparent}</style><body>' +
     `<script>atOptions=${options};</script>` +
     `<script id="ad-src" src="${unit.src}"></script>` +
     // Tell the page that holds this frame what happened: 'filled' the moment anything is drawn,
@@ -35,7 +37,7 @@ export const adFramePage = (name: AdSize): string | null => {
     'function count(){return document.body.querySelectorAll(":not(script):not(style)").length}' +
     'try{new MutationObserver(function(){if(count())say("filled")}).observe(document.body,{childList:true,subtree:true})}catch(e){}' +
     'if(count())say("filled");setTimeout(function(){say(count()?"filled":"empty")},6000)})();</script>' +
-    '</body></html>'
+    '</body>'
   )
 }
 
