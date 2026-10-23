@@ -51,8 +51,8 @@ const html = adFramePage('mobile')
 check('the frame page asks for this site’s address as the referrer, and no more', /<meta name="referrer" content="origin">/.test(html))
 check('it reports back whether anything arrived', /m45ad/.test(html) && /"empty"/.test(html) && /"filled"/.test(html) && /"error"/.test(html))
 check('a size that is not a unit gets no page (the script cannot be chosen from the URL)', adFramePage('evil') === null && adFramePage('../x') === null)
-check('the frame loads the unit’s own script', html.includes('src="https://bauval.org/22/5854b8b6f2fdd21988e40b9eb9be56c6"'))
-check('and sets atOptions from the unit', /atOptions=\{"key":"5854b8b6f2fdd21988e40b9eb9be56c6","format":"iframe","height":50,"width":320/.test(html))
+check('the frame loads the unit’s own script', html.includes('src="https://bauval.org/22/84c0716c8abaa82649e86753f0334cd8"'))
+check('and sets atOptions from the unit', /atOptions=\{"key":"84c0716c8abaa82649e86753f0334cd8","format":"iframe","height":50,"width":320/.test(html))
 check('the sandbox grants scripts and real-click popups only', AD_SANDBOX === 'allow-scripts allow-popups allow-popups-to-escape-sandbox', AD_SANDBOX)
 check('and neither same-origin nor top navigation', !/same-origin|top-navigation/.test(AD_SANDBOX))
 
@@ -63,7 +63,7 @@ const files = ['src/lib/site.ts', 'src/components/AdSlot.tsx', 'public/decide/js
 for (const [name, key] of [['the 160x600 skyscraper', 'c34df66c2852fa155381e97d401a1a4a'], ['the native unit', 'd3500e59199e09eee4a23799c098b4e5'], ['the Social Bar', '081a53853ee78e59ce72a9333b3d4700']]) {
   check(`${name} is not used`, !files.includes(key))
 }
-check('the smart link is an opt-in constant, not a unit', SMARTLINK_URL === 'https://araplhn.org/4/c3b5fbe91c3b67d3648196f1c2b7711d' && !Object.values(AD_UNITS).some((u) => u.src === SMARTLINK_URL))
+check('the smart link is an opt-in constant, not a unit', SMARTLINK_URL === 'https://araplhn.org/4/fd1fabea155b5555cea9a2d25b525f86' && !Object.values(AD_UNITS).some((u) => u.src === SMARTLINK_URL))
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

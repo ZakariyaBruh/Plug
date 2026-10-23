@@ -7,11 +7,11 @@ member sees none.
 
 | Size | Used | Served from |
 |---|---|---|
-| 728x90 | wide screens, in a list | `https://bauval.org/22/79c3a17f…` |
-| 468x60 | wide screens | `…/22/08a0aa14…` |
-| 320x50 | phones | `…/22/5854b8b6…` |
-| 300x250 | the end of a page | `…/22/df667c7b…` |
-| 160x300 | the end of a page, wide | `…/22/31d2d666…` |
+| 728x90 | wide screens, in a list | `https://bauval.org/22/13578a9e…` |
+| 468x60 | wide screens | `…/22/e6a338e4…` |
+| 320x50 | phones | `…/22/84c0716c…` |
+| 300x250 | the end of a page | `…/22/47b83994…` |
+| 160x300 | the end of a page, wide | `…/22/ff664151…` |
 
 The same table is in `src/lib/site.ts` (`AD_UNITS`) and `public/decide/js/config.js`;
 `shell-test` fails if they disagree. Handed over and **deliberately not used**: the
@@ -55,7 +55,7 @@ each size said.
 That means the network's script came back empty. From the build server **every** key (even a made-up
 one) returns an empty script from `bauval.org/22/<key>`, so this cannot be settled from the code.
 Check in Adsterra: the **site** is approved (not only the units being Active) and its domain is
-the one serving the app (`morsels45-app.whop.site`; a free subdomain is often not approved, a
+the one serving the app (`morsels45-app.whop.site`, spelled exactly so: the first set of units was created under `morsles45-app.whop.site`, a misspelling, and the network answered every request with an empty script; a free subdomain is often not approved, a
 domain of your own is); Statistics shows requests (if zero, something is blocking the script:
 try without an ad blocker or Brave shields) and impressions (requests with no impressions is no fill).
 
