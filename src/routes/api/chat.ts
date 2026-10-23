@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { ALL_DISHES } from '#/lib/dishes'
 import { askGemini } from '#/lib/gemini'
 import { askFree } from '#/lib/free-ai'
+import { localAnswer } from '#/lib/free-local'
 import { langLine } from '#/lib/lang'
 import { BONUS_CLAIMS_PER_DAY, BONUS_PER_CLAIM, premiumFor, spendOnStanding, standing, type Standing } from '#/lib/allowance'
 
@@ -12,8 +13,9 @@ const bonusOffer = (s: Standing) => ({ per: BONUS_PER_CLAIM, claimsLeft: Math.ma
 /*
  * /api/chat — the food assistant, in two tiers.
  *
- * STANDARD answers on free models that need no key — Pollinations, with LLM7 behind it (lib/free-ai.ts): three
- * questions a day per free Whop account, counted in the database, and what a
+ * STANDARD answers on free models that need no key — LLM7 and Pollinations, raced and health-checked (lib/free-ai.ts), and
+ * when none of them answers, a plain pick from the app's own menu (lib/free-local.ts), said to be what it is and not
+ * counted: three questions a day per free Whop account, counted in the database, and what a
  * Premium member can switch to for a quick answer. ADVANCED is Gemini, on this
  * app's own key, for Premium only: it knows your taste profile, can read a
  * photo, can look things up on the web, suggests where to take the
@@ -185,6 +187,11 @@ const SKILLS: Record<string, string> = {
   plan: 'They want a plan: lay it out day by day or course by course, one line each, and keep it realistic for a home cook.',
   cook: 'They are cooking right now: give short numbered steps with quantities and timings, and the one thing that most often goes wrong.',
   compare: 'They are choosing between options: give a clear pick first, then the two or three reasons that decide it.',
+  swap: 'They are missing or avoiding an ingredient: say what to use instead, in what quantity, and what changes about the dish, and if nothing really replaces it, say so and offer the nearest dish that does without.',
+  scale: 'They want a recipe made for a different number of people: give the new quantities for that number, rounded to things a person can measure, then a short shopping list of only what they would need to buy.',
+  budget: 'They are cooking on a budget: keep to cheap staples, give a rough cost per portion in the currency they used (or say the cost is approximate and name no currency), and say where the saving comes from.',
+  leftovers: 'They have leftovers or odd ingredients: give two or three ideas ranked by effort, using what they have named and as little else as possible, and say how long each takes.',
+  pair: 'They want something to go with what they are having: a drink, a side and a pudding if it fits, one pick each, with the reason in a line.',
 }
 
 /*
@@ -218,11 +225,35 @@ function advancedInstruction(profile: Profile, skill: string, search: boolean) {
     if (profile.rules.length) lines.push('Food rules they follow (never suggest anything that breaks these): ' + profile.rules.join('; '))
   }
   if (search) lines.push('', 'You can search the web. Use it for anything current or local (opening hours, new products, seasonal items) and say plainly when you used it.')
-  else lines.push('', 'After the answer, offer two or three short follow-ups they might actually tap next (under 45 characters each, written as what the person would say).')
+  else {
+    lines.push('', 'After the answer, offer two or three short follow-ups they might actually tap next (under 45 characters each, written as what the person would say).')
+    lines.push('When, and only when, you are giving them ONE complete recipe to cook, also fill in the recipe object (name, serves, minutes, every ingredient with its quantity, every step) so the app can offer to save it. For anything else leave it out.')
+  }
   return lines.join('\n')
 }
 
-type Reply = { reply: string; followups: string[]; sources: { title: string; url: string }[] }
+type Recipe = { name: string; serves: number; minutes: number | null; ingredients: string[]; steps: string[] }
+type Reply = { reply: string; followups: string[]; sources: { title: string; url: string }[]; recipe?: Recipe }
+
+function cleanRecipe(raw: unknown): Recipe | undefined {
+  if (!raw || typeof raw !== 'object') return undefined
+  const r = raw as Record<string, unknown>
+  const text = (v: unknown, n: number) => String(typeof v === 'string' ? v : '').replace(/[\r\n]+/g, ' ').trim().slice(0, n)
+  const list = (v: unknown, cap: number, each: number) => (Array.isArray(v) ? v.map((x) => text(x, each)).filter(Boolean).slice(0, cap) : [])
+  const name = text(r.name, 120)
+  const ingredients = list(r.ingredients, 40, 160)
+  const steps = list(r.steps, 30, 500)
+  if (!name || ingredients.length < 2 || steps.length < 2) return undefined
+  const serves = Math.round(Number(r.serves))
+  const minutes = Math.round(Number(r.minutes))
+  return {
+    name,
+    serves: Number.isFinite(serves) && serves > 0 ? Math.min(serves, 50) : 2,
+    minutes: Number.isFinite(minutes) && minutes > 0 ? Math.min(minutes, 1440) : null,
+    ingredients,
+    steps,
+  }
+}
 
 function readGemini(payload: unknown, structured: boolean): Reply | null {
   const cand = (payload as { candidates?: { content?: { parts?: { text?: string }[] }; groundingMetadata?: { groundingChunks?: { web?: { uri?: string; title?: string } }[] } }[] } | null)
@@ -238,14 +269,14 @@ function readGemini(payload: unknown, structured: boolean): Reply | null {
     .slice(0, 4)
   if (!structured) return { reply: text, followups: [], sources }
   try {
-    const parsed = JSON.parse(text) as { reply?: unknown; followups?: unknown }
+    const parsed = JSON.parse(text) as { reply?: unknown; followups?: unknown; recipe?: unknown }
     const reply = typeof parsed.reply === 'string' ? parsed.reply.trim() : ''
     const followups = (Array.isArray(parsed.followups) ? parsed.followups : [])
       .filter((x): x is string => typeof x === 'string')
       .map((x) => x.trim().slice(0, 60))
       .filter(Boolean)
       .slice(0, 3)
-    if (reply) return { reply, followups, sources }
+    if (reply) return { reply, followups, sources, recipe: cleanRecipe(parsed.recipe) }
   } catch {
     /* the model ignored the format: the text is still an answer */
   }
@@ -318,6 +349,17 @@ export const Route = createFileRoute('/api/chat')({
                       properties: {
                         reply: { type: 'STRING' },
                         followups: { type: 'ARRAY', items: { type: 'STRING' } },
+                        recipe: {
+                          type: 'OBJECT',
+                          properties: {
+                            name: { type: 'STRING' },
+                            serves: { type: 'INTEGER' },
+                            minutes: { type: 'INTEGER' },
+                            ingredients: { type: 'ARRAY', items: { type: 'STRING' } },
+                            steps: { type: 'ARRAY', items: { type: 'STRING' } },
+                          },
+                          required: ['name', 'ingredients', 'steps'],
+                        },
                       },
                       required: ['reply'],
                     },
@@ -331,11 +373,15 @@ export const Route = createFileRoute('/api/chat')({
             attemptMs: 26000,
             timeoutMs: 30000,
           })
-          if (!res) return json({ error: lastStatus === 429 ? 'busy' : 'unavailable' }, 502)
-          const out = readGemini(await res.json().catch(() => null), !search)
+          const out = res ? readGemini(await res.json().catch(() => null), !search) : null
           if (!out) {
-            console.error('chat: advanced answer had no text')
-            return json({ error: 'no_answer' }, 502)
+            if (res) console.error('chat: advanced answer had no text')
+            // Gemini is busy or down. A Premium member is not told to wait: the free model
+            // answers instead, and the page says plainly that this one came from Standard.
+            // (Nothing goes the other way: Standard never reaches the paid key.)
+            const stand = await askFree(instruction() + langLine(want) + '\nAlways answer in at least two complete sentences, and give the reason for a pick.', turns)
+            if (stand?.text) return json({ reply: stand.text, followups: [], sources: [], mode: 'standard', degraded: 'advanced_busy', left: null, limit: mine.limit })
+            return json({ error: res ? 'no_answer' : lastStatus === 429 ? 'busy' : 'unavailable' }, 502)
           }
           return json({ ...out, mode: 'advanced', left: null, limit: mine.limit })
         }
@@ -352,7 +398,16 @@ export const Route = createFileRoute('/api/chat')({
         // The free model is terse when left alone ("Pizza."); a pick with a reason is the answer.
         const free = await askFree(system + '\nAlways answer in at least two complete sentences, and give the reason for a pick.', turns)
         const reply = free?.text ?? ''
-        if (!reply) return json({ error: 'busy' }, 502)
+        if (!reply) {
+          // No free model answered. A question that is plainly about what to eat (or about this
+          // app) is answered from the app's own menu and fact list instead, and said to be: the
+          // page marks it, and it is not counted, because it is not the assistant. Anything else
+          // is still "busy", because a menu has nothing to say to it.
+          const last = turns[turns.length - 1]?.text ?? ''
+          const local = localAnswer(last)
+          if (local) return json({ reply: local.text, left: mine.left, limit: mine.limit, mode: 'standard', degraded: local.kind, bonus: bonusOffer(mine) })
+          return json({ error: 'busy' }, 502)
+        }
 
         // Counted only now that there is an answer to give: a question the
         // model never answered is not one the visitor got.

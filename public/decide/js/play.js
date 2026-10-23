@@ -440,6 +440,7 @@
     open = true; back = document.activeElement;
     if (D.Buddy) D.Buddy.sync();
     root.hidden = false;
+    document.body.classList.add('is-games');
     root.classList.remove('is-in'); void root.offsetWidth; root.classList.add('is-in');
     var sh = D.shell(); if (sh && 'inert' in sh) sh.inert = true;
     if (which && SHELF.some(function (d) { return d.id === which; })) launch(which); else menu();
@@ -449,6 +450,7 @@
     if (!open) return;
     open = false; stop();
     root.hidden = true;
+    document.body.classList.remove('is-games');
     var sh = D.shell(); if (sh && 'inert' in sh && !document.body.classList.contains('is-landing')) sh.inert = false;
     if (D.Buddy) D.Buddy.sync();
     if (back && back.focus) try { back.focus(); } catch (err) { /* fine */ }

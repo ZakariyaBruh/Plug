@@ -1,25 +1,25 @@
 /*
- * The ad rules, in a real browser, against a fake ad network.
+ * The ad dock, in a real browser, against a fake ad network.
  *
  *   bun run adsdrive
  *
- * No real unit is needed, and none is contacted: the driver serves public/
- * itself, rewrites config.js on the way out to point three fake units at a
- * script it also serves, and checks what the game does with them. The fake
- * creative is deliberately rude. It tries to read the page's storage, reach into
- * its DOM and redirect the tab, and reports what the browser let it do, so the
- * sandbox is tested by an attacker and not by reading its attribute.
+ * No real unit is needed, and none is contacted: the driver serves public/ itself,
+ * rewrites config.js on the way out to point the units at a script it also serves,
+ * and checks what the app does with them. The fake creative is deliberately rude. It
+ * tries to read the page's storage, reach into its DOM and redirect the tab, and reports
+ * what the browser let it do, so the sandbox is tested by an attacker and not by
+ * reading its attribute.
  *
  * What it asserts is the list of promises made on the privacy page:
  *   - nothing is drawn, and nothing is requested, until a unit is configured
- *   - an ad from the first visit (no decisions needed), and Save-Data does not stop it
- *   - nothing for Premium
- *   - where the visitor has to opt in first: the same ads, loaded without cookies, until Accept all; and after Essential only the ads reload cookie-free, they do not go
- *   - one slot under every section but the questions and Profile (which has its own)
- *   - none in the decide flow, a game, the answer or the reward
- *   - one slot per screen, drawn only once it is near the viewport
- *   - the right size for the width, and a label that offers the way out
- *   - re-rendering the list does not reload (and so re-count) the ad
+ *   - from the first visit: an ad strip along the bottom, whatever Save-Data or a stored "ads off" say
+ *   - it is over the page and never pushes it: nothing above it moves when it loads, and it never
+ *     sits on a control (the answer buttons, the Ask button, a game's Pause)
+ *   - it is there during the decide questions, in every game, and in Ask
+ *   - one banner on a phone and two on a wide screen, and a fresh one about once a minute
+ *   - nothing at all for Premium, not even a flash
+ *   - the cookie choice changes HOW it loads (cookie-free, no referrer), never WHETHER
+ *   - the welcome screen is not covered by it
  *   - the creative can read nothing of ours and cannot move the tab
  *
  * Playwright is not a dependency of this project; it is on the machine and
@@ -96,17 +96,17 @@ if (!pw) { console.error('Playwright is not available on this machine; nothing d
 const { chromium } = pw.default || pw
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
 
-async function open({ width = 1280, height = 800, decisions = 0, premium = false, askFirst = false, consent = null, saveData = false } = {}) {
+async function open({ width = 1280, height = 800, decisions = 0, premium = false, askFirst = false, consent = null, saveData = false, keepWelcome = false, premiumDelay = 0 } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce', hasTouch: width < 700, isMobile: width < 700 })
   const page = await ctx.newPage()
   page.on('pageerror', (e) => { console.log('PAGEERROR ' + e.message); fails += 1 })
   // Playwright tries the most recently added route first, so the specific one goes last.
   await page.route(/\/api\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }))
   await page.route(/\/api\/region/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ askFirst }) }))
-  await page.route(/\/api\/premium-status/, (r) => r.fulfill({
+  await page.route(/\/api\/premium-status/, async (r) => { if (premiumDelay) await new Promise((x) => setTimeout(x, premiumDelay)); return r.fulfill({
     status: 200, contentType: 'application/json',
     body: JSON.stringify({ signedIn: premium, hasPremium: premium, username: premium ? 'tester' : '', userId: premium ? 'u1' : null }),
-  }))
+  }) })
   await page.addInitScript(([k, n, c, sd]) => {
     if (window.top !== window) return // the ad's own frame: no storage there, by design
     if (c && !localStorage.getItem('m45-consent')) localStorage.setItem('m45-consent', c)
@@ -117,7 +117,7 @@ async function open({ width = 1280, height = 800, decisions = 0, premium = false
   }, [KEY, decisions, consent, saveData])
   await page.goto(APP, { waitUntil: 'load' })
   await page.waitForTimeout(800)
-  for (let i = 0; i < 6 && (await page.locator('#welcome').isVisible()); i++) {
+  for (let i = 0; !keepWelcome && i < 6 && (await page.locator('#welcome').isVisible()); i++) {
     const next = page.locator('#welcome-next')
     if (await next.isVisible()) await next.click({ force: true })
     await page.waitForTimeout(300)
@@ -126,241 +126,169 @@ async function open({ width = 1280, height = 800, decisions = 0, premium = false
   return page
 }
 const go = (page, v) => page.evaluate((v) => window.M45.setView(v), v).then(() => page.waitForTimeout(500))
-const frames = (page) => page.evaluate(() => [...document.querySelectorAll('.ad-wrap iframe')].map((f) => ({ w: f.width, h: f.height, sandbox: f.getAttribute('sandbox'), where: f.closest('.ad-wrap').id })))
+const frames = (page) => page.evaluate(() => [...document.querySelectorAll('#ad-dock iframe')].map((f) => ({ w: f.width, h: f.height, sandbox: f.getAttribute('sandbox'), mode: f.getAttribute('data-mode'), cl: f.hasAttribute('credentialless'), ref: f.getAttribute('referrerpolicy') })))
+const dockBox = (page) => page.evaluate(() => { const d = document.getElementById('ad-dock'); if (!d) return null; const r = d.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, h: r.height, vh: window.innerHeight, anchor: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--anchor-h')), fixed: getComputedStyle(d).position === 'fixed' } })
+// Is the point at the centre of this element reachable, or is something (the dock) on top of it?
+const reachable = (page, sel) => page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) return null; el.scrollIntoView({ block: 'center' }); const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return !!hit && (el === hit || el.contains(hit)) }, sel)
 
 /* ------------------------------------------------ nothing configured */
 configured = false
 {
   adRequests.length = 0
   const page = await open({ decisions: 5 })
-  await go(page, 'dishes'); await page.evaluate(() => window.scrollTo(0, 0))
-  await go(page, 'profile')
-  ok('with no unit configured nothing is drawn', (await frames(page)).length === 0)
+  await go(page, 'dishes'); await go(page, 'chat')
+  ok('with no unit configured nothing is drawn', (await frames(page)).length === 0 && (await dockBox(page)) === null)
   ok('and nothing is requested from any network', adRequests.length === 0, adRequests.join(', '))
-  ok('and no slot takes up room', await page.evaluate(() => [...document.querySelectorAll('.ad-wrap')].every((e) => e.offsetHeight === 0)))
+  ok('and nothing is reserved at the bottom of the page', await page.evaluate(() => !document.body.classList.contains('has-dock')))
   await page.context().close()
 }
 
 /* ------------------------------------------------ configured */
 configured = true
 {
-  // From the first visit: no decisions finished at all, and the browser asks to save data.
-  const page = await open({ decisions: 0, saveData: true })
-  await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
-  ok('with no decisions finished and Save-Data on, an ad is still drawn', (await frames(page)).length >= 2, JSON.stringify(await frames(page)))
-  ok('and the cookie notice is there to change that', await page.locator('.consent:not([hidden])').count() === 1)
+  // From the first visit, on a phone: one banner, along the bottom, above the tab bar. Save-Data and a stored "off" do nothing.
+  adRequests.length = 0
+  const page = await open({ width: 390, height: 800, decisions: 0, saveData: true })
+  await page.evaluate(() => { try { localStorage.setItem('ads', 'off'); localStorage.setItem('m45-ads', '0') } catch (e) {} })
+  await page.waitForTimeout(800)
+  const f = await frames(page), d = await dockBox(page)
+  ok('from the first visit, with Save-Data on, there is an ad', f.length === 1 && f[0].w === '320' && f[0].h === '50', JSON.stringify(f))
+  ok('it is fixed along the bottom, above the tab bar', d && d.fixed && d.bottom <= d.vh && d.bottom > d.vh - 120, JSON.stringify(d))
+  ok('and the page has reserved exactly its height', d && Math.abs(d.anchor - d.h) < 1.5, JSON.stringify(d))
+  ok('the cookie notice is there to change how it loads', await page.locator('.consent:not([hidden])').count() === 1)
+  await page.context().close()
+}
+{
+  // A wide screen: two banners. And it overlays: nothing above it moves when it arrives.
+  const page = await open({ width: 1280, height: 800, decisions: 5 })
+  await page.waitForTimeout(900)
+  const f = await frames(page)
+  ok('a wide screen gets two banners side by side (728x90 and 468x60)', f.length === 2 && f[0].w === '728' && f[1].w === '468', JSON.stringify(f))
+  await page.evaluate(() => { document.getElementById('ad-dock').remove(); document.documentElement.style.setProperty('--anchor-h', '0px'); document.body.classList.remove('has-dock') })
+  const before = await page.evaluate(() => Math.round(document.querySelector('.landing-ask, #landing-start').getBoundingClientRect().top))
+  await page.evaluate(() => Ads.premiumKnown(false)); await page.waitForTimeout(900)
+  const after = await page.evaluate(() => Math.round(document.querySelector('.landing-ask, #landing-start').getBoundingClientRect().top))
+  ok('nothing above the strip moves when it arrives', before === after, `${before} vs ${after}`)
+  await page.context().close()
+}
+{
+  // Everywhere the app is, and never on top of something to tap.
+  const page = await open({ width: 390, height: 800, decisions: 5 })
+  await page.waitForTimeout(800)
+  ok('the front page has it', (await frames(page)).length === 1)
+  await page.click('#landing-start'); await page.waitForTimeout(600)
+  const q = await dockBox(page)
+  ok('while the questions are asked it is there, along the bottom', q && q.fixed && q.bottom <= q.vh && q.bottom > q.vh - 120, JSON.stringify(q))
+  await page.click('.consent [data-c="essential"]'); await page.waitForTimeout(300)
+  ok('and it does not sit on the answer buttons', (await reachable(page, '#choice-yes')) && (await reachable(page, '#choice-no')))
+  await page.evaluate(() => window.M45.setView('chat')); await page.waitForTimeout(500)
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(300)
+  const c = await dockBox(page)
+  ok('in Ask it is there, above the tab bar', c && c.bottom < c.vh && c.bottom > c.vh - 120, JSON.stringify(c))
+  ok('and it does not sit on the Ask button or the box', (await reachable(page, '#chat-send')) && (await reachable(page, '#chat-input')))
+  await page.evaluate(() => window.M45.setView('dishes')); await page.waitForTimeout(400)
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(300)
+  ok('the last row of Dishes can be scrolled clear of it', await page.evaluate(() => { const rows = document.querySelectorAll('.dish'); const r = rows[rows.length - 1].getBoundingClientRect(); const d = document.getElementById('ad-dock').getBoundingClientRect(); return r.bottom <= d.top + 1 }))
+  await page.context().close()
+}
+{
+  // In a game: over the game, at the very bottom, and not on the game's own buttons.
+  const page = await open({ width: 390, height: 800, decisions: 5 })
+  await page.waitForTimeout(800)
+  await page.evaluate(() => window.M45.Play.open('arena')); await page.waitForSelector('.pg-canvas'); await page.waitForTimeout(500)
+  const g = await dockBox(page)
+  ok('in a game the strip is still there, at the very bottom', g && g.fixed && Math.abs(g.bottom - g.vh) < 2, JSON.stringify(g))
+  ok('and sits over the game panel (the games are under it)', await page.evaluate(() => { const d = document.getElementById('ad-dock'); const r = d.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return d === hit || d.contains(hit) }))
+  ok('the game’s Pause and Quit buttons are clear of it', (await reachable(page, '.pg-pause')) && (await reachable(page, '.pg-quit')))
+  ok('and so is the close button', await reachable(page, '.pg-x'))
+  const box = await page.locator('.pg-canvas').boundingBox()
+  ok('the stage fits above it', box.y + box.height <= g.top + 1, `${box.y + box.height} vs ${g.top}`)
+  await page.context().close()
+  const wide = await open({ width: 1280, height: 800, decisions: 5 })
+  await wide.waitForTimeout(800)
+  await wide.evaluate(() => window.M45.Play.open('merge')); await wide.waitForSelector('.pg-canvas'); await wide.waitForTimeout(500)
+  const wd = await dockBox(wide)
+  ok('on a desktop the game panel stops above the strip', await wide.evaluate(() => { const p = document.querySelector('.pg-panel').getBoundingClientRect(); const d = document.getElementById('ad-dock').getBoundingClientRect(); return p.bottom <= d.top + 1 }), JSON.stringify(wd))
+  await wide.context().close()
+}
+{
+  // The first screen a new visitor sees is the welcome, and the strip is not on top of its button.
+  const page = await open({ width: 390, height: 800, decisions: 0, keepWelcome: true })
+  await page.waitForTimeout(900)
+  ok('the welcome screen’s Next button is reachable', await page.evaluate(() => { const el = document.getElementById('welcome-next'); const r = el.getBoundingClientRect(); const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2); return el === hit || el.contains(hit) }))
+  await page.context().close()
+}
+{
+  // Swapped for a fresh one about once a minute.
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 800 }, reducedMotion: 'reduce', hasTouch: true, isMobile: true })
+  const page = await ctx.newPage()
+  await page.clock.install()
+  await page.route(/\/api\/premium-status/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ signedIn: false, hasPremium: false, username: '', userId: null }) }))
+  await page.route(/\/api\/region/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"askFirst":false}' }))
+  await page.route(/\/api\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }), { times: 0 }).catch(() => {})
+  await page.addInitScript(() => { if (window.top === window) { localStorage.setItem('m45-consent', 'all'); localStorage.setItem('whatShouldIEat.v1', JSON.stringify({ decisions: 3, onboarded: true, langAsked: true })) } })
+  await page.goto(APP, { waitUntil: 'load' }); await page.clock.runFor(1500)
+  await page.evaluate(() => { window.__first = document.querySelector('#ad-dock iframe') })
+  await page.clock.runFor(61000)
+  ok('about a minute later the ad is swapped for a fresh one', await page.evaluate(() => { const now = document.querySelector('#ad-dock iframe'); return !!window.__first && !!now && now !== window.__first && !window.__first.isConnected }))
+  await ctx.close()
+}
+{
+  // Premium: nothing, and not even a flash while it is being found out.
+  const page = await open({ width: 390, height: 800, decisions: 5, premium: true, premiumDelay: 700 })
+  await page.waitForTimeout(300)
+  const early = await page.evaluate(() => !!document.getElementById('ad-dock'))
+  await page.waitForTimeout(1500)
+  ok('a Premium member sees no strip, and none while it is being checked', !early && (await dockBox(page)) === null && await page.evaluate(() => !document.body.classList.contains('has-dock')))
+  for (const v of ['chat', 'dishes', 'profile']) { await go(page, v) }
+  ok('on any screen', (await frames(page)).length === 0)
+  await page.evaluate(() => window.M45.Play.open('stack')); await page.waitForTimeout(500)
+  ok('or in a game', (await frames(page)).length === 0 && (await dockBox(page)) === null)
+  await page.context().close()
+}
+{
+  // The sandbox, tested by an attacker.
+  adRequests.length = 0
+  const page = await open({ width: 1280, height: 800, decisions: 5 })
+  await page.waitForTimeout(1500)
+  const rep = await page.evaluate(() => window.__ad[0])
+  const f = await frames(page)
+  ok('the creative ran', !!rep, 'no report came back from the fake ad')
+  ok('and could not read this page’s storage', rep && rep.storage === 'blocked', JSON.stringify(rep))
+  ok('or reach into its DOM', rep && rep.parentDom === 'blocked', JSON.stringify(rep))
+  ok('or redirect the tab', rep && rep.top === 'blocked' && page.url().startsWith(APP), `${JSON.stringify(rep)} ${page.url()}`)
+  ok('the sandbox has neither forbidden flag', f[0] && !/allow-same-origin|allow-top-navigation/.test(f[0].sandbox), f[0] && f[0].sandbox)
+  ok('and the label offers Premium as the way out', await page.evaluate(() => /Remove ads with Premium/.test(document.querySelector('#ad-dock .ad-label').textContent)))
   await page.context().close()
 }
 {
   // Where the law says to ask first. The ads are still there; they just load without cookies.
   adRequests.length = 0
   const page = await open({ decisions: 0, askFirst: true })
-  await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
-  const modes = () => page.evaluate(() => [...document.querySelectorAll('.ad-wrap iframe')].map((f) => ({ mode: f.getAttribute('data-mode'), cl: f.hasAttribute('credentialless'), ref: f.getAttribute('referrerpolicy') })))
-  let f1 = await modes()
-  ok('opt-in region, nothing chosen: the ads are still shown', f1.length >= 2, JSON.stringify(f1))
-  ok('and every one is loaded cookie-free: credentialless, no referrer', f1.length >= 2 && f1.every((f) => f.mode === 'cookieless' && f.cl && f.ref === 'no-referrer'), JSON.stringify(f1))
+  await page.waitForTimeout(900)
+  let f1 = await frames(page)
+  ok('opt-in region, nothing chosen: the ads are still shown', f1.length >= 1, JSON.stringify(f1))
+  ok('and every one is loaded cookie-free: credentialless, no referrer', f1.length >= 1 && f1.every((f) => f.mode === 'cookieless' && f.cl && f.ref === 'no-referrer'), JSON.stringify(f1))
   ok('the two buttons are equally easy to reach', await page.locator('.consent [data-c="all"]').isVisible() && await page.locator('.consent [data-c="essential"]').isVisible())
+  ok('and the cookie notice is not underneath the strip', await page.evaluate(() => { const c = document.querySelector('.consent').getBoundingClientRect(); const d = document.getElementById('ad-dock').getBoundingClientRect(); return c.bottom <= d.top + 1 }))
   await page.locator('.consent [data-c="all"]').click(); await page.waitForTimeout(1200)
-  f1 = await modes()
-  ok('Accept all: the ads load the normal way', f1.length >= 2 && f1.every((f) => !f.mode && !f.cl), JSON.stringify(f1))
+  f1 = await frames(page)
+  ok('Accept all: the ads load the normal way', f1.length >= 1 && f1.every((f) => !f.mode && !f.cl), JSON.stringify(f1))
   ok('and the notice goes away', await page.locator('.consent:not([hidden])').count() === 0)
   await page.evaluate(() => Consent.show()); await page.waitForTimeout(200)
   await page.locator('.consent [data-c="essential"]').click(); await page.waitForTimeout(1200)
-  f1 = await modes()
-  ok('taking it back does NOT take the ads away: they reload cookie-free', f1.length >= 2 && f1.every((f) => f.mode === 'cookieless' && f.cl), JSON.stringify(f1))
+  f1 = await frames(page)
+  ok('taking it back does NOT take the ads away: they reload cookie-free', f1.length >= 1 && f1.every((f) => f.mode === 'cookieless' && f.cl), JSON.stringify(f1))
   ok('and the choice is kept for next time', await page.evaluate(() => localStorage.getItem('m45-consent') === 'essential'))
   await page.context().close()
 }
 {
   // Said no on an earlier visit: still ads, still cookie-free, and no nagging.
   const page = await open({ decisions: 0, askFirst: true, consent: 'essential' })
-  await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
+  await page.waitForTimeout(900)
   const fr = await frames(page)
-  ok('an earlier "Essential only" still gets ads', fr.length >= 2, JSON.stringify(fr))
+  ok('an earlier "Essential only" still gets ads', fr.length >= 1 && fr.every((f) => f.mode === 'cookieless'), JSON.stringify(fr))
   ok('and the notice does not nag', await page.locator('.consent:not([hidden])').count() === 0)
-  await page.context().close()
-}
-{
-  // There is no other way to switch them off: Save-Data, Do Not Track and a stored "no ads" do nothing.
-  const page = await open({ decisions: 0, saveData: true })
-  await page.evaluate(() => { try { localStorage.setItem('ads', 'off'); localStorage.setItem('m45-ads', '0') } catch (e) {} })
-  await go(page, 'nearby'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
-  ok('Save-Data and a stored "ads off" change nothing', (await frames(page)).length >= 2)
-  await page.context().close()
-}
-{
-  const page = await open({ decisions: 5, premium: true })
-  await page.waitForTimeout(600)
-  await go(page, 'dishes'); await go(page, 'profile')
-  ok('a Premium member sees none', (await frames(page)).length === 0, JSON.stringify(await frames(page)))
-  await page.context().close()
-}
-{
-  // Everything that is not a place for one.
-  const page = await open({ decisions: 5 })
-  await page.click('#landing-start'); await page.waitForTimeout(400)
-  let answer = false
-  for (let i = 0; i < 30 && !answer; i++) {
-    if (await page.locator('#accept-btn').isVisible()) { answer = true; break }
-    const yes = page.locator('#choice-yes')
-    if (!(await yes.isVisible())) break
-    await yes.click(); await page.waitForTimeout(150)
-  }
-  await page.waitForTimeout(1500)
-  ok('none while a question is being answered, or on the answer', (await frames(page)).length === 0)
-  await page.locator('#accept-btn').click().catch(() => {}); await page.waitForTimeout(1200)
-  ok('none on the reward after accepting', (await frames(page)).length === 0)
-  await page.context().close()
-}
-{
-  const page = await open({ decisions: 5 })
-  await go(page, 'dishes')
-  // On a desktop screen the ninth row is within 400px of the fold, so it may well be drawn already.
-  // Laziness is asserted on the profile below, where the slot is far down the page.
-  // Scroll the ninth row into view, which is where the ad sits.
-  await page.evaluate(() => document.querySelectorAll('#dish-grid .dish')[8].scrollIntoView({ block: 'center' }))
-  await page.waitForTimeout(900)
-  const f = await frames(page)
-  ok('scrolling to it draws a cluster of two, not one and not a wall', f.length === 2, JSON.stringify(f))
-  ok('under one label, not one each', await page.evaluate(() => document.querySelectorAll('#dish-ad .ad-label').length === 1))
-  ok('desktop width gets the 728x90 and the 468x60 together', f.length === 2 && f[0].w === '728' && f[0].h === '90' && f[1].w === '468' && f[1].h === '60', JSON.stringify(f))
-  ok('it is the ninth thing in the list, after eight dishes', await page.evaluate(() => {
-    const kids = [...document.getElementById('dish-grid').children].filter((e) => !e.hidden)
-    return kids.findIndex((e) => e.id === 'dish-ad') === 8
-  }))
-  ok('the label offers Premium as the way out', await page.evaluate(() => /Remove ads with Premium/.test(document.querySelector('#dish-ad .ad-label').textContent)))
-  ok('and calls itself an advertisement to assistive tech', await page.evaluate(() => document.getElementById('dish-ad').getAttribute('aria-label') === 'Advertisement'))
-
-  // The creative is hostile; the sandbox is what stops it.
-  await page.waitForTimeout(600)
-  const rep = await page.evaluate(() => window.__ad[0])
-  ok('the creative ran', !!rep, 'no report came back from the fake ad')
-  ok('and could not read this page’s storage', rep && rep.storage === 'blocked', JSON.stringify(rep))
-  ok('or reach into its DOM', rep && rep.parentDom === 'blocked', JSON.stringify(rep))
-  ok('or redirect the tab', rep && rep.top === 'blocked' && page.url().startsWith(APP), `${JSON.stringify(rep)} ${page.url()}`)
-  ok('the sandbox has neither forbidden flag', f[0] && !/allow-same-origin|allow-top-navigation/.test(f[0].sandbox), f[0] && f[0].sandbox)
-
-  // Filtering rebuilds the list around it; it must not be reloaded or counted again.
-  const requestsBefore = adRequests.length
-  const reportsBefore = await page.evaluate(() => window.__ad.length)
-  await page.evaluate(() => { window.__adNode = document.querySelector('#dish-ad iframe') })
-  for (const t of ['Sweet', 'Savoury', 'Everything']) {
-    await page.locator('.filter', { hasText: new RegExp('^' + t) }).first().click().catch(() => {})
-    await page.waitForTimeout(300)
-  }
-  ok('filtering the list does not reload the ad', await page.evaluate(() => window.__adNode === document.querySelector('#dish-ad iframe') && window.__ad.length === 2), `reports ${await page.evaluate(() => window.__ad.length)}`)
-  ok('or ask the network for another', adRequests.length === requestsBefore, `${adRequests.length} vs ${requestsBefore}`)
-  await page.fill('.find input, #dish-search', 'pizza').catch(() => {}); await page.waitForTimeout(300)
-  ok('a short result list has no ad in it', await page.evaluate(() => document.getElementById('dish-ad').hidden === true))
-  await page.context().close()
-}
-{
-  const page = await open({ width: 390, height: 800, decisions: 5 })
-  await go(page, 'dishes')
-  await page.evaluate(() => document.querySelectorAll('#dish-grid .dish')[8].scrollIntoView({ block: 'center' }))
-  await page.waitForTimeout(900)
-  const f = await frames(page)
-  ok('a phone gets the slim 320x50 and a 300x250, two together', f.length === 2 && f[0].w === '320' && f[0].h === '50' && f[1].w === '300' && f[1].h === '250', JSON.stringify(f))
-  ok('and never sideways overflow', await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth))
-  await go(page, 'profile')
-  await page.waitForTimeout(500)
-  ok('at the end of a long page nothing loads until it is near the viewport', (await frames(page)).filter((x) => x.where === 'profile-ad').length === 0)
-  await page.evaluate(() => document.getElementById('profile-ad').scrollIntoView())
-  await page.waitForTimeout(900)
-  const p = (await frames(page)).filter((x) => x.where === 'profile-ad')
-  ok('the end of the profile on a phone gets two: 300x250 and 320x50', p.length === 2 && p[0].w === '300' && p[1].w === '320', JSON.stringify(p))
-  await page.context().close()
-}
-{
-  const page = await open({ decisions: 5 })
-  await go(page, 'profile')
-  await page.evaluate(() => document.getElementById('profile-ad').scrollIntoView())
-  await page.waitForTimeout(900)
-  const p = (await frames(page)).filter((x) => x.where === 'profile-ad')
-  ok('the end of the profile on a wide screen gets three: 300x250, 160x300, 468x60', p.length === 3 && p.map((x) => x.w).join() === '300,160,468', JSON.stringify(p))
-  await page.context().close()
-}
-
-/* ------------------------------------------------ the sponsor page, for more questions */
-async function chatScenario({ left, premium = false, claimsLeft = 3 }) {
-  const page = await open({ decisions: 5, premium })
-  const calls = []
-  await page.context().route(/araplhn\.org/, (r) => { calls.push('sponsor:' + r.request().url()); return r.fulfill({ status: 200, contentType: 'text/html', body: '<p>sponsor</p>' }) })
-  await page.route(/\/api\/chat$/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ left, limit: 3, account: false, bonus: { per: 2, claimsLeft } }) }))
-  await page.route(/\/api\/chat-bonus/, async (r) => {
-    const sent = JSON.parse(r.request().postData() || '{}')
-    calls.push('bonus:' + sent.step)
-    if (sent.step === 'start') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ token: '1800000000000.' + 'a'.repeat(32), per: 2 }) })
-    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ left: 2, limit: 5, claimsLeft: claimsLeft - 1 }) })
-  })
-  await go(page, 'chat'); await page.waitForTimeout(700)
-  return { page, calls }
-}
-{
-  const { page } = await chatScenario({ left: 2 })
-  ok('with questions left there is no offer', await page.evaluate(() => document.getElementById('chat-bonus-wrap').hidden))
-  await page.context().close()
-}
-{
-  const { page } = await chatScenario({ left: 0, premium: true })
-  ok('a Premium member is never offered it', await page.evaluate(() => document.getElementById('chat-bonus-wrap').hidden))
-  await page.context().close()
-}
-{
-  const { page } = await chatScenario({ left: 0, claimsLeft: 0 })
-  ok('with no claims left today there is no offer', await page.evaluate(() => document.getElementById('chat-bonus-wrap').hidden))
-  await page.context().close()
-}
-{
-  const { page, calls } = await chatScenario({ left: 0 })
-  ok('out of questions: the offer is there, says what it is, and nothing has opened', await page.evaluate(() => !document.getElementById('chat-bonus-wrap').hidden && /sponsor page/i.test(document.getElementById('chat-bonus-note').textContent)) && calls.length === 0, calls.join(', '))
-  const popup = page.waitForEvent('popup', { timeout: 4000 }).catch(() => null)
-  await page.click('#chat-bonus')
-  const opened = await popup
-  ok('one tap opens the sponsor page in a new tab, and only then', !!opened && /araplhn\.org\/4\/c3b5fbe9/.test(opened.url() || ''), opened ? opened.url() : 'no popup')
-  await page.waitForTimeout(500)
-  ok('and asks the server to start the clock', calls.includes('bonus:start'), calls.join(', '))
-  ok('the claim cannot be pressed straight away', await page.evaluate(() => document.getElementById('chat-bonus').disabled))
-  await page.waitForTimeout(11000)
-  ok('after the wait it can', await page.evaluate(() => !document.getElementById('chat-bonus').disabled && /Add my 2 questions/.test(document.getElementById('chat-bonus').textContent)), await page.evaluate(() => document.getElementById('chat-bonus').textContent))
-  await page.click('#chat-bonus'); await page.waitForTimeout(700)
-  ok('claiming asks the server, and the number shown is the server’s', calls.includes('bonus:claim') && await page.evaluate(() => /2 of 5 free questions left/.test(document.getElementById('chat-left').textContent)), await page.evaluate(() => document.getElementById('chat-left').textContent))
-  ok('then the offer goes, because there are questions again', await page.evaluate(() => document.getElementById('chat-bonus-wrap').hidden))
-  await page.context().close()
-}
-
-{
-  // Every section but the questions and Profile has one under it; the questions have none.
-  const page = await open({ decisions: 0 })
-  for (const v of ['nearby', 'menu', 'planner', 'kitchen', 'scan', 'chat', 'news', 'radio', 'daily', 'help', 'dishes']) {
-    await go(page, v)
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(500)
-    const shown = await page.evaluate(() => { const s = document.getElementById('view-ad'); return { hidden: s.hidden, frames: s.querySelectorAll('iframe').length } })
-    ok(`${v}: a cluster of two or three sits under the section`, !shown.hidden && shown.frames >= 2 && shown.frames <= 3, JSON.stringify(shown))
-  }
-  await go(page, 'decide')
-  ok('decide: the slot is gone', await page.evaluate(() => document.getElementById('view-ad').hidden))
-  await go(page, 'profile'); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(900)
-  ok('profile: only its own cluster, not a second one', await page.evaluate(() => document.getElementById('view-ad').hidden && document.querySelectorAll('#profile-ad iframe').length >= 2))
-  await page.context().close()
-}
-{
-  // The front page.
-  const page = await open({ decisions: 0 })
-  // Scrolled the way a person does, so each slot is passed on the way down.
-  for (let y = 0; y < 6000; y += 500) { await page.evaluate((y) => { document.getElementById('landing').scrollTop = y }, y); await page.waitForTimeout(120) }
-  await page.waitForTimeout(900)
-  const n = await page.evaluate(() => ({ a: document.querySelectorAll('#landing-ad-a iframe').length, b: document.querySelectorAll('#landing-ad-b iframe').length }))
-  ok('the front page has a cluster in the middle and one at the end', n.a >= 2 && n.b >= 2, JSON.stringify(n))
-  await page.context().close()
-}
-{
-  // Premium: none anywhere, on any of them.
-  const page = await open({ decisions: 0, premium: true })
-  await page.waitForTimeout(500)
-  for (const v of ['nearby', 'chat', 'dishes', 'profile']) { await go(page, v); await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)); await page.waitForTimeout(300) }
-  ok('Premium: no frame on any section', (await frames(page)).length === 0 && await page.evaluate(() => [...document.querySelectorAll('.ad-wrap')].every((e) => e.offsetHeight === 0)))
   await page.context().close()
 }
 

@@ -131,13 +131,16 @@ export const GA4_ID = 'G-M5PMRS475E'
  * HOW MUCH THERE IS, as numbers rather than adjectives. The owner asked for ads
  * on every screen, from the first visit, and for Save-Data to be ignored; this
  * is that, with the lines that were kept:
- *   - never in the decide questions, a game, the answer or the reward, and never
- *     on /premium, /checkout or /account
- *   - one cluster per screen, of two or three banners together (two in the
- *     middle of a list and on a phone, three at the end of a page on a wide
- *     screen), lazy-loaded when it is about to scroll into view, so it costs
- *     nothing to somebody who never reaches it. Every section of the app has
- *     one under it, as do the front page and the site's reading pages
+ *   - in the app (public/decide), ONE fixed strip along the bottom of the screen, the
+ *     ad dock (js/ads.js): over the page rather than pushing it, so it is there during
+ *     the decide questions, in every game and in Ask. It has a fixed height the page
+ *     reserves once, so it never makes anything jump and never lies across a button
+ *     (a fixed ad on top of controls gets accidental taps, which is invalid traffic and
+ *     what an ad network closes accounts for). Two banners side by side on a wide
+ *     screen, one on a phone, swapped for a fresh one about once a minute
+ *   - on the site (/, /faq, /how-it-works, /info, /eat, each /eat/<dish>) a cluster of
+ *     two or three banners at the end of the page, lazy-loaded when it is about to
+ *     scroll into view; never on /premium, /checkout or /account
  *   - none for a Premium member, ever
  *   - from the first visit (ADS_AFTER_DECISIONS is 0), and Save-Data is no longer
  *     a reason to skip them

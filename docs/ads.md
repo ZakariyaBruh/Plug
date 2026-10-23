@@ -24,16 +24,25 @@ Inactive, and this network showed nothing for the whole of its previous run here
 
 ## What a visitor sees
 
-Two or three banners **together**, under one label, not scattered: two in the middle
-of a list and on a phone, three at the end of a page on a wide screen.
+In the **app** there is one fixed strip along the bottom, the *ad dock* (`js/ads.js`):
+it sits **over** the page, never pushing it, and is there during the decide
+questions, in every game and in Ask. Its height is reserved once (`--anchor-h`), so
+nothing jumps when it loads and it never lies across a control: a fixed ad on top of
+buttons gets accidental taps, which is invalid traffic. Two banners side by side on
+a wide screen (728x90 + 468x60, or one 728x90 from 900px, one 468x60 from 520px), one
+320x50 on a phone, swapped for a fresh one about every minute while the page is
+visible. Z-order: cookie bar < top bar < games < dock < welcome / toasts < tour.
+On a phone it sits above the tab bar, and at the very bottom when the tab bar is
+hidden (a game is open). The **site** pages keep a cluster of two or three at the end
+of the page.
 
 | | |
 |---|---|
-| Game | under every section but the questions (one slot, `#view-ad`, `adForView()` in app.js; a fresh cluster when the section changes, at most one per 20 seconds), plus the Dishes list (after the 8th dish), the end of Profile, and two on the front page |
+| Game | the dock, everywhere in the app, games and questions included |
 | Site | the end of /, /faq, /how-it-works, /info, /eat and each /eat/<dish> |
-| Never | the decide questions, any game, the answer, the reward, /premium, /checkout, /account |
+| Never | /premium, /checkout, /account; the welcome and tour screens sit on top of it |
 | Who | everybody except Premium members, **from the first visit** |
-| How | loaded only within 400px of view. Save-Data is ignored (the owner's call) |
+| How | the dock loads as soon as Premium status is known (a member never sees a flash); the site's end-of-page clusters load within 400px of view. Save-Data is ignored (the owner's call) |
 | Consent | changes how an ad loads, **never whether**. Without consent where the law asks first (EU, EEA, UK, Switzerland, or a country that cannot be told), the same ad loads in a `credentialless` frame with no referrer; **Accept all** loads it normally; **Essential only** reloads it cookie-free. There is no free way to turn ads off: Save-Data, the cookie choice and stored settings do nothing, and `shell-test` and `adsdrive` fail if one appears |
 
 ## The sponsor page: more Standard questions
@@ -41,7 +50,11 @@ of a list and on a phone, three at the end of a page on a wide screen.
 When the free Standard questions are used up, a button offers two more for opening a
 sponsor page (`SMARTLINK_URL`), up to three times a day (so nine at most). It opens
 in a new tab **only when tapped**, never automatically, and is never offered to
-Premium.
+Premium. The tab is opened with `noopener` but **with** the referrer (the browser
+sends only this site's address, not the path), because that is how the network can
+tell which site a visit came from. How well it targets food ads depends on the site
+category set in the Adsterra dashboard plus the visitor's geo and device; there is,
+on purpose, no hidden page or link to fake a category (see the note in `site.ts`).
 
 It is an honour system with limits, and says so. The server cannot tell the page was
 opened. What it enforces (`lib/allowance.ts`, `routes/api/chat-bonus.ts`): a signed

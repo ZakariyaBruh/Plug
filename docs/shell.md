@@ -138,6 +138,24 @@ Seven places, and `scripts/shell-test.mjs` fails until all of them agree:
   pause, hit-stop and shake. The old file's CSS and code are gone.
 
 
+## The ad dock, the free assistant and the Advanced extras
+
+- **The ad dock** (`js/ads.js`) replaced every inline ad slot in the app: one fixed strip
+  along the bottom, over the page, with its height reserved in `--anchor-h` so nothing
+  moves and nothing it overlaps is a control. It is present in the questions, every game
+  and Ask. Z-order is fixed in the stylesheet and checked by `shell-test`: cookie bar <
+  top bar < games < dock < welcome/toasts < tour. `body.is-games` (set by `play.js`) and
+  `body.is-playing` put it at the very bottom on a phone when the tab bar is hidden.
+  `adsdrive` checks the geometry (reachable buttons, reserved height, Premium never sees it).
+- **The free assistant** (Standard) never touches Gemini: `lib/free-ai.ts` races LLM7 and
+  Pollinations (fast model first, the next joining after 3.5s or at once on failure), skips
+  a service that keeps failing, rejects error bodies, and remembers a first question for ten
+  minutes. If every service fails, `lib/free-local.ts` answers from the menu or the app's own
+  fact list, says so, and does not count it against the day. `free-ai-test` covers all of it.
+- **Advanced** (Premium, Gemini) gained skills (swap, scale, budget, leftovers, pair), recipe
+  cards that can be saved to the cookbook, follow-up suggestions and a Listen button. If
+  Gemini is busy a Premium member is answered by Standard, with a note.
+
 ## Decisions to know about
 
 - **The Premium pill used to pulse forever.** It now pulses twice, a moment after the

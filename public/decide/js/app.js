@@ -679,27 +679,6 @@
     // keeps scrolling it into view from somewhere else in the app.
     else stopTyping();
     window.scrollTo(0, 0);
-    adForView(name);
-  }
-
-  /*
-   * ADS ON EVERY SCREEN THAT IS READ. One slot sits under the current section, so
-   * the cluster is the same size and place everywhere and there is never more than
-   * one of them from this (Dishes also has its own in the middle of the list, and
-   * Profile its own at the bottom, so those two are left to them). A fresh cluster
-   * is asked for when the section changes, but not more than once in 20 seconds,
-   * so flipping between tabs is not a way of making the network count a page 40 times.
-   * Not under the questions, the answer, a game or the reward: that is `decide`.
-   */
-  var adStamp = 0;
-  function adForView(name) {
-    var slot = $('view-ad');
-    if (!slot || typeof Ads === 'undefined') return;
-    var skip = name === 'decide' || name === 'profile';
-    slot.hidden = skip;
-    if (skip) return;
-    var now = Date.now();
-    if (!slot.dataset.adArmed || now - adStamp > 20000) { adStamp = now; Ads.refresh(slot, 'end', { premium: isPlus() }); }
   }
 
   function setPanel(name) {
@@ -7243,7 +7222,10 @@
     if (bonusFlow.busy) return;
     if (!bonusFlow.token) {
       // Opened from the tap itself, and with noopener so the sponsor page gets no handle on this one.
-      try { window.open(window.FoodConfig.smartlink, '_blank', 'noopener,noreferrer'); } catch (err) { /* fine */ }
+      // The referrer is sent (the browser's default sends only this site's address, never the path):
+      // it is how the network can tell which site the visit came from, and it is how a food site is
+      // told apart from any other. Nothing here pretends to be a different page.
+      try { window.open(window.FoodConfig.smartlink, '_blank', 'noopener'); } catch (err) { /* fine */ }
       bonusFlow.busy = true;
       bonusPost({ step: 'start' }).then(function (r) {
         bonusFlow.busy = false;
@@ -7295,7 +7277,12 @@
     { id: 'chat', label: 'Anything' },
     { id: 'plan', label: 'Plan it' },
     { id: 'cook', label: 'Cook with me' },
-    { id: 'compare', label: 'Help me choose' }
+    { id: 'compare', label: 'Help me choose' },
+    { id: 'swap', label: 'Swap an ingredient' },
+    { id: 'scale', label: 'Scale and shop' },
+    { id: 'budget', label: 'On a budget' },
+    { id: 'leftovers', label: 'Use it up' },
+    { id: 'pair', label: 'What goes with it' }
   ];
   var CHAT_SEEDS_ADV = [
     'Plan my dinners for the week',
@@ -7303,7 +7290,9 @@
     'Cook me something I will love, step by step',
     'Which of my favourites should I have tonight?',
     'Is there a good place for a late breakfast nearby?',
-    'Compare a stir-fry and a curry for tonight'
+    'Compare a stir-fry and a curry for tonight',
+    'I have no cream. What do I use in a carbonara?',
+    'Scale a lasagne for eight, and list what to buy'
   ];
   chat.mode = 'standard';
   chat.skill = 'chat';
@@ -7554,6 +7543,83 @@
     row.appendChild(wrap);
   }
 
+  // A plain line under an answer that did not come from the assistant it was asked of.
+  function addNote(row, text) {
+    var p = document.createElement('p');
+    p.className = 'fine chat-note';
+    p.textContent = text;
+    row.appendChild(p);
+  }
+
+  // Read aloud, for hands that are in the flour. The browser's own voice; nothing is sent anywhere.
+  function plainForSpeech(text) { return String(text).replace(/\*\*/g, '').replace(/^\s*[-\u2022]\s+/gm, '').replace(/^\s*\d+\.\s+/gm, ''); }
+  function addListen(row, text) {
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chat-mini';
+    btn.textContent = 'Listen';
+    var LOCALES = { en: 'en-GB', ms: 'ms-MY', th: 'th-TH', hi: 'hi-IN', ar: 'ar-SA' };
+    btn.addEventListener('click', function () {
+      if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); btn.textContent = 'Listen'; return; }
+      var u = new SpeechSynthesisUtterance(plainForSpeech(text));
+      u.lang = LOCALES[I18n.get()] || 'en-GB';
+      u.onend = u.onerror = function () { btn.textContent = 'Listen'; };
+      btn.textContent = 'Stop';
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    });
+    var bar = row.querySelector('.chat-bar');
+    if (!bar) { bar = document.createElement('div'); bar.className = 'chat-bar'; row.appendChild(bar); }
+    bar.appendChild(btn);
+  }
+
+  // A recipe the assistant gave, as a card you can keep: save it to your recipes, copy the shopping
+  // list, or have it read to you. Built from text nodes only.
+  function addRecipeCard(row, r) {
+    if (!r || !r.ingredients || !r.steps) return;
+    var card = document.createElement('div');
+    card.className = 'chat-recipe';
+    var head = document.createElement('h4');
+    head.textContent = r.name;
+    card.appendChild(head);
+    var meta = document.createElement('p');
+    meta.className = 'fine';
+    meta.textContent = 'Serves ' + r.serves + (r.minutes ? ' \u00b7 ' + r.minutes + ' min' : '');
+    card.appendChild(meta);
+    var ul = document.createElement('ul');
+    r.ingredients.forEach(function (i) { var li = document.createElement('li'); li.textContent = i; ul.appendChild(li); });
+    card.appendChild(ul);
+    var ol = document.createElement('ol');
+    r.steps.forEach(function (i) { var li = document.createElement('li'); li.textContent = i; ol.appendChild(li); });
+    card.appendChild(ol);
+    var bar = document.createElement('div');
+    bar.className = 'chat-bar';
+    var save = document.createElement('button');
+    save.type = 'button'; save.className = 'chat-mini'; save.textContent = 'Save to my recipes';
+    save.addEventListener('click', function () {
+      if (save.disabled) return;
+      save.disabled = true; save.textContent = 'Saving\u2026';
+      fetch('/api/cookbook', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipe: { name: r.name, serves: r.serves, time: r.minutes, ingredients: r.ingredients, steps: r.steps, origin: 'own', notes: 'From Ask' } }) })
+        .then(function (res) { return res.json().catch(function () { return {}; }).then(function (b) { return { ok: res.ok, b: b }; }); })
+        .catch(function () { return { ok: false, b: {} }; })
+        .then(function (out) {
+          if (out.ok) { save.textContent = 'Saved'; toast('\u2705', 'Saved', r.name + ' is in your recipes.'); }
+          else { save.disabled = false; save.textContent = out.b && out.b.error === 'cookbook_full' ? 'Your recipe book is full' : 'Could not save \u2014 try again'; }
+        });
+    });
+    var list = document.createElement('button');
+    list.type = 'button'; list.className = 'chat-mini'; list.textContent = 'Copy shopping list';
+    list.addEventListener('click', function () {
+      var done = function () { list.textContent = 'Copied'; setTimeout(function () { list.textContent = 'Copy shopping list'; }, 1600); };
+      try { navigator.clipboard.writeText(r.name + '\n' + r.ingredients.map(function (i) { return '- ' + i; }).join('\n')).then(done, function () {}); } catch (err) { /* fine */ }
+    });
+    bar.appendChild(save); bar.appendChild(list);
+    card.appendChild(bar);
+    row.appendChild(card);
+    addListen(card, r.name + '. Ingredients. ' + r.ingredients.join('. ') + '. Method. ' + r.steps.map(function (st, i) { return 'Step ' + (i + 1) + '. ' + st; }).join(' '));
+  }
+
   function askChat() {
     if (chat.busy) return;
     var field = $('chat-input');
@@ -7585,8 +7651,8 @@
     var sentImage = mode === 'advanced' ? chat.image : null;
     log.appendChild(chatRow('user', (sentImage ? '\u{1F4F7} ' : '') + text, false));
 
-    // The assistant is what was asked for, so it is what answers — nothing
-    // stands in for it while it works and nothing is substituted if it fails.
+    // The assistant is what was asked for, so it is what answers. Nothing stands in for it
+    // while it works; if it cannot answer, a pick from the menu does, and says so (see addNote).
     var waiting = chatRow('bot', mode === 'advanced' && chat.search ? 'Looking it up…' : 'Thinking…', true);
     log.appendChild(waiting);
     waiting.scrollIntoView({ block: 'nearest' });
@@ -7641,8 +7707,14 @@
         row.scrollIntoView({ block: 'nearest' });
         var finish = function () {
           addDishTaps(row, reply);
-          if (adv) { addSources(row, answer.body.sources); addFollowups(row, answer.body.followups); }
+          if (adv) { addSources(row, answer.body.sources); addRecipeCard(row, answer.body.recipe); addFollowups(row, answer.body.followups); }
           addCopy(row, reply);
+          if (adv && !answer.body.recipe) addListen(row, reply);
+          // Not the assistant that was asked: said, in a line, so nobody takes a menu pick for an answer.
+          var deg = answer.body.degraded;
+          if (deg === 'menu') addNote(row, 'The assistant was busy, so this one is straight from the app\u2019s menu and did not use up a question. Ask again for a proper answer.');
+          else if (deg === 'app') addNote(row, 'From the app\u2019s own help, because the assistant was busy. This did not use up a question.');
+          else if (deg === 'advanced_busy') addNote(row, 'Advanced was busy, so the Standard assistant answered this one. Ask again for the full answer.');
           row.scrollIntoView({ block: 'nearest' });
         };
         if (adv) { richInto(row.querySelector('.chat-text'), reply); row.classList.add('is-in'); finish(); }
@@ -8617,26 +8689,8 @@
     });
 
     var grid = $('dish-grid');
-    /*
-     * One ad, in the list, because the bottom of four hundred and fifty rows is
-     * not somewhere anybody gets to. It is a single node that is never removed
-     * and never moved: this function runs on every filter tap and keystroke,
-     * and rebuilding the list around it (rather than emptying the list) is what
-     * keeps the ad from reloading, and being counted again, each time.
-     */
-    var adItem = $('dish-ad');
-    if (!adItem) {
-      adItem = document.createElement('li');
-      adItem.id = 'dish-ad';
-      adItem.className = 'ad-wrap ad-feed';
-    }
-    Array.prototype.slice.call(grid.children).forEach(function (child) {
-      if (child !== adItem) grid.removeChild(child);
-    });
-    if (adItem.parentNode !== grid) grid.appendChild(adItem);
-    // Only worth a slot in a list long enough to have somewhere to put it.
-    adItem.hidden = matches.length < 12;
-    matches.forEach(function (dish, at) {
+    clear2(grid);
+    matches.forEach(function (dish) {
       var li = document.createElement('li');
       var row = document.createElement('button');
       row.type = 'button';
@@ -8654,10 +8708,8 @@
         ? 'Struck off' : dish.blurb;
       row.addEventListener('click', function () { openSheet(dish); });
       li.appendChild(row);
-      // The first eight rows go above the ad, the rest below it.
-      if (at < 8) grid.insertBefore(li, adItem); else grid.appendChild(li);
+      grid.appendChild(li);
     });
-    if (typeof Ads !== 'undefined') Ads.mount(adItem, 'inline', { premium: isPlus() });
 
     $('dish-empty').hidden = matches.length > 0;
     $('dish-count-label').textContent = matches.length === Data.ITEMS.length
@@ -8969,7 +9021,6 @@
 
     // The end of the screen that is read to the bottom. A no-op until a unit is
     // configured, and every time after the first.
-    if (typeof Ads !== 'undefined') Ads.mount($('profile-ad'), 'end', { premium: isPlus() });
 
     $('profile-name').textContent = level.name;
     $('profile-xp').textContent = state.xp;
@@ -9202,6 +9253,8 @@
     return premiumApi.refresh().then(function (status) {
       var was = isPlus();
       progress.setPlus(status.hasPremium);
+      // The ad dock waits for this: a Premium member must never see it flash up first.
+      if (typeof Ads !== 'undefined') Ads.premiumKnown(!!status.hasPremium);
       paintTopbar(status);
       applyTaste();
       applyRules();
@@ -17795,10 +17848,6 @@
     renderIntro();
     startReel();
     loadDaily();
-    if (typeof Ads !== 'undefined') {
-      Ads.mount($('landing-ad-a'), 'inline', { premium: isPlus() });
-      Ads.mount($('landing-ad-b'), 'end', { premium: isPlus() });
-    }
     focusQuietly($('landing-start'));
   }
 
@@ -18181,4 +18230,5 @@
   // checkout at /premium already attached access to the account directly, so
   // this is the same check every later load makes, just running once early.
   syncPremium(true);
+  if (typeof Ads !== 'undefined') Ads.start();
 })();

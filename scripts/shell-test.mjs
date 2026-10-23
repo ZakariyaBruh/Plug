@@ -166,14 +166,16 @@ for (const [name, src] of [['js/ads.js', adsJs], ['AdSlot.tsx', adSlot]]) {
 check('no Social Bar or Smartlink is implemented anywhere', !/social.?bar|smartlink/i.test(adsJs + adSlot.replace(/\/\*[\s\S]*?\*\//g, '')),
   'they are left out on purpose: built to look like something other than an ad')
 
-// Where a slot may be armed. Anything else (a question, a game, the answer, the
-// reward) is a moment the persuasion notes say gets care, so it is a failure.
-const mounts = [...app.matchAll(/Ads\.mount\(([^,]+),\s*'(\w+)'/g)].map((m) => m[1].trim())
-const SLOTS = ['adItem', "$('profile-ad')", "$('landing-ad-a')", "$('landing-ad-b')"]
-check('the game arms the dish list, the profile and the front page, and nothing else', mounts.length === SLOTS.length && SLOTS.every((m) => mounts.includes(m)), mounts.join(' | '))
-check('and every other section gets its slot from one place, which skips the questions and Profile',
-  /function adForView\(name\)[\s\S]*?name === 'decide' \|\| name === 'profile'[\s\S]*?Ads\.refresh\(slot, 'end', \{ premium: isPlus\(\) \}\)/.test(app))
-check('every ad call in the game passes Premium', [...app.matchAll(/Ads\.(?:mount|refresh)\([^\n]*/g)].every((m) => /premium: isPlus\(\)/.test(m[0])))
+const zOf = (sel) => { const m = css.match(new RegExp('(?:^|\\n)' + sel.replace(/[.]/g, '\\.') + ' \\{[^}]*?z-index: (\\d+)')); return m ? Number(m[1]) : null }
+// The app's ads are ONE fixed strip, over the page, that never pushes it and never goes away
+// for a free visitor. It is started once, told about Premium, and reserves its height in a variable.
+check('the game starts the dock once and tells it about Premium', (app.match(/Ads\.start\(\)/g) || []).length === 1 && /Ads\.premiumKnown\(!!status\.hasPremium\)/.test(app))
+check('and has no in-page slots left', !/Ads\.(mount|refresh)\(/.test(app) && !/class="ad-wrap"|id="(dish|profile|view|landing)-ad/.test(html))
+check('the dock is fixed, and the page reserves its height instead of moving when it loads', /\.dock \{[^}]*position: fixed/.test(css) && /--anchor-h/.test(adsJs) && /body\.has-dock \{ padding-bottom: var\(--anchor-h\)/.test(css))
+check('the dock is gone for a Premium member, in the stylesheet and in the script', /body\.is-premium \.dock \{ display: none/.test(css) && /if \(premium\) \{[^}]*remove\(\)/.test(adsJs))
+check('the games sit under the dock and over the rest; the welcome and tour sit over it', zOf('.topbar') < zOf('.pg') && zOf('.pg') < zOf('.dock') && zOf('.dock') < zOf('.welcome') && zOf('.welcome') < zOf('.tour'), `pg ${zOf('.pg')} dock ${zOf('.dock')} welcome ${zOf('.welcome')} tour ${zOf('.tour')}`)
+check('open games and a decision being played put the dock at the very bottom', /body\.is-playing \.dock, body\.is-games \.dock \{ bottom:/.test(css) && /classList\.add\('is-games'\)/.test(read('js/play.js')) && /classList\.remove\('is-games'\)/.test(read('js/play.js')))
+check('the dock shows when the questions are asked and while a game is played: nothing in the game hides it', !/is-playing[^{]*\.dock[^{]*\{[^}]*display: none/.test(css) && !/is-games[^{]*\.dock[^{]*\{[^}]*display: none/.test(css))
 const pages = ['faq', 'how-it-works', 'info', 'eat.index', 'index', 'eat.$dish']
 for (const f of readdirSyncSafe(join(root, '..', '..', 'src/routes'))) {
   const src = readFileSync(join(root, '..', '..', 'src/routes', f), 'utf8')
@@ -194,7 +196,6 @@ const consentBar = readFileSync(join(root, '..', '..', 'src/components/ConsentBa
 const consentLib = readFileSync(join(root, '..', '..', 'src/lib/consent.ts'), 'utf8')
 const consentClient = readFileSync(join(root, '..', '..', 'src/lib/consent-client.ts'), 'utf8')
 check('the app and the site store the choice under the same key', (consentJs.match(/KEY = '([^']+)'/) || [])[1] === (consentClient.match(/CONSENT_KEY = '([^']+)'/) || [])[1])
-const zOf = (sel) => { const m = css.match(new RegExp('(?:^|\\n)' + sel.replace(/[.]/g, '\\.') + ' \\{[^}]*?z-index: (\\d+)')); return m ? Number(m[1]) : null }
 check('the cookie bar sits under the welcome screen, not over its Next button', zOf('.consent') !== null && zOf('.welcome') !== null && zOf('.consent') < zOf('.welcome'), `consent ${zOf('.consent')}, welcome ${zOf('.welcome')}`)
 // The cookie choice changes HOW an ad is loaded, never WHETHER: no way to turn the ads off for free.
 const adCode = (adsJs + adSlot).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')

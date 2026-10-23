@@ -501,8 +501,6 @@
          Hidden until it has something. A shelf that says "nothing today" is
          worse than no shelf.
          =================================================================== -->
-    <div class="ad-wrap" id="landing-ad-a"></div>
-
     <section class="strip" id="daily-wrap" hidden>
       <h2 class="strip-title" id="daily-title">Five to try today</h2>
       <p class="fine" id="daily-note">Dishes the app does not already know,
@@ -712,8 +710,6 @@
       <li><b id="landing-questions">8</b><span>questions, usually</span></li>
       <li><b id="landing-recipes">780</b><span>recipes inside</span></li>
     </ul>
-
-    <div class="ad-wrap" id="landing-ad-b"></div>
 
     <p class="landing-foot">Free to play. Premium is extra.
       <button class="link-btn" id="landing-premium">See what Premium adds</button>
@@ -2827,16 +2823,9 @@
         </div>
       </section>
 
-      <!-- The end of the one screen that is read to the bottom. Armed by
-           renderProfile() through js/ads.js, which draws nothing unless a unit is
-           configured, the visitor is not Premium and two decisions are done.
-           Never in the decide flow, a game, the answer or the reward. -->
-      <div class="ad-wrap" id="profile-ad"></div>
     </section>
 
-    <!-- Under whichever section is current, except the questions and Profile (which
-         has its own). Armed by adForView() in app.js. -->
-    <div class="ad-wrap" id="view-ad" hidden></div>
+
 
   </main>
 </div>
