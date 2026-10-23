@@ -38,6 +38,73 @@ export const AD_SANDBOX = 'allow-scripts allow-popups allow-popups-to-escape-san
 /** The name a unit goes by in /ad-frame?u=…, found from its key. */
 const nameOf = (unit: AdUnit): AdSize => (Object.keys(AD_UNITS) as AdSize[]).find((n) => AD_UNITS[n].key === unit.key) as AdSize
 
+/*
+ * THE NETWORK'S OWN SNIPPET, IN THE PAGE (see public/decide/js/ads.js, which does the same in the app). Where the
+ * visitor has said yes to cookies the ad is a box of the unit's size with `atOptions = {...}` and then the
+ * network's script inside it, as the network's snippet is meant to be used; framed and sandboxed it drew blank
+ * white boxes on a real device. The script reads one global as it runs, so the boxes are asked one at a time.
+ */
+const queue: Array<{ box: HTMLElement; unit: AdUnit; after: (bad: boolean) => void }> = []
+let running = false
+function pump() {
+  if (running) return
+  const job = queue.shift()
+  if (!job) return
+  running = true
+  let finished = false
+  const done = (bad: boolean) => {
+    if (finished) return
+    finished = true
+    clearTimeout(guard)
+    running = false
+    job.after(bad)
+    pump()
+  }
+  const guard = setTimeout(() => done(false), 6000)
+  if (!job.box.isConnected) return done(false)
+  ;(window as unknown as { atOptions: unknown }).atOptions = { key: job.unit.key, format: 'iframe', height: job.unit.height, width: job.unit.width, params: {} }
+  const sc = document.createElement('script')
+  sc.async = true
+  sc.onload = () => done(false)
+  sc.onerror = () => done(true)
+  sc.src = job.unit.src
+  job.box.appendChild(sc)
+}
+
+function DirectAd({ unit, onEmpty, onFilled }: { unit: AdUnit; onEmpty: () => void; onFilled: () => void }) {
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = box.current
+    if (!el) return
+    const drawn = () => !!el.querySelector(':not(script):not(style)')
+    let gone = false
+    let observer: MutationObserver | undefined
+    try {
+      observer = new MutationObserver(() => { if (drawn()) onFilled() })
+      observer.observe(el, { childList: true, subtree: true })
+    } catch { /* very old browser */ }
+    const ask = (n: number) => {
+      queue.push({
+        box: el,
+        unit,
+        after: () => {
+          // Nothing drawn: ask again twice, a few seconds apart, then the site's own card; a late ad takes the box back.
+          setTimeout(() => {
+            if (gone || drawn()) return
+            if (n < 2) setTimeout(() => { if (gone || drawn()) return; el.textContent = ''; ask(n + 1) }, n === 0 ? 3500 : 8000)
+            else onEmpty()
+          }, 4000)
+        },
+      })
+      pump()
+    }
+    ask(0)
+    return () => { gone = true; observer?.disconnect() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unit.key])
+  return <div ref={box} className="ad-direct max-w-full overflow-hidden" style={{ width: unit.width, height: unit.height }} data-ad={nameOf(unit)} />
+}
+
 /* The frames made with the page have come back blank on a real device where the same frames made inside a tap drew ads (see public/decide/js/ads.js): the first tap asks them again, once. */
 let tapped = false
 
@@ -152,6 +219,11 @@ export function AdSlot({
                       <span className="text-xs text-[var(--text-dim)]">{unit.height >= 90 ? 'No ads. A smarter assistant. See what Premium adds.' : 'No ads. See Premium'}</span>
                     </Link>
                   ) : null}
+                  {!restricted ? (
+                    <span hidden={!!empty[name]} className="contents">
+                      <DirectAd unit={unit} onEmpty={() => setEmpty((m) => ({ ...m, [name]: true }))} onFilled={() => setEmpty((m) => (m[name] ? { ...m, [name]: false } : m))} />
+                    </span>
+                  ) : (
                   <iframe
                     {...extra}
                     data-ad={name}
@@ -167,6 +239,7 @@ export function AdSlot({
                     hidden={!!empty[name]}
                     className="max-w-full border-0"
                   />
+                  )}
                 </span>
               )
             })}

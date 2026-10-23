@@ -87,9 +87,19 @@ nothing, so the worst case is cheap. `bonus-test` covers the token.
 
 ## What is and is not safe
 
-Every ad renders in a sandboxed frame: scripts and real-click popups, no
-same-origin, no top navigation, so a creative cannot read our storage or DOM or
-redirect the tab. `adsdrive` checks that with a creative that tries all of it.
+Two ways in, by the cookie choice (`restricted()` in `js/ads.js`, `restricted` in
+`AdSlot.tsx`):
+
+- **Cookies accepted, or none asked for: the network's own snippet in the page.** A box of
+  the unit's size with `atOptions = {...}` set and the network's script added inside it, one
+  box at a time (the snippet reads one global as it runs). Chosen by the owner after the
+  framed way drew blank white boxes on a real iPad while the snippet drew ads. The script
+  runs with the page's own rights: it can read storage and cookies of this origin and move the
+  tab. That is the network's own recommended use and the trade the owner accepted; the privacy
+  page says so. Add `?adsframe` to the app's address to force the framed way for comparing.
+- **Not accepted: the sandboxed frame**, as before: scripts and real-click popups, no
+  same-origin, no top navigation, `credentialless` where supported. `adsdrive` checks that
+  with a creative that tries all of it, and `shell-test` fails if either flag is widened.
 
 Not handled, and worth deciding:
 

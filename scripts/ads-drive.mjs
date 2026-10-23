@@ -44,6 +44,7 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
 }
 
+let inplace = false // the snippet run in the page itself: draws where its script sits, as the network's does
 let polite = false // a creative that draws and nothing else, for the one page that runs it unsandboxed
 let blocked = false // the script cannot be fetched at all (a blocker, a filter)
 let silent = false // the network answers every request with an empty script, as it does for a unit it will not fill
@@ -64,6 +65,9 @@ const FAKE_AD = `
   window.parent.postMessage({ fakeAd: r }, '*');
 })();`
 
+// What the network's script does when it is in the page: note the options it was given, draw a box where it sits.
+const INPLACE_AD = `(function () { var o = window.atOptions || {}; (window.__direct = window.__direct || []).push(o.key + ':' + o.width + 'x' + o.height); var p = document.currentScript && document.currentScript.parentNode; if (p) p.insertAdjacentHTML('beforeend', '<div class="fake" style="width:' + o.width + 'px;height:' + o.height + 'px;background:#ccc"></div>'); })();`
+
 const server = createServer((req, res) => {
   const url = decodeURIComponent((req.url || '/').split('?')[0])
   if (url.startsWith('/fake-ad/') && blocked) { res.writeHead(404); return res.end('no') }
@@ -74,7 +78,7 @@ const server = createServer((req, res) => {
   if (url.startsWith('/fake-ad/')) {
     adRequests.push(url)
     res.writeHead(200, { 'Content-Type': 'text/javascript' })
-    return res.end(silent ? '' : polite ? "document.body.insertAdjacentHTML('beforeend', '<div style=\"width:320px;height:50px;background:#ccc\"></div>');" : FAKE_AD)
+    return res.end(silent ? '' : inplace ? INPLACE_AD : polite ? "document.body.insertAdjacentHTML('beforeend', '<div style=\"width:320px;height:50px;background:#ccc\"></div>');" : FAKE_AD)
   }
   if (url === '/ad-frame') {
     // The real route's page, pointed at the fake network (and nothing when no unit is configured).
@@ -101,6 +105,8 @@ const server = createServer((req, res) => {
 })
 await new Promise((ok) => server.listen(PORT, '127.0.0.1', ok))
 const APP = `http://127.0.0.1:${PORT}/decide/`
+// Every scenario below that is about the frame is run framed (`?adsframe`); the in-page way has its own scenarios at the end.
+const FRAMED = APP + '?adsframe'
 
 let pass = 0
 let fails = 0
@@ -114,7 +120,7 @@ if (!pw) { console.error('Playwright is not available on this machine; nothing d
 const { chromium } = pw.default || pw
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
 
-async function open({ width = 1280, height = 800, decisions = 0, premium = false, askFirst = false, consent = null, saveData = false, keepWelcome = false, premiumDelay = 0 } = {}) {
+async function open({ width = 1280, height = 800, decisions = 0, premium = false, askFirst = false, consent = null, saveData = false, keepWelcome = false, premiumDelay = 0, inPage = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce', hasTouch: width < 700, isMobile: width < 700 })
   const page = await ctx.newPage()
   page.on('console', (m) => { if (m.text().startsWith('COVERED')) console.log(m.text()) })
@@ -134,7 +140,7 @@ async function open({ width = 1280, height = 800, decisions = 0, premium = false
     window.__ad = []
     window.addEventListener('message', (e) => { if (e.data && e.data.fakeAd) window.__ad.push(e.data.fakeAd) })
   }, [KEY, decisions, consent, saveData])
-  await page.goto(APP, { waitUntil: 'load' })
+  await page.goto(inPage ? APP : FRAMED, { waitUntil: 'load' })
   await page.waitForTimeout(800)
   for (let i = 0; !keepWelcome && i < 6 && (await page.locator('#welcome').isVisible()); i++) {
     const next = page.locator('#welcome-next')
@@ -246,7 +252,7 @@ configured = true
   await page.route(/\/api\/region/, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"askFirst":false}' }))
   await page.route(/\/api\//, (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }), { times: 0 }).catch(() => {})
   await page.addInitScript(() => { if (window.top === window) { localStorage.setItem('m45-consent', 'all'); localStorage.setItem('whatShouldIEat.v1', JSON.stringify({ decisions: 3, onboarded: true, langAsked: true })) } })
-  await page.goto(APP, { waitUntil: 'load' }); await page.clock.runFor(1500)
+  await page.goto(FRAMED, { waitUntil: 'load' }); await page.clock.runFor(1500)
   await page.evaluate(() => { window.__first = document.querySelector('#ad-dock iframe') })
   await page.clock.runFor(61000)
   ok('about a minute later the ad is swapped for a fresh one', await page.evaluate(() => { const now = document.querySelector('#ad-dock iframe'); return !!window.__first && !!now && now !== window.__first && !window.__first.isConnected }))
@@ -442,6 +448,47 @@ configured = true
   ok('ads-check: the five sandbox settings are tried and reported, and the reading says the current ones already draw', r.rows.every((x) => x === 'Drew an ad') && /already draw here/.test(r.box), JSON.stringify(r))
   await page.context().close()
   polite = false
+}
+
+{
+  // THE NETWORK'S OWN SNIPPET, IN THE PAGE: with the cookie choice made (or none asked for), no frame at all.
+  inplace = true
+  const page = await open({ width: 1280, height: 800, decisions: 5, inPage: true })
+  await page.waitForTimeout(2500)
+  const d = await page.evaluate(() => ({
+    frames: document.querySelectorAll('iframe[data-ad]').length,
+    boxes: [...document.querySelectorAll('#ad-dock .ad-direct')].map((b) => ({ n: b.getAttribute('data-ad'), w: b.style.width, state: b.getAttribute('data-state'), drew: b.querySelector('.fake') ? b.querySelector('.fake').style.width : null, script: !!b.querySelector('script[src]') })),
+    seen: window.__direct,
+  }))
+  ok('in the page: the dock is boxes with the network’s script inside, not frames', d.frames === 0 && d.boxes.length === 2 && d.boxes.every((b) => b.script), JSON.stringify(d))
+  ok('each box drew at its own size: the options were set for each script in turn', d.boxes.length === 2 && d.boxes.every((b) => b.drew === b.w) && d.seen.length === 2 && d.seen[0].endsWith('728x90'), JSON.stringify(d))
+  ok('and they are reported as filled', await page.evaluate(() => Ads.status().leaderboard === 'filled' && Ads.status().wide === 'filled'))
+  await go(page, 'dishes'); await page.waitForTimeout(2500)
+  ok('the slots in the page are the same: boxes, one after the other, none framed', await page.evaluate(() => document.querySelectorAll('#dish-ad iframe').length === 0 && document.querySelectorAll('#dish-ad .ad-direct').length >= 2 && [...document.querySelectorAll('#dish-ad .ad-direct')].every((b) => b.querySelector('.fake'))))
+  await page.context().close()
+}
+{
+  // Not asked yet / said no: the framed, sandboxed, cookie-free way stays.
+  const page = await open({ width: 1280, height: 800, decisions: 5, askFirst: true, consent: 'essential', inPage: true })
+  await page.waitForTimeout(2500)
+  const r = await page.evaluate(() => ({ frames: document.querySelectorAll('#ad-dock iframe').length, boxes: document.querySelectorAll('.ad-direct').length, sandbox: document.querySelector('#ad-dock iframe') && document.querySelector('#ad-dock iframe').getAttribute('sandbox') }))
+  ok('where cookies were not accepted the ad stays framed and sandboxed', r.frames === 2 && r.boxes === 0 && r.sandbox === 'allow-scripts allow-popups allow-popups-to-escape-sandbox', JSON.stringify(r))
+  await page.context().close()
+  inplace = false
+}
+{
+  // In the page and the network answers with nothing: asked again, then the app's own card; a late ad takes the box back.
+  silent = true
+  const page = await open({ width: 390, height: 800, decisions: 5, inPage: true })
+  await page.waitForTimeout(32000)
+  const r = await page.evaluate(() => ({ houses: document.querySelectorAll('#ad-dock .house-ad').length, tries: [...document.querySelectorAll('#ad-dock .ad-direct')].map((b) => b._try) }))
+  ok('in the page, an empty network is asked again and then becomes the app’s own card', r.houses === 1 && r.tries.every((t) => t === 2), JSON.stringify(r))
+  silent = false; inplace = true
+  await page.evaluate(() => { const b = document.querySelector('#ad-dock .ad-direct'); b.insertAdjacentHTML('beforeend', '<div class="late"></div>') })
+  await page.waitForTimeout(500)
+  ok('and an ad that turns up late takes the box back', await page.evaluate(() => document.querySelectorAll('#ad-dock .house-ad').length === 0 && !document.querySelector('#ad-dock .ad-direct').hidden))
+  await page.context().close()
+  inplace = false
 }
 
 console.log(`\n${pass} passed, ${fails} failed`)

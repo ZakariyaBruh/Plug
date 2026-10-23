@@ -127,6 +127,84 @@ var Ads = (function () {
     f._house = a; f.hidden = true; f.parentNode.insertBefore(a, f);
   }
   /*
+   * THE NETWORK'S OWN SNIPPET, IN THE PAGE. Where the visitor has said yes to cookies (or none is asked
+   * for) the ad is not framed at all: a box of the unit's size, and inside it exactly what the network's
+   * snippet is, `atOptions = {...}` and then its script, which draws the ad where the script sits. Framed
+   * and sandboxed, the same unit drew a blank white box on a real device while the network's own snippet
+   * drew an ad, so the framed way is kept only for the visitor who has not said yes (see unitEl).
+   * The snippet reads one global, atOptions, as it runs, so the boxes are asked one after the other:
+   * set the options, add the script, wait until it has run, then the next.
+   */
+  var queue = [], running = false;
+  function pump() {
+    if (running) return;
+    var job = queue.shift();
+    if (!job) return;
+    running = true;
+    var finished = false, guard;
+    var done = function (bad) {
+      if (finished) return;
+      finished = true; clearTimeout(guard); running = false;
+      if (bad) job.box.setAttribute('data-state', 'error');
+      watch(job.box);
+      pump();
+    };
+    guard = setTimeout(done, 6000);
+    if (!job.box.isConnected) { done(); return; }
+    var unit = cfg[job.name];
+    window.atOptions = { key: unit.key, format: 'iframe', height: unit.height, width: unit.width, params: {} };
+    var sc = document.createElement('script');
+    sc.async = true;
+    sc.onload = function () { done(); };
+    sc.onerror = function () { done(true); };
+    sc.src = unit.src;
+    job.box.appendChild(sc);
+  }
+  function drawn(box) { return !!box.querySelector(':not(script):not(style)'); }
+  // After the script has run: whatever it drew is an ad; nothing drawn asks again twice, then the app's own card.
+  function markFilled(box) { box.setAttribute('data-state', 'filled'); outcome[box.getAttribute('data-ad')] = 'filled'; unhouse(box); }
+  function watch(box) {
+    if (drawn(box)) markFilled(box);
+    if (!box._seen) {
+      box._seen = true;
+      try {
+        new MutationObserver(function () {
+          if (drawn(box)) markFilled(box);
+        }).observe(box, { childList: true, subtree: true });
+      } catch (err) { /* very old browser: the check below still runs */ }
+    }
+    setTimeout(function () {
+      if (!box.isConnected || drawn(box)) { if (box.isConnected) markFilled(box); return; }
+      var name = box.getAttribute('data-ad');
+      outcome[name] = 'empty';
+      if (box._try < RETRY_AFTER.length) {
+        var wait = RETRY_AFTER[box._try]; box._try += 1;
+        setTimeout(function () {
+          if (!box.isConnected || drawn(box)) return;
+          box.textContent = ''; box.removeAttribute('data-state');
+          queue.push({ box: box, name: name }); pump();
+        }, wait);
+      } else house(box);
+    }, 4000);
+  }
+  function direct(name) {
+    var unit = cfg[name];
+    var b = document.createElement('div');
+    b.className = 'ad-direct';
+    b.setAttribute('data-ad', name);
+    b.style.width = unit.width + 'px';
+    b.style.height = unit.height + 'px';
+    b._try = 0;
+    // After this call the caller puts it in the page; the script is added once it is there.
+    setTimeout(function () { queue.push({ box: b, name: name }); pump(); }, 0);
+    return b;
+  }
+  // Which way a unit is put in the page. `?adsframe` on the address forces the framed way, for comparing the two.
+  function unitEl(name, lazy) {
+    return restricted() || /[?&]adsframe\b/.test(location.search) ? frame(name, lazy) : direct(name);
+  }
+
+  /*
    * AN EMPTY ANSWER IS NOT YET THE END. On a real visitor's device the frame that was drawn with the page
    * stayed blank while the same frame, made a few seconds later, drew an ad: the first ask of a visit is
    * sometimes answered with nothing. So an empty frame asks again (twice, a few seconds apart, from a fresh
@@ -226,7 +304,7 @@ var Ads = (function () {
     rowEl.textContent = '';
     var tallest = 0;
     names.forEach(function (n) {
-      rowEl.appendChild(frame(n, false));
+      rowEl.appendChild(unitEl(n, false));
       if (cfg[n].height > tallest) tallest = cfg[n].height;
     });
     dockEl.style.height = (LABEL_H + tallest + PAD) + 'px';
@@ -250,7 +328,7 @@ var Ads = (function () {
     // One label over the whole cluster: a label on each reads like the screen is mostly ads.
     var row = document.createElement('div');
     row.className = 'ad-row';
-    names.forEach(function (n) { row.appendChild(frame(n, true)); });
+    names.forEach(function (n) { row.appendChild(unitEl(n, true)); });
     container.appendChild(label());
     container.appendChild(row);
     container.setAttribute('role', 'complementary');
@@ -355,8 +433,8 @@ var Ads = (function () {
     dbg.style.cssText = 'position:fixed;left:6px;top:60px;z-index:70;margin:0;padding:6px 8px;max-width:92vw;max-height:40vh;overflow:auto;font:11px/1.35 ui-monospace,monospace;background:rgba(0,0,0,.85);color:#9fe39f;border:1px solid #555;border-radius:6px;pointer-events:none';
     document.addEventListener('DOMContentLoaded', function () { document.body.appendChild(dbg); });
     setInterval(function () {
-      var fr = document.querySelectorAll('iframe[data-ad]'), out = ['ads  consent=' + (typeof Consent !== 'undefined' ? Consent.allowed() : '?') + '  premium=' + premium + '  known=' + known_ + '  started=' + started + '  tapped=' + gestured];
-      for (var i = 0; i < fr.length; i++) out.push((fr[i].closest('#ad-dock') ? 'dock ' : 'slot ') + fr[i].getAttribute('data-ad') + '  state=' + (fr[i].getAttribute('data-state') || 'pending') + '  tries=' + fr[i]._try + (fr[i]._house ? '  [house card]' : '') + (fr[i]._again ? '  [asked again after tap]' : '') + '\n      ' + (fr[i]._info || 'drew: not reported yet'));
+      var fr = document.querySelectorAll('[data-ad]'), out = ['ads  consent=' + (typeof Consent !== 'undefined' ? Consent.allowed() : '?') + '  premium=' + premium + '  known=' + known_ + '  started=' + started + '  tapped=' + gestured];
+      for (var i = 0; i < fr.length; i++) out.push((fr[i].closest('#ad-dock') ? 'dock ' : 'slot ') + fr[i].getAttribute('data-ad') + '  state=' + (fr[i].getAttribute('data-state') || 'pending') + '  tries=' + fr[i]._try + (fr[i].tagName === 'DIV' ? '  [in the page]' : '  [framed]') + (fr[i]._house ? '  [house card]' : '') + (fr[i]._again ? '  [asked again after tap]' : '') + '\n      ' + (fr[i]._info || 'drew: not reported yet'));
       out.push('said: ' + JSON.stringify(outcome));
       dbg.textContent = out.join('\n');
     }, 700);
