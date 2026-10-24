@@ -47,6 +47,41 @@
  * is refused by the browser. scripts/shell-test.mjs fails if either flag ever appears in this
  * file or in components/AdSlot.tsx.
  */
+/*
+ * NO POPUNDERS. Where the network's own code runs in the page (see the note in js/ads.js), a creative can try
+ * to open a window behind the page on the first tap, by window.open or by clicking a link it made itself. Both
+ * are stopped here, before any ad script is added:
+ *   - window.open does nothing unless this site's own code is the caller, through window.m45Open (the "earn more
+ *     questions" button, upgrade, and links out are the only callers);
+ *   - a click that did not come from a person, on a link to another site, is cancelled;
+ *   - a frame an ad draws for itself in the page gets the same window.open treatment, as it appears.
+ * It cannot stop a creative that sends the whole tab away; that is a report to the network.
+ */
+(function () {
+  if (window.__m45Guard) return;
+  window.__m45Guard = true;
+  var real = window.open;
+  var allow = false;
+  window.open = function () { return allow ? real.apply(window, arguments) : null; };
+  window.m45Open = function (url, target, features) {
+    allow = true;
+    try { return real.call(window, url, target, features); } finally { allow = false; }
+  };
+  document.addEventListener('click', function (e) {
+    if (e.isTrusted) return;
+    var a = e.target && e.target.closest ? e.target.closest('a') : null;
+    if (a && a.href && /^https?:/i.test(a.href) && a.origin !== location.origin) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  // Frames an ad makes inside the page share its origin: close the same door in them.
+  window.m45GuardFrames = function (root) {
+    if (!root || !root.querySelectorAll) return;
+    var frames = root.querySelectorAll('iframe');
+    for (var i = 0; i < frames.length; i++) {
+      try { if (frames[i].contentWindow && frames[i].contentWindow.open !== null) frames[i].contentWindow.open = function () { return null; }; } catch (err) { /* another origin: not ours to reach */ }
+    }
+  };
+})();
+
 var Ads = (function () {
   var SANDBOX = 'allow-scripts allow-popups allow-popups-to-escape-sandbox';
   var cfg = (window.FoodConfig && window.FoodConfig.ads) || {};
@@ -174,7 +209,7 @@ var Ads = (function () {
   }
   function drawn(box) { return !!box.querySelector(':not(script):not(style)'); }
   // After the script has run: whatever it drew is an ad; nothing drawn asks again twice, then the app's own card.
-  function markFilled(box) { box.setAttribute('data-state', 'filled'); outcome[box.getAttribute('data-ad')] = 'filled'; unhouse(box); }
+  function markFilled(box) { try { window.m45GuardFrames(box); } catch (err) { /* fine */ } box.setAttribute('data-state', 'filled'); outcome[box.getAttribute('data-ad')] = 'filled'; unhouse(box); }
   function watch(box) {
     if (drawn(box)) markFilled(box);
     if (!box._seen) {

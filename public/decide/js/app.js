@@ -243,7 +243,7 @@
   function openOut(url) {
     if (!url) return;
     var opened = null;
-    try { opened = window.open(url, '_blank'); } catch (err) {}
+    try { opened = (window.m45Open || window.open).call(window, url, '_blank'); } catch (err) {}
     if (opened) {
       // Severed by hand because 'noopener' would make the return value null
       // on success as well as on failure, and then there is no telling
@@ -7373,7 +7373,7 @@
       // The referrer is sent (the browser's default sends only this site's address, never the path):
       // it is how the network can tell which site the visit came from, and it is how a food site is
       // told apart from any other. Nothing here pretends to be a different page.
-      try { window.open(window.FoodConfig.smartlink, '_blank', 'noopener'); } catch (err) { /* fine */ }
+      try { (window.m45Open || window.open).call(window, window.FoodConfig.smartlink, '_blank', 'noopener'); } catch (err) { /* fine */ }
       bonusFlow.busy = true;
       bonusPost({ step: 'start' }).then(function (r) {
         bonusFlow.busy = false;

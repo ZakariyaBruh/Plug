@@ -44,6 +44,7 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
 }
 
+let rude = false // the in-page creative also tries every popunder trick
 let inplace = false // the snippet run in the page itself: draws where its script sits, as the network's does
 let polite = false // a creative that draws and nothing else, for the one page that runs it unsandboxed
 let blocked = false // the script cannot be fetched at all (a blocker, a filter)
@@ -68,6 +69,16 @@ const FAKE_AD = `
 // What the network's script does when it is in the page: note the options it was given, draw a box where it sits.
 const INPLACE_AD = `(function () { var o = window.atOptions || {}; (window.__direct = window.__direct || []).push(o.key + ':' + o.width + 'x' + o.height); var p = document.currentScript && document.currentScript.parentNode; if (p) p.insertAdjacentHTML('beforeend', '<div class="fake" style="width:' + o.width + 'px;height:' + o.height + 'px;background:#ccc"></div>'); })();`
 
+// The same creative, tried as the worst kind: it opens windows on load, from a link it makes and clicks itself, on the first
+// real tap, and from a frame it draws for itself. None may open.
+const RUDE_AD = `(function () { var o = window.atOptions || {}; var p = document.currentScript.parentNode; var U = 'http://127.0.0.1:${PORT}/popunder';
+  try { window.open(U + '1') } catch (e) {}
+  var a = document.createElement('a'); a.href = 'http://example.com/pop'; a.target = '_blank'; document.body.appendChild(a); a.click();
+  document.addEventListener('click', function () { try { window.open(U + '2') } catch (e) {} });
+  var f = document.createElement('iframe'); p.appendChild(f);
+  document.addEventListener('click', function () { try { f.contentWindow.open(U + '3') } catch (e) {} });
+  p.insertAdjacentHTML('beforeend', '<div class="fake" style="width:' + o.width + 'px;height:' + o.height + 'px;background:#ccc"></div>'); })();`
+
 const server = createServer((req, res) => {
   const url = decodeURIComponent((req.url || '/').split('?')[0])
   if (url.startsWith('/fake-ad/') && blocked) { res.writeHead(404); return res.end('no') }
@@ -78,7 +89,7 @@ const server = createServer((req, res) => {
   if (url.startsWith('/fake-ad/')) {
     adRequests.push(url)
     res.writeHead(200, { 'Content-Type': 'text/javascript' })
-    return res.end(silent ? '' : inplace ? INPLACE_AD : polite ? "document.body.insertAdjacentHTML('beforeend', '<div style=\"width:320px;height:50px;background:#ccc\"></div>');" : FAKE_AD)
+    return res.end(silent ? '' : inplace ? (rude ? RUDE_AD : INPLACE_AD) : polite ? "document.body.insertAdjacentHTML('beforeend', '<div style=\"width:320px;height:50px;background:#ccc\"></div>');" : FAKE_AD)
   }
   if (url === '/ad-frame') {
     // The real route's page, pointed at the fake network (and nothing when no unit is configured).
@@ -545,6 +556,25 @@ configured = true
   ok('accepted, then Essential only where asked first: no blank boxes left, only cards', r.boxes.length === 0 && r.cards.length === 2 && r.cards.every((c) => c.h > 0 && /cookies/.test(c.text)), JSON.stringify(r))
   await page.context().close()
   inplace = false
+}
+
+{
+  // No popunders: the worst creative opens nothing, and the site's own buttons still can.
+  inplace = true; rude = true
+  const page = await open({ width: 1280, height: 800, decisions: 5, inPage: true })
+  const popped = []
+  page.context().on('page', (p) => popped.push(p.url()))
+  await page.waitForTimeout(3000)
+  ok('a creative that opens windows on load opens none', popped.length === 0, JSON.stringify(popped))
+  await page.mouse.click(640, 300); await page.waitForTimeout(800)
+  await page.mouse.click(300, 500); await page.waitForTimeout(800)
+  ok('nor on the first taps, from the page or from a frame of its own', popped.length === 0, JSON.stringify(popped))
+  ok('and it still drew', await page.evaluate(() => document.querySelectorAll('#ad-dock .ad-direct .fake').length === 2))
+  await page.evaluate(() => window.m45Open('http://127.0.0.1:8793/ours', '_blank'))
+  await page.waitForTimeout(800)
+  ok('while the site’s own button can still open a window', popped.length === 1 && /\/ours$/.test(popped[0]), JSON.stringify(popped))
+  await page.context().close()
+  inplace = false; rude = false
 }
 
 console.log(`\n${pass} passed, ${fails} failed`)

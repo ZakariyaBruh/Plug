@@ -92,7 +92,7 @@
    */
   Premium.prototype.openUpgrade = function () {
     var opened = null;
-    try { opened = window.open(UPGRADE_URL, '_blank'); } catch (err) {}
+    try { opened = (window.m45Open || window.open).call(window, UPGRADE_URL, '_blank'); } catch (err) {}
     if (opened) {
       try { opened.opener = null; } catch (err) {}
       return;

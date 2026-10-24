@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
 import { useAdsInPage } from '#/lib/consent-client'
+import { guardFrames, installOpenGuard } from '#/lib/open-guard'
 import { ADS_ON, AD_UNITS, adCluster, type AdSize, type AdUnit } from '#/lib/site'
 
 /*
@@ -62,6 +63,7 @@ function pump() {
   }
   const guard = setTimeout(() => done(false), 6000)
   if (!job.box.isConnected) return done(false)
+  installOpenGuard()
   ;(window as unknown as { atOptions: unknown }).atOptions = { key: job.unit.key, format: 'iframe', height: job.unit.height, width: job.unit.width, params: {} }
   const sc = document.createElement('script')
   sc.async = true
@@ -80,7 +82,7 @@ function DirectAd({ unit, onEmpty, onFilled }: { unit: AdUnit; onEmpty: () => vo
     let gone = false
     let observer: MutationObserver | undefined
     try {
-      observer = new MutationObserver(() => { if (drawn()) onFilled() })
+      observer = new MutationObserver(() => { guardFrames(el); if (drawn()) onFilled() })
       observer.observe(el, { childList: true, subtree: true })
     } catch { /* very old browser */ }
     const ask = (n: number) => {
