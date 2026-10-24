@@ -5970,6 +5970,17 @@ body.is-lang-gate { overflow: hidden; }
 /* The row the browser's own language points at, offered not applied. */
 .lang-row.is-suggested .lang-btn { border-color: var(--amber); }
 .welcome .lang-list { margin: var(--s3) 0; }
+/* Six languages in a single column push the Continue button off a phone's first screen. Two columns keep
+   it where it was with five, and a row's flag sits over its name instead of beside it. */
+@media (max-width: 560px) {
+  .welcome .lang-list, .lang-gate .lang-list { grid-template-columns: 1fr 1fr; gap: var(--s2); }
+  .welcome .lang-btn, .lang-gate .lang-btn {
+    grid-template-columns: auto; grid-template-areas: 'flag' 'name' 'sub'; justify-items: start; gap: var(--s1) 0;
+    padding: var(--s3);
+  }
+  .welcome .lang-btn:not(:has(.lang-sub)), .lang-gate .lang-btn:not(:has(.lang-sub)) { grid-template-areas: 'flag' 'name'; }
+  .welcome .lang-name, .lang-gate .lang-name { font-size: var(--t-sm); }
+}
 
 /* ===========================================================================
    Daily — the page for the day: ring, streak, dish of the day, checklist,
