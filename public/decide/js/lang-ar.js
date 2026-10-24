@@ -2,6 +2,7 @@
 window.I18N_DICT = window.I18N_DICT || {};
 window.I18N_PATTERNS = window.I18N_PATTERNS || {};
 window.I18N_DICT.ar = {
+"Vietnamese (Vietnam)": "الفيتنامية (فيتنام)",
 "+ Add": "+ إضافة",
 "+ Add a guest": "+ إضافة ضيف",
 ", a free community directory. The food and dining group is stations named for eating — dinner lounges, restaurant and coffee-bar channels, a barbecue station; the others are music to cook and eat to, about ten of the best-loved stations in each, with no talk, news or sport. Each streams straight from its own broadcaster to you; morsels45 hosts none of them and puts nothing over them, though a station may run its own adverts.": " ، دليل مجتمعي مجاني. مجموعة الطعام وتناوله محطات سُمّيت للأكل — صالات عشاء، وقنوات مطاعم ومقاهٍ، ومحطة للشواء؛ والبقية موسيقى للطبخ والأكل، نحو عشر محطات من أحبّ المحطات في كل مجموعة، بلا حوارات أو أخبار أو رياضة. وتبث كل محطة مباشرة من مذيعها إلى جهازك؛ لا تستضيف morsels45 أيًّا منها ولا تضع شيئًا فوقها، وإن كان لأي محطة إعلاناتها الخاصة.",

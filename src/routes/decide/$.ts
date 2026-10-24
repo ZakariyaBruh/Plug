@@ -24,6 +24,7 @@ import flavorJs from '../../../public/decide/js/flavor.js?raw'
 import i18nJs from '../../../public/decide/js/i18n.js?raw'
 import langMS from '../../../public/decide/js/lang-ms.js?raw'
 import langTH from '../../../public/decide/js/lang-th.js?raw'
+import langVI from '../../../public/decide/js/lang-vi.js?raw'
 import langHI from '../../../public/decide/js/lang-hi.js?raw'
 import langAR from '../../../public/decide/js/lang-ar.js?raw'
 import mapviewJs from '../../../public/decide/js/mapview.js?raw'
@@ -71,7 +72,7 @@ const VERSIONED = [
   'js/engine.js', 'js/flavor.js', 'js/i18n.js', 'js/mapview.js', 'js/places.js', 'js/premium.js',
   'js/progress.js', 'js/recipes.js', 'js/sound.js',
   'js/taste.js', 'js/hub.js',
-  'js/lang-ms.js', 'js/lang-th.js', 'js/lang-hi.js', 'js/lang-ar.js',
+  'js/lang-ms.js', 'js/lang-th.js', 'js/lang-vi.js', 'js/lang-hi.js', 'js/lang-ar.js',
 ]
 
 function stampUrls(text: string, quote: string): string {
@@ -149,6 +150,7 @@ const FILES: Record<string, { body: string; type: string }> = {
   'js/i18n.js': { body: i18nJs, type: 'text/javascript; charset=utf-8' },
   'js/lang-ms.js': { body: langMS, type: 'text/javascript; charset=utf-8' },
   'js/lang-th.js': { body: langTH, type: 'text/javascript; charset=utf-8' },
+  'js/lang-vi.js': { body: langVI, type: 'text/javascript; charset=utf-8' },
   'js/lang-hi.js': { body: langHI, type: 'text/javascript; charset=utf-8' },
   'js/lang-ar.js': { body: langAR, type: 'text/javascript; charset=utf-8' },
   'js/mapview.js': { body: mapviewJs, type: 'text/javascript; charset=utf-8' },

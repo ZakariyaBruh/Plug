@@ -16,6 +16,7 @@ const NAMES: Record<string, string> = {
   en: 'English',
   ms: 'Malay',
   th: 'Thai',
+  vi: 'Vietnamese',
   hi: 'Hindi',
   ar: 'Arabic',
 }

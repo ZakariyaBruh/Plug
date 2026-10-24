@@ -148,7 +148,7 @@ export const FACTS: Fact[] = [
   {
     topic: 'languages',
     keys: ['language', 'languages', 'translate', 'malay', 'thai', 'hindi', 'arabic', 'english', 'change language'],
-    text: 'morsels45 speaks English, Malay, Thai, Hindi and Arabic. Change it any time in Profile, under Language. Some translated lines may read oddly.',
+    text: 'morsels45 speaks English, Malay, Thai, Vietnamese, Hindi and Arabic. Change it any time in Profile, under Language. Some translated lines may read oddly.',
   },
   {
     topic: 'themes',

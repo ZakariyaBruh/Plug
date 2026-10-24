@@ -7630,7 +7630,7 @@
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     var btn = $('chat-mic');
     if (!SR) { btn.hidden = true; return; }
-    var LOCALES = { en: 'en-GB', ms: 'ms-MY', th: 'th-TH', hi: 'hi-IN', ar: 'ar-SA' };
+    var LOCALES = { en: 'en-GB', ms: 'ms-MY', th: 'th-TH', vi: 'vi-VN', hi: 'hi-IN', ar: 'ar-SA' };
     btn.addEventListener('click', function () {
       if (chat.listening) { try { chat.listening.stop(); } catch (err) { /* fine */ } return; }
       var rec = new SR();
@@ -7718,7 +7718,7 @@
     btn.type = 'button';
     btn.className = 'chat-mini';
     btn.textContent = 'Listen';
-    var LOCALES = { en: 'en-GB', ms: 'ms-MY', th: 'th-TH', hi: 'hi-IN', ar: 'ar-SA' };
+    var LOCALES = { en: 'en-GB', ms: 'ms-MY', th: 'th-TH', vi: 'vi-VN', hi: 'hi-IN', ar: 'ar-SA' };
     btn.addEventListener('click', function () {
       if (window.speechSynthesis.speaking) { window.speechSynthesis.cancel(); btn.textContent = 'Listen'; return; }
       var u = new SpeechSynthesisUtterance(plainForSpeech(text));

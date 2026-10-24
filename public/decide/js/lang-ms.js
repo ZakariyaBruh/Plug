@@ -2,6 +2,7 @@
 window.I18N_DICT = window.I18N_DICT || {};
 window.I18N_PATTERNS = window.I18N_PATTERNS || {};
 window.I18N_DICT.ms = {
+"Vietnamese (Vietnam)": "Bahasa Vietnam (Vietnam)",
 "+ Add": "+ Tambah",
 "+ Add a guest": "+ Tambah tetamu",
 ", a free community directory. The food and dining group is stations named for eating — dinner lounges, restaurant and coffee-bar channels, a barbecue station; the others are music to cook and eat to, about ten of the best-loved stations in each, with no talk, news or sport. Each streams straight from its own broadcaster to you; morsels45 hosts none of them and puts nothing over them, though a station may run its own adverts.": ", direktori komuniti percuma. Kumpulan makanan dan santapan ialah stesen yang dinamakan untuk makan — lounge makan malam, saluran restoran dan bar kopi, stesen barbeku; yang lain ialah muzik untuk menemani memasak dan makan, kira-kira sepuluh stesen paling digemari dalam setiap satu, tanpa perbualan, berita atau sukan. Setiap satu disiarkan terus dari penyiarnya sendiri kepada anda; morsels45 tidak menjadi hos untuk satu pun dan tidak meletakkan apa-apa di atasnya, walaupun sesebuah stesen mungkin menyiarkan iklannya sendiri.",

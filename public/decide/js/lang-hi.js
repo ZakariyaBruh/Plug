@@ -2,6 +2,7 @@
 window.I18N_DICT = window.I18N_DICT || {};
 window.I18N_PATTERNS = window.I18N_PATTERNS || {};
 window.I18N_DICT.hi = {
+"Vietnamese (Vietnam)": "वियतनामी (वियतनाम)",
 "+ Add": "+ जोड़ें",
 "+ Add a guest": "+ मेहमान जोड़ें",
 ", a free community directory. The food and dining group is stations named for eating — dinner lounges, restaurant and coffee-bar channels, a barbecue station; the others are music to cook and eat to, about ten of the best-loved stations in each, with no talk, news or sport. Each streams straight from its own broadcaster to you; morsels45 hosts none of them and puts nothing over them, though a station may run its own adverts.": ", एक मुफ़्त सामुदायिक डायरेक्टरी। खाने-पीने वाला ग्रुप उन स्टेशनों का है जिनके नाम खाने से जुड़े हैं — डिनर लाउंज, रेस्तरां और कॉफ़ी-बार चैनल, एक बारबेक्यू स्टेशन; बाकी खाना पकाने और खाने के लिए संगीत हैं, हर एक में लगभग दस सबसे पसंदीदा स्टेशन, बिना बातचीत, खबर या खेल के। हर एक सीधे अपने प्रसारक से आप तक स्ट्रीम होता है; morsels45 इनमें से किसी को होस्ट नहीं करता और इन पर कुछ नहीं चढ़ाता, हालाँकि कोई स्टेशन अपने विज्ञापन चला सकता है।",

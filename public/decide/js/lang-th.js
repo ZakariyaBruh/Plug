@@ -2,6 +2,7 @@
 window.I18N_DICT = window.I18N_DICT || {};
 window.I18N_PATTERNS = window.I18N_PATTERNS || {};
 window.I18N_DICT.th = {
+"Vietnamese (Vietnam)": "ภาษาเวียดนาม (เวียดนาม)",
 "+ Add": "+ เพิ่ม",
 "+ Add a guest": "+ เพิ่มแขก",
 ", a free community directory. The food and dining group is stations named for eating — dinner lounges, restaurant and coffee-bar channels, a barbecue station; the others are music to cook and eat to, about ten of the best-loved stations in each, with no talk, news or sport. Each streams straight from its own broadcaster to you; morsels45 hosts none of them and puts nothing over them, though a station may run its own adverts.": ", ไดเรกทอรีชุมชนฟรี กลุ่มอาหารและการรับประทานคือสถานีที่ตั้งชื่อเกี่ยวกับการกิน — เลานจ์มื้อเย็น ช่องร้านอาหารและคาเฟ่ สถานีบาร์บีคิว ส่วนกลุ่มอื่นเป็นเพลงสำหรับฟังตอนทำอาหารและกินข้าว สถานีที่คนรักมากที่สุดราวสิบสถานีในแต่ละกลุ่ม ไม่มีรายการพูดคุย ข่าว หรือกีฬา แต่ละสถานีสตรีมตรงจากผู้ออกอากาศมาถึงคุณ morsels45 ไม่ได้โฮสต์สถานีใดเลยและไม่ใส่อะไรทับ แม้สถานีอาจมีโฆษณาของตัวเอง",
