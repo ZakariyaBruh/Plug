@@ -18170,6 +18170,18 @@
   applyMute();
   applyRules();
   applyTaste();
+  /*
+   * A link that names a language (?lang=th, ?lang=vi: the ads in Thai and Vietnamese use them) opens the app in it
+   * for somebody who has never chosen. Only a starting point: it is saved like a pick, the language card still shows
+   * once with it already on, and a person who already chose is left alone.
+   */
+  (function langFromLink() {
+    var m = /[?&]lang=([a-z]{2})(?:&|#|$)/.exec(window.location.search || '');
+    if (m && !progress.state.langAsked && I18n.known(m[1]) && progress.state.lang !== m[1]) {
+      progress.state.lang = m[1];
+      progress.save();
+    }
+  })();
   applyLang();
   goHome();
   renderProfile();
