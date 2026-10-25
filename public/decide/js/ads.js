@@ -90,7 +90,8 @@ var Ads = (function () {
   var outcome = {}; // size -> 'filled' | 'empty' | 'error', the last word from a frame
 
   function live(unit) { return !!(unit && unit.src && unit.key); }
-  function anyLive() { return Object.keys(cfg).some(function (k) { return live(cfg[k]); }); }
+  // The master switch (config.js adsOn): off, and nothing here draws, loads or asks for anything.
+  function anyLive() { return !!(window.FoodConfig && window.FoodConfig.adsOn) && Object.keys(cfg).some(function (k) { return live(cfg[k]); }); }
 
   // Which banners fit a dock this wide, in order of preference (names, as config.js has them).
   function strip(width) {

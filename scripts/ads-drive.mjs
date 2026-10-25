@@ -25,6 +25,7 @@
  * Playwright is not a dependency of this project; it is on the machine and
  * imported by path, as in play-drive.
  */
+import './ads-on.mjs'
 import { createServer } from 'node:http'
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
@@ -44,6 +45,7 @@ const TYPES = {
   '.webmanifest': 'application/manifest+json', '.ico': 'image/x-icon', '.txt': 'text/plain; charset=utf-8',
 }
 
+let adsOff = false // serve config.js exactly as shipped: the master switch off
 let rude = false // the in-page creative also tries every popunder trick
 let inplace = false // the snippet run in the page itself: draws where its script sits, as the network's does
 let polite = false // a creative that draws and nothing else, for the one page that runs it unsandboxed
@@ -107,8 +109,9 @@ const server = createServer((req, res) => {
   if (path.endsWith('/decide/js/config.js')) {
     // The shipped file carries the real keys and the real network. Either take them out (as if
     // nothing had been pasted) or keep the keys and point the network at the fake one here.
+    if (adsOff) { res.writeHead(200, { 'Content-Type': TYPES['.js'] }); return res.end(body) }
     body = Buffer.from(configured
-      ? String(body).replaceAll('https://bauval.org/22/', `http://127.0.0.1:${PORT}/fake-ad/`)
+      ? String(body).replaceAll('https://bauval.org/22/', `http://127.0.0.1:${PORT}/fake-ad/`).replace('adsOn: false', 'adsOn: true')
       : String(body).replace(/src: '[^']*', key: '[^']*'/g, "src: '', key: ''"))
   }
   res.writeHead(200, { 'Content-Type': TYPES[extname(file)] || 'application/octet-stream' })
@@ -575,6 +578,32 @@ configured = true
   ok('while the site’s own button can still open a window', popped.length === 1 && /\/ours$/.test(popped[0]), JSON.stringify(popped))
   await page.context().close()
   inplace = false; rude = false
+}
+
+{
+  // ALL ADS OFF, as shipped: nothing is drawn, requested or offered, on a phone and on a desktop.
+  adsOff = true
+  const before = adRequests.length
+  for (const [w, h] of [[390, 800], [1280, 800]]) {
+    const page = await open({ width: w, height: h, decisions: 5, inPage: true })
+    await page.waitForTimeout(3500)
+    const r = await page.evaluate(() => ({
+      dock: !!document.getElementById('ad-dock'), has: document.body.classList.contains('has-dock'),
+      slots: document.querySelectorAll('[data-ad], .ad-direct, .house-ad, iframe').length,
+      on: Ads.enabled(), anchor: getComputedStyle(document.documentElement).getPropertyValue('--anchor-h').trim(),
+      bonus: (document.getElementById('chat-bonus-wrap') || { hidden: true }).hidden,
+      banner: (document.querySelector('.consent') || { textContent: '' }).textContent,
+    }))
+    ok(`${w}px, switch off: no strip, no frames, no in-page ads, no house card`, !r.dock && !r.has && r.slots === 0 && r.on === false, JSON.stringify(r))
+    ok(`${w}px, switch off: no room is reserved at the bottom`, r.anchor === '' || r.anchor === '0px', r.anchor)
+    ok(`${w}px, switch off: the sponsor-page offer is not there`, r.bonus === true)
+    ok(`${w}px, switch off: the cookie notice does not talk about ads`, !/Adsterra|ad network/i.test(r.banner) && /no ads/i.test(r.banner), r.banner.slice(0, 160))
+    await go(page, 'dishes'); await go(page, 'chat'); await go(page, 'profile'); await page.waitForTimeout(1500)
+    ok(`${w}px, switch off: still nothing after moving through the app`, await page.evaluate(() => document.querySelectorAll('[data-ad], .ad-direct, .house-ad, iframe, #ad-dock').length === 0))
+    await page.context().close()
+  }
+  ok('and the network was never asked', adRequests.length === before, String(adRequests.length - before))
+  adsOff = false
 }
 
 console.log(`\n${pass} passed, ${fails} failed`)

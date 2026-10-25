@@ -222,8 +222,21 @@ export function adCluster(placement: 'inline' | 'end', width: number): AdUnit[] 
 /** Decisions somebody has finished before the first ad is shown to them. 0: from the first visit. */
 export const ADS_AFTER_DECISIONS = 0
 
-/** A unit is live only when both halves of its snippet are here. */
-export const adLive = (unit: AdUnit): boolean => unit.src.length > 0 && unit.key.length > 0
+/*
+ * THE MASTER SWITCH. OFF: no ad of any kind anywhere. The owner asked for all of them to go (popunders from the
+ * network's code), so the units, the ad strip, the in-page ads, the sponsor-page offer and the pages that serve
+ * them are all dormant, and the privacy page and the cookie banner stop mentioning ads. The code and the units
+ * stay, so turning this back on is this one line and `adsOn: true` in public/decide/js/config.js (the two must
+ * agree: scripts/shell-test.mjs fails if they do not). The tests set M45_ADS=1 to exercise the machinery.
+ */
+export const ADS_SWITCH: boolean =
+  false || (typeof process !== 'undefined' && process.env?.M45_ADS === '1')
+
+/** A unit is live only when the switch is on and both halves of its snippet are here. */
+export const adLive = (unit: AdUnit): boolean => ADS_SWITCH && unit.src.length > 0 && unit.key.length > 0
+
+/** The sponsor-page offer for more free questions is an ad, so it follows the switch. */
+export const BONUS_ON: boolean = ADS_SWITCH && SMARTLINK_URL.length > 0
 
 /** Everything downstream reads this rather than testing a string itself. */
 export const ADS_ON = Object.values(AD_UNITS).some(adLive)

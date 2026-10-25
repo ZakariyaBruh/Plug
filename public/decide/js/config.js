@@ -18,6 +18,8 @@
  * js/ads.js and the long note over ADS_ON in site.ts.
  */
 window.FoodConfig = {
+  // THE MASTER SWITCH: false means no ad of any kind (see ADS_SWITCH in src/lib/site.ts, which must say the same).
+  adsOn: false,
   // Ads from the first visit. (It was 2: a stranger's first thing was an answer.)
   adsAfterDecisions: 0,
   // Opened only by a tap on the button that offers it, for two more free

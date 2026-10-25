@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
+import { BONUS_ON } from '#/lib/site'
+
 import {
   BONUS_CLAIMS_PER_DAY,
   BONUS_PER_CLAIM,
@@ -38,6 +40,8 @@ export const Route = createFileRoute('/api/chat-bonus')({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        // The sponsor-page offer is an ad; with the master switch off (lib/site.ts) it does not exist.
+        if (!BONUS_ON) return json({ error: 'not_found' }, 404)
         let sent: Record<string, unknown> = {}
         try {
           sent = ((await request.json()) as Record<string, unknown>) ?? {}

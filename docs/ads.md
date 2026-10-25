@@ -1,3 +1,9 @@
+# Ads are OFF
+
+All ads were removed on the owner's say (popunders from the network's code). One master switch turns everything off: `ADS_SWITCH` in `src/lib/site.ts` and `adsOn` in `public/decide/js/config.js`, which must agree (`ads-off-test` checks). Off means: no ad strip, no in-page ads, no frames, no Premium card standing in for an ad, no sponsor-page offer for extra questions (its route answers 404), no `/ad-frame` page, and the privacy page and cookie notice stop mentioning ads. The rest of this file describes the machinery as it stays in the code, ready to switch back on; the tests run it with `M45_ADS=1` (`scripts/ads-on.mjs`).
+
+To turn it back on: set both switches, deploy. Check the privacy page and the cookie notice read right.
+
 # Ads (Adsterra) and the sponsor page
 
 On, with the five fixed-size banners from the snippets handed over. A Premium

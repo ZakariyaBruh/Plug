@@ -5,6 +5,7 @@
  * (and the fake hostile creative) is scripts/ads-drive.mjs; the files-agree
  * half is scripts/shell-test.mjs.
  */
+import './ads-on.mjs'
 import { readFileSync } from 'node:fs'
 import { AD_SANDBOX } from '../src/components/AdSlot.tsx'
 import { adFramePage } from '../src/routes/ad-frame.ts'

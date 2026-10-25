@@ -7341,7 +7341,7 @@
 
   function bonusOffered() {
     return !isPlus() && chat.left === 0 && !!chat.bonus && chat.bonus.claimsLeft > 0 &&
-      !!(window.FoodConfig && window.FoodConfig.smartlink);
+      !!(window.FoodConfig && window.FoodConfig.adsOn && window.FoodConfig.smartlink);
   }
 
   function paintBonus(text, disabled) {

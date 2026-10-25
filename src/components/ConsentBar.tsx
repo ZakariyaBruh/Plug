@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
 import { OPEN_CONSENT_EVENT, setConsent, storedConsent } from '#/lib/consent-client'
+import { ADS_ON } from '#/lib/site'
 
 /*
  * The cookie notice for the marketing pages; the app has its own copy of the same
@@ -32,12 +33,22 @@ export function ConsentBar() {
     >
       <p>
         <b className="text-[var(--text)]">Cookies.</b> Essential ones remember your settings and progress in this browser;
-        the site needs them. Ads pay for the free app; Premium has none. The ad network (Adsterra) cannot draw an ad without
-        its own cookies, and analytics (Google Analytics, Microsoft Clarity) use them too. Where the law lets us show ads
-        without asking first, they run whatever you pick here and “Essential only” turns analytics off. Where we have to ask
-        (the EU, the UK, Switzerland, or a place we cannot tell), no cookies means no ad network, and the box shows a Premium
-        card instead. Whop, which hosts this site, counts page views on every page itself, and this choice cannot switch that
-        off.{' '}
+        the site needs them.{' '}
+        {ADS_ON ? (
+          <>
+            Ads pay for the free app; Premium has none. The ad network (Adsterra) cannot draw an ad without its own cookies,
+            and analytics (Google Analytics, Microsoft Clarity) use them too. Where the law lets us show ads without asking
+            first, they run whatever you pick here and “Essential only” turns analytics off. Where we have to ask (the EU, the
+            UK, Switzerland, or a place we cannot tell), no cookies means no ad network, and the box shows a Premium card
+            instead.
+          </>
+        ) : (
+          <>
+            There are no ads. Analytics (Google Analytics, Microsoft Clarity) use cookies too, and only run if you press
+            Accept all.
+          </>
+        )}{' '}
+        Whop, which hosts this site, counts page views on every page itself, and this choice cannot switch that off.{' '}
         <Link to="/privacy" className="text-[var(--amber)] underline underline-offset-2">
           Details
         </Link>
